@@ -1,4 +1,4 @@
-package validation
+package validate
 
 // Messages internal error message for some rules.
 var Messages = map[string]string{

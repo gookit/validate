@@ -1,4 +1,4 @@
-package validation
+package validate
 
 // IValidator
 type IValidator interface {

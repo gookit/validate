@@ -1,4 +1,4 @@
-package validation
+package validate
 
 import (
 	"bytes"
@@ -6,13 +6,18 @@ import (
 	"strings"
 )
 
+const (
+	notInitializedYet = "Validation instance not initialized"
+)
+
 // Validate
-// Validation
 type Validation struct {
-	data interface{}
-	dataM map[string]interface{}
-	rules map[string]string
+	data       interface{}
+	dataM      map[string]interface{}
+	rules      map[string]string
 	validators map[string]*Validator
+
+	validated bool
 }
 
 // Option contains the options that a Validator instance will use.
@@ -22,16 +27,38 @@ type Option struct {
 	FieldNameTag string // "json"
 }
 
-func (v *Validation) AddValidator()  {
+func (v *Validation) initCheck() {
+	if v == nil {
+		panic(notInitializedYet)
+	}
+}
+
+func (v *Validation) AddValidator() {
 
 }
 
-func (v *Validation) Map()  {
+func (v *Validation) ValidateMap(data map[string]interface{}, vFields ...string) {
 
 }
 
-func (v *Validation) Struct()  {
+func (v *Validation) ValidateStruct(data interface{}, vFields ...string) {
 
+}
+
+func (v *Validation) DataTo(s interface{}) {
+
+}
+
+func (v *Validation) MapTo(s interface{}) {
+
+}
+
+func (v *Validation) Safe(field string) {
+
+}
+
+func (v *Validation) SafeData() (data map[string]interface{}) {
+	return
 }
 
 // Errors
@@ -51,7 +78,7 @@ func (es Errors) String() string {
 
 // FieldError
 type FieldError struct {
-	Name string
+	Name    string
 	Message string
 }
 
@@ -65,5 +92,15 @@ var d = &Validation{}
 
 // V validate the input data
 func V(data interface{}) {
+
+}
+
+// Map validate the input map data
+func Map(data map[string]interface{}) {
+
+}
+
+// Struct validate the input data
+func Struct(data interface{}) {
 
 }
