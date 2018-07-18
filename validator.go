@@ -2,8 +2,8 @@ package validate
 
 // IValidator
 type IValidator interface {
-	Name() string
-	Validate() error
+	GetName() string
+	Run() error
 }
 
 // Validator
@@ -12,11 +12,17 @@ type Validator struct {
 	Func func() error
 }
 
-func (v *Validator) Name() string {
+func (v *Validator) GetName() string {
 	panic("implement me")
 }
 
-func (v *Validator) Validate() error {
+func (v *Validator) Run() error {
 	panic("implement me")
 }
 
+// global user validators
+var gUserValidators = map[string]interface{}{}
+
+func AddValidator() {
+
+}
