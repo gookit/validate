@@ -19,17 +19,6 @@ var defTranslates = map[string]string{
 	"range": "%s value must be in the range %d - %d",
 }
 
-// some validator alias name
-var validatorAliases = map[string]string{
-	"int": "integer",
-	"num": "number",
-	"str": "string",
-	"map": "mapping",
-	"arr": "array",
-
-	"regex": "regexp",
-}
-
 // Translator
 type Translator struct {
 	data map[string]string

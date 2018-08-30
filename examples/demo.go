@@ -1,15 +1,15 @@
 package main
 
 import (
-	"github.com/gookit/validate"
 	"fmt"
+	"github.com/gookit/validate"
 )
 
 type UserForm struct {
 	Name string `json:"name" validate:"required,minSize(2),customValidator"`
 }
 
-func (f UserForm) CustomValidator(val string)  {
+func (f UserForm) CustomValidator(val string) {
 
 }
 
@@ -25,7 +25,7 @@ func main() {
 
 	mData := map[string]interface{}{
 		"name": "inhere",
-		"age": 28,
+		"age":  28,
 	}
 
 	v := validate.New()

@@ -18,10 +18,10 @@ type Validation struct {
 	aliases    map[string]string
 	validators map[string]*Validator
 
-	dataIsMap bool
+	dataIsMap    bool
 	dataIsStruct bool
 
-	validated bool
+	validated  bool
 	translator *Translator
 
 	stopOnError bool
@@ -42,7 +42,6 @@ type Rules map[string]interface{}
 func (v *Validation) SetRules(rules Rules) {
 
 }
-
 
 func (v *Validation) initCheck() {
 	if v == nil {
@@ -123,6 +122,10 @@ func (v *Validation) AddTranslates(translates map[string]string) {
 func (v *Validation) SafeData() (data map[string]interface{}) {
 	return
 }
+
+/*************************************************************
+ * quick validate func
+ *************************************************************/
 
 // create new Validation
 func New() *Validation {
