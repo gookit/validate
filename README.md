@@ -1,6 +1,8 @@
-# validator
+# validate
 
-Inspired the projects [albrow/forms](https://github.com/albrow/forms) and [asaskevich/govalidator](https://github.com/asaskevich/govalidator)
+the package is a generic go data validate library.
+
+Inspired the projects [albrow/forms](https://github.com/albrow/forms) and [asaskevich/govalidator](https://github.com/asaskevich/govalidator). Thank you very much
 
 ## validators
 

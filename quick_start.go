@@ -10,16 +10,6 @@ import (
 	"strings"
 )
 
-// Struct validate
-func Struct(s interface{}, scene ...string) bool {
-	d, err := FromStruct(s)
-	if err != nil {
-		panicf(err.Error())
-	}
-
-	return d.New(scene...).Validate()
-}
-
 // New a Validation
 func New(data interface{}, scene ...string) *Validation {
 	switch td := data.(type) {
@@ -45,6 +35,21 @@ func New(data interface{}, scene ...string) *Validation {
 	}
 
 	panic("invalid input data")
+}
+
+// Map validation create
+func Map(m map[string]interface{}, scene ...string) *Validation {
+	return FromMap(m).New(scene...)
+}
+
+// Struct validation create
+func Struct(s interface{}, scene ...string) *Validation {
+	d, err := FromStruct(s)
+	if err != nil {
+		panicf(err.Error())
+	}
+
+	return d.New(scene...)
 }
 
 /*************************************************************
@@ -75,7 +80,7 @@ func FromMap(m map[string]interface{}) *MapData {
 
 // FromStruct build data instance.
 func FromStruct(s interface{}) (*StructData, error) {
-	data := &StructData{}
+	data := &StructData{TagName: defaultTag}
 	val := reflect.ValueOf(s)
 
 	if val.Kind() == reflect.Ptr && !val.IsNil() {
@@ -88,6 +93,7 @@ func FromStruct(s interface{}) (*StructData, error) {
 
 	data.Struct = s
 	data.value = val
+
 	return data, nil
 }
 

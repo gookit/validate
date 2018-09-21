@@ -85,27 +85,29 @@ var defMessages = map[string]string{
 	"minLength": "{field} value min length is %d",
 	"maxLength": "{field} value max length is %d",
 
-	"enum": "{field} value must be in the enum %v",
+	"enum":  "{field} value must be in the enum %v",
 	"range": "{field} value must be in the range %d - %d",
 	// required
 	"required": "{field} is required",
 	// field compare
-	"eqField": "{field} value must be equal the field %s",
-	"neField": "{field} value cannot be equal the field %s",
-	"ltField": "{field} value should be less than the field %s",
+	"eqField":  "{field} value must be equal the field %s",
+	"neField":  "{field} value cannot be equal the field %s",
+	"ltField":  "{field} value should be less than the field %s",
 	"lteField": "{field} value should be less than or equal to field %s",
-	"gtField": "{field} value must be greater the field %s",
+	"gtField":  "{field} value must be greater the field %s",
 	"gteField": "{field} value should be greater or equal to field %s",
 }
 
 // Translator definition
 type Translator struct {
+	fieldMap map[string]string
+	// message data
 	data map[string]string
 }
 
 // NewTranslator instance
 func NewTranslator() *Translator {
-	return &Translator{defMessages}
+	return &Translator{fieldMap: make(map[string]string), data: defMessages}
 }
 
 // Load messages data to translator
@@ -113,6 +115,11 @@ func (t *Translator) Load(data map[string]string) {
 	for n, m := range data {
 		t.data[n] = m
 	}
+}
+
+// SetFieldMap config data
+func (t *Translator) SetFieldMap(fieldMap map[string]string) {
+	t.fieldMap = fieldMap
 }
 
 // Add new message to translator
@@ -142,14 +149,19 @@ func (t *Translator) Message(validator, field string, args ...interface{}) (msg 
 
 	if !ok {
 		msg, ok = t.format(validator, field, args...)
-
-		if !ok { // fallback, use default message
+		// fallback, use default message
+		if !ok {
 			msg = t.data["_"]
 		}
 	}
 
 	if !strings.Contains(msg, "{") {
 		return
+	}
+
+	// get field translate.
+	if trName, ok := t.fieldMap[field]; ok {
+		field = trName
 	}
 
 	return strings.Replace(msg, "{field}", field, 1)

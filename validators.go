@@ -97,15 +97,17 @@ var (
 // some validator alias name
 var validatorAliases = map[string]string{
 	// alias -> real name
-	"in":   "enum",
-	"int":   "integer",
-	"num":   "number",
-	"str":   "string",
-	"map":   "mapping",
-	"arr":   "array",
-	"regex": "regexp",
+	"in":     "enum",
+	"int":    "integer",
+	"num":    "number",
+	"str":    "string",
+	"map":    "mapping",
+	"arr":    "array",
+	"regex":  "regexp",
 	"minLen": "minLength",
 	"maxLen": "maxLength",
+	"minSize": "minLength",
+	"maxSize": "maxLength",
 }
 
 // ValidatorName get real validator name.
@@ -123,7 +125,7 @@ func ValidatorName(name string) string {
 
 // global validators. contains built-in and user custom
 var (
-	validators map[string]interface{}
+	validators      map[string]interface{}
 	validatorValues = map[string]reflect.Value{
 		// int value
 		"min": reflect.ValueOf(Min),
@@ -160,7 +162,7 @@ func validatorValue(name string) (reflect.Value, bool) {
 	return reflect.Value{}, false
 }
 
-func checkValidatorFunc(name string, fn interface{}) reflect.Value  {
+func checkValidatorFunc(name string, fn interface{}) reflect.Value {
 	fv := reflect.ValueOf(fn)
 
 	// is nil or not is func
@@ -201,13 +203,21 @@ func (v *Validation) AddValidator(name string, checkFunc interface{}) {
 func (v *Validation) ValidatorValue(name string) (fv reflect.Value, ok bool) {
 	name = ValidatorName(name)
 
+	// if DataFace is StructData instance.
+	if sd, ok := v.DataFace.(*StructData); ok {
+		fv, ok = sd.FuncValue(name)
+		if ok {
+			return fv, true
+		}
+	}
+
 	// current validation
-	if fv, ok =  v.validatorValues[name]; ok {
+	if fv, ok = v.validatorValues[name]; ok {
 		return
 	}
 
 	// global validators
-	if fv, ok =  validatorValues[name]; ok {
+	if fv, ok = validatorValues[name]; ok {
 		return
 	}
 

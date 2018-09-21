@@ -1,7 +1,6 @@
 package validate
 
 import (
-	"encoding/json"
 	"io/ioutil"
 	"mime/multipart"
 	"net/url"
@@ -22,9 +21,9 @@ type FormData struct {
 	// need to have more than one file per key, parse the
 	// files manually using r.MultipartForm.File.
 	Files map[string]*multipart.FileHeader
-	// JSONBody holds the original body of the request.
+	// jsonBodies holds the original body of the request.
 	// Only available for json requests.
-	JSONBody []byte
+	jsonBodies []byte
 }
 
 /*************************************************************
@@ -226,9 +225,14 @@ func (d FormData) GetStringsSplit(key string, delim string) []string {
 // BindJSON binds v to the json data in the request body. It calls json.Unmarshal and
 // sets the value of v.
 func (d FormData) BindJSON(v interface{}) error {
-	if len(d.JSONBody) == 0 {
+	if len(d.jsonBodies) == 0 {
 		return nil
 	}
 
-	return json.Unmarshal(d.JSONBody, v)
+	return Unmarshal(d.jsonBodies, v)
+}
+
+// MapTo the v
+func (d FormData) MapTo(v interface{}) error {
+	return d.BindJSON(v)
 }

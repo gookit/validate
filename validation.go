@@ -2,6 +2,7 @@ package validate
 
 import (
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"strings"
 	"time"
@@ -71,13 +72,13 @@ type Validation struct {
 	// mark has error occurs
 	hasError bool
 	// mark is validated
-	validated  bool
+	validated bool
 	// translator
 	trans *Translator
 	// rules for the validation
 	rules []*Rule
 	// current scene name
-	scene  string
+	scene string
 	// scenes config.
 	// {
 	// 	"create": {"field", "field1"}
@@ -89,7 +90,7 @@ type Validation struct {
 	// filter func reflect.Value map
 	filterValues map[string]reflect.Value
 	// validators and functions for the validation
-	validators  GMap
+	validators GMap
 	// validator func reflect.Value map
 	validatorValues map[string]reflect.Value
 }
@@ -101,7 +102,7 @@ type Validation struct {
 // NewValidation instance
 func NewValidation(d DataFace, scene ...string) *Validation {
 	v := &Validation{
-		Errors: make(Errors),
+		Errors:   make(Errors),
 		DataFace: d,
 		// default config
 		StopOnError: true,
@@ -122,6 +123,23 @@ func NewValidation(d DataFace, scene ...string) *Validation {
 	}
 
 	return v.SetScene(scene...)
+}
+
+// WithScenarios is alias of the WithScenes()
+func (v *Validation) WithScenarios(scenes SValues) *Validation {
+	return v.WithScenes(scenes)
+}
+
+// WithScenes config.
+// Usage:
+//	v.WithScenes(SValues{
+// 		"create": []string{"name", "email"},
+// 		"update": []string{"name"},
+// 	})
+//	ok := v.AtScene("create").Validate()
+func (v *Validation) WithScenes(scenes map[string][]string) *Validation {
+	v.scenes = scenes
+	return v
 }
 
 // SetRules
@@ -259,31 +277,21 @@ func (v *Validation) shouldStop() bool {
  * errors messages
  *************************************************************/
 
-// WithScenarios is alias of the WithScenes()
-func (v *Validation) WithScenarios(scenes SValues) *Validation {
-	return v.WithScenes(scenes)
-}
-
-// WithScenes config.
-// Usage:
-//	v.WithScenes(SValues{
-// 		"create": []string{"name", "email"},
-// 		"update": []string{"name"},
-// 	})
-//	ok := v.AtScene("create").Validate()
-func (v *Validation) WithScenes(scenes SValues) *Validation {
-	v.scenes = scenes
-	return v
-}
-
 // WithTranslates set fields translates. Usage:
-// 	v.WithTranslates()
+// 	v.WithTranslates(map[string]string{
+//		"name": "User Name",
+//		"pwd": "Password",
+//  })
 func (v *Validation) WithTranslates(m map[string]string) *Validation {
-	v.trans.Load(m)
+	v.trans.SetFieldMap(m)
 	return v
 }
 
-// Messages settings
+// Messages settings. Usage:
+// 	v.WithMessages(map[string]string{
+//		"name": "User Name",
+//		"pwd": "Password",
+//  })
 func (v *Validation) WithMessages(m map[string]string) *Validation {
 	v.trans.Load(m)
 	return v
@@ -304,25 +312,33 @@ func (v *Validation) AddError(field string, msg string) {
 }
 
 /*************************************************************
- * helper methods
+ * getter methods
  *************************************************************/
 
-// MapTo
-func (v *Validation) MapTo(s interface{}) {
+// SceneFields name get
+func (v *Validation) SceneFields() (fields []string) {
+	if v.scene == "" {
+		return
+	}
 
+	return v.scenes[v.scene]
 }
 
-// Safe
-func (v *Validation) Safe(field string) {
+// SceneFieldMap name get
+func (v *Validation) SceneFieldMap() (m map[string]uint8) {
+	if v.scene == "" {
+		return
+	}
 
-}
+	if fields, ok := v.scenes[v.scene]; ok {
+		m = make(map[string]uint8, len(fields))
 
-// Reset
-func (v *Validation) Reset() {
-	v.trans = NewTranslator()
-	v.rules = v.rules[:0]
-	v.Errors = Errors{}
-	v.hasError = false
+		for _, field := range fields {
+			m[field] = 1
+		}
+	}
+
+	return
 }
 
 // Scene name get
@@ -341,4 +357,30 @@ func (v *Validation) IsFail() bool {
 
 func (v *Validation) IsSuccess() bool {
 	return !v.hasError
+}
+
+/*************************************************************
+ * helper methods
+ *************************************************************/
+
+// shouldCheck field
+func (v *Validation) shouldCheck(field string) bool {
+	return false
+}
+
+// Safe
+func (v *Validation) Safe(field string) {
+
+}
+
+// Reset
+func (v *Validation) Reset() {
+	v.trans = NewTranslator()
+	v.rules = v.rules[:0]
+	v.Errors = Errors{}
+	v.hasError = false
+}
+
+func panicf(format string, args ...interface{}) {
+	panic("validate: " + fmt.Sprintf(format, args...))
 }

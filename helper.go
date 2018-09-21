@@ -3,6 +3,7 @@ package validate
 import (
 	"fmt"
 	"reflect"
+	"strings"
 )
 
 // CallByValue call func by reflect.Value
@@ -29,4 +30,19 @@ func CallByValue(fv reflect.Value, args ...interface{}) []reflect.Value {
 // Call call func by reflection
 func Call(fn interface{}, args ...interface{}) []reflect.Value {
 	return CallByValue(reflect.ValueOf(fn), args...)
+}
+
+// upperFirst upper first char
+func upperFirst(s string) string {
+	if len(s) == 0 {
+		return s
+	}
+
+	f := s[0]
+
+	if f >= 'a' && f <= 'z' {
+		return strings.ToUpper(string(f)) + string(s[1:])
+	}
+
+	return s
 }
