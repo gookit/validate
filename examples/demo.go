@@ -6,7 +6,7 @@ import (
 )
 
 type UserForm struct {
-	Name string `json:"name" validate:"required,minSize(2),customValidator"`
+	Name string `json:"name" validate:"required,minLen(2),customValidator"`
 }
 
 func (f UserForm) CustomValidator(val string) {

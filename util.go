@@ -1,5 +1,0 @@
-package validate
-
-const (
-	blank = ""
-)
