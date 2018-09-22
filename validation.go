@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-const name = "validate"
+const errorName = "validate"
 const defaultMaxMemory int64 = 32 << 20 // 32 MB
 
 // SMap is short name for map[string]string
@@ -289,7 +289,7 @@ func (v *Validation) shouldStop() bool {
  * errors messages
  *************************************************************/
 
-// WithTranslates settings.you can custom define field translates.
+// WithTranslates settings.you can custom field translates.
 // Usage:
 // 	v.WithTranslates(map[string]string{
 // 		"name": "User Name",
@@ -300,12 +300,13 @@ func (v *Validation) WithTranslates(m map[string]string) *Validation {
 	return v
 }
 
-// AddTranslates settings data.
+// AddTranslates settings data. like WithTranslates()
 func (v *Validation) AddTranslates(m map[string]string) {
 	v.trans.AddFieldMap(m)
 }
 
-// Messages settings. you can custom define validator error messages. Usage:
+// Messages settings. you can custom validator error messages.
+// Usage:
 // 	v.WithMessages(map[string]string{
 // 		"require": "oh! {field} is required",
 // 		"range": "oh! {field} must be in the range %d - %d",
@@ -323,7 +324,7 @@ func (v *Validation) Fields() []string {
 // WithError add error of the validation
 func (v *Validation) WithError(err error) *Validation {
 	if err != nil {
-		v.AddError(name, err.Error())
+		v.AddError(errorName, err.Error())
 	}
 
 	return v

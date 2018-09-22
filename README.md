@@ -69,12 +69,12 @@ type UserForm struct {
 }
 
 // custom validator in the source struct.
-func (f *UserForm) CustomValidator(val string) bool {
+func (f UserForm) CustomValidator(val string) bool {
 	return len(val) == 4
 }
 
-// Messages you can custom define validator error messages. 
-func (f *UserForm) Messages() map[string]string {
+// Messages you can custom validator error messages. 
+func (f UserForm) Messages() map[string]string {
 	return validate.SMap{
 		"required": "oh! the {field} is required",
 		"Name.required": "message for special field",
@@ -82,7 +82,7 @@ func (f *UserForm) Messages() map[string]string {
 }
 
 // Translates you can custom field translates. 
-func (f *UserForm) Translates() map[string]string {
+func (f UserForm) Translates() map[string]string {
 	return validate.SMap{
 		"Name": "User Name",
 		"Email": "User Email",
