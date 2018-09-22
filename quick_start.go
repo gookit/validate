@@ -91,7 +91,7 @@ func FromStruct(s interface{}) (*StructData, error) {
 		return nil, &ErrInvalidType{Type: reflect.TypeOf(s)}
 	}
 
-	data.Struct = s
+	data.source = s
 	data.value = val
 
 	return data, nil

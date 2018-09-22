@@ -34,9 +34,9 @@ type Rule struct {
 	// arguments for the validator
 	arguments []interface{}
 	// some functions
-	beforeFunc func(v *Validation) bool // func (val interface{}) bool
-	filterFunc interface{}              // func (val interface{}) (newVal interface{})
-	checkFunc  interface{}              // func (val interface{}, ...) bool
+	beforeFunc func(field string, v *Validation) bool // func (val interface{}) bool
+	filterFunc interface{}                            // func (val interface{}) (newVal interface{})
+	checkFunc  interface{}                            // func (val interface{}, ...) bool
 	// custom check is empty.
 	emptyChecker func(val interface{}) bool
 }
@@ -115,10 +115,9 @@ func (r *Rule) Fields() []string {
 // Apply rule for the rule fields
 func (r *Rule) Apply(v *Validation) bool {
 	fieldMap := v.SceneFieldMap()
-
 	dontNeedCheck := func(field string) bool {
 		if len(fieldMap) == 0 {
-			return true
+			return false
 		}
 
 		_, ok := fieldMap[field]

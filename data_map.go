@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-// MapData
+// MapData definition
 type MapData struct {
 	// Map form unmarshal JSON string, or user setting
 	Map map[string]interface{}
@@ -14,7 +14,7 @@ type MapData struct {
 	// bodyJSON holds the original body of the request.
 	// Only available for json requests.
 	bodyJSON []byte
-
+	// field reflect.Value caches
 	fields map[string]reflect.Value
 }
 

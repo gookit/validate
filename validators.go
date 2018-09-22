@@ -97,15 +97,15 @@ var (
 // some validator alias name
 var validatorAliases = map[string]string{
 	// alias -> real name
-	"in":     "enum",
-	"int":    "integer",
-	"num":    "number",
-	"str":    "string",
-	"map":    "mapping",
-	"arr":    "array",
-	"regex":  "regexp",
-	"minLen": "minLength",
-	"maxLen": "maxLength",
+	"in":      "enum",
+	"int":     "integer",
+	"num":     "number",
+	"str":     "string",
+	"map":     "mapping",
+	"arr":     "array",
+	"regex":   "regexp",
+	"minLen":  "minLength",
+	"maxLen":  "maxLength",
 	"minSize": "minLength",
 	"maxSize": "maxLength",
 }

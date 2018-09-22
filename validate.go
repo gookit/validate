@@ -1,7 +1,9 @@
 // Package validate is a generic go data validate library.
 package validate
 
-import "reflect"
+import (
+	"reflect"
+)
 
 type sourceType uint8
 
@@ -17,7 +19,7 @@ const (
 // Validate the field by validator name
 func (r *Rule) Validate(field, validator string, v *Validation) (ok bool) {
 	// beforeFunc return false, skip validate
-	if r.beforeFunc != nil && !r.beforeFunc(v) {
+	if r.beforeFunc != nil && !r.beforeFunc(field, v) {
 		return false
 	}
 
@@ -88,8 +90,10 @@ func callValidatorValue(name string, fv reflect.Value, val interface{}, args []i
 		// compare func param type and input param type.
 		if ft.In(i).Kind() == av.Kind() {
 			argIn[i] = av
-		} else { // need convert type.
+		} else if av.Type().ConvertibleTo(ft.In(i)) { // need convert type.
 			argIn[i] = av.Convert(ft.In(i))
+		} else { // cannot converted
+			return false
 		}
 	}
 

@@ -21,10 +21,11 @@ type GMap map[string]interface{}
 
 // DataFace interface definition
 type DataFace interface {
-	// Int() int
-	// Int64() int
 	Get(key string) (interface{}, bool)
 	Set(field string, val interface{}) error
+	// validation instance create func
+	Create(scene ...string) *Validation
+	Validation(scene ...string) *Validation
 }
 
 // MarshalFunc define
@@ -277,7 +278,8 @@ func (v *Validation) shouldStop() bool {
  * errors messages
  *************************************************************/
 
-// WithTranslates set fields translates. Usage:
+// WithTranslates settings.you can custom define field translates.
+// Usage:
 // 	v.WithTranslates(map[string]string{
 //		"name": "User Name",
 //		"pwd": "Password",
@@ -287,10 +289,10 @@ func (v *Validation) WithTranslates(m map[string]string) *Validation {
 	return v
 }
 
-// Messages settings. Usage:
+// Messages settings. you can custom define validator error messages. Usage:
 // 	v.WithMessages(map[string]string{
-//		"name": "User Name",
-//		"pwd": "Password",
+//		"require": "oh! {field} is required",
+//		"range": "oh! {field} must be in the range %d - %d",
 //  })
 func (v *Validation) WithMessages(m map[string]string) *Validation {
 	v.trans.Load(m)
@@ -314,6 +316,11 @@ func (v *Validation) AddError(field string, msg string) {
 /*************************************************************
  * getter methods
  *************************************************************/
+
+// Trans get Translator
+func (v *Validation) Trans() *Translator {
+	return v.trans
+}
 
 // SceneFields name get
 func (v *Validation) SceneFields() (fields []string) {
@@ -341,7 +348,7 @@ func (v *Validation) SceneFieldMap() (m map[string]uint8) {
 	return
 }
 
-// Scene name get
+// Scene name get for current validation
 func (v *Validation) Scene() string {
 	return v.scene
 }
@@ -351,10 +358,12 @@ func (v *Validation) IsOK() bool {
 	return !v.hasError
 }
 
+// IsFail for the validate
 func (v *Validation) IsFail() bool {
 	return v.hasError
 }
 
+// IsSuccess for the validate
 func (v *Validation) IsSuccess() bool {
 	return !v.hasError
 }

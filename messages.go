@@ -31,7 +31,7 @@ func (es Errors) Add(field, message string) {
 	}
 }
 
-// One returns a random error message
+// One returns a random error message text
 func (es Errors) One() string {
 	if len(es) > 0 {
 		for _, ss := range es {
