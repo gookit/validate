@@ -8,6 +8,7 @@ import (
 	"time"
 )
 
+const name = "validate"
 const defaultMaxMemory int64 = 32 << 20 // 32 MB
 
 // SMap is short name for map[string]string
@@ -49,10 +50,10 @@ type ErrInvalidType struct {
 
 func (e *ErrInvalidType) Error() string {
 	if e.Type == nil {
-		return "validator: (nil)"
+		return "validate: (nil)"
 	}
 
-	return "validator: (nil " + e.Type.String() + ")"
+	return "validate: (nil " + e.Type.String() + ")"
 }
 
 // Validation definition
@@ -96,14 +97,11 @@ type Validation struct {
 	validatorValues map[string]reflect.Value
 }
 
-/*************************************************************
- * validation settings
- *************************************************************/
-
 // NewValidation instance
 func NewValidation(d DataFace, scene ...string) *Validation {
 	v := &Validation{
-		Errors:   make(Errors),
+		Errors: make(Errors),
+		// add data source
 		DataFace: d,
 		// default config
 		StopOnError: true,
@@ -112,6 +110,7 @@ func NewValidation(d DataFace, scene ...string) *Validation {
 		trans: NewTranslator(),
 	}
 
+	// init build in context validator
 	v.validatorValues = map[string]reflect.Value{
 		"required": reflect.ValueOf(v.Required),
 		// field compare
@@ -126,6 +125,24 @@ func NewValidation(d DataFace, scene ...string) *Validation {
 	return v.SetScene(scene...)
 }
 
+/*************************************************************
+ * validation settings
+ *************************************************************/
+
+// Config the Validation instance
+func (v *Validation) Config(fn func(v *Validation)) {
+	fn(v)
+}
+
+// Reset the Validation instance
+func (v *Validation) Reset() {
+	// v.trans = NewTranslator()
+	v.rules = v.rules[:0]
+	v.Errors = Errors{}
+	v.hasError = false
+	v.validated = false
+}
+
 // WithScenarios is alias of the WithScenes()
 func (v *Validation) WithScenarios(scenes SValues) *Validation {
 	return v.WithScenes(scenes)
@@ -133,19 +150,13 @@ func (v *Validation) WithScenarios(scenes SValues) *Validation {
 
 // WithScenes config.
 // Usage:
-//	v.WithScenes(SValues{
+// 	v.WithScenes(SValues{
 // 		"create": []string{"name", "email"},
 // 		"update": []string{"name"},
 // 	})
-//	ok := v.AtScene("create").Validate()
+// 	ok := v.AtScene("create").Validate()
 func (v *Validation) WithScenes(scenes map[string][]string) *Validation {
 	v.scenes = scenes
-	return v
-}
-
-// SetRules
-func (v *Validation) SetRules(rules ...*Rule) *Validation {
-	v.rules = rules
 	return v
 }
 
@@ -164,7 +175,31 @@ func (v *Validation) CacheRules(key string) {
 	rulesCaches[key] = v.rules
 }
 
-// AppendRule
+// AtScene setting current validate scene.
+func (v *Validation) AtScene(scene string) *Validation {
+	v.scene = scene
+	return v
+}
+
+// InScene alias of the AtScene()
+func (v *Validation) InScene(scene string) *Validation {
+	return v.AtScene(scene)
+}
+
+// SetScene alias of the AtScene()
+func (v *Validation) SetScene(scene ...string) *Validation {
+	if len(scene) > 0 {
+		v.AtScene(scene[0])
+	}
+
+	return v
+}
+
+/*************************************************************
+ * add validate rules
+ *************************************************************/
+
+// AppendRule instance
 func (v *Validation) AppendRule(rule *Rule) *Rule {
 	v.rules = append(v.rules, rule)
 	return rule
@@ -178,17 +213,17 @@ func (v *Validation) StringRule(field, ruleString string) *Validation {
 	ruleString = strings.Trim(ruleString, "|:")
 
 	rules := stringSplit(ruleString, "|")
-	for _, singleRule := range rules {
-		singleRule = strings.Trim(singleRule, ":")
-		if singleRule == "" { // empty
+	for _, validator := range rules {
+		validator = strings.Trim(validator, ":")
+		if validator == "" { // empty
 			continue
 		}
 
-		if strings.ContainsRune(singleRule, ':') { // has args
-			list := stringSplit(singleRule, ":")
-			v.AddRule(field, list[0], strings2Args(list[1:]))
+		if strings.ContainsRune(validator, ':') { // has args
+			list := stringSplit(validator, ":")
+			v.AddRule(field, list[0], strings2Args(list[1:])...)
 		} else {
-			v.AddRule(field, singleRule)
+			v.AddRule(field, validator)
 		}
 	}
 
@@ -209,7 +244,7 @@ func (v *Validation) StringRules(sMap SMap) *Validation {
 	return v
 }
 
-// AddRule
+// AddRule for current validate
 func (v *Validation) AddRule(fields, validator string, args ...interface{}) *Rule {
 	rule := &Rule{
 		fields: fields,
@@ -223,37 +258,13 @@ func (v *Validation) AddRule(fields, validator string, args ...interface{}) *Rul
 	return rule
 }
 
-// AtScene setting current validate scene.
-func (v *Validation) AtScene(scene string) *Validation {
-	v.scene = scene
-	return v
-}
-
-// InScene alias of the AtScene()
-func (v *Validation) InScene(scene string) *Validation {
-	return v.AtScene(scene)
-}
-
-// SetScene alias of the AtScene()
-func (v *Validation) SetScene(scene ...string) *Validation {
-	if len(scene) > 0 {
-		return v.AtScene(scene[0])
-	}
-
-	return v
-}
-
-func (v *Validation) Custom(fields, validator string, args ...interface{}) *Rule {
-	return v.AddRule(fields, validator, args...)
-}
-
 /*************************************************************
  * do Validate
  *************************************************************/
 
 // Validate processing
 func (v *Validation) Validate(scene ...string) bool {
-	if v.validated {
+	if v.validated || v.shouldStop() { // has been validated OR has error
 		return v.IsSuccess()
 	}
 
@@ -281,27 +292,41 @@ func (v *Validation) shouldStop() bool {
 // WithTranslates settings.you can custom define field translates.
 // Usage:
 // 	v.WithTranslates(map[string]string{
-//		"name": "User Name",
-//		"pwd": "Password",
+// 		"name": "User Name",
+// 		"pwd": "Password",
 //  })
 func (v *Validation) WithTranslates(m map[string]string) *Validation {
-	v.trans.SetFieldMap(m)
+	v.trans.AddFieldMap(m)
 	return v
+}
+
+// AddTranslates settings data.
+func (v *Validation) AddTranslates(m map[string]string) {
+	v.trans.AddFieldMap(m)
 }
 
 // Messages settings. you can custom define validator error messages. Usage:
 // 	v.WithMessages(map[string]string{
-//		"require": "oh! {field} is required",
-//		"range": "oh! {field} must be in the range %d - %d",
+// 		"require": "oh! {field} is required",
+// 		"range": "oh! {field} must be in the range %d - %d",
 //  })
 func (v *Validation) WithMessages(m map[string]string) *Validation {
-	v.trans.Load(m)
+	v.trans.LoadMessages(m)
 	return v
 }
 
 // Fields returns the fields for all validated
 func (v *Validation) Fields() []string {
 	return v.fields
+}
+
+// WithError add error of the validation
+func (v *Validation) WithError(err error) *Validation {
+	if err != nil {
+		v.AddError(name, err.Error())
+	}
+
+	return v
 }
 
 // AddError message for a field
@@ -372,22 +397,9 @@ func (v *Validation) IsSuccess() bool {
  * helper methods
  *************************************************************/
 
-// shouldCheck field
-func (v *Validation) shouldCheck(field string) bool {
-	return false
-}
-
 // Safe
 func (v *Validation) Safe(field string) {
 
-}
-
-// Reset
-func (v *Validation) Reset() {
-	v.trans = NewTranslator()
-	v.rules = v.rules[:0]
-	v.Errors = Errors{}
-	v.hasError = false
 }
 
 func panicf(format string, args ...interface{}) {

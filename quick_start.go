@@ -2,7 +2,6 @@ package validate
 
 import (
 	"encoding/json"
-	"errors"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -25,16 +24,7 @@ func New(data interface{}, scene ...string) *Validation {
 		return FromURLValues(data.(map[string][]string)).Create(scene...)
 	}
 
-	if reflect.TypeOf(data).Kind() == reflect.Struct {
-		d, err := FromStruct(data)
-		if err != nil {
-			panic(err)
-		}
-
-		return d.Create(scene...)
-	}
-
-	panic("invalid input data")
+	return Struct(data, scene...)
 }
 
 // Map validation create
@@ -44,23 +34,21 @@ func Map(m map[string]interface{}, scene ...string) *Validation {
 
 // Struct validation create
 func Struct(s interface{}, scene ...string) *Validation {
-	d, err := FromStruct(s)
-	if err != nil {
-		panicf(err.Error())
-	}
+	return newWithError(newStructData(s)).SetScene(scene...)
+}
 
-	return d.New(scene...)
+// Request validation create
+func Request(r *http.Request) *Validation {
+	return newWithError(FromRequest(r))
+}
+
+func newWithError(d DataFace, err error) *Validation {
+	return d.Create().WithError(err)
 }
 
 /*************************************************************
  * create data instance
  *************************************************************/
-
-// ErrNoData define
-var (
-	// ErrNoData = errors.New("validate: no any data can be collected")
-	ErrEmptyData = errors.New("validate: please input data use for validate")
-)
 
 // FromMap build data instance.
 func FromMap(m map[string]interface{}) *MapData {
@@ -80,21 +68,7 @@ func FromMap(m map[string]interface{}) *MapData {
 
 // FromStruct build data instance.
 func FromStruct(s interface{}) (*StructData, error) {
-	data := &StructData{TagName: defaultTag}
-	val := reflect.ValueOf(s)
-
-	if val.Kind() == reflect.Ptr && !val.IsNil() {
-		val = val.Elem()
-	}
-
-	if val.Kind() != reflect.Struct || val.Type() == timeType {
-		return nil, &ErrInvalidType{Type: reflect.TypeOf(s)}
-	}
-
-	data.source = s
-	data.value = val
-
-	return data, nil
+	return newStructData(s)
 }
 
 // FromRequest collect data from request instance
@@ -141,7 +115,6 @@ func FromRequest(r *http.Request, maxMemoryLimit ...int64) (DataFace, error) {
 		data := FromURLValues(r.PostForm)
 		// add queries data
 		data.AddValues(r.URL.Query())
-
 		return data, nil
 	}
 

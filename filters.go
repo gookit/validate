@@ -103,6 +103,11 @@ func ToUint(str string) (uint64, error) {
 	return strconv.ParseUint(Trim(str), 10, 0)
 }
 
+// ToInt64
+func ToInt64(str string) (int64, error) {
+	return strconv.ParseInt(Trim(str), 10, 0)
+}
+
 func MustUint(str string) uint64 {
 	val, _ := strconv.ParseUint(Trim(str), 10, 0)
 	return val

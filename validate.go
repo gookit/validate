@@ -2,6 +2,7 @@
 package validate
 
 import (
+	"fmt"
 	"reflect"
 )
 
@@ -15,6 +16,8 @@ const (
 	// from user setting
 	sourceStruct
 )
+
+var emptyValue = reflect.Value{}
 
 // Validate the field by validator name
 func (r *Rule) Validate(field, validator string, v *Validation) (ok bool) {
@@ -86,18 +89,59 @@ func callValidatorValue(name string, fv reflect.Value, val interface{}, args []i
 	// typeIn := make([]reflect.Type, fnArgNum)
 	for i := 0; i < fnArgNum; i++ {
 		av := reflect.ValueOf(newArgs[i])
+		wantTyp := ft.In(i).Kind()
+		updateArg := false
 
 		// compare func param type and input param type.
-		if ft.In(i).Kind() == av.Kind() {
+		if wantTyp == av.Kind() {
 			argIn[i] = av
 		} else if av.Type().ConvertibleTo(ft.In(i)) { // need convert type.
+			updateArg = true
 			argIn[i] = av.Convert(ft.In(i))
+		} else if nv, ok := convertValueType(av, wantTyp); ok { // manual converted
+			argIn[i] = nv
+			updateArg = true
 		} else { // cannot converted
 			return false
 		}
+
+		// update rule.arguments[i] value
+		if updateArg && i != 0 {
+			args[i-1] = argIn[i].Interface()
+		}
 	}
 
-	// f.CallSlice()与Call() 不一样的是，参数的最后一个会被展开
-	vs := fv.Call(argIn)
-	return vs[0].Bool()
+	// f.CallSlice()与Call() 不一样的是，CallSlice参数的最后一个会被展开
+	// vs := fv.Call(argIn)
+	return fv.Call(argIn)[0].Bool()
+}
+
+func convertValueType(src reflect.Value, dstType reflect.Kind) (nVal reflect.Value, ok bool) {
+	switch src.Kind() {
+	case reflect.String:
+		srcVal := src.String()
+		switch dstType {
+		case reflect.Int:
+			return convertResult(ToInt(srcVal))
+		case reflect.Int64:
+			return convertResult(ToInt64(srcVal))
+		}
+	case reflect.Int:
+		switch dstType {
+		case reflect.Int64:
+			return convertResult(int64(src.Int()), nil)
+		case reflect.String:
+			return convertResult(fmt.Sprint(src.Int()), nil)
+		}
+	}
+
+	return
+}
+
+func convertResult(val interface{}, err error) (reflect.Value, bool) {
+	if err != nil {
+		return emptyValue, false
+	}
+
+	return reflect.ValueOf(val), true
 }

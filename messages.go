@@ -2,8 +2,17 @@ package validate
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"strings"
+)
+
+// some internal error definition
+var (
+	ErrSetValue = errors.New("set value failure")
+	// ErrNoData = errors.New("validate: no any data can be collected")
+	ErrEmptyData   = errors.New("validate: please input data use for validate")
+	ErrInvalidData = errors.New("validate: invalid input data")
 )
 
 /*************************************************************
@@ -79,11 +88,11 @@ func (es Errors) String() string {
 var defMessages = map[string]string{
 	"_": "{field} did not pass validate", // default message
 	// int value
-	"min": "{field} value min is %d",
-	"max": "{field} value max is %d",
+	"min": "{field} min value is %d",
+	"max": "{field} max value is %d",
 	// length
-	"minLength": "{field} value min length is %d",
-	"maxLength": "{field} value max length is %d",
+	"minLength": "{field} min length is %d",
+	"maxLength": "{field} max length is %d",
 
 	"enum":  "{field} value must be in the enum %v",
 	"range": "{field} value must be in the range %d - %d",
@@ -101,42 +110,55 @@ var defMessages = map[string]string{
 // Translator definition
 type Translator struct {
 	fieldMap map[string]string
-	// message data
-	data map[string]string
+	// message data map
+	messages map[string]string
 }
 
 // NewTranslator instance
 func NewTranslator() *Translator {
-	return &Translator{fieldMap: make(map[string]string), data: defMessages}
+	return &Translator{fieldMap: make(map[string]string), messages: defMessages}
 }
 
-// Load messages data to translator
-func (t *Translator) Load(data map[string]string) {
+// Reset translator to default
+func (t *Translator) Reset() {
+	t.messages = defMessages
+	t.fieldMap = make(map[string]string)
+}
+
+// FieldMap data get
+func (t *Translator) FieldMap() map[string]string {
+	return t.fieldMap
+}
+
+// LoadMessages data to translator
+func (t *Translator) LoadMessages(data map[string]string) {
 	for n, m := range data {
-		t.data[n] = m
+		t.messages[n] = m
 	}
 }
 
-// SetFieldMap config data
-func (t *Translator) SetFieldMap(fieldMap map[string]string) {
-	t.fieldMap = fieldMap
-}
-
-// Add new message to translator
-func (t *Translator) Add(key, msg string) {
-	t.data[key] = msg
-}
-
-// format message for the validator
-func (t *Translator) format(validator, field string, args ...interface{}) (msg string, ok bool) {
-	key := field + "." + validator
-	if msg, ok = t.data[key]; ok { // "field.required"
-		msg = fmt.Sprintf(msg, args...)
-	} else if msg, ok = t.data[validator]; ok { // "required"
-		msg = fmt.Sprintf(msg, args...)
+// AddFieldMap config data
+func (t *Translator) AddFieldMap(fieldMap map[string]string) {
+	for name, showName := range fieldMap {
+		t.fieldMap[name] = showName
 	}
+}
 
-	return
+// AddMessage to translator
+func (t *Translator) AddMessage(key, msg string) {
+	t.messages[key] = msg
+}
+
+// HasField name in the t.fieldMap
+func (t *Translator) HasField(field string) bool {
+	_, ok := t.fieldMap[field]
+	return ok
+}
+
+// HasMessage key in the t.messages
+func (t *Translator) HasMessage(key string) bool {
+	_, ok := t.messages[key]
+	return ok
 }
 
 // Message get by validator name and field name.
@@ -151,7 +173,7 @@ func (t *Translator) Message(validator, field string, args ...interface{}) (msg 
 		msg, ok = t.format(validator, field, args...)
 		// fallback, use default message
 		if !ok {
-			msg = t.data["_"]
+			msg = t.messages["_"]
 		}
 	}
 
@@ -167,9 +189,16 @@ func (t *Translator) Message(validator, field string, args ...interface{}) (msg 
 	return strings.Replace(msg, "{field}", field, 1)
 }
 
-// Reset translator to default
-func (t *Translator) Reset() {
-	t.data = defMessages
+// format message for the validator
+func (t *Translator) format(validator, field string, args ...interface{}) (msg string, ok bool) {
+	key := field + "." + validator
+	if msg, ok = t.messages[key]; ok { // "field.required"
+		msg = fmt.Sprintf(msg, args...)
+	} else if msg, ok = t.messages[validator]; ok { // "required"
+		msg = fmt.Sprintf(msg, args...)
+	}
+
+	return
 }
 
 func strings2Args(strings []string) []interface{} {

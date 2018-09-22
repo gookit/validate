@@ -18,7 +18,7 @@ func ExampleStruct() {
 	fmt.Println(ok)
 }
 
-func TestValidation(t *testing.T) {
+func TestMap(t *testing.T) {
 	is := assert.New(t)
 
 	m := GMap{
@@ -56,12 +56,18 @@ type UserForm struct {
 }
 
 // custom validator in the source struct.
-func (f *UserForm) CustomValidator(val string) bool {
+func (f UserForm) CustomValidator(val string) bool {
 	return len(val) == 4
 }
 
+func (f UserForm) ConfigValidation(v *Validation) {
+	v.AddTranslates(SMap{
+		"Safe": "Safe-Name",
+	})
+}
+
 // Messages you can custom define validator error messages.
-func (f *UserForm) Messages() map[string]string {
+func (f UserForm) Messages() map[string]string {
 	return SMap{
 		"required":      "oh! the {field} is required",
 		"Name.required": "message for special field",
@@ -69,7 +75,7 @@ func (f *UserForm) Messages() map[string]string {
 }
 
 // Translates you can custom field translates.
-func (f *UserForm) Translates() map[string]string {
+func (f UserForm) Translates() map[string]string {
 	return SMap{
 		"Name":  "User Name",
 		"Email": "User Email",
@@ -78,12 +84,23 @@ func (f *UserForm) Translates() map[string]string {
 
 func TestStruct(t *testing.T) {
 	is := assert.New(t)
+
 	u := &UserForm{
 		Name: "inhere",
 	}
-
 	v := Struct(u)
-	ok := v.Validate()
 
+	// check trans data
+	is.True(v.Trans().HasField("Name"))
+	is.True(v.Trans().HasField("Safe"))
+	is.True(v.Trans().HasMessage("Name.required"))
+
+	// validate
+	ok := v.Validate()
 	is.False(ok)
+	is.Equal("User Name min length is 7", v.Errors.Field("Name")[0])
+}
+
+func TestRequest(t *testing.T) {
+	// r := http.NewRequest()
 }
