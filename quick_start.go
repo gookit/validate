@@ -46,6 +46,11 @@ func newWithError(d DataFace, err error) *Validation {
 	return d.Create().WithError(err)
 }
 
+// Config global options
+func Config(fn func(opt *GlobalOption)) {
+	fn(globalOpt)
+}
+
 /*************************************************************
  * create data instance
  *************************************************************/

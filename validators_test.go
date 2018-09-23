@@ -2,6 +2,7 @@ package validate
 
 import (
 	"fmt"
+	"github.com/stretchr/testify/assert"
 	"reflect"
 	"testing"
 )
@@ -46,19 +47,70 @@ func TestSome(t *testing.T) {
 	fmt.Println(rv.Kind(), rv.Field(0).String())
 }
 
+func TestIsInt(t *testing.T) {
+	is := assert.New(t)
+
+	// type check
+	is.True(IsInt(2))
+	is.True(IsInt(int8(2)))
+	is.True(IsInt(int16(2)))
+	is.True(IsInt(int32(2)))
+	is.True(IsInt(int64(2)))
+	is.False(IsInt(nil))
+	is.False(IsInt("str"))
+	is.False(IsInt([]int{}))
+	is.False(IsInt([]int{2}))
+	is.False(IsInt(map[string]int{"key": 2}))
+
+	// with min and max value
+	is.True(IsInt(5, 5))
+	is.True(IsInt(5, 4))
+	is.True(IsInt(5, 4, 6))
+	is.False(IsInt(nil, 4, 6))
+	is.False(IsInt("str", 4, 6))
+}
+
 func TestMin(t *testing.T) {
-	f := reflect.ValueOf(Min)
-	vs := CallByValue(f, int64(4), int64(3))
-	fmt.Println(vs[0].Bool(), f.Type().PkgPath())
+	is := assert.New(t)
 
-	f = reflect.ValueOf(stringSplit)
-	vs = CallByValue(f, "a,b,c", ",")
-	fmt.Printf("%#v\n", vs[0])
+	// ok
+	is.True(Min(3, 2))
+	is.True(Min(3, 3))
+	is.True(Min(int64(3), 3))
 
-	f = reflect.ValueOf(ToArray)
-	vs = CallByValue(f, "a,b,c", ",")
-	// .Interface().([]string)
-	fmt.Printf("%#v\n", vs[0].Interface().([]string))
+	// fail
+	is.False(Min(nil, 3))
+	is.False(Min("str", 3))
+	is.False(Min(3, 4))
+	is.False(Min(int64(3), 4))
+}
+
+func TestMax(t *testing.T) {
+	is := assert.New(t)
+
+	// ok
+	is.True(Max(3, 4))
+	is.True(Max(3, 3))
+	is.True(Max(int64(3), 3))
+
+	// fail
+	is.False(Max(nil, 3))
+	is.False(Max("str", 3))
+	is.False(Max(3, 2))
+	is.False(Max(int64(3), 2))
+}
+
+func TestIsString(t *testing.T) {
+	is := assert.New(t)
+
+	is.True(IsString("str"))
+	is.False(IsString(nil))
+	is.False(IsString(2))
+
+	is.True(IsString("str", 3))
+	is.True(IsString("str", 3, 5))
+	is.False(IsString("str", 4))
+	is.False(IsString("str", 1, 2))
 }
 
 func TestIsAlpha(t *testing.T) {

@@ -3,6 +3,7 @@ package validate
 import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
+	"net/url"
 	"testing"
 	"time"
 )
@@ -54,7 +55,7 @@ type UserForm struct {
 	UpdateAt time.Time `json:"updateAt" validate:"required"`
 	Code     string    `json:"code" validate:"customValidator"`
 	Status   int       `json:"status" validate:"required|gtField:Extra.Status1"`
-	Extra    ExtraInfo
+	Extra    ExtraInfo `validate:"required"`
 }
 
 // ExtraInfo data
@@ -111,4 +112,21 @@ func TestStruct(t *testing.T) {
 
 func TestRequest(t *testing.T) {
 	// r := http.NewRequest()
+}
+
+func TestFromQuery(t *testing.T) {
+	is := assert.New(t)
+
+	data := url.Values{
+		"name": []string{"inhere"},
+		"age":  []string{"10"},
+	}
+
+	v := FromQuery(data).Create()
+	v.StringRules(SMap{
+		"name": "required|minLen:7",
+		"age":  "required|int|min:20",
+	})
+
+	is.False(v.Validate())
 }

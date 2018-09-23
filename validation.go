@@ -9,6 +9,7 @@ import (
 )
 
 const errorName = "validate"
+const defaultTag = "validate"
 const defaultMaxMemory int64 = 32 << 20 // 32 MB
 
 // SMap is short name for map[string]string
@@ -42,18 +43,21 @@ var (
 )
 
 var timeType = reflect.TypeOf(time.Time{})
-
-// ErrInvalidType
-type ErrInvalidType struct {
-	Type reflect.Type
+var globalOpt = &GlobalOption{
+	StopOnError: true,
+	SkipOnEmpty: true,
+	// tag name in struct tags
+	TagName: defaultTag,
 }
 
-func (e *ErrInvalidType) Error() string {
-	if e.Type == nil {
-		return "validate: (nil)"
-	}
-
-	return "validate: (nil " + e.Type.String() + ")"
+// GlobalOption settings for validate
+type GlobalOption struct {
+	// TagName in the struct tags.
+	TagName string
+	// StopOnError If true: An error occurs, it will cease to continue to verify
+	StopOnError bool
+	// SkipOnEmpty Skip check on field not exist or value is empty
+	SkipOnEmpty bool
 }
 
 // Validation definition
@@ -104,8 +108,8 @@ func NewValidation(data DataFace, scene ...string) *Validation {
 		// add data source
 		DataFace: data,
 		// default config
-		StopOnError: true,
-		SkipOnEmpty: true,
+		StopOnError: globalOpt.StopOnError,
+		SkipOnEmpty: globalOpt.SkipOnEmpty,
 		// create message translator
 		trans: NewTranslator(),
 	}
@@ -366,11 +370,7 @@ func (v *Validation) Trans() *Translator {
 }
 
 // SceneFields field names get
-func (v *Validation) SceneFields() (fields []string) {
-	if v.scene == "" {
-		return
-	}
-
+func (v *Validation) SceneFields() []string {
 	return v.scenes[v.scene]
 }
 

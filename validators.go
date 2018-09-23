@@ -99,9 +99,11 @@ var (
 var validatorAliases = map[string]string{
 	// alias -> real name
 	"in":      "enum",
-	"int":     "integer",
+	"int":     "isInt",
+	"uint":    "isUint",
 	"num":     "number",
-	"str":     "string",
+	"str":     "isString",
+	"string":  "isString",
 	"map":     "mapping",
 	"arr":     "array",
 	"regex":   "regexp",
@@ -129,8 +131,11 @@ var (
 	validators      map[string]interface{}
 	validatorValues = map[string]reflect.Value{
 		// int value
-		"min": reflect.ValueOf(Min),
-		"max": reflect.ValueOf(Max),
+		"min":      reflect.ValueOf(Min),
+		"max":      reflect.ValueOf(Max),
+		"isInt":    reflect.ValueOf(IsInt),
+		"isUint":   reflect.ValueOf(IsUint),
+		"isString": reflect.ValueOf(IsString),
 		// length
 		"minLength": reflect.ValueOf(MinLength),
 		"maxLength": reflect.ValueOf(MaxLength),
@@ -329,9 +334,17 @@ func (v *Validation) LteField(val interface{}, dstField string) bool {
  * built in global validators
  *************************************************************/
 
-// IsEmpty
-func IsEmpty(val string) bool {
-	return val == ""
+// IsEmpty of the value
+func IsEmpty(val interface{}) bool {
+	if val == nil {
+		return true
+	}
+
+	if rv, ok := val.(reflect.Value); ok {
+		return ValueIsEmpty(rv)
+	}
+
+	return ValueIsEmpty(reflect.ValueOf(val))
 }
 
 // IsNull check if the string is null.
@@ -339,9 +352,43 @@ func IsNull(str string) bool {
 	return len(str) == 0
 }
 
-func IsInt(str string) bool {
-	_, err := strconv.ParseInt(str, 10, 32)
-	return err == nil
+// IsInt check, and support length check
+func IsInt(val interface{}, minAndMax ...int64) (ok bool) {
+	if val == nil {
+		return false
+	}
+
+	var rv reflect.Value
+
+	if rv, ok = val.(reflect.Value); !ok {
+		rv = reflect.ValueOf(val)
+	}
+
+	intVal, isInt := ValueInt64(rv)
+
+	// @todo convert string to int?
+	// if !isInt && rv.Kind() == reflect.String {
+	// }
+
+	argLn := len(minAndMax)
+	if argLn == 0 { // only check type
+		return isInt
+	}
+
+	if !isInt {
+		return false
+	}
+
+	// value check
+	minVal := minAndMax[0]
+	if argLn == 1 { // only min length check.
+		return intVal >= minVal
+	}
+
+	maxVal := minAndMax[1]
+
+	// min and max length check
+	return intVal >= minVal && intVal <= maxVal
 }
 
 func IsUint(str string) bool {
@@ -356,6 +403,48 @@ func IsBool(str string) bool {
 
 func IsFloat(str string) bool {
 	return rxFloat.MatchString(str)
+}
+
+// IsString check, and support length check.
+// Usage:
+// 	ok := IsString(val)
+// 	ok := IsString(val, 5) // with min len check
+// 	ok := IsString(val, 5, 12) // with min and max len check
+func IsString(val interface{}, minAndMaxLen ...int) (ok bool) {
+	if val == nil {
+		return false
+	}
+
+	var rv reflect.Value
+
+	if rv, ok = val.(reflect.Value); !ok {
+		rv = reflect.ValueOf(val)
+	}
+
+	argLn := len(minAndMaxLen)
+	isStr := rv.Type().Kind() == reflect.String
+
+	// only check type
+	if argLn == 0 {
+		return isStr
+	}
+
+	if !isStr {
+		return false
+	}
+
+	// length check
+	strLen := rv.Len()
+	minLen := minAndMaxLen[0]
+
+	// only min length check.
+	if argLn == 1 {
+		return strLen >= minLen
+	}
+
+	// min and max length check
+	maxLen := minAndMaxLen[1]
+	return strLen >= minLen && strLen <= maxLen
 }
 
 func IsASCII(str string) bool {
@@ -434,33 +523,45 @@ func IsJSON(str string) bool {
 	return json.Unmarshal([]byte(str), &js) == nil
 }
 
-// Min value check
+// Min int value check
 func Min(val interface{}, min int64) bool {
 	return int64compare(val, min, "gte")
 }
 
-// Max value check
+// Max int value check
 func Max(val interface{}, max int64) bool {
 	return int64compare(val, max, "lte")
 }
 
 func int64compare(val interface{}, dstVal int64, op string) bool {
-	var ok bool
+	if val == nil {
+		return false
+	}
+
+	var isInt bool
 	var srcVal int64
 
 	if rv, ok := val.(reflect.Value); ok {
-		srcVal, ok = ValueInt64(rv)
+		srcVal, isInt = ValueInt64(rv)
 	} else {
-		srcVal, ok = ValueInt64(reflect.ValueOf(val))
+		srcVal, isInt = ValueInt64(reflect.ValueOf(val))
 	}
 
-	if !ok {
+	if !isInt {
 		return false
 	}
 
 	switch op {
+	case "eq":
+		return srcVal == dstVal
+	case "ne":
+		return srcVal != dstVal
+	case "lt":
+		return srcVal < dstVal
 	case "lte":
 		return srcVal <= dstVal
+	case "gt":
+		return srcVal > dstVal
 	case "gte":
 		return srcVal >= dstVal
 	}
@@ -559,7 +660,7 @@ func ValueLen(v reflect.Value) int {
 	switch k {
 	case reflect.Map, reflect.Array, reflect.Chan, reflect.Slice, reflect.String:
 		return v.Len()
-	// int use width.
+		// int use width.
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		return len(fmt.Sprint(v.Int()))
 	}

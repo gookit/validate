@@ -90,6 +90,7 @@ func Trim(str string) string {
 	return strings.TrimSpace(str)
 }
 
+// ToInt convert
 func ToInt(str string) (int, error) {
 	return strconv.Atoi(Trim(str))
 }
@@ -103,7 +104,7 @@ func ToUint(str string) (uint64, error) {
 	return strconv.ParseUint(Trim(str), 10, 0)
 }
 
-// ToInt64
+// ToInt64 convert
 func ToInt64(str string) (int64, error) {
 	return strconv.ParseInt(Trim(str), 10, 0)
 }
@@ -113,6 +114,7 @@ func MustUint(str string) uint64 {
 	return val
 }
 
+// ToFloat convert
 func ToFloat(str string) (float64, error) {
 	return strconv.ParseFloat(Trim(str), 0)
 }

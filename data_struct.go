@@ -5,8 +5,6 @@ import (
 	"strings"
 )
 
-const defaultTag = "validate"
-
 // ConfigValidationFace definition. you can do something on create Validation.
 type ConfigValidationFace interface {
 	ConfigValidation(v *Validation)
@@ -71,7 +69,7 @@ var (
 
 func newStructData(s interface{}) (*StructData, error) {
 	data := &StructData{
-		TagName: defaultTag,
+		TagName: globalOpt.TagName,
 		// init map
 		fieldValues: make(map[string]reflect.Value),
 	}
@@ -134,7 +132,7 @@ func (d *StructData) Validation(scene ...string) *Validation {
 // parse and collect rules from struct tags.
 func (d *StructData) parseRulesFromTag(v *Validation) {
 	if d.TagName == "" {
-		d.TagName = defaultTag
+		d.TagName = globalOpt.TagName
 	}
 
 	vt := d.valueTpy
