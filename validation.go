@@ -98,11 +98,11 @@ type Validation struct {
 }
 
 // NewValidation instance
-func NewValidation(d DataFace, scene ...string) *Validation {
+func NewValidation(data DataFace, scene ...string) *Validation {
 	v := &Validation{
 		Errors: make(Errors),
 		// add data source
-		DataFace: d,
+		DataFace: data,
 		// default config
 		StopOnError: true,
 		SkipOnEmpty: true,
@@ -199,12 +199,6 @@ func (v *Validation) SetScene(scene ...string) *Validation {
  * add validate rules
  *************************************************************/
 
-// AppendRule instance
-func (v *Validation) AppendRule(rule *Rule) *Rule {
-	v.rules = append(v.rules, rule)
-	return rule
-}
-
 // StringRule add field rules by string
 // Usage:
 // 	v.StringRule("name", "required|string|min:12")
@@ -219,7 +213,8 @@ func (v *Validation) StringRule(field, ruleString string) *Validation {
 			continue
 		}
 
-		if strings.ContainsRune(validator, ':') { // has args
+		// has args
+		if strings.ContainsRune(validator, ':') {
 			list := stringSplit(validator, ":")
 			v.AddRule(field, list[0], strings2Args(list[1:])...)
 		} else {
@@ -258,13 +253,20 @@ func (v *Validation) AddRule(fields, validator string, args ...interface{}) *Rul
 	return rule
 }
 
+// AppendRule instance
+func (v *Validation) AppendRule(rule *Rule) *Rule {
+	v.rules = append(v.rules, rule)
+	return rule
+}
+
 /*************************************************************
  * do Validate
  *************************************************************/
 
 // Validate processing
 func (v *Validation) Validate(scene ...string) bool {
-	if v.validated || v.shouldStop() { // has been validated OR has error
+	// has been validated OR has error
+	if v.validated || v.shouldStop() {
 		return v.IsSuccess()
 	}
 
@@ -272,6 +274,7 @@ func (v *Validation) Validate(scene ...string) bool {
 
 	// apply rule to validate data.
 	for _, rule := range v.rules {
+		// has error and v.StopOnError is true.
 		if rule.Apply(v) {
 			break
 		}
@@ -279,10 +282,6 @@ func (v *Validation) Validate(scene ...string) bool {
 
 	v.validated = true
 	return v.IsSuccess()
-}
-
-func (v *Validation) shouldStop() bool {
-	return v.hasError && v.StopOnError
 }
 
 /*************************************************************
@@ -343,12 +342,30 @@ func (v *Validation) AddError(field string, msg string) {
  * getter methods
  *************************************************************/
 
-// Trans get Translator
+// Get value by key
+func (v *Validation) Get(key string) (interface{}, bool) {
+	if v.DataFace == nil { // check input data
+		return nil, false
+	}
+
+	return v.DataFace.Get(key)
+}
+
+// Set value by key
+func (v *Validation) Set(field string, val interface{}) error {
+	if v.DataFace == nil { // check input data
+		return ErrEmptyData
+	}
+
+	return v.DataFace.Set(field, val)
+}
+
+// Trans get message Translator
 func (v *Validation) Trans() *Translator {
 	return v.trans
 }
 
-// SceneFields name get
+// SceneFields field names get
 func (v *Validation) SceneFields() (fields []string) {
 	if v.scene == "" {
 		return
@@ -357,7 +374,7 @@ func (v *Validation) SceneFields() (fields []string) {
 	return v.scenes[v.scene]
 }
 
-// SceneFieldMap name get
+// SceneFieldMap field name map build and get
 func (v *Validation) SceneFieldMap() (m map[string]uint8) {
 	if v.scene == "" {
 		return
@@ -365,7 +382,6 @@ func (v *Validation) SceneFieldMap() (m map[string]uint8) {
 
 	if fields, ok := v.scenes[v.scene]; ok {
 		m = make(map[string]uint8, len(fields))
-
 		for _, field := range fields {
 			m[field] = 1
 		}
@@ -397,6 +413,10 @@ func (v *Validation) IsSuccess() bool {
 /*************************************************************
  * helper methods
  *************************************************************/
+
+func (v *Validation) shouldStop() bool {
+	return v.hasError && v.StopOnError
+}
 
 // Safe
 func (v *Validation) Safe(field string) {

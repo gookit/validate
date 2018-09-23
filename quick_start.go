@@ -29,7 +29,7 @@ func New(data interface{}, scene ...string) *Validation {
 
 // Map validation create
 func Map(m map[string]interface{}, scene ...string) *Validation {
-	return FromMap(m).New(scene...)
+	return FromMap(m).Create(scene...)
 }
 
 // Struct validation create
@@ -60,7 +60,7 @@ func FromMap(m map[string]interface{}) *MapData {
 		}
 
 		data.Map = m
-		data.value = val
+		data.src = val
 	}
 
 	return data

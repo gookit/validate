@@ -29,7 +29,10 @@ type Rule struct {
 	// error message(s)
 	message  string
 	messages map[string]string
-	// validator name, allow multi validators. eg "min", "range", "required;min(2)"
+	// want used filter name. allow multi filters. eg. "trim|int"
+	filter  string
+	filters map[string]int
+	// validator name, allow multi validators. eg "min", "range", "required|min:2"
 	validator string
 	// arguments for the validator
 	arguments []interface{}
@@ -44,15 +47,16 @@ type Rule struct {
 // NewRule instance
 func NewRule(fields, validator string, args ...interface{}) *Rule {
 	return &Rule{
-		fields: fields,
+		fields:  fields,
+		filters: make(map[string]int),
 		// args
 		arguments: args,
 		validator: validator,
 	}
 }
 
-// With
-func (r *Rule) With(fn func(r *Rule)) *Rule {
+// Setting the rule
+func (r *Rule) Setting(fn func(r *Rule)) *Rule {
 	fn(r)
 	return r
 }
@@ -63,41 +67,36 @@ func (r *Rule) SetScene(scene string) *Rule {
 	return r
 }
 
-// SetCheckFunc
-func (r *Rule) SetCheckFunc(checkFunc interface{}) {
+// SetCheckFunc use custom check func.
+func (r *Rule) SetCheckFunc(checkFunc interface{}) *Rule {
 	r.checkFunc = checkFunc
+	return r
 }
 
-// SetOptional
+// SetOptional only validate on value is not empty.
 func (r *Rule) SetOptional(optional bool) *Rule {
 	r.optional = optional
 	return r
 }
 
-// SetMessage
+// SetMessage set error message
 func (r *Rule) SetMessage(errMsg string) *Rule {
 	r.message = errMsg
 	return r
 }
 
-// WithMessage
-func (r *Rule) WithMessage(errMsg []string) *Rule {
-	if len(errMsg) > 0 {
-		r.message = errMsg[0]
-	}
-
-	return r
-}
-
-// SetMessages
+// SetMessages set error message map
 func (r *Rule) SetMessages(msgMap SMap) *Rule {
 	r.messages = msgMap
 	return r
 }
 
-// Filters
+// UseFilters add filter name(s)
 func (r *Rule) UseFilters(names ...string) *Rule {
-	// r.messages = msgMap
+	for _, name := range names {
+		r.filters[name] = 1
+	}
+
 	return r
 }
 

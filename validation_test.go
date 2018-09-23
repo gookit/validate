@@ -53,6 +53,14 @@ type UserForm struct {
 	Safe     int       `json:"safe" validate:"-"`
 	UpdateAt time.Time `json:"updateAt" validate:"required"`
 	Code     string    `json:"code" validate:"customValidator"`
+	Status   int       `json:"status" validate:"required|gtField:Extra.Status1"`
+	Extra    ExtraInfo
+}
+
+// ExtraInfo data
+type ExtraInfo struct {
+	Github  string `validate:"required|url"`
+	Status1 int    `validate:"required|int"`
 }
 
 // custom validator in the source struct.

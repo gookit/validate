@@ -56,6 +56,19 @@ type StructData struct {
 	TagName string
 }
 
+// StructOption definition
+type StructOption struct {
+	// TagName in the struct tags.
+	TagName    string
+	MethodName string
+}
+
+var (
+	cmFaceType = reflect.TypeOf(new(CustomMessagesFace)).Elem()
+	ftFaceType = reflect.TypeOf(new(FieldTranslatorFace)).Elem()
+	cvFaceType = reflect.TypeOf(new(ConfigValidationFace)).Elem()
+)
+
 func newStructData(s interface{}) (*StructData, error) {
 	data := &StructData{
 		TagName: defaultTag,
@@ -82,26 +95,8 @@ func newStructData(s interface{}) (*StructData, error) {
 	return data, nil
 }
 
-// StructOption definition
-type StructOption struct {
-	// TagName in the struct tags.
-	TagName    string
-	MethodName string
-}
-
-var (
-	cmFaceType = reflect.TypeOf(new(CustomMessagesFace)).Elem()
-	ftFaceType = reflect.TypeOf(new(FieldTranslatorFace)).Elem()
-	cvFaceType = reflect.TypeOf(new(ConfigValidationFace)).Elem()
-)
-
 // Create a Validation from the StructData
 func (d *StructData) Create(scene ...string) *Validation {
-	return d.Validation(scene...)
-}
-
-// New a Validation from the StructData
-func (d *StructData) New(scene ...string) *Validation {
 	return d.Validation(scene...)
 }
 
@@ -201,9 +196,10 @@ func (d *StructData) Get(field string) (interface{}, bool) {
 // Set value by field name
 func (d *StructData) Set(field string, val interface{}) error {
 	fv := d.value.FieldByName(field)
-	// fv.IsNil()
-	if !fv.IsValid() { // not found
-		return ErrSetValue
+
+	// field not found
+	if !fv.IsValid() {
+		return ErrNoField
 	}
 
 	// check whether the value of v can be changed.

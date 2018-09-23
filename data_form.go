@@ -35,11 +35,6 @@ func (d *FormData) Create(scene ...string) *Validation {
 	return d.Validation(scene...)
 }
 
-// New a Validation from data
-func (d *FormData) New(scene ...string) *Validation {
-	return d.Validation(scene...)
-}
-
 // Validation create from data
 func (d *FormData) Validation(scene ...string) *Validation {
 	return NewValidation(d, scene...)

@@ -91,8 +91,8 @@ func (f UserForm) Translates() map[string]string {
 
 func main() {
 	u := &UserForm{
-        Name: "inhere",
-    }
+		Name: "inhere",
+	}
 	
 	v := validate.Struct(u)
 	// v := validate.New(u)

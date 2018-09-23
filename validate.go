@@ -26,6 +26,8 @@ func (r *Rule) Validate(field, validator string, v *Validation) (ok bool) {
 		return false
 	}
 
+	// @todo apply filter func
+
 	// get field value.
 	val, has := v.Get(field)
 	if !has {
@@ -35,13 +37,10 @@ func (r *Rule) Validate(field, validator string, v *Validation) (ok bool) {
 	// call custom validator
 	if r.checkFunc != nil {
 		ok = callValidatorFunc(validator, r.checkFunc, val, r.arguments)
-	} else {
-		fv, has := v.ValidatorValue(validator)
-		if !has {
-			panicf("the validator '%s' is not exists", validator)
-		}
-
+	} else if fv, has := v.ValidatorValue(validator); has { // find validator
 		ok = callValidatorValue(validator, fv, val, r.arguments)
+	} else {
+		panicf("the validator '%s' is not exists", validator)
 	}
 
 	// build and collect error message

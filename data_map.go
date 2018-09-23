@@ -10,11 +10,10 @@ type MapData struct {
 	// Map form unmarshal JSON string, or user setting
 	Map map[string]interface{}
 	// from reflect Map or Struct
-	value reflect.Value
-	// bodyJSON holds the original body of the request.
-	// Only available for json requests.
+	src reflect.Value
+	// bodyJSON from the original body of the request. only available for json http request.
 	bodyJSON []byte
-	// field reflect.Value caches
+	// map field reflect.Value caches
 	fields map[string]reflect.Value
 }
 
@@ -47,7 +46,7 @@ func (d *MapData) Get(field string) (interface{}, bool) {
 	return nil, false
 }
 
-// GetByPath
+// GetByPath get value by key path. eg "top.sub"
 func (d *MapData) GetByPath(key string) (val interface{}, ok bool) {
 	// has sub key? eg. "top.sub"
 	if !strings.ContainsRune(key, '.') {
@@ -89,11 +88,6 @@ func (d *MapData) GetByPath(key string) (val interface{}, ok bool) {
 
 // Create a Validation from data
 func (d *MapData) Create(scene ...string) *Validation {
-	return d.Validation(scene...)
-}
-
-// New a Validation from data
-func (d *MapData) New(scene ...string) *Validation {
 	return d.Validation(scene...)
 }
 

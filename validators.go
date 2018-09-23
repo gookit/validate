@@ -2,6 +2,7 @@ package validate
 
 import (
 	"encoding/json"
+	"fmt"
 	"net"
 	"reflect"
 	"regexp"
@@ -258,7 +259,7 @@ func (v *Validation) Required(val interface{}) bool {
 	return !ValueIsEmpty(reflect.ValueOf(val))
 }
 
-// EqField
+// EqField value should EQ the dst field
 func (v *Validation) EqField(val interface{}, dstField string) bool {
 	// get dst field value.
 	dstVal, has := v.Get(dstField)
@@ -269,7 +270,7 @@ func (v *Validation) EqField(val interface{}, dstField string) bool {
 	return val == dstVal
 }
 
-// NeField check field not equal the dst field
+// NeField value should not equal the dst field
 func (v *Validation) NeField(val interface{}, dstField string) bool {
 	// get dst field value.
 	dstVal, has := v.Get(dstField)
@@ -280,7 +281,7 @@ func (v *Validation) NeField(val interface{}, dstField string) bool {
 	return val != dstVal
 }
 
-// GtField
+// GtField value should GT the dst field
 func (v *Validation) GtField(val interface{}, dstField string) bool {
 	// get dst field value.
 	dstVal, has := v.Get(dstField)
@@ -291,7 +292,7 @@ func (v *Validation) GtField(val interface{}, dstField string) bool {
 	return ValueLen(reflect.ValueOf(val)) > ValueLen(reflect.ValueOf(dstVal))
 }
 
-// GteField
+// GteField value should GTE the dst field
 func (v *Validation) GteField(val interface{}, dstField string) bool {
 	// get dst field value.
 	dstVal, has := v.Get(dstField)
@@ -302,7 +303,7 @@ func (v *Validation) GteField(val interface{}, dstField string) bool {
 	return ValueLen(reflect.ValueOf(val)) >= ValueLen(reflect.ValueOf(dstVal))
 }
 
-// LtField
+// LtField value should LT the dst field
 func (v *Validation) LtField(val interface{}, dstField string) bool {
 	// get dst field value.
 	dstVal, has := v.Get(dstField)
@@ -313,7 +314,7 @@ func (v *Validation) LtField(val interface{}, dstField string) bool {
 	return ValueLen(reflect.ValueOf(val)) < ValueLen(reflect.ValueOf(dstVal))
 }
 
-// LteField
+// LteField value should LTE the dst field
 func (v *Validation) LteField(val interface{}, dstField string) bool {
 	// get dst field value.
 	dstVal, has := v.Get(dstField)
@@ -433,14 +434,38 @@ func IsJSON(str string) bool {
 	return json.Unmarshal([]byte(str), &js) == nil
 }
 
-// Min
+// Min value check
 func Min(val interface{}, min int64) bool {
-	return LenOrInt(val) >= min
+	return int64compare(val, min, "gte")
 }
 
-// Max
+// Max value check
 func Max(val interface{}, max int64) bool {
-	return LenOrInt(val) <= max
+	return int64compare(val, max, "lte")
+}
+
+func int64compare(val interface{}, dstVal int64, op string) bool {
+	var ok bool
+	var srcVal int64
+
+	if rv, ok := val.(reflect.Value); ok {
+		srcVal, ok = ValueInt64(rv)
+	} else {
+		srcVal, ok = ValueInt64(reflect.ValueOf(val))
+	}
+
+	if !ok {
+		return false
+	}
+
+	switch op {
+	case "lte":
+		return srcVal <= dstVal
+	case "gte":
+		return srcVal >= dstVal
+	}
+
+	return false
 }
 
 // MinLength check
@@ -512,27 +537,34 @@ func ValueIsEmpty(v reflect.Value) bool {
 	return reflect.DeepEqual(v.Interface(), reflect.Zero(v.Type()).Interface())
 }
 
-func ValueInt64(v reflect.Value) int64 {
+// ValueInt64 get int64 value
+func ValueInt64(v reflect.Value) (int64, bool) {
 	k := v.Kind()
 	switch k {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return v.Int()
+		return v.Int(), true
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-		return int64(v.Uint())
+		return int64(v.Uint()), true
 	case reflect.Float32, reflect.Float64:
-		return int64(v.Float())
+		return int64(v.Float()), true
 	}
 
-	return 0
+	// cannot get int value
+	return 0, false
 }
 
+// ValueLen get value length
 func ValueLen(v reflect.Value) int {
 	k := v.Kind()
 	switch k {
 	case reflect.Map, reflect.Array, reflect.Chan, reflect.Slice, reflect.String:
 		return v.Len()
+	// int use width.
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return len(fmt.Sprint(v.Int()))
 	}
 
+	// cannot get length
 	return -1
 }
 
@@ -552,7 +584,7 @@ func ValueLenOrInt(v reflect.Value) int64 {
 	return 0
 }
 
-// LenOrInt
+// LenOrInt of the val
 func LenOrInt(val interface{}) (intVal int64) {
 	switch tv := val.(type) {
 	case int:
