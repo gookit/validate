@@ -32,6 +32,11 @@ func Map(m map[string]interface{}, scene ...string) *Validation {
 	return FromMap(m).Create(scene...)
 }
 
+// JSON create validation from JSON string.
+func JSON(s string, scene ...string) *Validation {
+	return newWithError(FromJSON(s)).SetScene(scene...)
+}
+
 // Struct validation create
 func Struct(s interface{}, scene ...string) *Validation {
 	return newWithError(newStructData(s)).SetScene(scene...)
@@ -40,10 +45,6 @@ func Struct(s interface{}, scene ...string) *Validation {
 // Request validation create
 func Request(r *http.Request) *Validation {
 	return newWithError(FromRequest(r))
-}
-
-func newWithError(d DataFace, err error) *Validation {
-	return d.Create().WithError(err)
 }
 
 // Config global options
@@ -138,7 +139,7 @@ func FromRequest(r *http.Request, maxMemoryLimit ...int64) (DataFace, error) {
 
 // FromURLValues build data instance.
 func FromURLValues(values url.Values) *FormData {
-	data := &FormData{}
+	data := newFormData()
 
 	for key, vals := range values {
 		for _, val := range vals {

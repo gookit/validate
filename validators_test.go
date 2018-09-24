@@ -12,8 +12,8 @@ type ExtraSt struct {
 }
 
 type TestSt struct {
-	Name    string `json:"name" validate:"required,minLength(2)"`
-	Age     int    `json:"age" validate:"range(23, 100)"`
+	Name    string `json:"name" validate:"required,minLength:2"`
+	Age     int    `json:"age" validate:"range:23,100"`
 	ExtraSt        // is Anonymous field
 	pwd     string
 }
@@ -118,4 +118,22 @@ func TestIsAlpha(t *testing.T) {
 	val = "val"
 
 	fmt.Println(val, reflect.TypeOf(val).Kind())
+}
+
+func TestSomeValidators(t *testing.T) {
+	is := assert.New(t)
+
+	// email
+	is.True(IsEmail("some@abc.com"))
+	is.False(IsEmail("some.abc.com"))
+
+	// IP
+	is.True(IsIP("127.0.0.1"))
+	is.True(IsIP("1.1.1.1"))
+	is.False(IsIP("1.1.1.1.1"))
+
+	// IPv4
+	is.True(IsIPv4("127.0.0.1"))
+	is.True(IsIPv4("1.1.1.1"))
+	is.False(IsIPv4("1.1.1.1.1"))
 }

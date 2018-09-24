@@ -98,19 +98,27 @@ var (
 // some validator alias name
 var validatorAliases = map[string]string{
 	// alias -> real name
-	"in":      "enum",
-	"int":     "isInt",
-	"uint":    "isUint",
-	"num":     "number",
-	"str":     "isString",
-	"string":  "isString",
-	"map":     "mapping",
-	"arr":     "array",
-	"regex":   "regexp",
-	"minLen":  "minLength",
-	"maxLen":  "maxLength",
-	"minSize": "minLength",
-	"maxSize": "maxLength",
+	"in":       "enum",
+	"int":      "isInt",
+	"uint":     "isUint",
+	"num":      "number",
+	"str":      "isString",
+	"string":   "isString",
+	"map":      "mapping",
+	"arr":      "array",
+	"regex":    "regexp",
+	"eq":       "IsEqual",
+	"equal":    "IsEqual",
+	"intEq":    "IntEqual",
+	"lenEq":    "LengthEqual",
+	"lengthEq": "LengthEqual",
+	"minLen":   "minLength",
+	"maxLen":   "maxLength",
+	"minSize":  "minLength",
+	"maxSize":  "maxLength",
+	// string rune length
+	"strLength":  "stringLength",
+	"runeLength": "stringLength",
 }
 
 // ValidatorName get real validator name.
@@ -136,9 +144,12 @@ var (
 		"isInt":    reflect.ValueOf(IsInt),
 		"isUint":   reflect.ValueOf(IsUint),
 		"isString": reflect.ValueOf(IsString),
+		"isEqual":  reflect.ValueOf(IsEqual),
+		"intEqual": reflect.ValueOf(IntEqual),
 		// length
-		"minLength": reflect.ValueOf(MinLength),
-		"maxLength": reflect.ValueOf(MaxLength),
+		"minLength":   reflect.ValueOf(MinLength),
+		"maxLength":   reflect.ValueOf(MaxLength),
+		"lengthEqual": reflect.ValueOf(LengthEqual),
 	}
 )
 
@@ -467,16 +478,17 @@ func IsFilePath(str string) bool {
 	return false
 }
 
+// IsEmail check
 func IsEmail(str string) bool {
 	return rxEmail.MatchString(str)
 }
 
-func IsIP(str string) bool {
+func isIPv6(str string) bool {
 	return rxIP.MatchString(str)
 }
 
 // IsIP is the validation function for validating if the field's value is a valid v4 or v6 IP address.
-func isIP(str string) bool {
+func IsIP(str string) bool {
 	ip := net.ParseIP(str)
 	return ip != nil
 }
@@ -523,60 +535,64 @@ func IsJSON(str string) bool {
 	return json.Unmarshal([]byte(str), &js) == nil
 }
 
-// Min int value check
-func Min(val interface{}, min int64) bool {
-	return int64compare(val, min, "gte")
+// IsEqual check
+func IsEqual(val, wantVal interface{}) bool {
+	return val == wantVal
 }
 
-// Max int value check
-func Max(val interface{}, max int64) bool {
-	return int64compare(val, max, "lte")
-}
-
-func int64compare(val interface{}, dstVal int64, op string) bool {
-	if val == nil {
-		return false
-	}
-
-	var isInt bool
-	var srcVal int64
-
-	if rv, ok := val.(reflect.Value); ok {
-		srcVal, isInt = ValueInt64(rv)
-	} else {
-		srcVal, isInt = ValueInt64(reflect.ValueOf(val))
-	}
-
+// IntEqual check
+func IntEqual(val interface{}, wantVal int64) bool {
+	intVal, isInt := IntVal(val)
 	if !isInt {
 		return false
 	}
 
-	switch op {
-	case "eq":
-		return srcVal == dstVal
-	case "ne":
-		return srcVal != dstVal
-	case "lt":
-		return srcVal < dstVal
-	case "lte":
-		return srcVal <= dstVal
-	case "gt":
-		return srcVal > dstVal
-	case "gte":
-		return srcVal >= dstVal
+	return intVal == wantVal
+}
+
+// Min int value check
+func Min(val interface{}, min int64) bool {
+	intVal, isInt := IntVal(val)
+	if !isInt {
+		return false
 	}
 
-	return false
+	return intVal >= min
+}
+
+// Max int value check
+func Max(val interface{}, max int64) bool {
+	intVal, isInt := IntVal(val)
+	if !isInt {
+		return false
+	}
+
+	return intVal <= max
+}
+
+// LengthEqual check
+func LengthEqual(val interface{}, wantLen int) bool {
+	ln := Length(val)
+	if ln == -1 {
+		return false
+	}
+
+	return ln == wantLen
 }
 
 // MinLength check
 func MinLength(val interface{}, minLen int) bool {
-	return ValueLen(reflect.ValueOf(val)) >= minLen
+	ln := Length(val)
+	if ln == -1 {
+		return false
+	}
+
+	return ln >= minLen
 }
 
 // MaxLength check
 func MaxLength(val interface{}, maxLen int) bool {
-	ln := ValueLen(reflect.ValueOf(val))
+	ln := Length(val)
 	if ln == -1 {
 		return false
 	}
@@ -597,8 +613,7 @@ func ByteLength(str string, params ...string) bool {
 	return false
 }
 
-// RuneLength check string's length
-// Alias for StringLength
+// RuneLength check string's length, Alias for StringLength
 func RuneLength(str string, params ...string) bool {
 	return StringLength(str, params...)
 }
@@ -683,22 +698,4 @@ func ValueLenOrInt(v reflect.Value) int64 {
 	}
 
 	return 0
-}
-
-// LenOrInt of the val
-func LenOrInt(val interface{}) (intVal int64) {
-	switch tv := val.(type) {
-	case int:
-		intVal = int64(tv)
-	case int64:
-		intVal = tv
-	case string:
-		intVal = int64(len(tv))
-	case reflect.Value:
-		intVal = ValueLenOrInt(tv)
-	default:
-		intVal = ValueLenOrInt(reflect.ValueOf(val))
-	}
-
-	return
 }

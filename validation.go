@@ -129,6 +129,10 @@ func NewValidation(data DataFace, scene ...string) *Validation {
 	return v.SetScene(scene...)
 }
 
+func newWithError(d DataFace, err error) *Validation {
+	return d.Create().WithError(err)
+}
+
 /*************************************************************
  * validation settings
  *************************************************************/

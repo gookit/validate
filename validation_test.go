@@ -123,10 +123,12 @@ func TestFromQuery(t *testing.T) {
 	}
 
 	v := FromQuery(data).Create()
+	v.StopOnError = false
 	v.StringRules(SMap{
 		"name": "required|minLen:7",
 		"age":  "required|int|min:20",
 	})
 
 	is.False(v.Validate())
+	fmt.Println(v.Errors)
 }

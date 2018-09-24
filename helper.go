@@ -46,3 +46,53 @@ func upperFirst(s string) string {
 
 	return s
 }
+
+// Length calc
+func Length(val interface{}) int {
+	if val == nil {
+		return -1
+	}
+
+	if rv, ok := val.(reflect.Value); !ok {
+		return ValueLen(rv)
+	}
+
+	return ValueLen(reflect.ValueOf(val))
+}
+
+// IntVal of the val
+func IntVal(val interface{}) (intVal int64, ok bool) {
+	switch tv := val.(type) {
+	case int:
+		ok = true
+		intVal = int64(tv)
+	case int64:
+		ok = true
+		intVal = tv
+	case reflect.Value:
+		intVal, ok = ValueInt64(tv)
+	default:
+		intVal, ok = ValueInt64(reflect.ValueOf(val))
+	}
+
+	return
+}
+
+func int64compare(intVal, dstVal int64, op string) bool {
+	switch op {
+	case "eq":
+		return intVal == dstVal
+	case "ne":
+		return intVal != dstVal
+	case "lt":
+		return intVal < dstVal
+	case "lte":
+		return intVal <= dstVal
+	case "gt":
+		return intVal > dstVal
+	case "gte":
+		return intVal >= dstVal
+	}
+
+	return false
+}

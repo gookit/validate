@@ -94,6 +94,8 @@ var defMessages = map[string]string{
 	// length
 	"minLength": "{field} min length is %d",
 	"maxLength": "{field} max length is %d",
+	// string length. calc rune
+	"stringLength": "{field} length must be in the range %d - %d",
 
 	"enum":  "{field} value must be in the enum %v",
 	"range": "{field} value must be in the range %d - %d",

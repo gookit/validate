@@ -26,6 +26,13 @@ type FormData struct {
 	jsonBodies []byte
 }
 
+func newFormData() *FormData {
+	return &FormData{
+		Form:  make(map[string][]string),
+		Files: make(map[string]*multipart.FileHeader),
+	}
+}
+
 /*************************************************************
  * Form data operate
  *************************************************************/
