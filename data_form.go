@@ -89,7 +89,7 @@ func (d *FormData) DelFile(key string) {
 // Encode encodes the values into “URL encoded” form ("bar=baz&foo=quux") sorted by key.
 // Any files in d will be ignored because there is no direct way to convert a file to a
 // URL encoded value.
-func (d *FormData) EncodeForm() string {
+func (d *FormData) Encode() string {
 	return d.Form.Encode()
 }
 
@@ -99,6 +99,7 @@ func (d *FormData) Set(field string, val interface{}) error {
 	return nil
 }
 
+// Get value by key
 func (d FormData) Get(key string) (interface{}, bool) {
 	return d.Form.Get(key), true
 }
@@ -144,7 +145,7 @@ func (d FormData) HasFile(key string) bool {
 	return found
 }
 
-// GetInt returns the first element in data[key] converted to an int.
+// Int returns the first element in data[key] converted to an int.
 func (d FormData) Int(key string) int {
 	if !d.HasField(key) || len(d.Form[key]) == 0 {
 		return 0
@@ -168,7 +169,7 @@ func (d FormData) MustInt64(key string) int64 {
 	return val
 }
 
-// GetFloat returns the first element in data[key] converted to a float.
+// Float returns the first element in data[key] converted to a float.
 func (d FormData) Float(key string) float64 {
 	if !d.HasField(key) || len(d.Form[key]) == 0 {
 		return 0.0
@@ -183,7 +184,7 @@ func (d FormData) Float(key string) float64 {
 	return result
 }
 
-// GetBool returns the first element in data[key] converted to a bool.
+// Bool returns the first element in data[key] converted to a bool.
 func (d FormData) Bool(key string) bool {
 	if !d.HasField(key) || len(d.Form[key]) == 0 {
 		return false
@@ -197,11 +198,11 @@ func (d FormData) Bool(key string) bool {
 	}
 }
 
-// GetFileBytes returns the body of the file associated with key. If there is no
+// FileBytes returns the body of the file associated with key. If there is no
 // file associated with key, it returns nil (not an error). It may return an error if
 // there was a problem reading the file. If you need to know whether or not the file
 // exists (i.e. whether it was provided in the request), use the FileExists method.
-func (d FormData) GetFileBytes(key string) ([]byte, error) {
+func (d FormData) FileBytes(key string) ([]byte, error) {
 	fileHeader, found := d.Files[key]
 	if !found {
 		return nil, nil

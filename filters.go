@@ -30,17 +30,19 @@ func (f *Filtration) Set(field string, val interface{}) error {
 
 var filters map[string]interface{}
 
-// AddFilters
+// var filterValues map[string]reflect.Value
+
+// AddFilters add global filters
 func AddFilters(m GMap) {
 	for name, filterFunc := range m {
 		AddFilter(name, filterFunc)
 	}
 }
 
-// AddFilter to the pkg.
+// AddFilter add global filter to the pkg.
 func AddFilter(name string, filterFunc interface{}) {
 	if filterFunc == nil || reflect.TypeOf(filterFunc).Kind() != reflect.Func {
-		panic("validate: invalid validator func, it must be an func")
+		panicf("'%s' invalid filter func, it must be an func type", name)
 	}
 
 	if filters == nil {
@@ -111,13 +113,21 @@ func ToInt(str string) (int, error) {
 	return strconv.Atoi(Trim(str))
 }
 
+// MustInt convert
 func MustInt(str string) int {
 	val, _ := strconv.Atoi(Trim(str))
 	return val
 }
 
+// ToUint convert
 func ToUint(str string) (uint64, error) {
 	return strconv.ParseUint(Trim(str), 10, 0)
+}
+
+// MustUint convert
+func MustUint(str string) uint64 {
+	val, _ := strconv.ParseUint(Trim(str), 10, 0)
+	return val
 }
 
 // ToInt64 convert
@@ -125,21 +135,18 @@ func ToInt64(str string) (int64, error) {
 	return strconv.ParseInt(Trim(str), 10, 0)
 }
 
-func MustUint(str string) uint64 {
-	val, _ := strconv.ParseUint(Trim(str), 10, 0)
-	return val
-}
-
 // ToFloat convert
 func ToFloat(str string) (float64, error) {
 	return strconv.ParseFloat(Trim(str), 0)
 }
 
+// MustFloat convert
 func MustFloat(str string) float64 {
 	val, _ := strconv.ParseFloat(Trim(str), 0)
 	return val
 }
 
+// ToArray string split to array.
 func ToArray(str string, sep ...string) []string {
 	if len(sep) > 0 {
 		return stringSplit(str, sep[0])
@@ -163,11 +170,21 @@ func stringSplit(str, sep string) (ss []string) {
 	return
 }
 
-// StrValue definition
-type StrValue string
+// String definition.
+type String string
+
+// CanInt convert.
+func (s String) CanInt() bool {
+	if s == "" {
+		return false
+	}
+
+	_, err := strconv.Atoi(s.Trimmed())
+	return err == nil
+}
 
 // Int convert.
-func (s StrValue) Int() (val int) {
+func (s String) Int() (val int) {
 	if s == "" {
 		return 0
 	}
@@ -177,7 +194,7 @@ func (s StrValue) Int() (val int) {
 }
 
 // Uint convert.
-func (s StrValue) Uint() uint {
+func (s String) Uint() uint {
 	if s == "" {
 		return 0
 	}
@@ -187,7 +204,7 @@ func (s StrValue) Uint() uint {
 }
 
 // Int64 convert.
-func (s StrValue) Int64() int64 {
+func (s String) Int64() int64 {
 	if s == "" {
 		return 0
 	}
@@ -197,7 +214,7 @@ func (s StrValue) Int64() int64 {
 }
 
 // Bool convert.
-func (s StrValue) Bool() bool {
+func (s String) Bool() bool {
 	if s == "" {
 		return false
 	}
@@ -207,22 +224,22 @@ func (s StrValue) Bool() bool {
 }
 
 // Float convert. to float 64
-func (s StrValue) Float() float64 {
+func (s String) Float() float64 {
 	if s == "" {
 		return 0
 	}
 
-	val, _ := strconv.ParseFloat(s.Trimmed(), 64)
+	val, _ := strconv.ParseFloat(s.Trimmed(), 0)
 	return val
 }
 
 // Trimmed string
-func (s StrValue) Trimmed() string {
+func (s String) Trimmed() string {
 	return strings.TrimSpace(string(s))
 }
 
 // Split string to slice
-func (s StrValue) Split(sep string) (ss []string) {
+func (s String) Split(sep string) (ss []string) {
 	if s == "" {
 		return
 	}
@@ -231,6 +248,6 @@ func (s StrValue) Split(sep string) (ss []string) {
 }
 
 // String get
-func (s StrValue) String() string {
+func (s String) String() string {
 	return string(s)
 }

@@ -10,6 +10,7 @@ import (
 
 const errorName = "validate"
 const defaultTag = "validate"
+const defaultFilterTag = "filter"
 const defaultMaxMemory int64 = 32 << 20 // 32 MB
 
 // SMap is short name for map[string]string
@@ -47,11 +48,15 @@ var globalOpt = &GlobalOption{
 	StopOnError: true,
 	SkipOnEmpty: true,
 	// tag name in struct tags
+	FilterTag: defaultFilterTag,
+	// tag name in struct tags
 	ValidateTag: defaultTag,
 }
 
 // GlobalOption settings for validate
 type GlobalOption struct {
+	// FilterTag name in the struct tags.
+	FilterTag string
 	// ValidateTag in the struct tags.
 	ValidateTag string
 	// StopOnError If true: An error occurs, it will cease to continue to verify
@@ -172,7 +177,7 @@ func (v *Validation) WithScenes(scenes map[string][]string) *Validation {
 	return v
 }
 
-// SetRulesFromCaches
+// SetRulesFromCaches key string
 func (v *Validation) SetRulesFromCaches(key string) *Validation {
 	v.rules = rulesCaches[key]
 	return v
@@ -318,7 +323,7 @@ func (v *Validation) AddTranslates(m map[string]string) {
 	v.trans.AddFieldMap(m)
 }
 
-// Messages settings. you can custom validator error messages.
+// WithMessages settings. you can custom validator error messages.
 // Usage:
 // 	v.WithMessages(map[string]string{
 // 		"require": "oh! {field} is required",
@@ -327,6 +332,11 @@ func (v *Validation) AddTranslates(m map[string]string) {
 func (v *Validation) WithMessages(m map[string]string) *Validation {
 	v.trans.LoadMessages(m)
 	return v
+}
+
+// AddMessages settings data. like WithMessages()
+func (v *Validation) AddMessages(m map[string]string) {
+	v.trans.LoadMessages(m)
 }
 
 // Fields returns the fields for all validated
@@ -428,7 +438,7 @@ func (v *Validation) shouldStop() bool {
 	return v.hasError && v.StopOnError
 }
 
-// Safe
+// Safe value get
 func (v *Validation) Safe(field string) {
 
 }

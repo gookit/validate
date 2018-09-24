@@ -2,7 +2,6 @@ package validate
 
 import (
 	"encoding/json"
-	"fmt"
 	"net"
 	"reflect"
 	"regexp"
@@ -128,11 +127,13 @@ var validatorAliases = map[string]string{
 	// string rune length
 	"strLength":  "stringLength",
 	"runeLength": "stringLength",
-	//
-	"ip":    "isIP",
-	"ipv4":  "isIPv4",
-	"ipv6":  "isIPv6",
-	"email": "isEmail",
+	// string
+	"ip":        "isIP",
+	"ipv4":      "isIPv4",
+	"ipv6":      "isIPv6",
+	"email":     "isEmail",
+	"intStr":    "isIntString",
+	"intString": "isIntString",
 }
 
 // ValidatorName get real validator name.
@@ -150,7 +151,8 @@ func ValidatorName(name string) string {
 
 // global validators. contains built-in and user custom
 var (
-	validators      map[string]interface{}
+	validators map[string]interface{}
+	// validator func reflect.Value
 	validatorValues = map[string]reflect.Value{
 		// int value
 		"min": reflect.ValueOf(Min),
@@ -168,6 +170,8 @@ var (
 		"isStrings": reflect.ValueOf(IsStrings),
 		"isEqual":   reflect.ValueOf(IsEqual),
 		"intEqual":  reflect.ValueOf(IntEqual),
+		// string
+		"isIntString": reflect.ValueOf(IsIntString),
 		// length
 		"minLength":   reflect.ValueOf(MinLength),
 		"maxLength":   reflect.ValueOf(MaxLength),
@@ -369,7 +373,7 @@ func (v *Validation) LteField(val interface{}, dstField string) bool {
 }
 
 /*************************************************************
- * built in global validators
+ * global: basic validators
  *************************************************************/
 
 // IsEmpty of the value
@@ -390,270 +394,25 @@ func IsNull(str string) bool {
 	return len(str) == 0
 }
 
-// IsInt check, and support length check
-func IsInt(val interface{}, minAndMax ...int64) (ok bool) {
-	if val == nil {
-		return false
-	}
+/*************************************************************
+ * global: type validators
+ *************************************************************/
 
-	var rv reflect.Value
-	if rv, ok = val.(reflect.Value); !ok {
-		rv = reflect.ValueOf(val)
-	}
-
-	intVal, isInt := ValueInt64(rv)
-
-	// @todo convert string to int?
-	// if !isInt && rv.Kind() == reflect.String {
-	// }
-
-	argLn := len(minAndMax)
-	if argLn == 0 { // only check type
-		return isInt
-	}
-
-	if !isInt {
-		return false
-	}
-
-	// value check
-	minVal := minAndMax[0]
-	if argLn == 1 { // only min length check.
-		return intVal >= minVal
-	}
-
-	maxVal := minAndMax[1]
-
-	// min and max length check
-	return intVal >= minVal && intVal <= maxVal
-}
-
+// IsUint string
 func IsUint(str string) bool {
 	_, err := strconv.ParseUint(str, 10, 32)
 	return err == nil
 }
 
+// IsBool string.
 func IsBool(str string) bool {
 	_, err := strconv.ParseBool(str)
 	return err == nil
 }
 
+// IsFloat string
 func IsFloat(str string) bool {
 	return rxFloat.MatchString(str)
-}
-
-// IsString check, and support length check.
-// Usage:
-// 	ok := IsString(val)
-// 	ok := IsString(val, 5) // with min len check
-// 	ok := IsString(val, 5, 12) // with min and max len check
-func IsString(val interface{}, minAndMaxLen ...int) (ok bool) {
-	if val == nil {
-		return false
-	}
-
-	var rv reflect.Value
-	if rv, ok = val.(reflect.Value); !ok {
-		rv = reflect.ValueOf(val)
-	}
-
-	argLn := len(minAndMaxLen)
-	isStr := rv.Type().Kind() == reflect.String
-
-	// only check type
-	if argLn == 0 {
-		return isStr
-	}
-
-	if !isStr {
-		return false
-	}
-
-	// length check
-	strLen := rv.Len()
-	minLen := minAndMaxLen[0]
-
-	// only min length check.
-	if argLn == 1 {
-		return strLen >= minLen
-	}
-
-	// min and max length check
-	maxLen := minAndMaxLen[1]
-	return strLen >= minLen && strLen <= maxLen
-}
-
-func IsASCII(str string) bool {
-	return rxASCII.MatchString(str)
-}
-
-func IsBase64(str string) bool {
-	return rxBase64.MatchString(str)
-}
-
-func IsAlpha(str string) bool {
-	return rxAlpha.MatchString(str)
-}
-
-func IsAlphaNum(str string) bool {
-	return rxAlphaNum.MatchString(str)
-}
-
-func IsFilePath(str string) bool {
-	return false
-}
-
-// IsEmail check
-func IsEmail(str string) bool {
-	return rxEmail.MatchString(str)
-}
-
-func isIPv6(str string) bool {
-	return rxIP.MatchString(str)
-}
-
-// IsIP is the validation function for validating if the field's value is a valid v4 or v6 IP address.
-func IsIP(str string) bool {
-	ip := net.ParseIP(str)
-	return ip != nil
-}
-
-// IsIPv4 is the validation function for validating if a value is a valid v4 IP address.
-func IsIPv4(str string) bool {
-	ip := net.ParseIP(str)
-	return ip != nil && ip.To4() != nil
-}
-
-// IsIPv6 is the validation function for validating if the field's value is a valid v6 IP address.
-func IsIPv6(str string) bool {
-	ip := net.ParseIP(str)
-	return ip != nil && ip.To4() == nil
-}
-
-// IsMAC is the validation function for validating if the field's value is a valid MAC address.
-func IsMAC(str string) bool {
-	_, err := net.ParseMAC(str)
-	return err == nil
-}
-
-// IsCIDRv4 is the validation function for validating if the field's value is a valid v4 CIDR address.
-func isCIDRv4(str string) bool {
-	ip, _, err := net.ParseCIDR(str)
-	return err == nil && ip.To4() != nil
-}
-
-// IsCIDRv6 is the validation function for validating if the field's value is a valid v6 CIDR address.
-func isCIDRv6(str string) bool {
-	ip, _, err := net.ParseCIDR(str)
-	return err == nil && ip.To4() == nil
-}
-
-// IsCIDR is the validation function for validating if the field's value is a valid v4 or v6 CIDR address.
-func isCIDR(str string) bool {
-	_, _, err := net.ParseCIDR(str)
-	return err == nil
-}
-
-// IsJSON check if the string is valid JSON (note: uses json.Unmarshal).
-func IsJSON(str string) bool {
-	var js json.RawMessage
-	return json.Unmarshal([]byte(str), &js) == nil
-}
-
-// IsEqual check
-func IsEqual(val, wantVal interface{}) bool {
-	return val == wantVal
-}
-
-// IntEqual check
-func IntEqual(val interface{}, wantVal int64) bool {
-	intVal, isInt := IntVal(val)
-	if !isInt {
-		return false
-	}
-
-	return intVal == wantVal
-}
-
-// Min int value check
-func Min(val interface{}, min int64) bool {
-	intVal, isInt := IntVal(val)
-	if !isInt {
-		return false
-	}
-
-	return intVal >= min
-}
-
-// Max int value check
-func Max(val interface{}, max int64) bool {
-	intVal, isInt := IntVal(val)
-	if !isInt {
-		return false
-	}
-
-	return intVal <= max
-}
-
-// LengthEqual check
-func LengthEqual(val interface{}, wantLen int) bool {
-	ln := Length(val)
-	if ln == -1 {
-		return false
-	}
-
-	return ln == wantLen
-}
-
-// MinLength check
-func MinLength(val interface{}, minLen int) bool {
-	ln := Length(val)
-	if ln == -1 {
-		return false
-	}
-
-	return ln >= minLen
-}
-
-// MaxLength check
-func MaxLength(val interface{}, maxLen int) bool {
-	ln := Length(val)
-	if ln == -1 {
-		return false
-	}
-
-	return ln <= maxLen
-}
-
-// ByteLength check string's length
-func ByteLength(str string, params ...string) bool {
-	if len(params) == 2 {
-		min := MustInt(params[0])
-		max := MustInt(params[1])
-		strLen := len(str)
-
-		return strLen >= min && strLen <= max
-	}
-
-	return false
-}
-
-// RuneLength check string's length, Alias for StringLength
-func RuneLength(str string, params ...string) bool {
-	return StringLength(str, params...)
-}
-
-// StringLength check string's length (including multi byte strings)
-func StringLength(str string, params ...string) bool {
-	if len(params) == 2 {
-		min := MustInt(params[0])
-		max := MustInt(params[1])
-		strLen := utf8.RuneCountInString(str)
-
-		return strLen >= min && strLen <= max
-	}
-
-	return false
 }
 
 // IsArray check
@@ -746,71 +505,276 @@ func IsMap(val interface{}) (ok bool) {
 	return rv.Kind() == reflect.Map
 }
 
-// ValueIsEmpty check
-func ValueIsEmpty(v reflect.Value) bool {
-	switch v.Kind() {
-	case reflect.String, reflect.Array:
-		return v.Len() == 0
-	case reflect.Map, reflect.Slice:
-		return v.Len() == 0 || v.IsNil()
-	case reflect.Bool:
-		return !v.Bool()
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return v.Int() == 0
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-		return v.Uint() == 0
-	case reflect.Float32, reflect.Float64:
-		return v.Float() == 0
-	case reflect.Interface, reflect.Ptr:
-		return v.IsNil()
+// IsInt check, and support length check
+func IsInt(val interface{}, minAndMax ...int64) (ok bool) {
+	if val == nil {
+		return false
 	}
 
-	return reflect.DeepEqual(v.Interface(), reflect.Zero(v.Type()).Interface())
+	var rv reflect.Value
+	if rv, ok = val.(reflect.Value); !ok {
+		rv = reflect.ValueOf(val)
+	}
+
+	intVal, isInt := ValueInt64(rv)
+
+	// @todo convert string to int?
+	// if !isInt && rv.Kind() == reflect.String {
+	// }
+
+	argLn := len(minAndMax)
+	if argLn == 0 { // only check type
+		return isInt
+	}
+
+	if !isInt {
+		return false
+	}
+
+	// value check
+	minVal := minAndMax[0]
+	if argLn == 1 { // only min length check.
+		return intVal >= minVal
+	}
+
+	maxVal := minAndMax[1]
+
+	// min and max length check
+	return intVal >= minVal && intVal <= maxVal
 }
 
-// ValueInt64 get int64 value
-func ValueInt64(v reflect.Value) (int64, bool) {
-	k := v.Kind()
-	switch k {
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return v.Int(), true
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-		return int64(v.Uint()), true
-	case reflect.Float32, reflect.Float64:
-		return int64(v.Float()), true
+// IsString check, and support length check.
+// Usage:
+// 	ok := IsString(val)
+// 	ok := IsString(val, 5) // with min len check
+// 	ok := IsString(val, 5, 12) // with min and max len check
+func IsString(val interface{}, minAndMaxLen ...int) (ok bool) {
+	if val == nil {
+		return false
 	}
 
-	// cannot get int value
-	return 0, false
+	var rv reflect.Value
+	if rv, ok = val.(reflect.Value); !ok {
+		rv = reflect.ValueOf(val)
+	}
+
+	argLn := len(minAndMaxLen)
+	isStr := rv.Type().Kind() == reflect.String
+
+	// only check type
+	if argLn == 0 {
+		return isStr
+	}
+
+	if !isStr {
+		return false
+	}
+
+	// length check
+	strLen := rv.Len()
+	minLen := minAndMaxLen[0]
+
+	// only min length check.
+	if argLn == 1 {
+		return strLen >= minLen
+	}
+
+	// min and max length check
+	maxLen := minAndMaxLen[1]
+	return strLen >= minLen && strLen <= maxLen
 }
 
-// ValueLen get value length
-func ValueLen(v reflect.Value) int {
-	k := v.Kind()
-	switch k {
-	case reflect.Map, reflect.Array, reflect.Chan, reflect.Slice, reflect.String:
-		return v.Len()
-		// int use width.
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return len(fmt.Sprint(v.Int()))
-	}
+/*************************************************************
+ * global: string validators
+ *************************************************************/
 
-	// cannot get length
-	return -1
+// IsIntString check. eg "10"
+func IsIntString(str string) bool {
+	return String(str).CanInt()
 }
 
-func ValueLenOrInt(v reflect.Value) int64 {
-	k := v.Kind()
-	switch k {
-	case reflect.Map, reflect.Array, reflect.Chan, reflect.Slice, reflect.String: // return len
-		return int64(v.Len())
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return v.Int()
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-		return int64(v.Uint())
-	case reflect.Float32, reflect.Float64:
-		return int64(v.Float())
+// IsASCII string.
+func IsASCII(str string) bool {
+	return rxASCII.MatchString(str)
+}
+
+// IsBase64 string.
+func IsBase64(str string) bool {
+	return rxBase64.MatchString(str)
+}
+
+// IsAlpha string.
+func IsAlpha(str string) bool {
+	return rxAlpha.MatchString(str)
+}
+
+// IsAlphaNum string.
+func IsAlphaNum(str string) bool {
+	return rxAlphaNum.MatchString(str)
+}
+
+// IsFilePath string
+func IsFilePath(str string) bool {
+	return false
+}
+
+// IsEmail check
+func IsEmail(str string) bool {
+	return rxEmail.MatchString(str)
+}
+
+func isIPv6(str string) bool {
+	return rxIP.MatchString(str)
+}
+
+// IsIP is the validation function for validating if the field's value is a valid v4 or v6 IP address.
+func IsIP(str string) bool {
+	ip := net.ParseIP(str)
+	return ip != nil
+}
+
+// IsIPv4 is the validation function for validating if a value is a valid v4 IP address.
+func IsIPv4(str string) bool {
+	ip := net.ParseIP(str)
+	return ip != nil && ip.To4() != nil
+}
+
+// IsIPv6 is the validation function for validating if the field's value is a valid v6 IP address.
+func IsIPv6(str string) bool {
+	ip := net.ParseIP(str)
+	return ip != nil && ip.To4() == nil
+}
+
+// IsMAC is the validation function for validating if the field's value is a valid MAC address.
+func IsMAC(str string) bool {
+	_, err := net.ParseMAC(str)
+	return err == nil
+}
+
+// IsCIDRv4 is the validation function for validating if the field's value is a valid v4 CIDR address.
+func isCIDRv4(str string) bool {
+	ip, _, err := net.ParseCIDR(str)
+	return err == nil && ip.To4() != nil
+}
+
+// IsCIDRv6 is the validation function for validating if the field's value is a valid v6 CIDR address.
+func isCIDRv6(str string) bool {
+	ip, _, err := net.ParseCIDR(str)
+	return err == nil && ip.To4() == nil
+}
+
+// IsCIDR is the validation function for validating if the field's value is a valid v4 or v6 CIDR address.
+func isCIDR(str string) bool {
+	_, _, err := net.ParseCIDR(str)
+	return err == nil
+}
+
+// IsJSON check if the string is valid JSON (note: uses json.Unmarshal).
+func IsJSON(str string) bool {
+	var js json.RawMessage
+	return json.Unmarshal([]byte(str), &js) == nil
+}
+
+/*************************************************************
+ * global: compare validators
+ *************************************************************/
+
+// IsEqual check
+func IsEqual(val, wantVal interface{}) bool {
+	return val == wantVal
+}
+
+// IntEqual check
+func IntEqual(val interface{}, wantVal int64) bool {
+	intVal, isInt := IntVal(val)
+	if !isInt {
+		return false
 	}
 
-	return 0
+	return intVal == wantVal
+}
+
+// Min int value check
+func Min(val interface{}, min int64) bool {
+	intVal, isInt := IntVal(val)
+	if !isInt {
+		return false
+	}
+
+	return intVal >= min
+}
+
+// Max int value check
+func Max(val interface{}, max int64) bool {
+	intVal, isInt := IntVal(val)
+	if !isInt {
+		return false
+	}
+
+	return intVal <= max
+}
+
+/*************************************************************
+ * global: length validators
+ *************************************************************/
+
+// LengthEqual check
+func LengthEqual(val interface{}, wantLen int) bool {
+	ln := Length(val)
+	if ln == -1 {
+		return false
+	}
+
+	return ln == wantLen
+}
+
+// MinLength check
+func MinLength(val interface{}, minLen int) bool {
+	ln := Length(val)
+	if ln == -1 {
+		return false
+	}
+
+	return ln >= minLen
+}
+
+// MaxLength check
+func MaxLength(val interface{}, maxLen int) bool {
+	ln := Length(val)
+	if ln == -1 {
+		return false
+	}
+
+	return ln <= maxLen
+}
+
+// ByteLength check string's length
+func ByteLength(str string, params ...string) bool {
+	if len(params) == 2 {
+		min := MustInt(params[0])
+		max := MustInt(params[1])
+		strLen := len(str)
+
+		return strLen >= min && strLen <= max
+	}
+
+	return false
+}
+
+// RuneLength check string's length, Alias for StringLength
+func RuneLength(str string, params ...string) bool {
+	return StringLength(str, params...)
+}
+
+// StringLength check string's length (including multi byte strings)
+func StringLength(str string, params ...string) bool {
+	if len(params) == 2 {
+		min := MustInt(params[0])
+		max := MustInt(params[1])
+		strLen := utf8.RuneCountInString(str)
+
+		return strLen >= min && strLen <= max
+	}
+
+	return false
 }
