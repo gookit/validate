@@ -136,4 +136,39 @@ func TestSomeValidators(t *testing.T) {
 	is.True(IsIPv4("127.0.0.1"))
 	is.True(IsIPv4("1.1.1.1"))
 	is.False(IsIPv4("1.1.1.1.1"))
+
+	// IsMap
+	is.True(IsMap(map[string]int{}))
+	is.True(IsMap(new(map[string]int)))
+	is.True(IsMap(make(map[string]int)))
+	is.True(IsMap(map[string]int{"key": 1}))
+	is.False(IsMap(nil))
+	is.False(IsMap([]string{}))
+
+	// IsArray
+	is.True(IsArray([1]int{}))
+	is.True(IsArray([1]string{}))
+	is.False(IsArray(nil))
+	is.False(IsArray([]string{}))
+	is.False(IsArray(new([]string)))
+
+	// IsSlice
+	is.True(IsSlice([]string{}))
+	is.True(IsSlice(new([]string)))
+	is.True(IsSlice(make([]string, 1)))
+	is.False(IsSlice(nil))
+	is.False(IsSlice([1]string{}))
+	is.False(IsSlice(new(map[string]int)))
+
+	// IsInts
+	is.True(IsInts([]int{}))
+	is.True(IsInts([]int{1}))
+	is.False(IsInts([]int8{}))
+	is.False(IsInts(map[string]int{}))
+
+	// IsStrings
+	is.True(IsStrings([]string{}))
+	is.True(IsStrings([]string{"a"}))
+	is.False(IsStrings([]int{}))
+	is.False(IsStrings(map[string]int{}))
 }

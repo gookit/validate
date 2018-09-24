@@ -98,18 +98,27 @@ var (
 // some validator alias name
 var validatorAliases = map[string]string{
 	// alias -> real name
-	"in":       "enum",
-	"int":      "isInt",
-	"uint":     "isUint",
-	"num":      "number",
-	"str":      "isString",
-	"string":   "isString",
-	"map":      "mapping",
-	"arr":      "array",
-	"regex":    "regexp",
-	"eq":       "IsEqual",
-	"equal":    "IsEqual",
-	"intEq":    "IntEqual",
+	"in":  "enum",
+	"num": "number",
+	// type
+	"int":     "isInt",
+	"uint":    "isUint",
+	"bool":    "isBool",
+	"float":   "isFloat",
+	"map":     "isMap",
+	"ints":    "isInts", // []int
+	"str":     "isString",
+	"string":  "isString",
+	"strings": "isStrings", // []string
+	"arr":     "isArray",
+	"array":   "isArray",
+	"slice":   "isSlice",
+	// val
+	"regex": "regexp",
+	"eq":    "IsEqual",
+	"equal": "IsEqual",
+	"intEq": "IntEqual",
+	// len
 	"lenEq":    "LengthEqual",
 	"lengthEq": "LengthEqual",
 	"minLen":   "minLength",
@@ -119,6 +128,11 @@ var validatorAliases = map[string]string{
 	// string rune length
 	"strLength":  "stringLength",
 	"runeLength": "stringLength",
+	//
+	"ip":    "isIP",
+	"ipv4":  "isIPv4",
+	"ipv6":  "isIPv6",
+	"email": "isEmail",
 }
 
 // ValidatorName get real validator name.
@@ -139,17 +153,30 @@ var (
 	validators      map[string]interface{}
 	validatorValues = map[string]reflect.Value{
 		// int value
-		"min":      reflect.ValueOf(Min),
-		"max":      reflect.ValueOf(Max),
-		"isInt":    reflect.ValueOf(IsInt),
-		"isUint":   reflect.ValueOf(IsUint),
-		"isString": reflect.ValueOf(IsString),
-		"isEqual":  reflect.ValueOf(IsEqual),
-		"intEqual": reflect.ValueOf(IntEqual),
+		"min": reflect.ValueOf(Min),
+		"max": reflect.ValueOf(Max),
+		// data type check
+		"isInt":     reflect.ValueOf(IsInt),
+		"isMap":     reflect.ValueOf(IsMap),
+		"isUint":    reflect.ValueOf(IsUint),
+		"isBool":    reflect.ValueOf(IsBool),
+		"isFloat":   reflect.ValueOf(IsFloat),
+		"isInts":    reflect.ValueOf(IsInts),
+		"isArray":   reflect.ValueOf(IsArray),
+		"isSlice":   reflect.ValueOf(IsSlice),
+		"isString":  reflect.ValueOf(IsString),
+		"isStrings": reflect.ValueOf(IsStrings),
+		"isEqual":   reflect.ValueOf(IsEqual),
+		"intEqual":  reflect.ValueOf(IntEqual),
 		// length
 		"minLength":   reflect.ValueOf(MinLength),
 		"maxLength":   reflect.ValueOf(MaxLength),
 		"lengthEqual": reflect.ValueOf(LengthEqual),
+		// common
+		"isIP":    reflect.ValueOf(IsIP),
+		"isIPv4":  reflect.ValueOf(IsIPv4),
+		"isIPv6":  reflect.ValueOf(IsIPv6),
+		"isEmail": reflect.ValueOf(IsEmail),
 	}
 )
 
@@ -370,7 +397,6 @@ func IsInt(val interface{}, minAndMax ...int64) (ok bool) {
 	}
 
 	var rv reflect.Value
-
 	if rv, ok = val.(reflect.Value); !ok {
 		rv = reflect.ValueOf(val)
 	}
@@ -427,7 +453,6 @@ func IsString(val interface{}, minAndMaxLen ...int) (ok bool) {
 	}
 
 	var rv reflect.Value
-
 	if rv, ok = val.(reflect.Value); !ok {
 		rv = reflect.ValueOf(val)
 	}
@@ -629,6 +654,96 @@ func StringLength(str string, params ...string) bool {
 	}
 
 	return false
+}
+
+// IsArray check
+func IsArray(val interface{}) (ok bool) {
+	if val == nil {
+		return false
+	}
+
+	var rv reflect.Value
+	if rv, ok = val.(reflect.Value); !ok {
+		rv = reflect.ValueOf(val)
+	}
+
+	if rv.Kind() == reflect.Ptr {
+		rv = rv.Elem()
+	}
+
+	return rv.Kind() == reflect.Array
+}
+
+// IsSlice check
+func IsSlice(val interface{}) (ok bool) {
+	if val == nil {
+		return false
+	}
+
+	var rv reflect.Value
+	if rv, ok = val.(reflect.Value); !ok {
+		rv = reflect.ValueOf(val)
+	}
+
+	if rv.Kind() == reflect.Ptr {
+		rv = rv.Elem()
+	}
+
+	return rv.Kind() == reflect.Slice
+}
+
+// IsInts is int slice check
+func IsInts(val interface{}) (ok bool) {
+	if val == nil {
+		return false
+	}
+
+	switch val.(type) {
+	case []int:
+		return true
+	case reflect.Value:
+		if val.(reflect.Value).Kind() == reflect.Slice {
+			_, ok = val.([]int)
+		}
+	}
+
+	return
+}
+
+// IsStrings is string slice check
+func IsStrings(val interface{}) (ok bool) {
+	if val == nil {
+		return false
+	}
+
+	switch val.(type) {
+	case []string:
+		return true
+	case reflect.Value:
+		if val.(reflect.Value).Kind() == reflect.Slice {
+			_, ok = val.([]string)
+		}
+	}
+
+	return
+}
+
+// IsMap check
+func IsMap(val interface{}) (ok bool) {
+	if val == nil {
+		return false
+	}
+
+	var rv reflect.Value
+	if rv, ok = val.(reflect.Value); !ok {
+		rv = reflect.ValueOf(val)
+	}
+
+	if rv.Kind() == reflect.Ptr {
+		rv = rv.Elem()
+	}
+
+	return rv.Kind() == reflect.Map
 }
 
 // ValueIsEmpty check

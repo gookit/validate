@@ -53,7 +53,7 @@ func Length(val interface{}) int {
 		return -1
 	}
 
-	if rv, ok := val.(reflect.Value); !ok {
+	if rv, ok := val.(reflect.Value); ok {
 		return ValueLen(rv)
 	}
 
