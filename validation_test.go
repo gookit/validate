@@ -43,7 +43,7 @@ func TestMap(t *testing.T) {
 
 	ok := v.Validate()
 	is.False(ok)
-	is.Equal("name value min length is 7", v.Errors.Get("name"))
+	is.Equal("name min length is 7", v.Errors.Get("name"))
 }
 
 // UserForm struct
@@ -125,9 +125,12 @@ func TestFromQuery(t *testing.T) {
 	v := FromQuery(data).Create()
 	v.StopOnError = false
 	v.StringRules(SMap{
-		"name": "required|minLen:7",
-		"age":  "required|int|min:20",
+		// "name": "required|minLen:7",
+		"age": "int",
+		// "age":  "required|int|min:20",
 	})
+
+	// v.AddRule("age", )
 
 	is.False(v.Validate())
 	fmt.Println(v.Errors)

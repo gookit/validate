@@ -50,15 +50,17 @@ type StructData struct {
 	valueTpy reflect.Type
 	// field values cache
 	fieldValues map[string]reflect.Value
-	// TagName in the struct tags.
-	TagName string
+	// FilterTag name in the struct tags.
+	FilterTag string
+	// ValidateTag name in the struct tags.
+	ValidateTag string
 }
 
 // StructOption definition
 type StructOption struct {
-	// TagName in the struct tags.
-	TagName    string
-	MethodName string
+	// ValidateTag in the struct tags.
+	ValidateTag string
+	MethodName  string
 }
 
 var (
@@ -69,7 +71,7 @@ var (
 
 func newStructData(s interface{}) (*StructData, error) {
 	data := &StructData{
-		TagName: globalOpt.TagName,
+		ValidateTag: globalOpt.ValidateTag,
 		// init map
 		fieldValues: make(map[string]reflect.Value),
 	}
@@ -131,8 +133,8 @@ func (d *StructData) Validation(scene ...string) *Validation {
 
 // parse and collect rules from struct tags.
 func (d *StructData) parseRulesFromTag(v *Validation) {
-	if d.TagName == "" {
-		d.TagName = globalOpt.TagName
+	if d.ValidateTag == "" {
+		d.ValidateTag = globalOpt.ValidateTag
 	}
 
 	vt := d.valueTpy
@@ -144,7 +146,7 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 			continue
 		}
 
-		rule := vt.Field(i).Tag.Get(d.TagName)
+		rule := vt.Field(i).Tag.Get(d.ValidateTag)
 		if rule != "" && rule != "-" {
 			v.StringRule(name, rule)
 		}

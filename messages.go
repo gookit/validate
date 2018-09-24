@@ -91,6 +91,9 @@ var defMessages = map[string]string{
 	// int value
 	"min": "{field} min value is %d",
 	"max": "{field} max value is %d",
+	// type check
+	"isInt":  "{field} value must be an integer",
+	"isUint": "{field} value must be an unsigned integer(>= 0)",
 	// length
 	"minLength": "{field} min length is %d",
 	"maxLength": "{field} max length is %d",

@@ -20,17 +20,9 @@ const (
 var emptyValue = reflect.Value{}
 
 // Validate the field by validator name
-func (r *Rule) Validate(field, validator string, v *Validation) (ok bool) {
+func (r *Rule) Validate(field, validator string, val interface{}, v *Validation) (ok bool) {
 	// beforeFunc return false, skip validate
 	if r.beforeFunc != nil && !r.beforeFunc(field, v) {
-		return false
-	}
-
-	// @todo apply filter func
-
-	// get field value.
-	val, has := v.Get(field)
-	if !has {
 		return false
 	}
 
@@ -75,7 +67,14 @@ func callValidatorValue(name string, fv reflect.Value, val interface{}, args []i
 	}
 
 	argNum := len(args) + 1
-	if argNum < fnArgNum {
+	notEnough := argNum < fnArgNum
+
+	// last arg is like "... interface{}"
+	if ft.IsVariadic() {
+		notEnough = argNum+1 < fnArgNum
+	}
+
+	if notEnough {
 		panicf("not enough parameters for validator '%s'!", name)
 	}
 
@@ -84,9 +83,9 @@ func callValidatorValue(name string, fv reflect.Value, val interface{}, args []i
 	copy(newArgs[1:], args)
 
 	// build params for the validator func.
-	argIn := make([]reflect.Value, fnArgNum)
+	argIn := make([]reflect.Value, argNum)
 	// typeIn := make([]reflect.Type, fnArgNum)
-	for i := 0; i < fnArgNum; i++ {
+	for i := 0; i < argNum; i++ {
 		av := reflect.ValueOf(newArgs[i])
 		wantTyp := ft.In(i).Kind()
 		updateArg := false
@@ -109,6 +108,8 @@ func callValidatorValue(name string, fv reflect.Value, val interface{}, args []i
 			args[i-1] = argIn[i].Interface()
 		}
 	}
+
+	// fmt.Printf("%#v %v\n", val, argIn[0].String())
 
 	// f.CallSlice()与Call() 不一样的是，CallSlice参数的最后一个会被展开
 	// vs := fv.Call(argIn)

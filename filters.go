@@ -8,6 +8,22 @@ import (
 
 // filters.go: filter and convert data
 
+// Filtration definition
+type Filtration struct {
+	// filtered data
+	filtered GMap
+}
+
+// Get value by key
+func (f *Filtration) Get(key string) (interface{}, bool) {
+	return GetByPath(key, f.filtered)
+}
+
+// Set value by key
+func (f *Filtration) Set(field string, val interface{}) error {
+	panic("implement me")
+}
+
 /*************************************************************
  * global filters
  *************************************************************/
@@ -58,8 +74,8 @@ func (v *Validation) AddFilter(name string, filterFunc interface{}) {
 	v.filterFuncs[name] = filterFunc
 }
 
-// GetFilter by name
-func (v *Validation) GetFilter(name string) interface{} {
+// FilerFunc get filter by name
+func (v *Validation) FilerFunc(name string) interface{} {
 	if fn, ok := v.filterFuncs[name]; ok {
 		return fn
 	}

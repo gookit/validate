@@ -47,13 +47,13 @@ var globalOpt = &GlobalOption{
 	StopOnError: true,
 	SkipOnEmpty: true,
 	// tag name in struct tags
-	TagName: defaultTag,
+	ValidateTag: defaultTag,
 }
 
 // GlobalOption settings for validate
 type GlobalOption struct {
-	// TagName in the struct tags.
-	TagName string
+	// ValidateTag in the struct tags.
+	ValidateTag string
 	// StopOnError If true: An error occurs, it will cease to continue to verify
 	StopOnError bool
 	// SkipOnEmpty Skip check on field not exist or value is empty
@@ -79,7 +79,7 @@ type Validation struct {
 	hasError bool
 	// mark is validated
 	validated bool
-	// translator
+	// translator instance
 	trans *Translator
 	// rules for the validation
 	rules []*Rule
@@ -99,6 +99,10 @@ type Validation struct {
 	validators GMap
 	// validator func reflect.Value map
 	validatorValues map[string]reflect.Value
+	//
+	filteredData GMap
+	// validated safe data
+	safeData GMap
 }
 
 // NewValidation instance
@@ -246,6 +250,8 @@ func (v *Validation) StringRules(sMap SMap) *Validation {
 
 	return v
 }
+
+// func (v *Validation) UseRule()
 
 // AddRule for current validate
 func (v *Validation) AddRule(fields, validator string, args ...interface{}) *Rule {
