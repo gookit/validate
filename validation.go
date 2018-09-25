@@ -67,7 +67,8 @@ type GlobalOption struct {
 
 // Validation definition
 type Validation struct {
-	DataFace
+	// source input data
+	data DataFace
 	// Errors for the validate
 	Errors Errors
 	// CacheKey for cache rules
@@ -86,8 +87,10 @@ type Validation struct {
 	validated bool
 	// translator instance
 	trans *Translator
-	// rules for the validation
+	// validate rules for the validation
 	rules []*Rule
+	// filtering rules for the validation
+	filterRules []*FilterRule
 	// current scene name
 	scene string
 	// scenes config.
@@ -115,7 +118,7 @@ func NewValidation(data DataFace, scene ...string) *Validation {
 	v := &Validation{
 		Errors: make(Errors),
 		// add data source
-		DataFace: data,
+		data: data,
 		// default config
 		StopOnError: globalOpt.StopOnError,
 		SkipOnEmpty: globalOpt.SkipOnEmpty,
@@ -219,11 +222,9 @@ func (v *Validation) SetScene(scene ...string) *Validation {
 // StringRule add field rules by string
 // Usage:
 // 	v.StringRule("name", "required|string|min:12")
-func (v *Validation) StringRule(field, ruleString string) *Validation {
-	ruleString = strings.TrimSpace(ruleString)
-	ruleString = strings.Trim(ruleString, "|:")
-
-	rules := stringSplit(ruleString, "|")
+func (v *Validation) StringRule(field, rule string, filterRule ...string) *Validation {
+	rule = strings.TrimSpace(rule)
+	rules := stringSplit(strings.Trim(rule, "|:"), "|")
 	for _, validator := range rules {
 		validator = strings.Trim(validator, ":")
 		if validator == "" { // empty
@@ -237,6 +238,10 @@ func (v *Validation) StringRule(field, ruleString string) *Validation {
 		} else {
 			v.AddRule(field, validator)
 		}
+	}
+
+	if len(filterRule) > 0 {
+		v.FilterRule(field, filterRule[0])
 	}
 
 	return v
@@ -304,6 +309,34 @@ func (v *Validation) Validate(scene ...string) bool {
 }
 
 /*************************************************************
+ * data filtering/sanitize
+ *************************************************************/
+
+// Sanitize data by filter rules
+func (v *Validation) Sanitize() *Validation {
+	return v.Filtering()
+}
+
+// Filtering data by filter rules
+func (v *Validation) Filtering() *Validation {
+
+	return v
+}
+
+// FilterRule add filter rule.
+// Usage:
+//	v.FilterRule("name", "trim")
+//	v.FilterRule("age", "int")
+func (v *Validation) FilterRule(fields string, rule string) {
+	rule = strings.TrimSpace(rule)
+	rules := stringSplit(strings.Trim(rule, "|:"), "|")
+
+	r := &FilterRule{filters: rules}
+
+	v.filterRules = append(v.filterRules, r)
+}
+
+/*************************************************************
  * errors messages
  *************************************************************/
 
@@ -368,20 +401,20 @@ func (v *Validation) AddError(field string, msg string) {
 
 // Get value by key
 func (v *Validation) Get(key string) (interface{}, bool) {
-	if v.DataFace == nil { // check input data
+	if v.data == nil { // check input data
 		return nil, false
 	}
 
-	return v.DataFace.Get(key)
+	return v.data.Get(key)
 }
 
 // Set value by key
 func (v *Validation) Set(field string, val interface{}) error {
-	if v.DataFace == nil { // check input data
+	if v.data == nil { // check input data
 		return ErrEmptyData
 	}
 
-	return v.DataFace.Set(field, val)
+	return v.data.Set(field, val)
 }
 
 // Trans get message Translator

@@ -87,7 +87,8 @@ func (es Errors) String() string {
 
 // defMessages internal error message for some rules.
 var defMessages = map[string]string{
-	"_": "{field} did not pass validate", // default message
+	"_":        "{field} did not pass validate", // default message
+	"_invalid": "{field} data is invalid",       // data filter error
 	// int value
 	"min": "{field} min value is %d",
 	"max": "{field} max value is %d",

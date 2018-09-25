@@ -8,7 +8,7 @@ import (
 
 // filters.go: filter and convert data
 
-// Filtration definition
+// Filtration definition. Sanitization Sanitizing Sanitize
 type Filtration struct {
 	// filtered data
 	filtered GMap

@@ -97,8 +97,9 @@ var (
 // some validator alias name
 var validatorAliases = map[string]string{
 	// alias -> real name
-	"in":  "enum",
-	"num": "number",
+	"in":    "enum",
+	"num":   "number",
+	"range": "between",
 	// type
 	"int":     "isInt",
 	"uint":    "isUint",
@@ -251,8 +252,8 @@ func (v *Validation) AddValidator(name string, checkFunc interface{}) {
 func (v *Validation) ValidatorValue(name string) (fv reflect.Value, ok bool) {
 	name = ValidatorName(name)
 
-	// if DataFace is StructData instance.
-	if sd, ok := v.DataFace.(*StructData); ok {
+	// if v.data is StructData instance.
+	if sd, ok := v.data.(*StructData); ok {
 		fv, ok = sd.FuncValue(name)
 		if ok {
 			return fv, true

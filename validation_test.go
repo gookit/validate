@@ -48,13 +48,13 @@ func TestMap(t *testing.T) {
 
 // UserForm struct
 type UserForm struct {
-	Name     string    `json:"name" validate:"required|minLen:7"`
-	Email    string    `json:"email" validate:"email"`
-	CreateAt int       `json:"createAt" validate:"email"`
-	Safe     int       `json:"safe" validate:"-"`
-	UpdateAt time.Time `json:"updateAt" validate:"required"`
-	Code     string    `json:"code" validate:"customValidator"`
-	Status   int       `json:"status" validate:"required|gtField:Extra.Status1"`
+	Name     string    `validate:"required|minLen:7"`
+	Email    string    `validate:"email"`
+	CreateAt int       `validate:"email"`
+	Safe     int       `validate:"-"`
+	UpdateAt time.Time `validate:"required"`
+	Code     string    `validate:"customValidator"`
+	Status   int       `validate:"required|gtField:Extra.Status1"`
 	Extra    ExtraInfo `validate:"required"`
 }
 

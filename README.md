@@ -60,12 +60,12 @@ import "github.com/gookit/validate"
 
 // UserForm struct
 type UserForm struct {
-	Name     string    `json:"name" validate:"required|minLen:7"`
-	Email    string    `json:"email" validate:"email"`
-	CreateAt int       `json:"createAt" validate:"min:1"`
-	Safe     int       `json:"safe" validate:"-"`
-	UpdateAt time.Time `json:"updateAt" validate:"required"`
-	Code     string    `json:"code" validate:"customValidator"`
+	Name     string    `validate:"required|minLen:7"`
+	Email    string    `validate:"email"`
+	CreateAt int       `validate:"min:1"`
+	Safe     int       `validate:"-"`
+	UpdateAt time.Time `validate:"required"`
+	Code     string    `validate:"customValidator"`
 }
 
 // custom validator in the source struct.

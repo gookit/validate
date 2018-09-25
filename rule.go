@@ -217,3 +217,9 @@ func callFilter(fn, val interface{}, args ...interface{}) (interface{}, error) {
 
 	return val, nil
 }
+
+// FilterRule definition
+type FilterRule struct {
+	// filter list. eg. "int" "str2arr:,"
+	filters []string
+}

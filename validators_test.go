@@ -123,16 +123,16 @@ func TestIsAlpha(t *testing.T) {
 func TestSomeValidators(t *testing.T) {
 	is := assert.New(t)
 
-	// email
+	// IsEmail
 	is.True(IsEmail("some@abc.com"))
 	is.False(IsEmail("some.abc.com"))
 
-	// IP
+	// IsIP
 	is.True(IsIP("127.0.0.1"))
 	is.True(IsIP("1.1.1.1"))
 	is.False(IsIP("1.1.1.1.1"))
 
-	// IPv4
+	// IsIPv4
 	is.True(IsIPv4("127.0.0.1"))
 	is.True(IsIPv4("1.1.1.1"))
 	is.False(IsIPv4("1.1.1.1.1"))
@@ -171,4 +171,10 @@ func TestSomeValidators(t *testing.T) {
 	is.True(IsStrings([]string{"a"}))
 	is.False(IsStrings([]int{}))
 	is.False(IsStrings(map[string]int{}))
+
+	// IsEqual
+	is.True(IsEqual(2, 2))
+	is.False(IsEqual(2, "2"))
+
+	// is.Equal()
 }
