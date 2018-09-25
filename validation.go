@@ -2,13 +2,14 @@ package validate
 
 import (
 	"encoding/json"
-	"fmt"
+	"github.com/gookit/validate/filter"
 	"reflect"
 	"strings"
 	"time"
 )
 
-const errorName = "validate"
+const errorName = "_validate"
+const filterError = "_filter"
 const defaultTag = "validate"
 const defaultFilterTag = "filter"
 const defaultMaxMemory int64 = 32 << 20 // 32 MB
@@ -309,18 +310,50 @@ func (v *Validation) Validate(scene ...string) bool {
 }
 
 /*************************************************************
- * data filtering/sanitize
+ * filters for current validation
  *************************************************************/
 
-// Sanitize data by filter rules
-func (v *Validation) Sanitize() *Validation {
-	return v.Filtering()
+// AddFilters to the Validation
+func (v *Validation) AddFilters(m map[string]interface{}) {
+	for name, filterFunc := range m {
+		v.AddFilter(name, filterFunc)
+	}
 }
 
-// Filtering data by filter rules
-func (v *Validation) Filtering() *Validation {
+// AddFilter to the Validation.
+func (v *Validation) AddFilter(name string, filterFunc interface{}) {
+	if v.filterFuncs == nil {
+		v.filterFuncs = make(map[string]interface{})
+	}
 
-	return v
+	if filterFunc == nil || reflect.TypeOf(filterFunc).Kind() != reflect.Func {
+		panic("validate: invalid filter func, it must be an func type")
+	}
+
+	v.filterFuncs[name] = filterFunc
+}
+
+// FilerFunc get filter by name
+func (v *Validation) FilerFunc(name string) interface{} {
+	if fn, ok := v.filterFuncs[name]; ok {
+		return fn
+	}
+
+	if fn, ok := filter.Filter(name); ok {
+		return fn
+	}
+
+	panic("validate: not exists of the filter " + name)
+}
+
+// HasFilter check
+func (v *Validation) HasFilter(name string) bool {
+	if _, ok := v.filterFuncs[name]; ok {
+		return true
+	}
+
+	_, ok := filter.Filter(name)
+	return ok
 }
 
 // FilterRule add filter rule.
@@ -334,6 +367,29 @@ func (v *Validation) FilterRule(fields string, rule string) {
 	r := &FilterRule{filters: rules}
 
 	v.filterRules = append(v.filterRules, r)
+}
+
+/*************************************************************
+ * Do filtering/sanitize
+ *************************************************************/
+
+// Sanitize data by filter rules
+func (v *Validation) Sanitize() *Validation {
+	return v.Filtering()
+}
+
+// Filtering data by filter rules
+func (v *Validation) Filtering() *Validation {
+
+	// apply rule to validate data.
+	for _, rule := range v.filterRules {
+		if err := rule.Apply(v); err != nil { // has error
+			v.AddError(filterError, err.Error())
+			break
+		}
+	}
+
+	return v
 }
 
 /*************************************************************
@@ -474,8 +530,4 @@ func (v *Validation) shouldStop() bool {
 // Safe value get
 func (v *Validation) Safe(field string) {
 
-}
-
-func panicf(format string, args ...interface{}) {
-	panic("validate: " + fmt.Sprintf(format, args...))
 }

@@ -218,8 +218,43 @@ func callFilter(fn, val interface{}, args ...interface{}) (interface{}, error) {
 	return val, nil
 }
 
+/*************************************************************
+ * filtering rule
+ *************************************************************/
+
 // FilterRule definition
 type FilterRule struct {
 	// filter list. eg. "int" "str2arr:,"
 	filters []string
+}
+
+// Apply rule for the rule fields
+func (r *FilterRule) Apply(v *Validation) error {
+	// call filters
+	for _, filter := range r.filters {
+		name, args := parseSingleRule(filter)
+
+		fn := v.FilerFunc(name)
+		if val, err := callFilter(fn, val); err != nil {
+			v.WithError(err)
+			return err
+		}
+	}
+
+	return nil
+}
+
+// parseSingleRule "min:1" "range:1,2"
+func parseSingleRule(singleRule string) (name string, args []string) {
+	pos := strings.IndexRune(singleRule, ':')
+
+	// has args
+	if pos > 0 {
+		name = singleRule[:pos]
+		args = stringSplit(singleRule[pos+1:], ",")
+	} else {
+		name = singleRule
+	}
+
+	return
 }

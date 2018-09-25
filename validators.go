@@ -2,6 +2,7 @@ package validate
 
 import (
 	"encoding/json"
+	"github.com/gookit/validate/filter"
 	"net"
 	"reflect"
 	"regexp"
@@ -591,7 +592,7 @@ func IsString(val interface{}, minAndMaxLen ...int) (ok bool) {
 
 // IsIntString check. eg "10"
 func IsIntString(str string) bool {
-	return String(str).CanInt()
+	return filter.String(str).CanInt()
 }
 
 // IsASCII string.
@@ -752,8 +753,8 @@ func MaxLength(val interface{}, maxLen int) bool {
 // ByteLength check string's length
 func ByteLength(str string, params ...string) bool {
 	if len(params) == 2 {
-		min := MustInt(params[0])
-		max := MustInt(params[1])
+		min := filter.MustInt(params[0])
+		max := filter.MustInt(params[1])
 		strLen := len(str)
 
 		return strLen >= min && strLen <= max
@@ -770,8 +771,8 @@ func RuneLength(str string, params ...string) bool {
 // StringLength check string's length (including multi byte strings)
 func StringLength(str string, params ...string) bool {
 	if len(params) == 2 {
-		min := MustInt(params[0])
-		max := MustInt(params[1])
+		min := filter.MustInt(params[0])
+		max := filter.MustInt(params[1])
 		strLen := utf8.RuneCountInString(str)
 
 		return strLen >= min && strLen <= max

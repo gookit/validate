@@ -1,39 +1,23 @@
-package validate
+package filter
 
 import (
+	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
 )
 
-// filters.go: filter and convert data
-
-// Filtration definition. Sanitization Sanitizing Sanitize
-type Filtration struct {
-	// filtered data
-	filtered GMap
-}
-
-// Get value by key
-func (f *Filtration) Get(key string) (interface{}, bool) {
-	return GetByPath(key, f.filtered)
-}
-
-// Set value by key
-func (f *Filtration) Set(field string, val interface{}) error {
-	panic("implement me")
-}
-
 /*************************************************************
  * global filters
  *************************************************************/
 
+// filters global user filters
 var filters map[string]interface{}
 
 // var filterValues map[string]reflect.Value
 
 // AddFilters add global filters
-func AddFilters(m GMap) {
+func AddFilters(m map[string]interface{}) {
 	for name, filterFunc := range m {
 		AddFilter(name, filterFunc)
 	}
@@ -52,51 +36,10 @@ func AddFilter(name string, filterFunc interface{}) {
 	filters[name] = filterFunc
 }
 
-/*************************************************************
- * filters for current validation
- *************************************************************/
-
-// AddFilters to the Validation
-func (v *Validation) AddFilters(m map[string]interface{}) {
-	for name, filterFunc := range m {
-		v.AddFilter(name, filterFunc)
-	}
-}
-
-// AddFilter to the Validation.
-func (v *Validation) AddFilter(name string, filterFunc interface{}) {
-	if v.filterFuncs == nil {
-		v.filterFuncs = make(map[string]interface{})
-	}
-
-	if filterFunc == nil || reflect.TypeOf(filterFunc).Kind() != reflect.Func {
-		panic("validate: invalid filter func, it must be an func type")
-	}
-
-	v.filterFuncs[name] = filterFunc
-}
-
-// FilerFunc get filter by name
-func (v *Validation) FilerFunc(name string) interface{} {
-	if fn, ok := v.filterFuncs[name]; ok {
-		return fn
-	}
-
-	if fn, ok := filters[name]; ok {
-		return fn
-	}
-
-	panic("validate: not exists of the filter " + name)
-}
-
-// HasFilter check
-func (v *Validation) HasFilter(name string) bool {
-	if _, ok := v.filterFuncs[name]; ok {
-		return true
-	}
-
-	_, ok := filters[name]
-	return ok
+// Filter get filter by name
+func Filter(name string) (fn interface{}, ok bool) {
+	fn, ok = filters[name]
+	return
 }
 
 /*************************************************************
@@ -104,8 +47,17 @@ func (v *Validation) HasFilter(name string) bool {
  *************************************************************/
 
 // Trim string
-func Trim(str string) string {
+func Trim(str string, cutSet ...string) string {
+	if len(cutSet) > 0 {
+		return strings.Trim(str, cutSet[0])
+	}
+
 	return strings.TrimSpace(str)
+}
+
+// Int convert
+func Int(str string) (int, error) {
+	return ToInt(str)
 }
 
 // ToInt convert
@@ -117,6 +69,11 @@ func ToInt(str string) (int, error) {
 func MustInt(str string) int {
 	val, _ := strconv.Atoi(Trim(str))
 	return val
+}
+
+// Uint convert
+func Uint(str string) (uint64, error) {
+	return ToUint(str)
 }
 
 // ToUint convert
@@ -146,8 +103,8 @@ func MustFloat(str string) float64 {
 	return val
 }
 
-// ToArray string split to array.
-func ToArray(str string, sep ...string) []string {
+// Str2Array split string to array.
+func Str2Array(str string, sep ...string) []string {
 	if len(sep) > 0 {
 		return stringSplit(str, sep[0])
 	}
@@ -250,4 +207,8 @@ func (s String) Split(sep string) (ss []string) {
 // String get
 func (s String) String() string {
 	return string(s)
+}
+
+func panicf(format string, args ...interface{}) {
+	panic("filter: " + fmt.Sprintf(format, args...))
 }

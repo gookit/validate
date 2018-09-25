@@ -1,6 +1,7 @@
 package validate
 
 import (
+	"github.com/gookit/validate/helper"
 	"reflect"
 )
 
@@ -32,7 +33,7 @@ func (d *MapData) Get(field string) (interface{}, bool) {
 	// 	return fv, true
 	// }
 
-	return GetByPath(field, d.Map)
+	return helper.GetByPath(field, d.Map)
 }
 
 // Create a Validation from data
