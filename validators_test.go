@@ -2,6 +2,7 @@ package validate
 
 import (
 	"fmt"
+
 	"github.com/stretchr/testify/assert"
 	"reflect"
 	"testing"
@@ -45,6 +46,12 @@ func TestSome(t *testing.T) {
 	fmt.Printf("%s\n", rt.Field(0).Tag.Get("validate"))
 	fmt.Printf("%v\n", rt.Field(3).Name)
 	fmt.Println(rv.Kind(), rv.Field(0).String())
+}
+
+func TestIsEmpty(t *testing.T) {
+	is := assert.New(t)
+
+	is.True(IsEmpty(nil))
 }
 
 func TestIsInt(t *testing.T) {

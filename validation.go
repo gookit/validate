@@ -2,7 +2,7 @@ package validate
 
 import (
 	"encoding/json"
-	"github.com/gookit/validate/filter"
+	"github.com/gookit/filter"
 	"reflect"
 	"strings"
 	"time"
