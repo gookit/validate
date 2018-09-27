@@ -147,7 +147,7 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 		}
 
 		rule := vt.Field(i).Tag.Get(d.ValidateTag)
-		if rule != "" && rule != "-" {
+		if rule != "" {
 			v.StringRule(name, rule)
 		}
 	}

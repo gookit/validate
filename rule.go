@@ -115,7 +115,7 @@ func (r *Rule) Fields() []string {
 }
 
 // Apply rule for the rule fields
-func (r *Rule) Apply(v *Validation) bool {
+func (r *Rule) Apply(v *Validation) (stop bool) {
 	fieldMap := v.SceneFieldMap()
 	dontNeedCheck := func(field string) bool {
 		if len(fieldMap) == 0 {
@@ -126,7 +126,7 @@ func (r *Rule) Apply(v *Validation) bool {
 		return ok
 	}
 
-	// validate field
+	// validate field value
 	for _, field := range r.Fields() {
 		if dontNeedCheck(field) {
 			continue
@@ -147,11 +147,10 @@ func (r *Rule) Apply(v *Validation) bool {
 		}
 
 		// only one validator
-		if !strings.ContainsRune(r.validator, ',') {
+		if !strings.ContainsRune(r.validator, '|') {
 			r.Validate(field, r.validator, val, v)
 		} else { // has multi validators
 			vs := stringSplit(r.validator, "|")
-
 			for _, validator := range vs {
 				// stop on error
 				if r.Validate(field, validator, val, v) && v.StopOnError {

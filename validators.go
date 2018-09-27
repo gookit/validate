@@ -391,11 +391,6 @@ func IsEmpty(val interface{}) bool {
 	return ValueIsEmpty(reflect.ValueOf(val))
 }
 
-// IsNull check if the string is null.
-func IsNull(str string) bool {
-	return len(str) == 0
-}
-
 /*************************************************************
  * global: type validators
  *************************************************************/
@@ -654,19 +649,19 @@ func IsMAC(str string) bool {
 }
 
 // IsCIDRv4 is the validation function for validating if the field's value is a valid v4 CIDR address.
-func isCIDRv4(str string) bool {
+func IsCIDRv4(str string) bool {
 	ip, _, err := net.ParseCIDR(str)
 	return err == nil && ip.To4() != nil
 }
 
 // IsCIDRv6 is the validation function for validating if the field's value is a valid v6 CIDR address.
-func isCIDRv6(str string) bool {
+func IsCIDRv6(str string) bool {
 	ip, _, err := net.ParseCIDR(str)
 	return err == nil && ip.To4() == nil
 }
 
 // IsCIDR is the validation function for validating if the field's value is a valid v4 or v6 CIDR address.
-func isCIDR(str string) bool {
+func IsCIDR(str string) bool {
 	_, _, err := net.ParseCIDR(str)
 	return err == nil
 }
@@ -674,7 +669,7 @@ func isCIDR(str string) bool {
 // IsJSON check if the string is valid JSON (note: uses json.Unmarshal).
 func IsJSON(str string) bool {
 	var js json.RawMessage
-	return json.Unmarshal([]byte(str), &js) == nil
+	return Unmarshal([]byte(str), &js) == nil
 }
 
 /*************************************************************
@@ -763,20 +758,21 @@ func ByteLength(str string, params ...string) bool {
 	return false
 }
 
-// RuneLength check string's length, Alias for StringLength
-func RuneLength(str string, params ...string) bool {
-	return StringLength(str, params...)
+// RuneLength check string's length (including multi byte strings)
+func RuneLength(str string, minLen int, maxLen ...int) bool {
+	// strLen := len([]rune(str))
+	strLen := utf8.RuneCountInString(str)
+
+	// only min length check.
+	if len(maxLen) == 0 {
+		return strLen >= minLen
+	}
+
+	// min and max length check
+	return strLen >= minLen && strLen <= maxLen[1]
 }
 
 // StringLength check string's length (including multi byte strings)
-func StringLength(str string, params ...string) bool {
-	if len(params) == 2 {
-		min := filter.MustInt(params[0])
-		max := filter.MustInt(params[1])
-		strLen := utf8.RuneCountInString(str)
-
-		return strLen >= min && strLen <= max
-	}
-
-	return false
+func StringLength(str string, minLen int, maxLen ...int) bool {
+	return RuneLength(str, minLen, maxLen...)
 }

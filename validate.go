@@ -22,6 +22,11 @@ var emptyValue = reflect.Value{}
 
 // Validate the field by validator name
 func (r *Rule) Validate(field, validator string, val interface{}, v *Validation) (ok bool) {
+	// "-" OR "safe" mark field value always is safe.
+	if validator == "-" || validator == "safe"{
+		return true
+	}
+
 	// beforeFunc return false, skip validate
 	if r.beforeFunc != nil && !r.beforeFunc(field, v) {
 		return false
