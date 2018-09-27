@@ -1,8 +1,14 @@
-# validate
+# Validate
+
+[![GoDoc](https://godoc.org/github.com/gookit/filter?status.svg)](https://godoc.org/github.com/gookit/filter)
+[![Go Report Card](https://goreportcard.com/badge/github.com/gookit/filter)](https://goreportcard.com/report/github.com/gookit/filter)
 
 The package is a generic go data validate library.
 
-Inspired the projects [albrow/forms](https://github.com/albrow/forms) and [asaskevich/govalidator](https://github.com/asaskevich/govalidator). Thank you very much
+- support validate Map, Struct, Request data
+- support filter/sanitize data
+
+> Inspired the projects [albrow/forms](https://github.com/albrow/forms) and [asaskevich/govalidator](https://github.com/asaskevich/govalidator). Thank you very much
 
 ## Go Doc
 
@@ -35,7 +41,7 @@ func main()  {
 	v.AddRule("age", "min", 1)
 	v.AddRule("email", "email")
 
-	// v.WithScenes(SValues{
+	// v.WithScenes(map[string]string{
 	//	 "create": []string{"name", "email"},
 	//	 "update": []string{"name"},
 	// })
@@ -125,6 +131,8 @@ func main()  {
 		
 		v := data.Create()
 		// setting rules
+		v.FilterRule("age", "int") // convert value to int
+		
 		v.AddRule("name", "required")
 		v.AddRule("name", "minLen", 7)
 		v.AddRule("age", "max", 99)
@@ -141,12 +149,24 @@ func main()  {
 }
 ```
 
-## Validators
+## Built In Filters
+
+filter(alias) | description | simple example
+-------------------|-----------------------|--------------------
+`int`(`integer`)  | convert value(string) to int type | `v.FilterRule("id", "int")`
+
+## Built In Validators
+
+validator (alias) | description | simple example
+-------------------|-----------------------|--------------------
+`required`  | check value is not empty. | `v.AddRule("userId", "required")`
+`int`(`integer`)  | check value is int type | `v.AddRule("userId", "int")`
 
 ## Reference
 
 - https://github.com/albrow/forms
 - https://github.com/asaskevich/govalidator
+- https://github.com/inhere/php-validate
 
 ## License
 
