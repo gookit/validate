@@ -124,14 +124,13 @@ func TestFromQuery(t *testing.T) {
 
 	v := FromQuery(data).Create()
 	v.StopOnError = false
+	v.FilterRule("age", "int")
 	v.StringRules(SMap{
 		"name": "required|minLen:7",
 		// "age":  "int",
-		"age": "required|intStr|min:20",
+		"age": "required|int|min:10",
 	})
 
-	// v.AddRule("age", )
-
 	is.False(v.Validate())
-	fmt.Println(v.Errors)
+	is.Equal("name min length is 7", v.Errors.Field("name")[0])
 }

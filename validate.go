@@ -3,6 +3,7 @@ package validate
 
 import (
 	"fmt"
+	"github.com/gookit/filter"
 	"reflect"
 )
 
@@ -122,9 +123,9 @@ func convertValueType(src reflect.Value, dstType reflect.Kind) (nVal reflect.Val
 		srcVal := src.String()
 		switch dstType {
 		case reflect.Int:
-			return convertResult(ToInt(srcVal))
+			return convertResult(filter.Int(srcVal))
 		case reflect.Int64:
-			return convertResult(ToInt64(srcVal))
+			return convertResult(filter.Int64(srcVal))
 		}
 	case reflect.Int:
 		switch dstType {

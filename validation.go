@@ -2,7 +2,6 @@ package validate
 
 import (
 	"encoding/json"
-	"github.com/gookit/filter"
 	"reflect"
 	"strings"
 	"time"
@@ -70,6 +69,12 @@ type GlobalOption struct {
 type Validation struct {
 	// source input data
 	data DataFace
+	// all validated fields list
+	fields []string
+	// filtered clean data
+	filteredData GMap
+	// filtered/validated safe data
+	safeData GMap
 	// Errors for the validate
 	Errors Errors
 	// CacheKey for cache rules
@@ -80,18 +85,20 @@ type Validation struct {
 	SkipOnEmpty bool
 	// CachingRules switch. default is False
 	CachingRules bool
-	// all validated fields list
-	fields []string
 	// mark has error occurs
 	hasError bool
+	// mark is filtered
+	filtered bool
 	// mark is validated
 	validated bool
-	// translator instance
-	trans *Translator
 	// validate rules for the validation
 	rules []*Rule
-	// filtering rules for the validation
-	filterRules []*FilterRule
+	// validator func for the validation
+	validatorFuncs GMap
+	// validator func reflect.Value map
+	validatorValues map[string]reflect.Value
+	// translator instance
+	trans *Translator
 	// current scene name
 	scene string
 	// scenes config.
@@ -100,18 +107,12 @@ type Validation struct {
 	// 	"update": {"field", "field2"}
 	// }
 	scenes SValues
+	// filtering rules for the validation
+	filterRules []*FilterRule
 	// filters and functions for the validation
 	filterFuncs GMap
 	// filter func reflect.Value map
 	filterValues map[string]reflect.Value
-	// validators and functions for the validation
-	validators GMap
-	// validator func reflect.Value map
-	validatorValues map[string]reflect.Value
-	//
-	filteredData GMap
-	// validated safe data
-	safeData GMap
 }
 
 // NewValidation instance
@@ -120,6 +121,10 @@ func NewValidation(data DataFace, scene ...string) *Validation {
 		Errors: make(Errors),
 		// add data source
 		data: data,
+		// validated data
+		safeData: make(map[string]interface{}),
+		// filtered data
+		filteredData: make(map[string]interface{}),
 		// default config
 		StopOnError: globalOpt.StopOnError,
 		SkipOnEmpty: globalOpt.SkipOnEmpty,
@@ -161,6 +166,7 @@ func (v *Validation) Reset() {
 	v.rules = v.rules[:0]
 	v.Errors = Errors{}
 	v.hasError = false
+	v.filtered = false
 	v.validated = false
 }
 
@@ -222,7 +228,9 @@ func (v *Validation) SetScene(scene ...string) *Validation {
 
 // StringRule add field rules by string
 // Usage:
-// 	v.StringRule("name", "required|string|min:12")
+// 	v.StringRule("name", "required|string|minLen:6")
+//	// will try convert to int before apply validate.
+// 	v.StringRule("age", "required|int|min:12", "toInt")
 func (v *Validation) StringRule(field, rule string, filterRule ...string) *Validation {
 	rule = strings.TrimSpace(rule)
 	rules := stringSplit(strings.Trim(rule, "|:"), "|")
@@ -262,8 +270,6 @@ func (v *Validation) StringRules(sMap SMap) *Validation {
 	return v
 }
 
-// func (v *Validation) UseRule()
-
 // AddRule for current validate
 func (v *Validation) AddRule(fields, validator string, args ...interface{}) *Rule {
 	rule := &Rule{
@@ -271,7 +277,6 @@ func (v *Validation) AddRule(fields, validator string, args ...interface{}) *Rul
 		// args for the validator
 		arguments: args,
 		validator: validator,
-		// checkFunc: v.GetValidator(validator),
 	}
 
 	v.rules = append(v.rules, rule)
@@ -285,7 +290,7 @@ func (v *Validation) AppendRule(rule *Rule) *Rule {
 }
 
 /*************************************************************
- * do Validate
+ * Do Validate
  *************************************************************/
 
 // Validate processing
@@ -297,6 +302,11 @@ func (v *Validation) Validate(scene ...string) bool {
 
 	v.SetScene(scene...)
 
+	// apply filter rule before validate.
+	if !v.Filtering() {
+		return v.IsSuccess()
+	}
+
 	// apply rule to validate data.
 	for _, rule := range v.rules {
 		// has error and v.StopOnError is true.
@@ -306,67 +316,12 @@ func (v *Validation) Validate(scene ...string) bool {
 	}
 
 	v.validated = true
+
+	if v.hasError {
+		v.safeData = make(map[string]interface{})
+	}
+
 	return v.IsSuccess()
-}
-
-/*************************************************************
- * filters for current validation
- *************************************************************/
-
-// AddFilters to the Validation
-func (v *Validation) AddFilters(m map[string]interface{}) {
-	for name, filterFunc := range m {
-		v.AddFilter(name, filterFunc)
-	}
-}
-
-// AddFilter to the Validation.
-func (v *Validation) AddFilter(name string, filterFunc interface{}) {
-	if v.filterFuncs == nil {
-		v.filterFuncs = make(map[string]interface{})
-	}
-
-	if filterFunc == nil || reflect.TypeOf(filterFunc).Kind() != reflect.Func {
-		panic("validate: invalid filter func, it must be an func type")
-	}
-
-	v.filterFuncs[name] = filterFunc
-}
-
-// FilerFunc get filter by name
-func (v *Validation) FilerFunc(name string) interface{} {
-	if fn, ok := v.filterFuncs[name]; ok {
-		return fn
-	}
-
-	if fn, ok := filter.Filter(name); ok {
-		return fn
-	}
-
-	panic("validate: not exists of the filter " + name)
-}
-
-// HasFilter check
-func (v *Validation) HasFilter(name string) bool {
-	if _, ok := v.filterFuncs[name]; ok {
-		return true
-	}
-
-	_, ok := filter.Filter(name)
-	return ok
-}
-
-// FilterRule add filter rule.
-// Usage:
-//	v.FilterRule("name", "trim")
-//	v.FilterRule("age", "int")
-func (v *Validation) FilterRule(fields string, rule string) {
-	rule = strings.TrimSpace(rule)
-	rules := stringSplit(strings.Trim(rule, "|:"), "|")
-
-	r := &FilterRule{filters: rules}
-
-	v.filterRules = append(v.filterRules, r)
 }
 
 /*************************************************************
@@ -374,12 +329,15 @@ func (v *Validation) FilterRule(fields string, rule string) {
  *************************************************************/
 
 // Sanitize data by filter rules
-func (v *Validation) Sanitize() *Validation {
+func (v *Validation) Sanitize() bool {
 	return v.Filtering()
 }
 
 // Filtering data by filter rules
-func (v *Validation) Filtering() *Validation {
+func (v *Validation) Filtering() bool {
+	if v.filtered {
+		return v.IsSuccess()
+	}
 
 	// apply rule to validate data.
 	for _, rule := range v.filterRules {
@@ -389,7 +347,8 @@ func (v *Validation) Filtering() *Validation {
 		}
 	}
 
-	return v
+	v.filtered = true
+	return v.IsSuccess()
 }
 
 /*************************************************************
@@ -455,13 +414,37 @@ func (v *Validation) AddError(field string, msg string) {
  * getter methods
  *************************************************************/
 
+// Raw value get by key
+func (v *Validation) Raw(key string) (interface{}, bool) {
+	if v.data == nil { // check input data
+		return nil, false
+	}
+
+	return v.data.Get(key)
+}
+
 // Get value by key
 func (v *Validation) Get(key string) (interface{}, bool) {
 	if v.data == nil { // check input data
 		return nil, false
 	}
 
+	// find from filtered data.
+	if val, ok := v.filteredData[key]; ok {
+		return val, true
+	}
+
 	return v.data.Get(key)
+}
+
+// Safe get safe value by key
+func (v *Validation) Safe(key string) (val interface{}, ok bool) {
+	if v.data == nil { // check input data
+		return
+	}
+
+	val, ok = v.safeData[key]
+	return
 }
 
 // Set value by key
@@ -519,15 +502,20 @@ func (v *Validation) IsSuccess() bool {
 	return !v.hasError
 }
 
+// SafeData get
+func (v *Validation) SafeData() GMap {
+	return v.safeData
+}
+
+// FilteredData get
+func (v *Validation) FilteredData() GMap {
+	return v.filteredData
+}
+
 /*************************************************************
  * helper methods
  *************************************************************/
 
 func (v *Validation) shouldStop() bool {
 	return v.hasError && v.StopOnError
-}
-
-// Safe value get
-func (v *Validation) Safe(field string) {
-
 }

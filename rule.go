@@ -30,10 +30,8 @@ type Rule struct {
 	// error message(s)
 	message  string
 	messages map[string]string
-	// filter map. no args. eg. "int"
-	filters map[string]int
-	// filter map, with args. eg. "toArray:,"
-	argFilters map[string][]interface{}
+	// filter map. can with args. eg. "int", "str2arr:,"
+	filters map[string]string
 	// validator name, allow multi validators. eg "min", "range", "required"
 	validator string
 	// arguments for the validator
@@ -50,9 +48,8 @@ type Rule struct {
 func NewRule(fields, validator string, args ...interface{}) *Rule {
 	return &Rule{
 		fields: fields,
-		// filter
-		filters:    make(map[string]int),
-		argFilters: make(map[string][]interface{}),
+		// filters
+		filters: make(map[string]string),
 		// validator args
 		arguments: args,
 		validator: validator,
@@ -95,18 +92,20 @@ func (r *Rule) SetMessages(msgMap SMap) *Rule {
 	return r
 }
 
-// UseFilters add filter name(s)
-func (r *Rule) UseFilters(names ...string) *Rule {
-	for _, name := range names {
-		r.filters[name] = 1
+// UseFilters add filter(s)
+func (r *Rule) UseFilters(filters ...string) *Rule {
+	for _, filter := range filters {
+		pos := strings.IndexRune(filter, ':')
+
+		// has args
+		if pos > 0 {
+			name := filter[:pos]
+			r.filters[name] = filter[pos+1:]
+		} else {
+			r.filters[filter] = ""
+		}
 	}
 
-	return r
-}
-
-// UseArgsFilter add filter with args
-func (r *Rule) UseArgsFilter(name string, args ...interface{}) *Rule {
-	r.argFilters[name] = args
 	return r
 }
 
@@ -133,16 +132,18 @@ func (r *Rule) Apply(v *Validation) bool {
 			continue
 		}
 
-		// get field value.
-		val, has := v.Get(field)
+		val, has := v.Get(field) // get field value.
 		if !has && v.StopOnError { // no field AND stop on error
 			return true
 		}
 
 		// apply filters func
-		val, goon := r.ApplyFilters(val, v)
-		if !goon { // has error
+		val, err := applyFilters(val, r.filters, v)
+		if err != nil { // has error
+			v.AddError(filterError, err.Error())
 			return true
+		} else { // save filtered value.
+			v.filteredData[field] = val
 		}
 
 		// only one validator
@@ -163,59 +164,12 @@ func (r *Rule) Apply(v *Validation) bool {
 		if v.shouldStop() {
 			return true
 		}
+
+		// save validated value.
+		v.safeData[field] = val
 	}
 
 	return false
-}
-
-// ApplyFilters for filtering or convert value.
-func (r *Rule) ApplyFilters(val interface{}, v *Validation) (interface{}, bool) {
-	var err error
-
-	// no args filters
-	for filter := range r.filters {
-		fn := v.FilerFunc(filter)
-		if val, err = callFilter(fn, val); err != nil {
-			v.WithError(err)
-			return nil, false
-		}
-	}
-
-	// has args filters
-	for filter, args := range r.argFilters {
-		fn := v.FilerFunc(filter)
-		if val, err = callFilter(fn, val, args...); err != nil {
-			v.WithError(err)
-			return nil, false
-		}
-	}
-
-	return val, true
-}
-
-func callFilter(fn, val interface{}, args ...interface{}) (interface{}, error) {
-	var rs []reflect.Value
-	if len(args) > 0 {
-		rs = Call(fn, buildArgs(val, args)...)
-	} else {
-		rs = Call(fn, val)
-	}
-
-	rl := len(rs)
-
-	// return new val.
-	if rl > 0 {
-		val = rs[0].Interface()
-
-		if rl == 2 {
-			// filter func report error
-			if err := rs[1].Interface().(error); err != nil {
-				return nil, err
-			}
-		}
-	}
-
-	return val, nil
 }
 
 /*************************************************************
@@ -224,37 +178,122 @@ func callFilter(fn, val interface{}, args ...interface{}) (interface{}, error) {
 
 // FilterRule definition
 type FilterRule struct {
-	// filter list. eg. "int" "str2arr:,"
-	filters []string
+	// fields to filter
+	fields []string
+	// filter list, can with args. eg. "int" "str2arr:,"
+	filters map[string]string
 }
 
-// Apply rule for the rule fields
-func (r *FilterRule) Apply(v *Validation) error {
-	// call filters
-	for _, filter := range r.filters {
-		name, args := parseSingleRule(filter)
+func newFilterRule(fields []string) *FilterRule {
+	return &FilterRule{
+		fields:  fields,
+		filters: make(map[string]string),
+	}
+}
 
-		fn := v.FilerFunc(name)
-		if val, err := callFilter(fn, val); err != nil {
-			v.WithError(err)
-			return err
+// UseFilters add filter(s)
+func (r *FilterRule) UseFilters(filters ...string) *FilterRule {
+	return r.AddFilters(filters...)
+}
+
+// AddFilters add filter(s).
+// Usage:
+// 	r.AddFilters("int", "str2arr:,")
+func (r *FilterRule) AddFilters(filters ...string) *FilterRule {
+	for _, filter := range filters {
+		pos := strings.IndexRune(filter, ':')
+
+		// has filter args
+		if pos > 0 {
+			name := filter[:pos]
+			r.filters[name] = filter[pos+1:]
+		} else {
+			r.filters[filter] = ""
 		}
 	}
 
-	return nil
+	return r
 }
 
-// parseSingleRule "min:1" "range:1,2"
-func parseSingleRule(singleRule string) (name string, args []string) {
-	pos := strings.IndexRune(singleRule, ':')
+// Apply rule for the rule fields
+func (r *FilterRule) Apply(v *Validation) (err error) {
+	// validate field
+	for _, field := range r.Fields() {
+		// get field value.
+		val, has := v.Get(field)
+		if !has { // no field
+			continue
+		}
 
-	// has args
-	if pos > 0 {
-		name = singleRule[:pos]
-		args = stringSplit(singleRule[pos+1:], ",")
-	} else {
-		name = singleRule
+		// call filters
+		val, err = applyFilters(val, r.filters, v)
+		if err != nil {
+			v.AddError(filterError, err.Error())
+			return err
+		}
+
+		// save filtered value.
+		v.filteredData[field] = val
+		// v.safeData[field] = val
 	}
 
 	return
+}
+
+// Fields name get
+func (r *FilterRule) Fields() []string {
+	return r.fields
+}
+
+func applyFilters(val interface{}, filters map[string]string, v *Validation) (interface{}, error) {
+	var err error
+
+	// call filters
+	for name, argStr := range filters {
+		fv := v.FilterFuncValue(name)
+		args := parseArgString(argStr)
+
+		val, err = callFilter(fv, val, strings2Args(args))
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return val, nil
+}
+
+func parseArgString(argStr string) (ss []string) {
+	if argStr == "" { // no arg
+		return
+	}
+
+	if len(argStr) == 1 { // one char
+		return []string{argStr}
+	}
+
+	return stringSplit(argStr, ",")
+}
+
+func callFilter(fv reflect.Value, val interface{}, args []interface{}) (interface{}, error) {
+	var rs []reflect.Value
+	if len(args) > 0 {
+		rs = CallByValue(fv, buildArgs(val, args)...)
+	} else {
+		rs = CallByValue(fv, val)
+	}
+
+	rl := len(rs)
+
+	// return new val.
+	if rl > 0 {
+		val = rs[0].Interface()
+
+		if rl == 2 { // filter func report error
+			if err := rs[1].Interface(); err != nil {
+				return nil, err.(error)
+			}
+		}
+	}
+
+	return val, nil
 }

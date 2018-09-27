@@ -47,6 +47,24 @@ func stringSplit(str, sep string) (ss []string) {
 	return
 }
 
+func strings2Args(strings []string) []interface{} {
+	args := make([]interface{}, len(strings))
+	for i, s := range strings {
+		args[i] = s
+	}
+
+	return args
+}
+
+func buildArgs(val interface{}, args []interface{}) []interface{} {
+	newArgs := make([]interface{}, len(args)+1)
+	newArgs[0] = val
+	// as[1:] = args // error
+	copy(newArgs[1:], args)
+
+	return newArgs
+}
+
 // upperFirst upper first char
 func upperFirst(s string) string {
 	if len(s) == 0 {

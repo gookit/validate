@@ -241,11 +241,11 @@ func (v *Validation) AddValidators(m map[string]interface{}) {
 
 // AddValidator to the Validation. checkFunc must return a bool
 func (v *Validation) AddValidator(name string, checkFunc interface{}) {
-	if v.validators == nil {
-		v.validators = make(map[string]interface{})
+	if v.validatorFuncs == nil {
+		v.validatorFuncs = make(map[string]interface{})
 	}
 
-	v.validators[name] = checkFunc
+	v.validatorFuncs[name] = checkFunc
 	v.validatorValues[name] = checkValidatorFunc(name, checkFunc)
 }
 
@@ -277,7 +277,7 @@ func (v *Validation) ValidatorValue(name string) (fv reflect.Value, ok bool) {
 // ValidatorFunc get by name
 func (v *Validation) ValidatorFunc(name string) interface{} {
 	name = ValidatorName(name)
-	if fn, ok := v.validators[name]; ok {
+	if fn, ok := v.validatorFuncs[name]; ok {
 		return fn
 	}
 
@@ -291,7 +291,7 @@ func (v *Validation) ValidatorFunc(name string) interface{} {
 
 // HasValidator check
 func (v *Validation) HasValidator(name string) bool {
-	if _, ok := v.validators[name]; ok {
+	if _, ok := v.validatorFuncs[name]; ok {
 		return true
 	}
 
