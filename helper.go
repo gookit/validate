@@ -153,8 +153,8 @@ func ValueLenOrInt(v reflect.Value) int64 {
 	return 0
 }
 
-// Length calc
-func Length(val interface{}) int {
+// CalcLength for input value
+func CalcLength(val interface{}) int {
 	if val == nil {
 		return -1
 	}

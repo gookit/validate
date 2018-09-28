@@ -238,14 +238,14 @@ func TestIsJSON(t *testing.T) {
 func TestLength(t *testing.T) {
 	is := assert.New(t)
 
-	// LengthEqual
-	is.True(LengthEqual("a", 1))
-	is.True(LengthEqual("ab", 2))
-	is.True(LengthEqual([]int{1, 2}, 2))
-	is.True(LengthEqual([]string{"a", "b"}, 2))
-	is.True(LengthEqual("a中文", 7))
-	is.False(LengthEqual("a中文", 3))
-	is.False(LengthEqual(nil, 3))
+	// Length
+	is.True(Length("a", 1))
+	is.True(Length("ab", 2))
+	is.True(Length([]int{1, 2}, 2))
+	is.True(Length([]string{"a", "b"}, 2))
+	is.True(Length("a中文", 7))
+	is.False(Length("a中文", 3))
+	is.False(Length(nil, 3))
 
 	// RuneLength
 	is.True(RuneLength("a", 1))

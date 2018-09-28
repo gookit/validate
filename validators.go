@@ -120,8 +120,9 @@ var validatorAliases = map[string]string{
 	"equal": "IsEqual",
 	"intEq": "IntEqual",
 	// len
-	"lenEq":    "LengthEqual",
-	"lengthEq": "LengthEqual",
+	"len":    "Length",
+	"lenEq":    "Length",
+	"lengthEq": "Length",
 	"minLen":   "minLength",
 	"maxLen":   "maxLength",
 	"minSize":  "minLength",
@@ -159,6 +160,8 @@ var (
 		// int value
 		"min": reflect.ValueOf(Min),
 		"max": reflect.ValueOf(Max),
+		"enum": reflect.ValueOf(Enum),
+		"between": reflect.ValueOf(Between),
 		// data type check
 		"isInt":     reflect.ValueOf(IsInt),
 		"isMap":     reflect.ValueOf(IsMap),
@@ -177,7 +180,7 @@ var (
 		// length
 		"minLength":   reflect.ValueOf(MinLength),
 		"maxLength":   reflect.ValueOf(MaxLength),
-		"lengthEqual": reflect.ValueOf(LengthEqual),
+		"lengthEqual": reflect.ValueOf(Length),
 		// common
 		"isIP":    reflect.ValueOf(IsIP),
 		"isIPv4":  reflect.ValueOf(IsIPv4),
@@ -691,7 +694,7 @@ func IntEqual(val interface{}, wantVal int64) bool {
 	return intVal == wantVal
 }
 
-// Min int value check
+// Min int value check for int(8-64), uint(8-64)
 func Min(val interface{}, min int64) bool {
 	intVal, isInt := IntVal(val)
 	if !isInt {
@@ -701,7 +704,7 @@ func Min(val interface{}, min int64) bool {
 	return intVal >= min
 }
 
-// Max int value check
+// Max int value check for int(8-64), uint(8-64)
 func Max(val interface{}, max int64) bool {
 	intVal, isInt := IntVal(val)
 	if !isInt {
@@ -711,13 +714,54 @@ func Max(val interface{}, max int64) bool {
 	return intVal <= max
 }
 
+// Between int value in the given range.
+func Between(val interface{}, min, max int64) bool {
+	rv := reflect.ValueOf(val)
+
+	intVal, isInt := ValueInt64(rv)
+	if !isInt {
+		return false
+	}
+
+	return intVal >= min && intVal <= max
+}
+
+/*************************************************************
+ * global: array, slice, map validators
+ *************************************************************/
+
+// Enum value should be in the given enum(strings, ints, uints).
+func Enum(val interface{}, enum interface{}) bool {
+	rv := reflect.ValueOf(val)
+
+	// enum(strings, ints, uints).
+	ev := reflect.ValueOf(enum)
+	if ev.Kind() != reflect.Slice {
+		return false
+	}
+
+	// if is string value
+	if rv.Kind() == reflect.String {
+		// todo
+	}
+
+	// if is int value
+	intVal, isInt := ValueInt64(rv)
+	if !isInt {
+		return false
+	}
+
+	// todo
+	return intVal == 0
+}
+
 /*************************************************************
  * global: length validators
  *************************************************************/
 
-// LengthEqual check
-func LengthEqual(val interface{}, wantLen int) bool {
-	ln := Length(val)
+// Length equal check for string, array, slice, map
+func Length(val interface{}, wantLen int) bool {
+	ln := CalcLength(val)
 	if ln == -1 {
 		return false
 	}
@@ -725,9 +769,9 @@ func LengthEqual(val interface{}, wantLen int) bool {
 	return ln == wantLen
 }
 
-// MinLength check
+// MinLength check for string, array, slice, map
 func MinLength(val interface{}, minLen int) bool {
-	ln := Length(val)
+	ln := CalcLength(val)
 	if ln == -1 {
 		return false
 	}
@@ -735,9 +779,9 @@ func MinLength(val interface{}, minLen int) bool {
 	return ln >= minLen
 }
 
-// MaxLength check
+// MaxLength check for string, array, slice, map
 func MaxLength(val interface{}, maxLen int) bool {
-	ln := Length(val)
+	ln := CalcLength(val)
 	if ln == -1 {
 		return false
 	}
