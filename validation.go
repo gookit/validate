@@ -107,6 +107,8 @@ type Validation struct {
 	// 	"update": {"field", "field2"}
 	// }
 	scenes SValues
+	// should checked fields in current scene.
+	sceneFields map[string]uint8
 	// filtering rules for the validation
 	filterRules []*FilterRule
 	// filters and functions for the validation
@@ -160,14 +162,29 @@ func (v *Validation) Config(fn func(v *Validation)) {
 	fn(v)
 }
 
-// Reset the Validation instance
-func (v *Validation) Reset() {
-	// v.trans = NewTranslator()
-	v.rules = v.rules[:0]
+// ResetResult reset the validate result.
+func (v *Validation) ResetResult() {
 	v.Errors = Errors{}
 	v.hasError = false
 	v.filtered = false
 	v.validated = false
+	// result data
+	v.safeData = make(map[string]interface{})
+	v.filteredData = make(map[string]interface{})
+}
+
+// Reset the Validation instance
+func (v *Validation) Reset() {
+	v.Errors = Errors{}
+	v.hasError = false
+	v.filtered = false
+	v.validated = false
+	// rules
+	v.rules = v.rules[:0]
+	v.filterRules = v.filterRules[:0]
+	// result data
+	v.safeData = make(map[string]interface{})
+	v.filteredData = make(map[string]interface{})
 }
 
 // WithScenarios is alias of the WithScenes()
@@ -229,7 +246,7 @@ func (v *Validation) SetScene(scene ...string) *Validation {
 // StringRule add field rules by string
 // Usage:
 // 	v.StringRule("name", "required|string|minLen:6")
-//	// will try convert to int before apply validate.
+// 	// will try convert to int before apply validate.
 // 	v.StringRule("age", "required|int|min:12", "toInt")
 func (v *Validation) StringRule(field, rule string, filterRule ...string) *Validation {
 	rule = strings.TrimSpace(rule)
@@ -302,6 +319,7 @@ func (v *Validation) Validate(scene ...string) bool {
 	}
 
 	v.SetScene(scene...)
+	v.sceneFields = v.sceneFieldMap()
 
 	// apply filter rule before validate.
 	if !v.Filtering() {
@@ -467,8 +485,8 @@ func (v *Validation) SceneFields() []string {
 	return v.scenes[v.scene]
 }
 
-// SceneFieldMap field name map build and get
-func (v *Validation) SceneFieldMap() (m map[string]uint8) {
+// scene field name map build
+func (v *Validation) sceneFieldMap() (m map[string]uint8) {
 	if v.scene == "" {
 		return
 	}
@@ -519,4 +537,13 @@ func (v *Validation) FilteredData() M {
 
 func (v *Validation) shouldStop() bool {
 	return v.hasError && v.StopOnError
+}
+
+func (v *Validation) isNoNeedToCheck(field string) bool {
+	if len(v.sceneFields) == 0 {
+		return false
+	}
+
+	_, ok := v.sceneFields[field]
+	return !ok
 }

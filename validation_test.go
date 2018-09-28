@@ -36,15 +36,11 @@ func TestMap(t *testing.T) {
 	v.AddRule("age", "max", 99)
 	v.AddRule("age", "min", 1)
 
-	v.WithScenes(SValues{
-		"create": []string{"name", "email"},
-		"update": []string{"name"},
-	})
-
 	ok := v.Validate()
 	is.False(ok)
 	is.Equal("name min length is 7", v.Errors.Get("name"))
 	is.Empty(v.SafeData())
+
 }
 
 // UserForm struct
@@ -123,7 +119,7 @@ func TestJSON(t *testing.T) {
 	v.StopOnError = false
 	v.StringRules(MS{
 		"name": "required|minLen:7",
-		"age": "required|int|range:1,99",
+		"age":  "required|int|range:1,99",
 	})
 
 	is.False(v.Validate())
@@ -148,10 +144,42 @@ func TestFromQuery(t *testing.T) {
 	v.FilterRule("age", "int")
 	v.StringRules(MS{
 		"name": "required|minLen:7",
-		"age": "required|int|min:10",
+		"age":  "required|int|min:10",
 	})
 
 	is.False(v.Validate())
 	is.Equal("name min length is 7", v.Errors.Field("name")[0])
 	is.Empty(v.SafeData())
+}
+
+func TestValidationScene(t *testing.T) {
+	is := assert.New(t)
+	mp := M{
+		"name": "inhere",
+		"age":  100,
+	}
+
+	v := Map(mp)
+	v.StopOnError = false
+	v.StringRules(MS{
+		"name": "minLen:7",
+		"age":  "min:101",
+	})
+	v.WithScenes(SValues{
+		"create": []string{"name", "age"},
+		"update": []string{"name"},
+	})
+
+	// on scene "create"
+	ok := v.Validate("create")
+	is.False(ok)
+	is.Contains(v.Errors, "age")
+	is.Contains(v.Errors, "name")
+
+	// on scene "update"
+	v.ResetResult()
+	ok = v.Validate("update")
+	is.False(ok)
+	is.Contains(v.Errors, "name")
+	is.NotContains(v.Errors, "age")
 }

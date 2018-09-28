@@ -38,8 +38,8 @@ func (r *Rule) Validate(field, validator string, val interface{}, v *Validation)
 	}
 
 	// call custom validator
-	if r.checkFunc != nil {
-		ok = callValidatorFunc(validator, r.checkFunc, val, r.arguments)
+	if r.checkFunc.IsValid() {
+		ok = callValidatorValue(validator, r.checkFunc, val, r.arguments)
 	} else if fv, has := v.ValidatorValue(validator); has { // find validator
 		ok = callValidatorValue(validator, fv, val, r.arguments)
 	} else {
@@ -48,7 +48,12 @@ func (r *Rule) Validate(field, validator string, val interface{}, v *Validation)
 
 	// build and collect error message
 	if !ok {
-		v.AddError(field, v.trans.Message(validator, field, r.arguments...))
+		errMsg, has := r.errorMessage(field)
+		if !has {
+			errMsg = v.trans.Message(validator, field, r.arguments...)
+		}
+
+		v.AddError(field, errMsg)
 	}
 
 	return

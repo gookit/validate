@@ -38,8 +38,9 @@ type Rule struct {
 	arguments []interface{}
 	// some functions
 	beforeFunc func(field string, v *Validation) bool // func (val interface{}) bool
-	filterFunc interface{}                            // func (val interface{}) (newVal interface{})
-	checkFunc  interface{}                            // func (val interface{}, ...) bool
+	filterFunc func(val interface{}) (newVal interface{}, err error)
+	// custom check func's reflect.Value
+	checkFunc reflect.Value
 	// custom check is empty.
 	emptyChecker func(val interface{}) bool
 }
@@ -70,7 +71,7 @@ func (r *Rule) SetScene(scene string) *Rule {
 
 // SetCheckFunc use custom check func.
 func (r *Rule) SetCheckFunc(checkFunc interface{}) *Rule {
-	r.checkFunc = checkFunc
+	r.checkFunc = checkValidatorFunc("rule.checkFunc", checkFunc)
 	return r
 }
 
@@ -80,13 +81,21 @@ func (r *Rule) SetOptional(optional bool) *Rule {
 	return r
 }
 
-// SetMessage set error message
+// SetMessage set error message.
+// Usage:
+//	v.AddRule("name", "required").SetMessage("error message")
+//
 func (r *Rule) SetMessage(errMsg string) *Rule {
 	r.message = errMsg
 	return r
 }
 
-// SetMessages set error message map
+// SetMessages set error message map.
+// Usage:
+//	v.AddRule("name,email", "required").SetMessages(MS{
+// 		"name": "error message 1",
+// 		"email": "error message 2",
+// 	})
 func (r *Rule) SetMessages(msgMap MS) *Rule {
 	r.messages = msgMap
 	return r
@@ -116,19 +125,14 @@ func (r *Rule) Fields() []string {
 
 // Apply rule for the rule fields
 func (r *Rule) Apply(v *Validation) (stop bool) {
-	fieldMap := v.SceneFieldMap()
-	dontNeedCheck := func(field string) bool {
-		if len(fieldMap) == 0 {
-			return false
-		}
-
-		_, ok := fieldMap[field]
-		return ok
+	// scene name is not match.
+	if r.scene != "" && r.scene != v.scene {
+		return false
 	}
 
 	// validate field value
 	for _, field := range r.Fields() {
-		if dontNeedCheck(field) {
+		if v.isNoNeedToCheck(field) {
 			continue
 		}
 
@@ -169,6 +173,21 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 	}
 
 	return false
+}
+
+func (r *Rule) errorMessage(field string) (msg string, ok bool) {
+	if r.messages != nil {
+		msg, ok = r.messages[field]
+		if ok {
+			return
+		}
+	}
+
+	if r.message != "" {
+		return r.message, true
+	}
+
+	return
 }
 
 /*************************************************************
@@ -227,7 +246,6 @@ func (r *FilterRule) Apply(v *Validation) (err error) {
 		// call filters
 		val, err = applyFilters(val, r.filters, v)
 		if err != nil {
-			v.AddError(filterError, err.Error())
 			return err
 		}
 
