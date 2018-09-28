@@ -1,4 +1,9 @@
 // Package validate is a generic go data validate library.
+//
+// Source code and other details for the project are available at GitHub:
+//
+// 	https://github.com/gookit/validate
+//
 package validate
 
 import (

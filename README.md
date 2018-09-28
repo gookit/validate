@@ -5,8 +5,10 @@
 
 The package is a generic go data validate library.
 
-- support validate Map, Struct, Request(From,JSON) data
+- support validate Map, Struct, Request(Form, JSON, url.Values) data
 - support filter/sanitize data
+- support add custom filter/validator func
+- support custom error messages, field translates.
 
 > Inspired the projects [albrow/forms](https://github.com/albrow/forms) and [asaskevich/govalidator](https://github.com/asaskevich/govalidator). Thank you very much
 
@@ -40,6 +42,10 @@ func main()  {
 	v.AddRule("age", "max", 99)
 	v.AddRule("age", "min", 1)
 	v.AddRule("email", "email")
+	
+	// can also
+	v.StringRule("age", "required|int|min:1|max:99")
+	v.StringRule("name", "required|minLen:7")
 
 	// v.WithScenes(map[string]string{
 	//	 "create": []string{"name", "email"},
@@ -68,6 +74,7 @@ import "github.com/gookit/validate"
 type UserForm struct {
 	Name     string    `validate:"required|minLen:7"`
 	Email    string    `validate:"email"`
+	Age      int       `validate:"required|int|min:1|max:99"`
 	CreateAt int       `validate:"min:1"`
 	Safe     int       `validate:"-"`
 	UpdateAt time.Time `validate:"required"`
