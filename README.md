@@ -6,9 +6,10 @@
 The package is a generic go data validate library.
 
 - support validate Map, Struct, Request(Form, JSON, url.Values) data
-- support filter/sanitize data
+- support filter/sanitize data before validate
 - support add custom filter/validator func
 - support custom error messages, field translates.
+- support language messages, built in `en`, `zh-CN`
 
 > Inspired the projects [albrow/forms](https://github.com/albrow/forms) and [asaskevich/govalidator](https://github.com/asaskevich/govalidator). Thank you very much
 
@@ -158,21 +159,22 @@ func main()  {
 
 ## Built In Filters
 
-filter(alias) | description | simple example
+filter/aliases | description | simple example
 -------------------|-----------------------|--------------------
-`int`(`integer`)  | convert value(string) to int type | `v.FilterRule("id", "int")`
+`int/integer`  | convert value(string) to int type | `v.FilterRule("id", "int")`
 
 ## Built In Validators
 
-validator (alias) | description | simple example
+validator/aliases | description | simple example
 -------------------|-----------------------|--------------------
 `required`  | check value is not empty. | `v.AddRule("userId", "required")`
-`int`(`integer`)  | check value is int type | `v.AddRule("userId", "int")`
+`int/integer`  | check value is int type | `v.AddRule("userId", "int")`
 
 ## Reference
 
 - https://github.com/albrow/forms
 - https://github.com/asaskevich/govalidator
+- https://github.com/go-playground/validator
 - https://github.com/inhere/php-validate
 
 ## License
