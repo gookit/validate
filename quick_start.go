@@ -14,7 +14,7 @@ func New(data interface{}, scene ...string) *Validation {
 	switch td := data.(type) {
 	case DataFace:
 		return NewValidation(td, scene...)
-	case GMap:
+	case M:
 		return FromMap(td).Create(scene...)
 	case map[string]interface{}:
 		return FromMap(td).Create(scene...)

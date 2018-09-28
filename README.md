@@ -81,7 +81,7 @@ func (f UserForm) CustomValidator(val string) bool {
 
 // Messages you can custom validator error messages. 
 func (f UserForm) Messages() map[string]string {
-	return validate.SMap{
+	return validate.MS{
 		"required": "oh! the {field} is required",
 		"Name.required": "message for special field",
 	}
@@ -89,7 +89,7 @@ func (f UserForm) Messages() map[string]string {
 
 // Translates you can custom field translates. 
 func (f UserForm) Translates() map[string]string {
-	return validate.SMap{
+	return validate.MS{
 		"Name": "User Name",
 		"Email": "User Email",
 	}

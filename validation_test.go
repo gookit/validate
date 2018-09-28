@@ -22,7 +22,7 @@ func ExampleStruct() {
 func TestMap(t *testing.T) {
 	is := assert.New(t)
 
-	m := GMap{
+	m := M{
 		"name":  "inhere",
 		"age":   100,
 		"oldSt": 1,
@@ -70,14 +70,14 @@ func (f UserForm) CustomValidator(val string) bool {
 }
 
 func (f UserForm) ConfigValidation(v *Validation) {
-	v.AddTranslates(SMap{
+	v.AddTranslates(MS{
 		"Safe": "Safe-Name",
 	})
 }
 
 // Messages you can custom define validator error messages.
 func (f UserForm) Messages() map[string]string {
-	return SMap{
+	return MS{
 		"required":      "oh! the {field} is required",
 		"Name.required": "message for special field",
 	}
@@ -85,7 +85,7 @@ func (f UserForm) Messages() map[string]string {
 
 // Translates you can custom field translates.
 func (f UserForm) Translates() map[string]string {
-	return SMap{
+	return MS{
 		"Name":  "User Name",
 		"Email": "User Email",
 	}
@@ -125,7 +125,7 @@ func TestFromQuery(t *testing.T) {
 	v := FromQuery(data).Create()
 	v.StopOnError = false
 	v.FilterRule("age", "int")
-	v.StringRules(SMap{
+	v.StringRules(MS{
 		"name": "required|minLen:7",
 		// "age":  "int",
 		"age": "required|int|min:10",

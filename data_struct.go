@@ -17,7 +17,7 @@ type ConfigValidationFace interface {
 // 	}
 //
 // 	func (u *User) Translates() map[string]string {
-// 		return SMap{
+// 		return MS{
 // 			"Name": "User name",
 // 		}
 // 	}
@@ -32,7 +32,7 @@ type FieldTranslatorFace interface {
 // 	}
 //
 // 	func (u *User) Messages() map[string]string {
-// 		return SMap{
+// 		return MS{
 // 			"Name.required": "oh! User name is required",
 // 		}
 // 	}

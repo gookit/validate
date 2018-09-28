@@ -120,7 +120,7 @@ var validatorAliases = map[string]string{
 	"equal": "IsEqual",
 	"intEq": "IntEqual",
 	// len
-	"len":    "Length",
+	"len":      "Length",
 	"lenEq":    "Length",
 	"lengthEq": "Length",
 	"minLen":   "minLength",
@@ -158,9 +158,9 @@ var (
 	// validator func reflect.Value
 	validatorValues = map[string]reflect.Value{
 		// int value
-		"min": reflect.ValueOf(Min),
-		"max": reflect.ValueOf(Max),
-		"enum": reflect.ValueOf(Enum),
+		"min":     reflect.ValueOf(Min),
+		"max":     reflect.ValueOf(Max),
+		"enum":    reflect.ValueOf(Enum),
 		"between": reflect.ValueOf(Between),
 		// data type check
 		"isInt":     reflect.ValueOf(IsInt),

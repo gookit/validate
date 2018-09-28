@@ -87,7 +87,7 @@ func (r *Rule) SetMessage(errMsg string) *Rule {
 }
 
 // SetMessages set error message map
-func (r *Rule) SetMessages(msgMap SMap) *Rule {
+func (r *Rule) SetMessages(msgMap MS) *Rule {
 	r.messages = msgMap
 	return r
 }
@@ -132,7 +132,7 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 			continue
 		}
 
-		val, has := v.Get(field) // get field value.
+		val, has := v.Get(field)   // get field value.
 		if !has && v.StopOnError { // no field AND stop on error
 			return true
 		}

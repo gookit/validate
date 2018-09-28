@@ -13,14 +13,14 @@ const defaultTag = "validate"
 const defaultFilterTag = "filter"
 const defaultMaxMemory int64 = 32 << 20 // 32 MB
 
-// SMap is short name for map[string]string
-type SMap map[string]string
+// MS is short name for map[string]string
+type MS map[string]string
 
 // SValues simple values
 type SValues map[string][]string
 
-// GMap is short name for map[string]interface{}
-type GMap map[string]interface{}
+// M is short name for map[string]interface{}
+type M map[string]interface{}
 
 // DataFace interface definition
 type DataFace interface {
@@ -72,9 +72,9 @@ type Validation struct {
 	// all validated fields list
 	fields []string
 	// filtered clean data
-	filteredData GMap
+	filteredData M
 	// filtered/validated safe data
-	safeData GMap
+	safeData M
 	// Errors for the validate
 	Errors Errors
 	// CacheKey for cache rules
@@ -94,7 +94,7 @@ type Validation struct {
 	// validate rules for the validation
 	rules []*Rule
 	// validator func for the validation
-	validatorFuncs GMap
+	validatorFuncs M
 	// validator func reflect.Value map
 	validatorValues map[string]reflect.Value
 	// translator instance
@@ -110,7 +110,7 @@ type Validation struct {
 	// filtering rules for the validation
 	filterRules []*FilterRule
 	// filters and functions for the validation
-	filterFuncs GMap
+	filterFuncs M
 	// filter func reflect.Value map
 	filterValues map[string]reflect.Value
 }
@@ -262,7 +262,7 @@ func (v *Validation) StringRule(field, rule string, filterRule ...string) *Valid
 // 		"name": "required|string|min:12",
 // 		"age": "required|int|min:12",
 // 	})
-func (v *Validation) StringRules(sMap SMap) *Validation {
+func (v *Validation) StringRules(sMap MS) *Validation {
 	for name, rule := range sMap {
 		v.StringRule(name, rule)
 	}
@@ -503,12 +503,12 @@ func (v *Validation) IsSuccess() bool {
 }
 
 // SafeData get
-func (v *Validation) SafeData() GMap {
+func (v *Validation) SafeData() M {
 	return v.safeData
 }
 
 // FilteredData get
-func (v *Validation) FilteredData() GMap {
+func (v *Validation) FilteredData() M {
 	return v.filteredData
 }
 

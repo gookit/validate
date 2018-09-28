@@ -3,7 +3,7 @@ package locales
 import "github.com/gookit/validate"
 
 // Locales supported language data map
-var Locales = map[string]validate.SMap{
+var Locales = map[string]validate.MS{
 	"zh-CN": zhCN,
 }
 
