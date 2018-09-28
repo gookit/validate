@@ -3,6 +3,7 @@ package validate
 import (
 	"fmt"
 	"reflect"
+	"strconv"
 	"strings"
 )
 
@@ -201,6 +202,64 @@ func int64compare(intVal, dstVal int64, op string) bool {
 	}
 
 	return false
+}
+
+func toInt64Slice(enum interface{}) (ret []int64, ok bool) {
+	ok = true
+	switch td := enum.(type) {
+	case []int:
+		for _, val := range td {
+			ret = append(ret, int64(val))
+		}
+	case []int8:
+		for _, val := range td {
+			ret = append(ret, int64(val))
+		}
+	case []int16:
+		for _, val := range td {
+			ret = append(ret, int64(val))
+		}
+	case []int32:
+		for _, val := range td {
+			ret = append(ret, int64(val))
+		}
+	case []int64:
+		ret = td
+	case []uint:
+		for _, val := range td {
+			ret = append(ret, int64(val))
+		}
+	case []uint8:
+		for _, val := range td {
+			ret = append(ret, int64(val))
+		}
+	case []uint16:
+		for _, val := range td {
+			ret = append(ret, int64(val))
+		}
+	case []uint32:
+		for _, val := range td {
+			ret = append(ret, int64(val))
+		}
+	case []uint64:
+		for _, val := range td {
+			ret = append(ret, int64(val))
+		}
+	case []string: // try convert string to int
+		for _, val := range td {
+			i64, err := strconv.ParseInt(val, 10, 0)
+			if err != nil {
+				ret = []int64{} // reset
+				break
+			}
+
+			ret = append(ret, i64)
+		}
+	default:
+		ok = false
+	}
+
+	return
 }
 
 func panicf(format string, args ...interface{}) {

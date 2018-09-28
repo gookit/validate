@@ -116,9 +116,12 @@ var validatorAliases = map[string]string{
 	"slice":   "isSlice",
 	// val
 	"regex": "regexp",
-	"eq":    "IsEqual",
-	"equal": "IsEqual",
-	"intEq": "IntEqual",
+	"eq":    "isEqual",
+	"equal": "isEqual",
+	"intEq": "intEqual",
+	// int
+	"lte": "max",
+	"gte": "min",
 	// len
 	"len":      "Length",
 	"lenEq":    "Length",
@@ -158,9 +161,12 @@ var (
 	// validator func reflect.Value
 	validatorValues = map[string]reflect.Value{
 		// int value
+		"lt":      reflect.ValueOf(Lt),
+		"gt":      reflect.ValueOf(Gt),
 		"min":     reflect.ValueOf(Min),
 		"max":     reflect.ValueOf(Max),
 		"enum":    reflect.ValueOf(Enum),
+		"notIn":   reflect.ValueOf(NotIn),
 		"between": reflect.ValueOf(Between),
 		// data type check
 		"isInt":     reflect.ValueOf(IsInt),
@@ -694,7 +700,17 @@ func IntEqual(val interface{}, wantVal int64) bool {
 	return intVal == wantVal
 }
 
-// Min int value check for int(8-64), uint(8-64)
+// Gt check value greater dst value
+func Gt(val interface{}, dstVal int64) bool {
+	intVal, isInt := IntVal(val)
+	if !isInt {
+		return false
+	}
+
+	return intVal > dstVal
+}
+
+// Min check value greater or equal dst value. for int(8-64), uint(8-64). alias `Gte`
 func Min(val interface{}, min int64) bool {
 	intVal, isInt := IntVal(val)
 	if !isInt {
@@ -704,7 +720,17 @@ func Min(val interface{}, min int64) bool {
 	return intVal >= min
 }
 
-// Max int value check for int(8-64), uint(8-64)
+// Lt less than dst value
+func Lt(val interface{}, dstVal int64) bool {
+	intVal, isInt := IntVal(val)
+	if !isInt {
+		return false
+	}
+
+	return intVal < dstVal
+}
+
+// Max less than or equal dst value. for int(8-64), uint(8-64). alias `Lte`
 func Max(val interface{}, max int64) bool {
 	intVal, isInt := IntVal(val)
 	if !isInt {
@@ -732,17 +758,26 @@ func Between(val interface{}, min, max int64) bool {
 
 // Enum value should be in the given enum(strings, ints, uints).
 func Enum(val interface{}, enum interface{}) bool {
-	rv := reflect.ValueOf(val)
-
-	// enum(strings, ints, uints).
-	ev := reflect.ValueOf(enum)
-	if ev.Kind() != reflect.Slice {
+	if val == nil {
 		return false
 	}
 
+	rv := reflect.ValueOf(val)
+
 	// if is string value
 	if rv.Kind() == reflect.String {
-		// todo
+		strVal := val.(string)
+
+		switch ss := enum.(type) {
+		case []string:
+			for _, strItem := range ss {
+				if strVal == strItem { // exists
+					return true
+				}
+			}
+		}
+
+		return false
 	}
 
 	// if is int value
@@ -751,8 +786,20 @@ func Enum(val interface{}, enum interface{}) bool {
 		return false
 	}
 
-	// todo
-	return intVal == 0
+	if int64s, ok := toInt64Slice(enum); ok {
+		for _, i64 := range int64s {
+			if intVal == i64 { // exists
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+// NotIn value should be not in the given enum(strings, ints, uints).
+func NotIn(val interface{}, enum interface{}) bool {
+	return false == Enum(val, enum)
 }
 
 /*************************************************************

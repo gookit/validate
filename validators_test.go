@@ -260,3 +260,37 @@ func TestLength(t *testing.T) {
 	is.True(MaxLength("abc", 5))
 	is.False(MaxLength(nil, 5))
 }
+
+func TestEnumAndNotIn(t *testing.T) {
+	is := assert.New(t)
+
+	tests := map[interface{}]interface{}{
+		1:   []int{1, 2, 3},
+		2:   []int8{1, 2, 3},
+		3:   []int16{1, 2, 3},
+		4:   []int32{4, 2, 3},
+		5:   []int64{5, 2, 3},
+		'a': []int64{97},
+		'b': []rune{'a', 'b'},
+		'c': []byte{'a', 'b', 'c'}, // byte -> uint8
+		"a": []string{"a", "b", "c"},
+	}
+
+	for val, list := range tests {
+		is.True(Enum(val, list))
+		is.False(NotIn(val, list))
+	}
+
+	is.False(Enum(nil, []int{}))
+	is.False(Enum('a', []int{}))
+
+	tests1 := map[interface{}]interface{}{
+		2:   []int{1, 3},
+		"a": []string{"b", "c"},
+	}
+
+	for val, list := range tests1 {
+		is.True(NotIn(val, list))
+		is.False(Enum(val, list))
+	}
+}
