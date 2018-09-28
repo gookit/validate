@@ -5,11 +5,12 @@
 
 The package is a generic go data validate library.
 
-- support validate Map, Struct, Request(Form, JSON, url.Values) data
-- support filter/sanitize data before validate
-- support add custom filter/validator func
-- support custom error messages, field translates.
-- support language messages, built in `en`, `zh-CN`
+- Support validate Map, Struct, Request(Form, JSON, url.Values) data
+- Support filter/sanitize data before validate
+- Support add custom filter/validator func
+- Support scene settings, verify different fields in different scenes
+- Support custom error messages, field translates.
+- Support language messages, built in `en`, `zh-CN`
 
 > Inspired the projects [albrow/forms](https://github.com/albrow/forms) and [asaskevich/govalidator](https://github.com/asaskevich/govalidator). Thank you very much
 

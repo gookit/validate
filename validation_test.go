@@ -44,6 +44,7 @@ func TestMap(t *testing.T) {
 	ok := v.Validate()
 	is.False(ok)
 	is.Equal("name min length is 7", v.Errors.Get("name"))
+	is.Empty(v.SafeData())
 }
 
 // UserForm struct
@@ -108,10 +109,30 @@ func TestStruct(t *testing.T) {
 	ok := v.Validate()
 	is.False(ok)
 	is.Equal("User Name min length is 7", v.Errors.Field("Name")[0])
+	is.Empty(v.SafeData())
 }
 
-func TestRequest(t *testing.T) {
-	// r := http.NewRequest()
+func TestJSON(t *testing.T) {
+	is := assert.New(t)
+
+	v := JSON(`{
+	"name": "inhere",
+	"age": 100
+}`)
+
+	v.StopOnError = false
+	v.StringRules(MS{
+		"name": "required|minLen:7",
+		"age": "required|int|range:1,99",
+	})
+
+	is.False(v.Validate())
+	is.Empty(v.SafeData())
+
+	is.Contains(v.Errors, "age")
+	is.Contains(v.Errors, "name")
+	is.Contains(v.Errors.String(), "name min length is 7")
+	is.Contains(v.Errors.String(), "age value must be in the range 1 - 99")
 }
 
 func TestFromQuery(t *testing.T) {
@@ -127,10 +148,10 @@ func TestFromQuery(t *testing.T) {
 	v.FilterRule("age", "int")
 	v.StringRules(MS{
 		"name": "required|minLen:7",
-		// "age":  "int",
 		"age": "required|int|min:10",
 	})
 
 	is.False(v.Validate())
 	is.Equal("name min length is 7", v.Errors.Field("name")[0])
+	is.Empty(v.SafeData())
 }

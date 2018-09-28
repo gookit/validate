@@ -243,7 +243,8 @@ func (v *Validation) StringRule(field, rule string, filterRule ...string) *Valid
 		// has args
 		if strings.ContainsRune(validator, ':') {
 			list := stringSplit(validator, ":")
-			v.AddRule(field, list[0], strings2Args(list[1:])...)
+			args := parseArgString(list[1])
+			v.AddRule(field, list[0], strings2Args(args)...)
 		} else {
 			v.AddRule(field, validator)
 		}
@@ -262,8 +263,8 @@ func (v *Validation) StringRule(field, rule string, filterRule ...string) *Valid
 // 		"name": "required|string|min:12",
 // 		"age": "required|int|min:12",
 // 	})
-func (v *Validation) StringRules(sMap MS) *Validation {
-	for name, rule := range sMap {
+func (v *Validation) StringRules(mp MS) *Validation {
+	for name, rule := range mp {
 		v.StringRule(name, rule)
 	}
 
@@ -502,7 +503,7 @@ func (v *Validation) IsSuccess() bool {
 	return !v.hasError
 }
 
-// SafeData get
+// SafeData get all validated safe data
 func (v *Validation) SafeData() M {
 	return v.safeData
 }
