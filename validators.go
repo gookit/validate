@@ -776,3 +776,7 @@ func RuneLength(str string, minLen int, maxLen ...int) bool {
 func StringLength(str string, minLen int, maxLen ...int) bool {
 	return RuneLength(str, minLen, maxLen...)
 }
+
+/*************************************************************
+ * global: date/time validators
+ *************************************************************/

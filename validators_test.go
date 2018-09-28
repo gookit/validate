@@ -245,6 +245,7 @@ func TestLength(t *testing.T) {
 	is.True(LengthEqual([]string{"a", "b"}, 2))
 	is.True(LengthEqual("a中文", 7))
 	is.False(LengthEqual("a中文", 3))
+	is.False(LengthEqual(nil, 3))
 
 	// RuneLength
 	is.True(RuneLength("a", 1))
@@ -253,7 +254,9 @@ func TestLength(t *testing.T) {
 
 	// MinLength
 	is.True(MinLength("abc", 3))
+	is.False(MinLength(nil, 3))
 
 	// MaxLength
 	is.True(MaxLength("abc", 5))
+	is.False(MaxLength(nil, 5))
 }
