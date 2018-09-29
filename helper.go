@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"unicode"
 )
 
 // CallByValue call func by reflect.Value
@@ -264,4 +265,57 @@ func toInt64Slice(enum interface{}) (ret []int64, ok bool) {
 
 func panicf(format string, args ...interface{}) {
 	panic("validate: " + fmt.Sprintf(format, args...))
+}
+
+// From package "text/template" -> text/template/funcs.go
+var (
+	errorType        = reflect.TypeOf((*error)(nil)).Elem()
+	// fmtStringerType  = reflect.TypeOf((*fmt.Stringer)(nil)).Elem()
+	// reflectValueType = reflect.TypeOf((*reflect.Value)(nil)).Elem()
+)
+
+// addValueFuncs adds to values the functions in funcs, converting them to reflect.Values.
+func addValueFuncs(out map[string]reflect.Value, in M) {
+	for name, fn := range in {
+		if !goodName(name) {
+			panic(fmt.Errorf("function name %s is not a valid identifier", name))
+		}
+		v := reflect.ValueOf(fn)
+		if v.Kind() != reflect.Func {
+			panic("value for " + name + " not a function")
+		}
+		if !goodFunc(v.Type()) {
+			panic(fmt.Errorf("can't install method/function %q with %d results", name, v.Type().NumOut()))
+		}
+		out[name] = v
+	}
+}
+
+// goodFunc reports whether the function or method has the right result signature.
+func goodFunc(typ reflect.Type) bool {
+	// We allow functions with 1 result or 2 results where the second is an error.
+	switch {
+	case typ.NumOut() == 1:
+		return true
+	case typ.NumOut() == 2 && typ.Out(1) == errorType:
+		return true
+	}
+	return false
+}
+
+// goodName reports whether the function name is a valid identifier.
+func goodName(name string) bool {
+	if name == "" {
+		return false
+	}
+	for i, r := range name {
+		switch {
+		case r == '_':
+		case i == 0 && !unicode.IsLetter(r):
+			return false
+		case !unicode.IsLetter(r) && !unicode.IsDigit(r):
+			return false
+		}
+	}
+	return true
 }

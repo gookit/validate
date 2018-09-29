@@ -166,3 +166,128 @@ func (v *Validation) FilterRule(fields string, rule string) {
 		v.filterRules = append(v.filterRules, r)
 	}
 }
+
+/*************************************************************
+ * filtering rule
+ *************************************************************/
+
+// FilterRule definition
+type FilterRule struct {
+	// fields to filter
+	fields []string
+	// filter list, can with args. eg. "int" "str2arr:,"
+	filters map[string]string
+}
+
+func newFilterRule(fields []string) *FilterRule {
+	return &FilterRule{
+		fields:  fields,
+		filters: make(map[string]string),
+	}
+}
+
+// UseFilters add filter(s)
+func (r *FilterRule) UseFilters(filters ...string) *FilterRule {
+	return r.AddFilters(filters...)
+}
+
+// AddFilters add filter(s).
+// Usage:
+// 	r.AddFilters("int", "str2arr:,")
+func (r *FilterRule) AddFilters(filters ...string) *FilterRule {
+	for _, filterName := range filters {
+		pos := strings.IndexRune(filterName, ':')
+
+		// has filter args
+		if pos > 0 {
+			name := filterName[:pos]
+			r.filters[name] = filterName[pos+1:]
+		} else {
+			r.filters[filterName] = ""
+		}
+	}
+
+	return r
+}
+
+// Apply rule for the rule fields
+func (r *FilterRule) Apply(v *Validation) (err error) {
+	// validate field
+	for _, field := range r.Fields() {
+		// get field value.
+		val, has := v.Get(field)
+		if !has { // no field
+			continue
+		}
+
+		// call filters
+		val, err = applyFilters(val, r.filters, v)
+		if err != nil {
+			return err
+		}
+
+		// save filtered value.
+		v.filteredData[field] = val
+		// v.safeData[field] = val
+	}
+
+	return
+}
+
+// Fields name get
+func (r *FilterRule) Fields() []string {
+	return r.fields
+}
+
+func applyFilters(val interface{}, filters map[string]string, v *Validation) (interface{}, error) {
+	var err error
+
+	// call filters
+	for name, argStr := range filters {
+		fv := v.FilterFuncValue(name)
+		args := parseArgString(argStr)
+
+		val, err = callFilter(fv, val, strings2Args(args))
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return val, nil
+}
+
+func parseArgString(argStr string) (ss []string) {
+	if argStr == "" { // no arg
+		return
+	}
+
+	if len(argStr) == 1 { // one char
+		return []string{argStr}
+	}
+
+	return stringSplit(argStr, ",")
+}
+
+func callFilter(fv reflect.Value, val interface{}, args []interface{}) (interface{}, error) {
+	var rs []reflect.Value
+	if len(args) > 0 {
+		rs = CallByValue(fv, buildArgs(val, args)...)
+	} else {
+		rs = CallByValue(fv, val)
+	}
+
+	rl := len(rs)
+
+	// return new val.
+	if rl > 0 {
+		val = rs[0].Interface()
+
+		if rl == 2 { // filter func report error
+			if err := rs[1].Interface(); err != nil {
+				return nil, err.(error)
+			}
+		}
+	}
+
+	return val, nil
+}
