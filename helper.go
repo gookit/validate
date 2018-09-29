@@ -269,7 +269,7 @@ func panicf(format string, args ...interface{}) {
 
 // From package "text/template" -> text/template/funcs.go
 var (
-	errorType        = reflect.TypeOf((*error)(nil)).Elem()
+	errorType = reflect.TypeOf((*error)(nil)).Elem()
 	// fmtStringerType  = reflect.TypeOf((*fmt.Stringer)(nil)).Elem()
 	// reflectValueType = reflect.TypeOf((*reflect.Value)(nil)).Elem()
 )

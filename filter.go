@@ -50,7 +50,7 @@ var filterValues = map[string]reflect.Value{
 	"escapeHTML": reflect.ValueOf(filter.EscapeHTML),
 	// string to array/time
 	"strToArray": reflect.ValueOf(filter.StrToArray),
-	"strToTime": reflect.ValueOf(filter.StrToTime),
+	"strToTime":  reflect.ValueOf(filter.StrToTime),
 }
 
 // AddFilters add global filters
@@ -126,7 +126,6 @@ func (v *Validation) FilterFuncValue(name string) reflect.Value {
 	}
 
 	name = FilterName(name)
-
 	if fv, ok := filterValues[name]; ok {
 		return fv
 	}
@@ -142,7 +141,6 @@ func (v *Validation) FilterFunc(name string) interface{} {
 	}
 
 	name = FilterName(name)
-
 	if fn, ok := filterFuncs[name]; ok {
 		return fn
 	}

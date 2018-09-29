@@ -56,6 +56,7 @@ func eq(arg1 reflect.Value, arg2 ...reflect.Value) (bool, error) {
 	if len(arg2) == 0 {
 		return false, errNoComparison
 	}
+
 	for _, arg := range arg2 {
 		v2 := indirectInterface(arg)
 		k2, err := basicKind(v2)

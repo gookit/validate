@@ -30,7 +30,7 @@ type Rules []*Rule
 // some global vars
 var (
 	rulesCaches map[string]Rules
-	emptyValue = reflect.Value{}
+	emptyValue  = reflect.Value{}
 )
 
 /*************************************************************
