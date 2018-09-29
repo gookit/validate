@@ -173,8 +173,9 @@ func TestValidationScene(t *testing.T) {
 	// on scene "create"
 	ok := v.Validate("create")
 	is.False(ok)
-	is.Contains(v.Errors, "age")
-	is.Contains(v.Errors, "name")
+	is.False(v.Errors.Empty())
+	is.Contains(v.Errors.Error(), "age")
+	is.Contains(v.Errors.Error(), "name")
 
 	// on scene "update"
 	v.ResetResult()
@@ -182,4 +183,6 @@ func TestValidationScene(t *testing.T) {
 	is.False(ok)
 	is.Contains(v.Errors, "name")
 	is.NotContains(v.Errors, "age")
+	is.Equal("", v.Errors.Get("age"))
+	is.Equal("name min length is 7", v.Errors.One())
 }

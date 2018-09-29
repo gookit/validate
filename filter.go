@@ -8,8 +8,13 @@ import (
 
 var filterAliases = map[string]string{
 	"toInt":     "int",
-	"str2arr":   "str2array",
+	"str2arr":   "strToArray",
+	"str2array": "strToArray",
+	"strToArr":  "strToArray",
+	"str2time":  "strToTime",
 	"trimSpace": "trim",
+	"lcFirst":   "lowerFirst",
+	"ucFirst":   "upperFirst",
 }
 
 // FilterName get real filter name.
@@ -27,10 +32,25 @@ func FilterName(name string) string {
 
 var filterFuncs map[string]interface{}
 var filterValues = map[string]reflect.Value{
-	"trim": reflect.ValueOf(filter.Trim),
-	"int":  reflect.ValueOf(filter.Int),
-	// string to array
-	"str2array": reflect.ValueOf(filter.Str2Array),
+	"int":   reflect.ValueOf(filter.Int),
+	"trim":  reflect.ValueOf(filter.Trim),
+	"ltrim": reflect.ValueOf(strings.TrimLeft),
+	"rtrim": reflect.ValueOf(strings.TrimRight),
+	"email": reflect.ValueOf(filter.Email),
+	// change first case.
+	"lowerFirst": reflect.ValueOf(filter.LowerFirst),
+	"upperFirst": reflect.ValueOf(filter.UpperFirst),
+	// change string case.
+	"lower": reflect.ValueOf(strings.ToLower),
+	"upper": reflect.ValueOf(strings.ToUpper),
+	"title": reflect.ValueOf(strings.ToTitle),
+	// string clear
+	"encodeUrl":  reflect.ValueOf(filter.UrlEncode),
+	"escapeJS":   reflect.ValueOf(filter.EscapeJS),
+	"escapeHTML": reflect.ValueOf(filter.EscapeHTML),
+	// string to array/time
+	"strToArray": reflect.ValueOf(filter.StrToArray),
+	"strToTime": reflect.ValueOf(filter.StrToTime),
 }
 
 // AddFilters add global filters
@@ -43,7 +63,6 @@ func AddFilters(m map[string]interface{}) {
 // AddFilter add global filter to the pkg.
 func AddFilter(name string, filterFunc interface{}) {
 	fv := reflect.ValueOf(filterFunc)
-
 	if filterFunc == nil || fv.Kind() != reflect.Func {
 		panicf("'%s' invalid filter func, it must be an func type", name)
 	}
