@@ -14,7 +14,11 @@ func TestIsEmpty(t *testing.T) {
 	is.True(IsEmpty(nil))
 }
 
-func TestIsInt(t *testing.T) {
+/*************************************************************
+ * global: type validators
+ *************************************************************/
+
+func TestIntCheck(t *testing.T) {
 	is := assert.New(t)
 
 	// type check
@@ -35,6 +39,29 @@ func TestIsInt(t *testing.T) {
 	is.True(IsInt(5, 4, 6))
 	is.False(IsInt(nil, 4, 6))
 	is.False(IsInt("str", 4, 6))
+
+	// IsUint
+	is.True(IsUint("2"))
+	is.False(IsUint("-2"))
+	is.False(IsUint("2a"))
+}
+
+func TestIsFloat(t *testing.T) {
+	is := assert.New(t)
+
+	is.True(IsFloat("3.4"))
+	is.True(IsFloat("2"))
+	is.False(IsFloat(""))
+	is.False(IsFloat("ab"))
+}
+
+func TestIsBool(t *testing.T) {
+	is := assert.New(t)
+
+	is.True(IsBool("1"))
+	is.True(IsBool("true"))
+	is.False(IsBool("false"))
+	is.False(IsBool("3.4"))
 }
 
 func TestMin(t *testing.T) {

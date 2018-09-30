@@ -310,8 +310,6 @@ func callValidatorValue(name string, fv reflect.Value, val interface{}, args []i
 		}
 	}
 
-	// fmt.Printf("%#v %v\n", val, argIn[0].String())
-
 	// f.CallSlice()与Call() 不一样的是，CallSlice参数的最后一个会被展开
 	// vs := fv.Call(argIn)
 	return fv.Call(argIn)[0].Bool()
