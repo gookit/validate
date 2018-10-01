@@ -60,7 +60,7 @@ func TestIsBool(t *testing.T) {
 
 	is.True(IsBool("1"))
 	is.True(IsBool("true"))
-	is.False(IsBool("false"))
+	is.True(IsBool("false"))
 	is.False(IsBool("3.4"))
 }
 

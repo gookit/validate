@@ -1,6 +1,7 @@
 package validate
 
 import (
+	"fmt"
 	"io/ioutil"
 	"mime/multipart"
 	"net/url"
@@ -95,7 +96,13 @@ func (d *FormData) Encode() string {
 
 // Set sets the key to value. It replaces any existing values.
 func (d *FormData) Set(field string, val interface{}) error {
-	d.Form.Set(field, val.(string))
+	switch val.(type) {
+	case string:
+		d.Form.Set(field, val.(string))
+	case int, int8, int16, int32, int64, uint8, uint16, uint32, uint64, float32, float64:
+		d.Form.Set(field, fmt.Sprint(val))
+	}
+
 	return nil
 }
 
@@ -165,7 +172,7 @@ func (d FormData) MustInt64(key string) int64 {
 		return 0
 	}
 
-	val, _ := strconv.ParseInt(d.Trimmed(key), 10, 64)
+	val, _ := strconv.ParseInt(d.Trimmed(key), 10, 0)
 	return val
 }
 
@@ -198,6 +205,11 @@ func (d FormData) Bool(key string) bool {
 	}
 }
 
+// String value get by key
+func (d FormData) String(key string) string {
+	return d.Form.Get(key)
+}
+
 // FileBytes returns the body of the file associated with key. If there is no
 // file associated with key, it returns nil (not an error). It may return an error if
 // there was a problem reading the file. If you need to know whether or not the file
@@ -214,15 +226,6 @@ func (d FormData) FileBytes(key string) ([]byte, error) {
 	}
 
 	return ioutil.ReadAll(file)
-}
-
-// GetStringsSplit returns the first element in data[key] split into a slice delimited by delim.
-func (d FormData) GetStringsSplit(key string, delim string) []string {
-	if !d.HasField(key) || len(d.Form[key]) == 0 {
-		return nil
-	}
-
-	return strings.Split(d.Form[key][0], delim)
 }
 
 // BindJSON binds v to the json data in the request body. It calls json.Unmarshal and
