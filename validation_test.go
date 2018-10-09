@@ -41,6 +41,11 @@ func TestMap(t *testing.T) {
 	is.Equal("name min length is 7", v.Errors.Get("name"))
 	is.Empty(v.SafeData())
 
+	v = New(nil)
+	is.Contains(v.Errors.String(), "invalid input data")
+	is.False(v.Validate())
+
+	// v = Map(m)
 }
 
 // UserForm struct

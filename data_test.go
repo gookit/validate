@@ -10,10 +10,10 @@ func TestFormData_Add(t *testing.T) {
 	is := assert.New(t)
 
 	d := FromURLValues(url.Values{
-		"name": {"inhere"},
-		"age": {"30"},
+		"name":   {"inhere"},
+		"age":    {"30"},
 		"notify": {"true"},
-		"money": {"23.4"},
+		"money":  {"23.4"},
 	})
 
 	is.True(d.Bool("notify"))

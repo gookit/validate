@@ -155,6 +155,7 @@ func le(arg1, arg2 reflect.Value) (bool, error) {
 	if lessThan || err != nil {
 		return lessThan, err
 	}
+
 	return eq(arg1, arg2)
 }
 

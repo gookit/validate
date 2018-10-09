@@ -103,7 +103,7 @@ func (r *Rule) SetOptional(optional bool) *Rule {
 
 // SetMessage set error message.
 // Usage:
-//	v.AddRule("name", "required").SetMessage("error message")
+// 	v.AddRule("name", "required").SetMessage("error message")
 //
 func (r *Rule) SetMessage(errMsg string) *Rule {
 	r.message = errMsg
@@ -112,7 +112,7 @@ func (r *Rule) SetMessage(errMsg string) *Rule {
 
 // SetMessages set error message map.
 // Usage:
-//	v.AddRule("name,email", "required").SetMessages(MS{
+// 	v.AddRule("name,email", "required").SetMessages(MS{
 // 		"name": "error message 1",
 // 		"email": "error message 2",
 // 	})
@@ -222,13 +222,23 @@ func (r *Rule) Validate(field, validator string, val interface{}, v *Validation)
 		return false
 	}
 
-	// call custom validator
+	// call custom validator in the rule.
 	if r.checkFunc.IsValid() {
 		ok = callValidatorValue(validator, r.checkFunc, val, r.arguments)
-	} else if fv, has := v.ValidatorValue(validator); has { // find validator
-		ok = callValidatorValue(validator, fv, val, r.arguments)
 	} else {
-		panicf("the validator '%s' is not exists", validator)
+		name := ValidatorName(validator)
+		fm := v.ValidatorMeta(name)
+		if fm == nil {
+			panicf("the validator '%s' is not exists", validator)
+		}
+
+		var checked bool
+
+		// call built in validators
+		checked, ok = callBuiltInValidator(validator, fm, val, r.arguments)
+		if !checked { // maybe is custom validator
+			ok = callValidatorValue(validator, fm.fv, val, r.arguments)
+		}
 	}
 
 	// build and collect error message
@@ -244,21 +254,92 @@ func (r *Rule) Validate(field, validator string, val interface{}, v *Validation)
 	return
 }
 
-func callValidatorFunc(name string, fn, val interface{}, args []interface{}) bool {
-	fv := reflect.ValueOf(fn)
-	if fv.Kind() != reflect.Func {
-		panicf("validator '%s' func must be an func type", name)
+func notEnoughParam(notEnough bool, name string) {
+	if notEnough {
+		panicf("not enough parameters for validator '%s'!", name)
+	}
+}
+
+func callBuiltInValidator(validator string, fm *funcMeta, val interface{}, args []interface{}) (checked, ok bool) {
+	checked = true
+	argNum := len(args) + 1 // "1" is the "val" position
+
+	// check arg num
+	fm.checkArgNum(argNum, validator)
+
+	ft := fm.fv.Type()
+
+	// build new args
+	newArgs := make([]interface{}, argNum)
+	newArgs[0] = val
+	copy(newArgs[1:], args)
+
+	// convert args data type
+	for i := 0; i < argNum; i++ {
+		av := reflect.ValueOf(newArgs[i])
+		ak, err := basicKind(av)
+		if err != nil {
+			return
+		}
+
+		wantTyp := ft.In(i).Kind()
+		updateArg := false
+
+		// compare func param type and input param type.
+		if wantTyp == av.Kind() { // type is same
+			continue
+		} else if av.Type().ConvertibleTo(ft.In(i)) { // need convert type.
+			updateArg = true
+			newArgs[i] = av.Convert(ft.In(i)).Interface()
+		} else if nVal, _ := convertType(newArgs[i], ak, wantTyp); nVal != nil { // manual converted
+			newArgs[i] = nVal
+			updateArg = true
+		} else { // unable to convert
+			return
+		}
+
+		// update rule.arguments[i] value
+		if updateArg && i != 0 {
+			args[i-1] = newArgs[i]
+		}
 	}
 
-	return callValidatorValue(name, fv, val, args)
+	switch fm.name {
+	case "min":
+		ok = Min(newArgs[0], newArgs[1].(int64))
+	case "max":
+		ok = Max(newArgs[0], newArgs[1].(int64))
+	default:
+		checked = false
+	}
+
+	return
+}
+
+func convertType(srcVal interface{}, srcKind kind, dstType reflect.Kind) (nVal interface{}, err error) {
+	switch srcKind {
+	case stringKind:
+		switch dstType {
+		case reflect.Int:
+			return filter.Int(srcVal)
+		case reflect.Int64:
+			return filter.Int64(srcVal)
+		}
+	case intKind, uintKind:
+		i64 := filter.MustInt64(srcVal)
+		switch dstType {
+		case reflect.Int64:
+			return i64, nil
+		case reflect.String:
+			return fmt.Sprint(i64), nil
+		}
+	}
+
+	return
 }
 
 func callValidatorValue(name string, fv reflect.Value, val interface{}, args []interface{}) bool {
 	ft := fv.Type()
-	if ft.NumOut() != 1 || ft.Out(0).Kind() != reflect.Bool {
-		panicf("the validator '%s' func must be return a bool value.", name)
-	}
-
 	fnArgNum := ft.NumIn() // arg num for the func
 
 	// only one param in the validator func.

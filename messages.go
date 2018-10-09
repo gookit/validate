@@ -11,9 +11,9 @@ import (
 var (
 	ErrSetValue = errors.New("set value failure")
 	// ErrNoData = errors.New("validate: no any data can be collected")
-	ErrNoField     = errors.New("validate: field not exist in the source data")
-	ErrEmptyData   = errors.New("validate: please input data use for validate")
-	ErrInvalidData = errors.New("validate: invalid input data")
+	ErrNoField     = errors.New("field not exist in the source data")
+	ErrEmptyData   = errors.New("please input data use for validate")
+	ErrInvalidData = errors.New("invalid input data")
 )
 
 /*************************************************************

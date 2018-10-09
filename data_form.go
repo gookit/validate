@@ -39,13 +39,17 @@ func newFormData() *FormData {
  *************************************************************/
 
 // Create a Validation from data
-func (d *FormData) Create(scene ...string) *Validation {
-	return d.Validation(scene...)
+func (d *FormData) Create(err ...error) *Validation {
+	return d.Validation(err...)
 }
 
 // Validation create from data
-func (d *FormData) Validation(scene ...string) *Validation {
-	return NewValidation(d, scene...)
+func (d *FormData) Validation(err ...error) *Validation {
+	if len(err) > 0 && err[0] != nil {
+		return NewValidation(d).WithError(err[0])
+	}
+
+	return NewValidation(d)
 }
 
 // Add adds the value to key. It appends to any existing values associated with key.

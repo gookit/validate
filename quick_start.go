@@ -15,13 +15,15 @@ func New(data interface{}, scene ...string) *Validation {
 	case DataFace:
 		return NewValidation(td, scene...)
 	case M:
-		return FromMap(td).Create(scene...)
+		return FromMap(td).Create().SetScene(scene...)
 	case map[string]interface{}:
-		return FromMap(td).Create(scene...)
+		return FromMap(td).Create().SetScene(scene...)
 	case SValues:
-		return FromURLValues(url.Values(td)).Create(scene...)
+		return FromURLValues(url.Values(td)).Create().SetScene(scene...)
+	case url.Values:
+		return FromURLValues(td).Create().SetScene(scene...)
 	case map[string][]string:
-		return FromURLValues(data.(map[string][]string)).Create(scene...)
+		return FromURLValues(data.(map[string][]string)).Create().SetScene(scene...)
 	}
 
 	return Struct(data, scene...)
@@ -29,7 +31,7 @@ func New(data interface{}, scene ...string) *Validation {
 
 // Map validation create
 func Map(m map[string]interface{}, scene ...string) *Validation {
-	return FromMap(m).Create(scene...)
+	return FromMap(m).Create().SetScene(scene...)
 }
 
 // JSON create validation from JSON string.
@@ -72,11 +74,6 @@ func FromMap(m map[string]interface{}) *MapData {
 	return data
 }
 
-// FromStruct build data instance.
-func FromStruct(s interface{}) (*StructData, error) {
-	return newStructData(s)
-}
-
 // FromRequest collect data from request instance
 func FromRequest(r *http.Request, maxMemoryLimit ...int64) (DataFace, error) {
 	// no body. like GET DELETE ....
@@ -99,7 +96,6 @@ func FromRequest(r *http.Request, maxMemoryLimit ...int64) (DataFace, error) {
 
 		// collect from values
 		data := FromURLValues(r.MultipartForm.Value)
-
 		// collection uploaded files
 		for key, files := range r.MultipartForm.File {
 			if len(files) != 0 {

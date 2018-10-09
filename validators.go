@@ -43,9 +43,9 @@ const (
 
 // some string regexp. (it is from package "asaskevich/govalidator")
 var (
-	rxUser           = regexp.MustCompile("^[a-zA-Z0-9!#$%&'*+/=?^_`{|}~.-]+$")
-	rxHostname       = regexp.MustCompile("^[^\\s]+\\.[^\\s]+$")
-	rxUserDot        = regexp.MustCompile("(^[.]{1})|([.]{1}$)|([.]{2,})")
+	// rxUser           = regexp.MustCompile("^[a-zA-Z0-9!#$%&'*+/=?^_`{|}~.-]+$")
+	// rxHostname       = regexp.MustCompile("^[^\\s]+\\.[^\\s]+$")
+	// rxUserDot        = regexp.MustCompile("(^[.]{1})|([.]{1}$)|([.]{2,})")
 	rxEmail          = regexp.MustCompile(Email)
 	rxISBN10         = regexp.MustCompile("^(?:[0-9]{9}X|[0-9]{10})$")
 	rxISBN13         = regexp.MustCompile("^(?:[0-9]{13})$")
@@ -108,9 +108,9 @@ var validatorAliases = map[string]string{
 	"lte": "max",
 	"gte": "min",
 	// len
-	"len":      "Length",
-	"lenEq":    "Length",
-	"lengthEq": "Length",
+	"len":      "length",
+	"lenEq":    "length",
+	"lengthEq": "length",
 	"minLen":   "minLength",
 	"maxLen":   "maxLength",
 	"minSize":  "minLength",
@@ -142,7 +142,9 @@ func ValidatorName(name string) string {
 
 // global validators. contains built-in and user custom
 var (
-	validators map[string]interface{}
+	validators map[string]int
+	// validator func meta info
+	validatorMetas map[string]*funcMeta
 	// validator func reflect.Value
 	validatorValues = map[string]reflect.Value{
 		// int value
@@ -172,9 +174,9 @@ var (
 		// string
 		"isIntString": reflect.ValueOf(IsIntString),
 		// length
-		"minLength":   reflect.ValueOf(MinLength),
-		"maxLength":   reflect.ValueOf(MaxLength),
-		"lengthEqual": reflect.ValueOf(Length),
+		"length":    reflect.ValueOf(Length),
+		"minLength": reflect.ValueOf(MinLength),
+		"maxLength": reflect.ValueOf(MaxLength),
 		// common
 		"isIP":    reflect.ValueOf(IsIP),
 		"isIPv4":  reflect.ValueOf(IsIPv4),
@@ -182,6 +184,52 @@ var (
 		"isEmail": reflect.ValueOf(IsEmail),
 	}
 )
+
+type funcMeta struct {
+	fv   reflect.Value
+	name string
+	// readonly cache
+	numIn  int
+	numOut int
+	// is internal built in validator
+	isInternal bool
+	// last arg is like "... interface{}"
+	isVariadic bool
+}
+
+func (fm *funcMeta) checkArgNum(argNum int, name string) {
+	notEnough := argNum < fm.numIn
+
+	// last arg is like "... interface{}"
+	if fm.isVariadic {
+		notEnough = argNum+1 < fm.numIn
+	}
+
+	if notEnough {
+		panicf("not enough parameters for validator '%s'!", name)
+	}
+}
+
+func newFuncMeta(name string, isInternal bool, fv reflect.Value) *funcMeta {
+	fm := &funcMeta{fv: fv, name: name, isInternal: isInternal}
+	ft := fv.Type()
+
+	fm.numIn = ft.NumIn()   // arg num of the func
+	fm.numOut = ft.NumOut() // return arg num of the func
+	fm.isVariadic = ft.IsVariadic()
+
+	return fm
+}
+
+func init() {
+	validators = make(map[string]int)
+	validatorMetas = make(map[string]*funcMeta)
+
+	for n, fv := range validatorValues {
+		validators[n] = 1 // built in
+		validatorMetas[n] = newFuncMeta(n, true, fv)
+	}
+}
 
 // AddValidators to the global validators map
 func AddValidators(m map[string]interface{}) {
@@ -192,37 +240,11 @@ func AddValidators(m map[string]interface{}) {
 
 // AddValidator to the pkg. checkFunc must return a bool
 func AddValidator(name string, checkFunc interface{}) {
-	if validators == nil {
-		validators = make(map[string]interface{})
-	}
+	fv := checkValidatorFunc(name, checkFunc)
 
-	validators[name] = checkFunc
-	validatorValues[name] = checkValidatorFunc(name, checkFunc)
-}
-
-// get validator func's reflect.Value
-func validatorValue(name string) (reflect.Value, bool) {
-	if v, ok := validatorValues[name]; ok {
-		return v, true
-	}
-
-	return reflect.Value{}, false
-}
-
-func checkValidatorFunc(name string, fn interface{}) reflect.Value {
-	fv := reflect.ValueOf(fn)
-
-	// is nil or not is func
-	if fn == nil || fv.Kind() != reflect.Func {
-		panicf("validator '%s'. 'checkFunc' parameter is invalid, it must be an func", name)
-	}
-
-	ft := fv.Type()
-	if ft.NumOut() != 1 || ft.Out(0).Kind() != reflect.Bool {
-		panicf("validator '%s' func must be return a bool value.", name)
-	}
-
-	return fv
+	validators[name] = 2 // custom
+	validatorValues[name] = fv
+	validatorMetas[name] = newFuncMeta(name, false, fv)
 }
 
 /*************************************************************
@@ -238,15 +260,14 @@ func (v *Validation) AddValidators(m map[string]interface{}) {
 
 // AddValidator to the Validation. checkFunc must return a bool
 func (v *Validation) AddValidator(name string, checkFunc interface{}) {
-	if v.validatorFuncs == nil {
-		v.validatorFuncs = make(map[string]interface{})
-	}
+	fv := checkValidatorFunc(name, checkFunc)
 
-	v.validatorFuncs[name] = checkFunc
-	v.validatorValues[name] = checkValidatorFunc(name, checkFunc)
+	v.validators[name] = 2 // custom
+	v.validatorValues[name] = fv
+	v.validatorMetas[name] = newFuncMeta(name, false, fv)
 }
 
-// ValidatorValue get by name
+// ValidatorValue get validator func's reflect.Value by name
 func (v *Validation) ValidatorValue(name string) (fv reflect.Value, ok bool) {
 	name = ValidatorName(name)
 
@@ -271,28 +292,30 @@ func (v *Validation) ValidatorValue(name string) (fv reflect.Value, ok bool) {
 	return
 }
 
-// ValidatorFunc get by name
-func (v *Validation) ValidatorFunc(name string) interface{} {
-	name = ValidatorName(name)
-	if fn, ok := v.validatorFuncs[name]; ok {
-		return fn
+// ValidatorMeta get by name
+func (v *Validation) ValidatorMeta(name string) *funcMeta {
+	if fm, ok := v.validatorMetas[name]; ok {
+		return fm
 	}
 
-	if fn, ok := validators[name]; ok {
-		return fn
+	if fm, ok := validatorMetas[name]; ok {
+		return fm
 	}
 
-	panicf("the validator %s not exists!", name)
 	return nil
 }
 
 // HasValidator check
 func (v *Validation) HasValidator(name string) bool {
-	if _, ok := v.validatorFuncs[name]; ok {
+	name = ValidatorName(name)
+
+	// current validation
+	if _, ok := v.validatorValues[name]; ok {
 		return true
 	}
 
-	_, ok := validators[name]
+	// global validators
+	_, ok := validatorValues[name]
 	return ok
 }
 
@@ -305,7 +328,7 @@ func (v *Validation) Required(val interface{}) bool {
 	return !ValueIsEmpty(reflect.ValueOf(val))
 }
 
-// EqField value should EQ the dst field
+// EqField value should EQ the dst field value
 func (v *Validation) EqField(val interface{}, dstField string) bool {
 	// get dst field value.
 	dstVal, has := v.Get(dstField)
@@ -313,10 +336,11 @@ func (v *Validation) EqField(val interface{}, dstField string) bool {
 		return false
 	}
 
-	return val == dstVal
+	// return val == dstVal
+	return IsEqual(val, dstVal)
 }
 
-// NeField value should not equal the dst field
+// NeField value should not equal the dst field value
 func (v *Validation) NeField(val interface{}, dstField string) bool {
 	// get dst field value.
 	dstVal, has := v.Get(dstField)
@@ -324,10 +348,11 @@ func (v *Validation) NeField(val interface{}, dstField string) bool {
 		return false
 	}
 
-	return val != dstVal
+	// return val != dstVal
+	return !IsEqual(val, dstVal)
 }
 
-// GtField value should GT the dst field
+// GtField value should GT the dst field value
 func (v *Validation) GtField(val interface{}, dstField string) bool {
 	// get dst field value.
 	dstVal, has := v.Get(dstField)
@@ -335,10 +360,10 @@ func (v *Validation) GtField(val interface{}, dstField string) bool {
 		return false
 	}
 
-	return ValueLen(reflect.ValueOf(val)) > ValueLen(reflect.ValueOf(dstVal))
+	return valueCompare(val, dstVal, "gt")
 }
 
-// GteField value should GTE the dst field
+// GteField value should GTE the dst field value
 func (v *Validation) GteField(val interface{}, dstField string) bool {
 	// get dst field value.
 	dstVal, has := v.Get(dstField)
@@ -346,10 +371,10 @@ func (v *Validation) GteField(val interface{}, dstField string) bool {
 		return false
 	}
 
-	return ValueLen(reflect.ValueOf(val)) >= ValueLen(reflect.ValueOf(dstVal))
+	return valueCompare(val, dstVal, "gte")
 }
 
-// LtField value should LT the dst field
+// LtField value should LT the dst field value
 func (v *Validation) LtField(val interface{}, dstField string) bool {
 	// get dst field value.
 	dstVal, has := v.Get(dstField)
@@ -357,10 +382,10 @@ func (v *Validation) LtField(val interface{}, dstField string) bool {
 		return false
 	}
 
-	return ValueLen(reflect.ValueOf(val)) < ValueLen(reflect.ValueOf(dstVal))
+	return valueCompare(val, dstVal, "lt")
 }
 
-// LteField value should LTE the dst field
+// LteField value should LTE the dst field value(for int, string)
 func (v *Validation) LteField(val interface{}, dstField string) bool {
 	// get dst field value.
 	dstVal, has := v.Get(dstField)
@@ -368,7 +393,7 @@ func (v *Validation) LteField(val interface{}, dstField string) bool {
 		return false
 	}
 
-	return ValueLen(reflect.ValueOf(val)) <= ValueLen(reflect.ValueOf(dstVal))
+	return valueCompare(val, dstVal, "lte")
 }
 
 /*************************************************************
@@ -806,8 +831,9 @@ func NotEqual(val, wantVal interface{}) bool {
 
 // IntEqual check
 func IntEqual(val interface{}, wantVal int64) bool {
-	intVal, isInt := IntVal(val)
-	if !isInt {
+	// intVal, isInt := IntVal(val)
+	intVal, err := filter.Int64(val)
+	if err != nil {
 		return false
 	}
 
@@ -816,8 +842,8 @@ func IntEqual(val interface{}, wantVal int64) bool {
 
 // Gt check value greater dst value
 func Gt(val interface{}, dstVal int64) bool {
-	intVal, isInt := IntVal(val)
-	if !isInt {
+	intVal, err := filter.Int64(val)
+	if err != nil {
 		return false
 	}
 
@@ -826,8 +852,8 @@ func Gt(val interface{}, dstVal int64) bool {
 
 // Min check value greater or equal dst value. for int(8-64), uint(8-64). alias `Gte`
 func Min(val interface{}, min int64) bool {
-	intVal, isInt := IntVal(val)
-	if !isInt {
+	intVal, err := filter.Int64(val)
+	if err != nil {
 		return false
 	}
 
@@ -836,8 +862,8 @@ func Min(val interface{}, min int64) bool {
 
 // Lt less than dst value
 func Lt(val interface{}, dstVal int64) bool {
-	intVal, isInt := IntVal(val)
-	if !isInt {
+	intVal, err := filter.Int64(val)
+	if err != nil {
 		return false
 	}
 
@@ -846,8 +872,8 @@ func Lt(val interface{}, dstVal int64) bool {
 
 // Max less than or equal dst value. for int(8-64), uint(8-64). alias `Lte`
 func Max(val interface{}, max int64) bool {
-	intVal, isInt := IntVal(val)
-	if !isInt {
+	intVal, err := filter.Int64(val)
+	if err != nil {
 		return false
 	}
 
@@ -856,10 +882,8 @@ func Max(val interface{}, max int64) bool {
 
 // Between int value in the given range.
 func Between(val interface{}, min, max int64) bool {
-	rv := reflect.ValueOf(val)
-
-	intVal, isInt := ValueInt64(rv)
-	if !isInt {
+	intVal, err := filter.Int64(val)
+	if err != nil {
 		return false
 	}
 

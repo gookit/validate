@@ -37,11 +37,15 @@ func (d *MapData) Get(field string) (interface{}, bool) {
 }
 
 // Create a Validation from data
-func (d *MapData) Create(scene ...string) *Validation {
-	return d.Validation(scene...)
+func (d *MapData) Create(err ...error) *Validation {
+	return d.Validation(err...)
 }
 
 // Validation create from data
-func (d *MapData) Validation(scene ...string) *Validation {
-	return NewValidation(d, scene...)
+func (d *MapData) Validation(err ...error) *Validation {
+	if len(err) > 0 {
+		return NewValidation(d).WithError(err[0])
+	}
+
+	return NewValidation(d)
 }

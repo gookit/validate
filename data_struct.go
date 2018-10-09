@@ -1,6 +1,7 @@
 package validate
 
 import (
+	"github.com/gookit/filter"
 	"reflect"
 	"strings"
 )
@@ -76,9 +77,11 @@ func newStructData(s interface{}) (*StructData, error) {
 		fieldValues: make(map[string]reflect.Value),
 	}
 
-	val := reflect.ValueOf(s)
+	if s == nil {
+		return data, ErrInvalidData
+	}
 
-	// fmt.Println(val.NumMethod())
+	val := reflect.ValueOf(s)
 	if val.Kind() == reflect.Ptr && !val.IsNil() {
 		val = val.Elem()
 	}
@@ -96,13 +99,17 @@ func newStructData(s interface{}) (*StructData, error) {
 }
 
 // Create a Validation from the StructData
-func (d *StructData) Create(scene ...string) *Validation {
-	return d.Validation(scene...)
+func (d *StructData) Create(err ...error) *Validation {
+	return d.Validation(err...)
 }
 
 // Validation create from the StructData
-func (d *StructData) Validation(scene ...string) *Validation {
-	v := NewValidation(d, scene...)
+func (d *StructData) Validation(err ...error) *Validation {
+	v := NewValidation(d)
+
+	if len(err) > 0 && err[0] != nil {
+		return v.WithError(err[0])
+	}
 
 	// collect field validate rules
 	d.parseRulesFromTag(v)
@@ -213,7 +220,7 @@ func (d *StructData) Set(field string, val interface{}) error {
 
 // FuncValue get
 func (d *StructData) FuncValue(name string) (reflect.Value, bool) {
-	fnName := upperFirst(name)
+	fnName := filter.UpperFirst(name)
 	fv := d.value.MethodByName(fnName)
 
 	return fv, fv.IsValid()

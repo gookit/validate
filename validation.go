@@ -27,8 +27,8 @@ type DataFace interface {
 	Get(key string) (interface{}, bool)
 	Set(field string, val interface{}) error
 	// validation instance create func
-	Create(scene ...string) *Validation
-	Validation(scene ...string) *Validation
+	Create(err ...error) *Validation
+	Validation(err ...error) *Validation
 }
 
 // MarshalFunc define
@@ -93,8 +93,10 @@ type Validation struct {
 	validated bool
 	// validate rules for the validation
 	rules []*Rule
-	// validator func for the validation
-	validatorFuncs M
+	// validators for the validation
+	validators map[string]int
+	// validator func meta info
+	validatorMetas map[string]*funcMeta
 	// validator func reflect.Value map
 	validatorValues map[string]reflect.Value
 	// translator instance
@@ -124,7 +126,8 @@ func NewValidation(data DataFace, scene ...string) *Validation {
 		// add data source
 		data: data,
 		// validated data
-		safeData: make(map[string]interface{}),
+		safeData:   make(map[string]interface{}),
+		validators: make(map[string]int),
 		// filtered data
 		filteredData: make(map[string]interface{}),
 		// default config
@@ -146,11 +149,27 @@ func NewValidation(data DataFace, scene ...string) *Validation {
 		"lteField": reflect.ValueOf(v.LteField),
 	}
 
+	v.validatorMetas = make(map[string]*funcMeta)
+
+	// collect meta info
+	for n, fv := range v.validatorValues {
+		v.validators[n] = 1 // built in
+		v.validatorMetas[n] = newFuncMeta(n, true, fv)
+	}
+
 	return v.SetScene(scene...)
 }
 
 func newWithError(d DataFace, err error) *Validation {
-	return d.Create().WithError(err)
+	if d == nil {
+		if err != nil {
+			return NewValidation(d).WithError(err)
+		}
+
+		return NewValidation(d)
+	}
+
+	return d.Validation(err)
 }
 
 /*************************************************************

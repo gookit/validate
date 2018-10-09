@@ -2,7 +2,9 @@ package validate
 
 import (
 	"fmt"
+	"github.com/gookit/filter"
 	"reflect"
+	"runtime"
 	"strconv"
 	"strings"
 	"unicode"
@@ -65,21 +67,6 @@ func buildArgs(val interface{}, args []interface{}) []interface{} {
 	copy(newArgs[1:], args)
 
 	return newArgs
-}
-
-// upperFirst upper first char
-func upperFirst(s string) string {
-	if len(s) == 0 {
-		return s
-	}
-
-	f := s[0]
-
-	if f >= 'a' && f <= 'z' {
-		return strings.ToUpper(string(f)) + string(s[1:])
-	}
-
-	return s
 }
 
 // ValueIsEmpty check
@@ -161,6 +148,11 @@ func CalcLength(val interface{}) int {
 		return -1
 	}
 
+	// string length
+	if str, ok := val.(string); ok {
+		return len(str)
+	}
+
 	if rv, ok := val.(reflect.Value); ok {
 		return ValueLen(rv)
 	}
@@ -186,23 +178,52 @@ func IntVal(val interface{}) (intVal int64, ok bool) {
 	return
 }
 
-func int64compare(intVal, dstVal int64, op string) bool {
+// value compare. use for compare int, string.
+func valueCompare(srcVal, dstVal interface{}, op string) bool {
+	var err error
+	var srcInt, dstInt int64
+
+	// string: compare length
+	if str, ok := srcVal.(string); ok {
+		dst, ok := dstVal.(string)
+		if !ok {
+			return false
+		}
+
+		srcInt = int64(len(str))
+		dstInt = int64(len(dst))
+	} else { // as int: compare size
+		srcInt, err = filter.Int64(srcVal)
+		if err != nil {
+			return false
+		}
+
+		dstInt, err = filter.Int64(dstVal)
+		if err != nil {
+			return false
+		}
+	}
+
 	switch op {
 	case "eq":
-		return intVal == dstVal
+		return srcInt == dstInt
 	case "ne":
-		return intVal != dstVal
+		return srcInt != dstInt
 	case "lt":
-		return intVal < dstVal
+		return srcInt < dstInt
 	case "lte":
-		return intVal <= dstVal
+		return srcInt <= dstInt
 	case "gt":
-		return intVal > dstVal
+		return srcInt > dstInt
 	case "gte":
-		return intVal >= dstVal
+		return srcInt >= dstInt
 	}
 
 	return false
+}
+
+func nameOfFunc(fv reflect.Value) string {
+	return runtime.FuncForPC(fv.Pointer()).Name()
 }
 
 func toInt64Slice(enum interface{}) (ret []int64, ok bool) {
@@ -273,6 +294,26 @@ var (
 	// fmtStringerType  = reflect.TypeOf((*fmt.Stringer)(nil)).Elem()
 	// reflectValueType = reflect.TypeOf((*reflect.Value)(nil)).Elem()
 )
+
+func checkValidatorFunc(name string, fn interface{}) reflect.Value {
+	if !goodName(name) {
+		panic(fmt.Errorf("function name %s is not a valid identifier", name))
+	}
+
+	fv := reflect.ValueOf(fn)
+
+	// is nil or not is func
+	if fn == nil || fv.Kind() != reflect.Func {
+		panicf("validator '%s'. 'checkFunc' parameter is invalid, it must be an func", name)
+	}
+
+	ft := fv.Type()
+	if ft.NumOut() != 1 || ft.Out(0).Kind() != reflect.Bool {
+		panicf("validator '%s' func must be return a bool value.", name)
+	}
+
+	return fv
+}
 
 // addValueFuncs adds to values the functions in funcs, converting them to reflect.Values.
 func addValueFuncs(out map[string]reflect.Value, in M) {
