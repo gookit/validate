@@ -1,10 +1,7 @@
 package validate
 
 import (
-	"fmt"
-
 	"github.com/stretchr/testify/assert"
-	"reflect"
 	"testing"
 )
 
@@ -108,10 +105,9 @@ func TestIsString(t *testing.T) {
 }
 
 func TestIsAlpha(t *testing.T) {
-	var val interface{}
-	val = "val"
-
-	fmt.Println(val, reflect.TypeOf(val).Kind())
+	is := assert.New(t)
+	is.True(IsAlpha("abc"))
+	is.False(IsAlpha("abc123"))
 }
 
 func TestTypeCheck(t *testing.T) {

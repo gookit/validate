@@ -254,12 +254,6 @@ func (r *Rule) Validate(field, validator string, val interface{}, v *Validation)
 	return
 }
 
-func notEnoughParam(notEnough bool, name string) {
-	if notEnough {
-		panicf("not enough parameters for validator '%s'!", name)
-	}
-}
-
 func callBuiltInValidator(validator string, fm *funcMeta, val interface{}, args []interface{}) (checked, ok bool) {
 	checked = true
 	argNum := len(args) + 1 // "1" is the "val" position
@@ -309,6 +303,12 @@ func callBuiltInValidator(validator string, fm *funcMeta, val interface{}, args 
 		ok = Min(newArgs[0], newArgs[1].(int64))
 	case "max":
 		ok = Max(newArgs[0], newArgs[1].(int64))
+	case "length":
+		ok = Length(newArgs[0], newArgs[1].(int))
+	case "minLength":
+		ok = MinLength(newArgs[0], newArgs[1].(int))
+	case "maxLength":
+		ok = MaxLength(newArgs[0], newArgs[1].(int))
 	default:
 		checked = false
 	}
