@@ -60,7 +60,8 @@ func TestValidation_StringRule(t *testing.T) {
 	v := Map(mpSample)
 	v.StringRules(MS{
 		"name":  "string|len:6|minLen:2|maxLen:10",
-		"oldSt": "lt:5|gt:0|in:1,2,3",
+		"oldSt": "lt:5|gt:0|in:1,2,3|notIn:4,5",
+		"age":   "max:100",
 	})
 	v.StringRule("newSt", "required|int:1|gtField:oldSt")
 	ok := v.Validate()

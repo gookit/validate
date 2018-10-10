@@ -171,13 +171,13 @@ var (
 		"isSlice":   reflect.ValueOf(IsSlice),
 		"isString":  reflect.ValueOf(IsString),
 		"isStrings": reflect.ValueOf(IsStrings),
-		// string
-		"isIntString": reflect.ValueOf(IsIntString),
 		// length
 		"length":    reflect.ValueOf(Length),
 		"minLength": reflect.ValueOf(MinLength),
 		"maxLength": reflect.ValueOf(MaxLength),
-		// common
+		// string
+		"isIntString": reflect.ValueOf(IsIntString),
+		// ip
 		"isIP":    reflect.ValueOf(IsIP),
 		"isIPv4":  reflect.ValueOf(IsIPv4),
 		"isIPv6":  reflect.ValueOf(IsIPv6),

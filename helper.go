@@ -297,6 +297,28 @@ func getVariadicKind(typString string) reflect.Kind {
 	return reflect.Invalid
 }
 
+func convertType(srcVal interface{}, srcKind kind, dstType reflect.Kind) (interface{}, error) {
+	switch srcKind {
+	case stringKind:
+		switch dstType {
+		case reflect.Int:
+			return filter.Int(srcVal)
+		case reflect.Int64:
+			return filter.Int64(srcVal)
+		}
+	case intKind, uintKind:
+		i64 := filter.MustInt64(srcVal)
+		switch dstType {
+		case reflect.Int64:
+			return i64, nil
+		case reflect.String:
+			return fmt.Sprint(i64), nil
+		}
+	}
+
+	return nil, nil
+}
+
 func panicf(format string, args ...interface{}) {
 	panic("validate: " + fmt.Sprintf(format, args...))
 }

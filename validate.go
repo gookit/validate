@@ -7,8 +7,6 @@
 package validate
 
 import (
-	"fmt"
-	"github.com/gookit/filter"
 	"reflect"
 	"strings"
 )
@@ -268,14 +266,8 @@ func (r *Rule) Validate(field, validator string, val interface{}, v *Validation)
 		}
 	}
 
-	var checked bool
-
 	// call built in validators
-	checked, ok = callBuiltInValidator(v, fm, val, r.arguments)
-	if !checked { // maybe is custom validator
-		ok = callValidatorValue(fm.fv, val, r.arguments)
-	}
-
+	ok = callValidator(v, fm, val, r.arguments)
 	// build and collect error message
 	if !ok {
 		errMsg, has := r.errorMessage(field, validator)
@@ -289,7 +281,7 @@ func (r *Rule) Validate(field, validator string, val interface{}, v *Validation)
 	return
 }
 
-func callBuiltInValidator(v *Validation, fm *funcMeta, val interface{}, args []interface{}) (checked, ok bool) {
+func callValidator(v *Validation, fm *funcMeta, val interface{}, args []interface{}) (ok bool) {
 	// 1. args data type convert
 
 	ft := fm.fv.Type()
@@ -303,7 +295,6 @@ func callBuiltInValidator(v *Validation, fm *funcMeta, val interface{}, args []i
 		lastTyp = getVariadicKind(ft.In(lastArgIndex).String())
 	}
 
-	checked = true
 	var wantTyp reflect.Kind
 
 	// convert args data type
@@ -387,32 +378,12 @@ func callBuiltInValidator(v *Validation, fm *funcMeta, val interface{}, args []i
 		ok = MinLength(val, args[0].(int))
 	case "maxLength":
 		ok = MaxLength(val, args[0].(int))
+	case "regexp":
+		ok = Regexp(val.(string), args[0].(string))
 	case "between":
 		ok = Between(val, args[0].(int64), args[1].(int64))
-	default:
-		checked = false
-	}
-
-	return
-}
-
-func convertType(srcVal interface{}, srcKind kind, dstType reflect.Kind) (nVal interface{}, err error) {
-	switch srcKind {
-	case stringKind:
-		switch dstType {
-		case reflect.Int:
-			return filter.Int(srcVal)
-		case reflect.Int64:
-			return filter.Int64(srcVal)
-		}
-	case intKind, uintKind:
-		i64 := filter.MustInt64(srcVal)
-		switch dstType {
-		case reflect.Int64:
-			return i64, nil
-		case reflect.String:
-			return fmt.Sprint(i64), nil
-		}
+	default: // is user custom validators
+		ok = callValidatorValue(fm.fv, val, args)
 	}
 
 	return
@@ -432,34 +403,4 @@ func callValidatorValue(fv reflect.Value, val interface{}, args []interface{}) b
 	// f.CallSlice()与Call() 不一样的是，CallSlice参数的最后一个会被展开
 	// vs := fv.Call(argIn)
 	return fv.Call(argIn)[0].Bool()
-}
-
-func convertValueType(src reflect.Value, dstType reflect.Kind) (nVal reflect.Value, ok bool) {
-	switch src.Kind() {
-	case reflect.String:
-		srcVal := src.String()
-		switch dstType {
-		case reflect.Int:
-			return convertResult(filter.Int(srcVal))
-		case reflect.Int64:
-			return convertResult(filter.Int64(srcVal))
-		}
-	case reflect.Int:
-		switch dstType {
-		case reflect.Int64:
-			return convertResult(int64(src.Int()), nil)
-		case reflect.String:
-			return convertResult(fmt.Sprint(src.Int()), nil)
-		}
-	}
-
-	return
-}
-
-func convertResult(val interface{}, err error) (reflect.Value, bool) {
-	if err != nil {
-		return emptyValue, false
-	}
-
-	return reflect.ValueOf(val), true
 }
