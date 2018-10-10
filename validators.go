@@ -67,7 +67,7 @@ var (
 	rxFullWidth      = regexp.MustCompile(FullWidth)
 	rxHalfWidth      = regexp.MustCompile(HalfWidth)
 	rxBase64         = regexp.MustCompile(Base64)
-	rxDataURI        = regexp.MustCompile("^data:.+\\/(.+);base64$")
+	rxDataURI        = regexp.MustCompile(`^data:.+/(.+);base64,(?:.+)`)
 	rxLatitude       = regexp.MustCompile(Latitude)
 	rxLongitude      = regexp.MustCompile(Longitude)
 	rxDNSName        = regexp.MustCompile(DNSName)
@@ -198,15 +198,18 @@ type funcMeta struct {
 }
 
 func (fm *funcMeta) checkArgNum(argNum int, name string) {
-	notEnough := argNum < fm.numIn
-
 	// last arg is like "... interface{}"
 	if fm.isVariadic {
-		notEnough = argNum+1 < fm.numIn
-	}
-
-	if notEnough {
-		panicf("not enough parameters for validator '%s'!", name)
+		if argNum+1 < fm.numIn {
+			panicf("not enough parameters for validator '%s'!", name)
+		}
+	} else if argNum != fm.numIn {
+		panicf(
+			"the number of parameters given does not match the required. validator '%s', want %d, given %d",
+			name,
+			fm.numIn,
+			argNum,
+		)
 	}
 }
 
@@ -475,21 +478,17 @@ func IsSlice(val interface{}) (ok bool) {
 }
 
 // IsInts is int slice check
-func IsInts(val interface{}) (ok bool) {
+func IsInts(val interface{}) bool {
 	if val == nil {
 		return false
 	}
 
 	switch val.(type) {
-	case []int:
+	case []int, []int8, []int16, []int32, []int64, []uint, []uint8, []uint16, []uint32, []uint64:
 		return true
-	case reflect.Value:
-		if val.(reflect.Value).Kind() == reflect.Slice {
-			_, ok = val.([]int)
-		}
 	}
 
-	return
+	return false
 }
 
 // IsStrings is string slice check
@@ -498,15 +497,7 @@ func IsStrings(val interface{}) (ok bool) {
 		return false
 	}
 
-	switch val.(type) {
-	case []string:
-		return true
-	case reflect.Value:
-		if val.(reflect.Value).Kind() == reflect.Slice {
-			_, ok = val.([]string)
-		}
-	}
-
+	_, ok = val.([]string)
 	return
 }
 
@@ -576,13 +567,8 @@ func IsString(val interface{}, minAndMaxLen ...int) (ok bool) {
 		return false
 	}
 
-	var rv reflect.Value
-	if rv, ok = val.(reflect.Value); !ok {
-		rv = reflect.ValueOf(val)
-	}
-
 	argLn := len(minAndMaxLen)
-	isStr := rv.Type().Kind() == reflect.String
+	str, isStr := val.(string)
 
 	// only check type
 	if argLn == 0 {
@@ -594,7 +580,7 @@ func IsString(val interface{}, minAndMaxLen ...int) (ok bool) {
 	}
 
 	// length check
-	strLen := rv.Len()
+	strLen := len(str)
 	minLen := minAndMaxLen[0]
 
 	// only min length check.
@@ -658,6 +644,8 @@ func IsURL(str string) bool {
 }
 
 // IsDataURI string.
+// data:[<mime type>] ( [;charset=<charset>] ) [;base64],码内容
+// eg. "data:image/gif;base64,R0lGODlhA..."
 func IsDataURI(str string) bool {
 	return rxDataURI.MatchString(str)
 }
@@ -901,19 +889,14 @@ func Regexp(str string, pattern string) bool {
  *************************************************************/
 
 // Enum value should be in the given enum(strings, ints, uints).
-func Enum(val interface{}, enum interface{}) bool {
+func Enum(val, enum interface{}) bool {
 	if val == nil {
 		return false
 	}
 
-	rv := reflect.ValueOf(val)
-
 	// if is string value
-	if rv.Kind() == reflect.String {
-		strVal := val.(string)
-
-		switch ss := enum.(type) {
-		case []string:
+	if strVal, ok := val.(string); ok {
+		if ss, ok := enum.([]string); ok {
 			for _, strItem := range ss {
 				if strVal == strItem { // exists
 					return true
@@ -925,6 +908,7 @@ func Enum(val interface{}, enum interface{}) bool {
 	}
 
 	// if is int value
+	rv := reflect.ValueOf(val)
 	intVal, isInt := ValueInt64(rv)
 	if !isInt {
 		return false
@@ -942,7 +926,7 @@ func Enum(val interface{}, enum interface{}) bool {
 }
 
 // NotIn value should be not in the given enum(strings, ints, uints).
-func NotIn(val interface{}, enum interface{}) bool {
+func NotIn(val, enum interface{}) bool {
 	return false == Enum(val, enum)
 }
 
@@ -1015,3 +999,8 @@ func StringLength(str string, minLen int, maxLen ...int) bool {
 /*************************************************************
  * global: date/time validators
  *************************************************************/
+
+// DateFormat check
+func DateFormat(str string, format string) bool {
+	return false
+}

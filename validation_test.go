@@ -19,6 +19,14 @@ func ExampleStruct() {
 	fmt.Println(ok)
 }
 
+var mpSample = M{
+	"age":   100,
+	"name":  "inhere",
+	"oldSt": 1,
+	"newSt": 2,
+	"email": "some@e.com",
+}
+
 func TestMap(t *testing.T) {
 	is := assert.New(t)
 
@@ -44,8 +52,23 @@ func TestMap(t *testing.T) {
 	v = New(nil)
 	is.Contains(v.Errors.String(), "invalid input data")
 	is.False(v.Validate())
+}
 
-	// v = Map(m)
+func TestValidation_StringRule(t *testing.T) {
+	is := assert.New(t)
+
+	v := Map(mpSample)
+	v.StringRules(MS{
+		"name":  "string|len:6|minLen:2|maxLen:10",
+		"oldSt": "lt:5|gt:0|in:1,2,3",
+	})
+	v.StringRule("newSt", "required|int:1|gtField:oldSt")
+	ok := v.Validate()
+	is.True(ok)
+
+	v = Map(mpSample)
+	v.StringRule("newSt", "required|int:1,5")
+	is.True(v.Validate())
 }
 
 // UserForm struct

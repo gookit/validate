@@ -280,7 +280,14 @@ func (v *Validation) StringRule(field, rule string, filterRule ...string) *Valid
 		if strings.ContainsRune(validator, ':') {
 			list := stringSplit(validator, ":")
 			args := parseArgString(list[1])
-			v.AddRule(field, list[0], strings2Args(args)...)
+			name := ValidatorName(list[0])
+			switch name {
+			// some special validator. need merge args to one.
+			case "enum", "notIn":
+				v.AddRule(field, list[0], args)
+			default:
+				v.AddRule(field, list[0], strings2Args(args)...)
+			}
 		} else {
 			v.AddRule(field, validator)
 		}
@@ -354,8 +361,7 @@ func (v *Validation) Validate(scene ...string) bool {
 	}
 
 	v.validated = true
-
-	if v.hasError {
+	if v.hasError { // clear safe data.
 		v.safeData = make(map[string]interface{})
 	}
 

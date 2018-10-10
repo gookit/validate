@@ -284,6 +284,19 @@ func toInt64Slice(enum interface{}) (ret []int64, ok bool) {
 	return
 }
 
+func getVariadicKind(typString string) reflect.Kind {
+	switch typString {
+	case "[]int":
+		return reflect.Int
+	case "[]int64":
+		return reflect.Int64
+	case "[]string":
+		return reflect.String
+	}
+
+	return reflect.Invalid
+}
+
 func panicf(format string, args ...interface{}) {
 	panic("validate: " + fmt.Sprintf(format, args...))
 }
@@ -301,15 +314,17 @@ func checkValidatorFunc(name string, fn interface{}) reflect.Value {
 	}
 
 	fv := reflect.ValueOf(fn)
-
-	// is nil or not is func
-	if fn == nil || fv.Kind() != reflect.Func {
-		panicf("validator '%s'. 'checkFunc' parameter is invalid, it must be an func", name)
+	if fn == nil || fv.Kind() != reflect.Func { // is nil or not is func
+		panicf("validator '%s'. 2th parameter is invalid, it must be an func", name)
 	}
 
 	ft := fv.Type()
+	if ft.NumIn() == 0 {
+		panicf("validator '%s' func at least one parameter position", name)
+	}
+
 	if ft.NumOut() != 1 || ft.Out(0).Kind() != reflect.Bool {
-		panicf("validator '%s' func must be return a bool value.", name)
+		panicf("validator '%s' func must be return a bool value", name)
 	}
 
 	return fv

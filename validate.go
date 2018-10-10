@@ -47,8 +47,13 @@ type Rule struct {
 	optional bool
 	// default value setting
 	defValue interface{}
-	// error message(s)
-	message  string
+	// error message
+	message string
+	// error messages, if fields contains multi field.
+	// eg {
+	// 	"field": "error message",
+	// 	"field.validator": "error message",
+	// }
 	messages map[string]string
 	// filter map. can with args. eg. "int", "str2arr:,"
 	filters map[string]string
@@ -60,7 +65,8 @@ type Rule struct {
 	beforeFunc func(field string, v *Validation) bool // func (val interface{}) bool
 	filterFunc func(val interface{}) (newVal interface{}, err error)
 	// custom check func's reflect.Value
-	checkFunc reflect.Value
+	checkFunc     reflect.Value
+	checkFuncMeta *funcMeta
 	// custom check is empty.
 	emptyChecker func(val interface{}) bool
 }
@@ -91,7 +97,11 @@ func (r *Rule) SetScene(scene string) *Rule {
 
 // SetCheckFunc use custom check func.
 func (r *Rule) SetCheckFunc(checkFunc interface{}) *Rule {
-	r.checkFunc = checkValidatorFunc("rule.checkFunc", checkFunc)
+	name := "rule." + r.fields
+	fv := checkValidatorFunc(name, checkFunc)
+
+	r.checkFunc = fv
+	r.checkFuncMeta = newFuncMeta(name, false, fv)
 	return r
 }
 
@@ -195,10 +205,15 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 	return false
 }
 
-func (r *Rule) errorMessage(field string) (msg string, ok bool) {
+func (r *Rule) errorMessage(field, validator string) (msg string, ok bool) {
 	if r.messages != nil {
-		msg, ok = r.messages[field]
-		if ok {
+		// use full key. "field.validator"
+		fKey := field + "." + validator
+		if msg, ok = r.messages[fKey]; ok {
+			return
+		}
+
+		if msg, ok = r.messages[field]; ok {
 			return
 		}
 	}
@@ -223,27 +238,47 @@ func (r *Rule) Validate(field, validator string, val interface{}, v *Validation)
 	}
 
 	// call custom validator in the rule.
-	if r.checkFunc.IsValid() {
-		ok = callValidatorValue(validator, r.checkFunc, val, r.arguments)
-	} else {
+	fm := r.checkFuncMeta
+	if fm == nil {
 		name := ValidatorName(validator)
-		fm := v.ValidatorMeta(name)
+		fm = v.ValidatorMeta(name)
 		if fm == nil {
 			panicf("the validator '%s' is not exists", validator)
 		}
+	}
 
-		var checked bool
+	// some prepare and check.
+	argNum := len(r.arguments) + 1 // "+1" is the "val" position
+	// check arg num is match
+	fm.checkArgNum(argNum, validator)
 
-		// call built in validators
-		checked, ok = callBuiltInValidator(validator, fm, val, r.arguments)
-		if !checked { // maybe is custom validator
-			ok = callValidatorValue(validator, fm.fv, val, r.arguments)
+	// convert val type, is first arg.
+	ft := fm.fv.Type()
+	firstTyp := ft.In(0).Kind()
+	rftVal := reflect.ValueOf(val)
+	if firstTyp == rftVal.Kind() {
+		ak, err := basicKind(rftVal)
+		if err != nil {
+			return
 		}
+
+		// manual converted
+		if nVal, _ := convertType(val, ak, rftVal.Kind()); nVal != nil {
+			val = nVal
+		}
+	}
+
+	var checked bool
+
+	// call built in validators
+	checked, ok = callBuiltInValidator(v, fm, val, r.arguments)
+	if !checked { // maybe is custom validator
+		ok = callValidatorValue(fm.fv, val, r.arguments)
 	}
 
 	// build and collect error message
 	if !ok {
-		errMsg, has := r.errorMessage(field)
+		errMsg, has := r.errorMessage(field, validator)
 		if !has {
 			errMsg = v.trans.Message(validator, field, r.arguments...)
 		}
@@ -254,61 +289,106 @@ func (r *Rule) Validate(field, validator string, val interface{}, v *Validation)
 	return
 }
 
-func callBuiltInValidator(validator string, fm *funcMeta, val interface{}, args []interface{}) (checked, ok bool) {
-	checked = true
-	argNum := len(args) + 1 // "1" is the "val" position
-
-	// check arg num
-	fm.checkArgNum(argNum, validator)
+func callBuiltInValidator(v *Validation, fm *funcMeta, val interface{}, args []interface{}) (checked, ok bool) {
+	// 1. args data type convert
 
 	ft := fm.fv.Type()
+	lastTyp := reflect.Invalid
+	lastArgIndex := fm.numIn - 1
 
-	// build new args
-	newArgs := make([]interface{}, argNum)
-	newArgs[0] = val
-	copy(newArgs[1:], args)
+	// isVariadic == true. last arg always is slice.
+	// eg. "...int64" -> slice "[]int64"
+	if fm.isVariadic {
+		// get variadic kind. "[]int64" -> reflect.Int64
+		lastTyp = getVariadicKind(ft.In(lastArgIndex).String())
+	}
+
+	checked = true
+	var wantTyp reflect.Kind
 
 	// convert args data type
-	for i := 0; i < argNum; i++ {
-		av := reflect.ValueOf(newArgs[i])
+	for i, arg := range args {
+		av := reflect.ValueOf(arg)
+
+		// "+1" because first arg is val, need exclude it.
+		if fm.isVariadic && i+1 >= lastArgIndex {
+			if lastTyp == av.Kind() { // type is same
+				continue
+			}
+
+			ak, err := basicKind(av)
+			if err != nil {
+				return
+			}
+
+			if nVal, _ := convertType(args[i], ak, lastTyp); nVal != nil { // manual converted
+				args[i] = nVal
+				continue
+			}
+
+			// unable to convert
+			return
+		}
+
+		// "+1" because func first arg is val, need skip it.
+		argITyp := ft.In(i + 1)
+		wantTyp = argITyp.Kind()
+
+		// type is same. or want type is interface
+		if wantTyp == av.Kind() || wantTyp == reflect.Interface {
+			continue
+		}
+
 		ak, err := basicKind(av)
 		if err != nil {
 			return
 		}
 
-		wantTyp := ft.In(i).Kind()
-		updateArg := false
-
-		// compare func param type and input param type.
-		if wantTyp == av.Kind() { // type is same
-			continue
-		} else if av.Type().ConvertibleTo(ft.In(i)) { // need convert type.
-			updateArg = true
-			newArgs[i] = av.Convert(ft.In(i)).Interface()
-		} else if nVal, _ := convertType(newArgs[i], ak, wantTyp); nVal != nil { // manual converted
-			newArgs[i] = nVal
-			updateArg = true
+		if av.Type().ConvertibleTo(argITyp) { // can auto convert type.
+			args[i] = av.Convert(argITyp).Interface()
+		} else if nVal, _ := convertType(args[i], ak, wantTyp); nVal != nil { // manual converted
+			args[i] = nVal
 		} else { // unable to convert
 			return
 		}
-
-		// update rule.arguments[i] value
-		if updateArg && i != 0 {
-			args[i-1] = newArgs[i]
-		}
 	}
 
+	// fmt.Println(fm.name, val)
+	// fmt.Printf("%#v\n", args)
+
+	// 2. call built in validator
 	switch fm.name {
+	case "required":
+		ok = v.Required(val)
+	case "lt":
+		ok = Lt(val, args[0].(int64))
+	case "gt":
+		ok = Gt(val, args[0].(int64))
 	case "min":
-		ok = Min(newArgs[0], newArgs[1].(int64))
+		ok = Min(val, args[0].(int64))
 	case "max":
-		ok = Max(newArgs[0], newArgs[1].(int64))
+		ok = Max(val, args[0].(int64))
+	case "enum":
+		ok = Enum(val, args[0])
+	case "notIn":
+		ok = NotIn(val, args[0])
+	case "isInt":
+		argLn := len(args)
+		if argLn == 0 {
+			ok = IsInt(val)
+		} else if argLn == 1 {
+			ok = IsInt(val, args[0].(int64))
+		} else { // argLn == 2
+			ok = IsInt(val, args[0].(int64), args[1].(int64))
+		}
 	case "length":
-		ok = Length(newArgs[0], newArgs[1].(int))
+		ok = Length(val, args[0].(int))
 	case "minLength":
-		ok = MinLength(newArgs[0], newArgs[1].(int))
+		ok = MinLength(val, args[0].(int))
 	case "maxLength":
-		ok = MaxLength(newArgs[0], newArgs[1].(int))
+		ok = MaxLength(val, args[0].(int))
+	case "between":
+		ok = Between(val, args[0].(int64), args[1].(int64))
 	default:
 		checked = false
 	}
@@ -338,57 +418,15 @@ func convertType(srcVal interface{}, srcKind kind, dstType reflect.Kind) (nVal i
 	return
 }
 
-func callValidatorValue(name string, fv reflect.Value, val interface{}, args []interface{}) bool {
-	ft := fv.Type()
-	fnArgNum := ft.NumIn() // arg num for the func
-
-	// only one param in the validator func.
-	if fnArgNum == 1 {
-		vs := fv.Call([]reflect.Value{reflect.ValueOf(val)})
-		return vs[0].Bool()
-	}
-
-	argNum := len(args) + 1
-	notEnough := argNum < fnArgNum
-
-	// last arg is like "... interface{}"
-	if ft.IsVariadic() {
-		notEnough = argNum+1 < fnArgNum
-	}
-
-	if notEnough {
-		panicf("not enough parameters for validator '%s'!", name)
-	}
-
-	newArgs := make([]interface{}, argNum)
-	newArgs[0] = val
-	copy(newArgs[1:], args)
+func callValidatorValue(fv reflect.Value, val interface{}, args []interface{}) bool {
+	argNum := len(args)
 
 	// build params for the validator func.
-	argIn := make([]reflect.Value, argNum)
-	// typeIn := make([]reflect.Type, fnArgNum)
+	argIn := make([]reflect.Value, argNum+1)
+	argIn[0] = reflect.ValueOf(val)
+
 	for i := 0; i < argNum; i++ {
-		av := reflect.ValueOf(newArgs[i])
-		wantTyp := ft.In(i).Kind()
-		updateArg := false
-
-		// compare func param type and input param type.
-		if wantTyp == av.Kind() {
-			argIn[i] = av
-		} else if av.Type().ConvertibleTo(ft.In(i)) { // need convert type.
-			updateArg = true
-			argIn[i] = av.Convert(ft.In(i))
-		} else if nv, ok := convertValueType(av, wantTyp); ok { // manual converted
-			argIn[i] = nv
-			updateArg = true
-		} else { // cannot converted
-			return false
-		}
-
-		// update rule.arguments[i] value
-		if updateArg && i != 0 {
-			args[i-1] = argIn[i].Interface()
-		}
+		argIn[i+1] = reflect.ValueOf(args[i])
 	}
 
 	// f.CallSlice()与Call() 不一样的是，CallSlice参数的最后一个会被展开

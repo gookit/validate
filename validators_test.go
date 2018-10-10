@@ -104,12 +104,6 @@ func TestIsString(t *testing.T) {
 	is.False(IsString("str", 1, 2))
 }
 
-func TestIsAlpha(t *testing.T) {
-	is := assert.New(t)
-	is.True(IsAlpha("abc"))
-	is.False(IsAlpha("abc123"))
-}
-
 func TestTypeCheck(t *testing.T) {
 	is := assert.New(t)
 
@@ -139,8 +133,8 @@ func TestTypeCheck(t *testing.T) {
 	// IsInts
 	is.True(IsInts([]int{}))
 	is.True(IsInts([]int{1}))
+	is.True(IsInts([]int8{}))
 	is.False(IsInts(nil))
-	is.False(IsInts([]int8{}))
 	is.False(IsInts(map[string]int{}))
 
 	// IsStrings
@@ -158,10 +152,18 @@ func TestTypeCheck(t *testing.T) {
 func TestStringCheck(t *testing.T) {
 	is := assert.New(t)
 
+	// IsAlpha
+	is.True(IsAlpha("abc"))
+	is.False(IsAlpha("abc123"))
+
 	// IsASCII
 	is.True(IsASCII("abc"))
 	is.True(IsASCII("#$"))
 	is.False(IsASCII("中文"))
+
+	// IsPrintableASCII
+	is.True(IsPrintableASCII("abc"))
+	is.False(IsPrintableASCII("中文"))
 
 	// IsEmail
 	is.True(IsEmail("some@abc.com"))
@@ -193,6 +195,24 @@ func TestStringCheck(t *testing.T) {
 	is.False(IsAlphaNum("#$"))
 	is.False(IsAlphaNum("123 abc"))
 
+	// IsMultiByte
+	is.True(IsMultiByte("你好"))
+	is.False(IsMultiByte("hello"))
+
+	// IsBase64
+	is.True(IsBase64("dGhpcyBpcyBhIGV4YW1wbGU=")) // -> "this is a example"
+
+	// IsDNSName
+	is.True(IsDNSName("8.8.8.8"))
+
+	// IsURL
+	is.True(IsURL("a.com?p=1"))
+	is.True(IsURL("http://a.com?p=1"))
+	is.True(IsURL("/users/profile/1"))
+
+	// IsDataURI
+	is.True(IsDataURI("data:image/gif;base64,AB...CD..."))
+
 	// IsMAC
 	is.True(IsMAC("01:23:45:67:89:ab"))
 	is.False(IsMAC("123 abc"))
@@ -206,6 +226,64 @@ func TestStringCheck(t *testing.T) {
 
 	// IsCIDRv6
 	is.True(IsCIDRv6("2001:db8::/32"))
+
+	// HasWhitespace
+	is.True(HasWhitespace("a bc"))
+	is.False(HasWhitespace("abc"))
+
+	// IsHexadecimal
+	is.True(IsHexadecimal("0a23"))
+
+	// IsISBN10
+	is.True(IsISBN10("0596528310"))
+
+	// IsISBN13
+	is.True(IsISBN13("9780596528317"))
+
+	// IsHexColor
+	is.True(IsHexColor("ccc"))
+	is.True(IsHexColor("ababab"))
+
+	// IsRGBColor
+	is.True(IsRGBColor("rgb(23,123,255)"))
+	is.False(IsRGBColor("rgb(23,123,355)"))
+
+	// UUID
+	is.True(IsUUID("fd2fff4c-cc39-11e8-a8d5-f2801f1b9fd1"))
+
+	// UUID3
+	is.True(IsUUID("e0f98f02-6703-365c-9a42-4a0749f76068"))
+	is.True(IsUUID3("e0f98f02-6703-365c-9a42-4a0749f76068"))
+
+	// UUID4
+	is.True(IsUUID("8098f6fb-1557-4633-b82b-40e1b26137bf"))
+	is.True(IsUUID4("8098f6fb-1557-4633-b82b-40e1b26137bf"))
+	is.False(IsUUID4("fd2fff4c-cc39-11e8-a8d5-f2801f1b9fd1")) // uuid 1
+
+	// UUID5
+	is.True(IsUUID("f6785639-778b-5db8-b1b3-60962fb4f38d"))
+	is.True(IsUUID5("f6785639-778b-5db8-b1b3-60962fb4f38d"))
+
+	is.True(IsLatitude("29.8431681298"))
+	is.True(IsLongitude("102.3908204650"))
+
+	// IsIntString
+	is.True(IsIntString("123"))
+	is.False(IsIntString("a123"))
+}
+
+func TestPath(t *testing.T) {
+	is := assert.New(t)
+
+	// IsWinPath
+	is.True(IsWinPath(`c:\users\inhere`))
+	is.False(IsWinPath(`c:/users/inhere`))
+
+	// IsUnixPath
+	is.True(IsUnixPath("/users/inhere"))
+
+	// IsFilePath
+	is.True(IsFilePath("./testdata/test.txt"))
 }
 
 func TestIsJSON(t *testing.T) {
