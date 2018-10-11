@@ -16,12 +16,16 @@ func TestFormData_Add(t *testing.T) {
 		"money":  {"23.4"},
 	})
 
-	is.True(d.Bool("notify"))
 	is.True(d.Has("notify"))
+	is.False(d.Has("not-exist"))
+	is.False(d.HasFile("file"))
+	is.True(d.Bool("notify"))
+	is.False(d.Bool("not-exist"))
 	is.Equal(30, d.Int("age"))
 	is.Equal(int64(30), d.MustInt64("age"))
 	is.Equal(0, d.Int("not-exist"))
 	is.Equal(23.4, d.Float("money"))
+	is.Equal(float64(0), d.Float("not-exist"))
 	is.Equal("inhere", d.String("name"))
 	is.Equal("age=30&money=23.4&name=inhere&notify=true", d.Encode())
 

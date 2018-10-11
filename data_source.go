@@ -462,11 +462,10 @@ func (d FormData) MustInt64(key string) int64 {
 // Float returns the first element in data[key] converted to a float.
 func (d FormData) Float(key string) float64 {
 	if !d.HasField(key) || len(d.Form[key]) == 0 {
-		return 0.0
+		return 0
 	}
 
-	val, _ := d.Get(key)
-	result, err := strconv.ParseFloat(val.(string), 64)
+	result, err := strconv.ParseFloat(d.String(key), 64)
 	if err != nil {
 		panic(err)
 	}
@@ -480,8 +479,7 @@ func (d FormData) Bool(key string) bool {
 		return false
 	}
 
-	val, _ := d.Get(key)
-	if result, err := strconv.ParseBool(val.(string)); err != nil {
+	if result, err := strconv.ParseBool(d.String(key)); err != nil {
 		panic(err)
 	} else {
 		return result

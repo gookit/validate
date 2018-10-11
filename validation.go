@@ -2,6 +2,7 @@ package validate
 
 import (
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"strings"
 	"time"
@@ -452,6 +453,15 @@ func (v *Validation) AddError(field string, msg string) {
 	}
 
 	v.Errors.Add(field, msg)
+}
+
+// AddErrorf add a formatted error message
+func (v *Validation) AddErrorf(field, msgFormat string, args ...interface{}) {
+	v.AddError(field, fmt.Sprintf(msgFormat, args...))
+}
+
+func (v *Validation) convertArgTypeError(name string, argKind, wantKind reflect.Kind) {
+	v.AddErrorf("_convert", "cannot convert %s to %s, validator '%s'", argKind, wantKind, name)
 }
 
 /*************************************************************

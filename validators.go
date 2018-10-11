@@ -250,6 +250,11 @@ func AddValidator(name string, checkFunc interface{}) {
 	validatorMetas[name] = newFuncMeta(name, false, fv)
 }
 
+// Validators get all validator names
+func Validators() map[string]int {
+	return validators
+}
+
 /*************************************************************
  * validators for current validation
  *************************************************************/
@@ -296,7 +301,7 @@ func (v *Validation) ValidatorValue(name string) (fv reflect.Value, ok bool) {
 }
 
 // ValidatorMeta get by name
-func (v *Validation) ValidatorMeta(name string) *funcMeta {
+func (v *Validation) validatorMeta(name string) *funcMeta {
 	if fm, ok := v.validatorMetas[name]; ok {
 		return fm
 	}
@@ -320,6 +325,24 @@ func (v *Validation) HasValidator(name string) bool {
 	// global validators
 	_, ok := validatorValues[name]
 	return ok
+}
+
+// Validators get all validator names
+func (v *Validation) Validators(withGlobal bool) map[string]int {
+	if withGlobal {
+		mp := make(map[string]int)
+		for name, typ := range validators {
+			mp[name] = typ
+		}
+
+		for name, typ := range v.validators {
+			mp[name] = typ
+		}
+
+		return mp
+	}
+
+	return v.validators
 }
 
 /*************************************************************

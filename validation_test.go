@@ -30,15 +30,7 @@ var mpSample = M{
 func TestMap(t *testing.T) {
 	is := assert.New(t)
 
-	m := M{
-		"name":  "inhere",
-		"age":   100,
-		"oldSt": 1,
-		"newSt": 2,
-		"email": "some@e.com",
-	}
-
-	v := New(m)
+	v := New(mpSample)
 	v.AddRule("name", "required")
 	v.AddRule("name", "minLen", 7)
 	v.AddRule("age", "max", 99)
@@ -52,6 +44,29 @@ func TestMap(t *testing.T) {
 	v = New(nil)
 	is.Contains(v.Errors.String(), "invalid input data")
 	is.False(v.Validate())
+
+	// test panic
+	v1 := New(mpSample)
+	is.Panics(func() {
+		// Max(val, max) only one arg
+		v1.AddRule("age", "max", 99, 34)
+		v1.Validate()
+	})
+
+	v = New(mpSample)
+	// invalid args
+	v.AddRule("age", "max", nil)
+	// v.AddRule("age", "max", []string{"a"})
+	is.False(v.Validate())
+	is.Contains(v.Errors.String(), "cannot convert invalid to int64")
+
+	v = New(mpSample)
+	v.StringRule("newSt", "gtField:oldSt")
+	v.StringRule("newSt", "gteField:oldSt")
+	v.StringRule("newSt", "neField:oldSt")
+	v.StringRule("oldSt", "ltField:newSt")
+	v.StringRule("oldSt", "lteField:newSt")
+	is.True(v.Validate())
 }
 
 func TestValidation_StringRule(t *testing.T) {
@@ -194,7 +209,7 @@ func TestValidationScene(t *testing.T) {
 		"name": "minLen:7",
 		"age":  "min:101",
 	})
-	v.WithScenes(SValues{
+	v.WithScenarios(SValues{
 		"create": []string{"name", "age"},
 		"update": []string{"name"},
 	})
@@ -208,10 +223,67 @@ func TestValidationScene(t *testing.T) {
 
 	// on scene "update"
 	v.ResetResult()
-	ok = v.Validate("update")
+	v.InScene("update")
+	ok = v.Validate()
 	is.False(ok)
 	is.Contains(v.Errors, "name")
 	is.NotContains(v.Errors, "age")
 	is.Equal("", v.Errors.Get("age"))
 	is.Equal("name min length is 7", v.Errors.One())
+}
+
+func TestAddValidator(t *testing.T) {
+	is := assert.New(t)
+
+	is.Panics(func() {
+		AddValidator("myCheck", "invalid")
+	})
+	is.Panics(func() {
+		AddValidator("myCheck", func() {})
+	})
+	is.Panics(func() {
+		AddValidator("myCheck", func() bool { return false })
+	})
+	is.Panics(func() {
+		AddValidator("myCheck", func(val interface{}) {})
+	})
+
+	is.Contains(Validators(), "min")
+
+	AddValidator("myCheck0", func(val interface{}) bool {
+		return true
+	})
+	AddValidators(M{
+		"myCheck1": func(val interface{}) bool {
+			return true
+		},
+	})
+
+	v := Map(mpSample)
+	is.True(v.HasValidator("int"))
+	is.True(v.HasValidator("min"))
+	is.True(v.HasValidator("myCheck0"))
+	is.True(v.HasValidator("myCheck1"))
+	is.False(v.HasValidator("myCheck"))
+
+	is.Panics(func() {
+		v.AddValidator("myFunc2", func() {})
+	})
+
+	v.AddValidator("myFunc3", func(val interface{}) bool {
+		return true
+	})
+	v.AddValidators(M{
+		"myFunc4": func(val interface{}) bool {
+			return true
+		},
+	})
+	is.True(v.HasValidator("myFunc3"))
+	is.True(v.HasValidator("myFunc4"))
+	is.False(v.HasValidator("myFunc2"))
+
+	is.Contains(v.Validators(false), "gtField")
+	is.Contains(v.Validators(false), "myFunc4")
+	is.NotContains(v.Validators(false), "min")
+	is.Contains(v.Validators(true), "min")
 }

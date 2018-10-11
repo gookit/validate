@@ -174,9 +174,10 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 		if err != nil { // has error
 			v.AddError(filterError, err.Error())
 			return true
-		} else { // save filtered value.
-			v.filteredData[field] = val
 		}
+
+		// save filtered value.
+		v.filteredData[field] = val
 
 		// only one validator
 		if !strings.ContainsRune(r.validator, '|') {
@@ -239,7 +240,7 @@ func (r *Rule) Validate(field, validator string, val interface{}, v *Validation)
 	fm := r.checkFuncMeta
 	if fm == nil {
 		name := ValidatorName(validator)
-		fm = v.ValidatorMeta(name)
+		fm = v.validatorMeta(name)
 		if fm == nil {
 			panicf("the validator '%s' is not exists", validator)
 		}
@@ -309,6 +310,7 @@ func callValidator(v *Validation, fm *funcMeta, val interface{}, args []interfac
 
 			ak, err := basicKind(av)
 			if err != nil {
+				v.convertArgTypeError(fm.name, av.Kind(), wantTyp)
 				return
 			}
 
@@ -318,6 +320,7 @@ func callValidator(v *Validation, fm *funcMeta, val interface{}, args []interfac
 			}
 
 			// unable to convert
+			v.convertArgTypeError(fm.name, av.Kind(), wantTyp)
 			return
 		}
 
@@ -332,6 +335,7 @@ func callValidator(v *Validation, fm *funcMeta, val interface{}, args []interfac
 
 		ak, err := basicKind(av)
 		if err != nil {
+			v.convertArgTypeError(fm.name, av.Kind(), wantTyp)
 			return
 		}
 
@@ -340,6 +344,7 @@ func callValidator(v *Validation, fm *funcMeta, val interface{}, args []interfac
 		} else if nVal, _ := convertType(args[i], ak, wantTyp); nVal != nil { // manual converted
 			args[i] = nVal
 		} else { // unable to convert
+			v.convertArgTypeError(fm.name, av.Kind(), wantTyp)
 			return
 		}
 	}

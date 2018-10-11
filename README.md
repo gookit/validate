@@ -1,6 +1,8 @@
 # Validate
 
 [![GoDoc](https://godoc.org/github.com/gookit/validate?status.svg)](https://godoc.org/github.com/gookit/validate)
+[![Build Status](https://travis-ci.org/gookit/validate.svg?branch=master)](https://travis-ci.org/gookit/validate)
+[![Coverage Status](https://coveralls.io/repos/github/gookit/validate/badge.svg?branch=master)](https://coveralls.io/github/gookit/validate?branch=master)
 [![Go Report Card](https://goreportcard.com/badge/github.com/gookit/validate)](https://goreportcard.com/report/github.com/gookit/validate)
 
 The package is a generic go data validate library.
@@ -18,50 +20,6 @@ The package is a generic go data validate library.
 
 - [godoc for gopkg](https://godoc.org/gopkg.in/gookit/validate.v1)
 - [godoc for github](https://godoc.org/github.com/gookit/validate)
-
-## Validate Map
-
-```go
-package main
-
-import "fmt"
-import "time"
-import "github.com/gookit/validate"
-
-func main()  {
-	m := map[string]interface{}{
-		"name":  "inhere",
-		"age":   100,
-		"oldSt": 1,
-		"newSt": 2,
-		"email": "some@email.com",
-	}
-
-	v := validate.Map(m)
-	// v := validate.New(m)
-	v.AddRule("name", "required")
-	v.AddRule("name", "minLen", 7)
-	v.AddRule("age", "max", 99)
-	v.AddRule("age", "min", 1)
-	v.AddRule("email", "email")
-	
-	// can also
-	v.StringRule("age", "required|int|min:1|max:99")
-	v.StringRule("name", "required|minLen:7")
-
-	// v.WithScenes(map[string]string{
-	//	 "create": []string{"name", "email"},
-	//	 "update": []string{"name"},
-	// })
-	
-	if v.Validate() { // validate ok
-		// do something ...
-	} else {
-		fmt.Println(v.Errors) // all error messages
-		fmt.Println(v.Errors.One()) // returns a random error message text
-	}
-}
-```
 
 ## Validate Struct
 
@@ -112,6 +70,50 @@ func main() {
 	v := validate.Struct(u)
 	// v := validate.New(u)
 
+	if v.Validate() { // validate ok
+		// do something ...
+	} else {
+		fmt.Println(v.Errors) // all error messages
+		fmt.Println(v.Errors.One()) // returns a random error message text
+	}
+}
+```
+
+## Validate Map
+
+```go
+package main
+
+import "fmt"
+import "time"
+import "github.com/gookit/validate"
+
+func main()  {
+	m := map[string]interface{}{
+		"name":  "inhere",
+		"age":   100,
+		"oldSt": 1,
+		"newSt": 2,
+		"email": "some@email.com",
+	}
+
+	v := validate.Map(m)
+	// v := validate.New(m)
+	v.AddRule("name", "required")
+	v.AddRule("name", "minLen", 7)
+	v.AddRule("age", "max", 99)
+	v.AddRule("age", "min", 1)
+	v.AddRule("email", "email")
+	
+	// can also
+	v.StringRule("age", "required|int|min:1|max:99")
+	v.StringRule("name", "required|minLen:7")
+
+	// v.WithScenes(map[string]string{
+	//	 "create": []string{"name", "email"},
+	//	 "update": []string{"name"},
+	// })
+	
 	if v.Validate() { // validate ok
 		// do something ...
 	} else {
