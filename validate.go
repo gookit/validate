@@ -164,20 +164,23 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 			continue
 		}
 
-		val, has := v.Get(field)   // get field value.
-		if !has && v.StopOnError { // no field AND stop on error
-			return true
-		}
+		// get field value.
+		val, exist := v.Get(field)
+		// if !exist && v.SkipOnEmpty { // empty value AND skip on empty
+		// 	return false
+		// }
 
-		// apply filters func
-		val, err := applyFilters(val, r.filters, v)
-		if err != nil { // has error
-			v.AddError(filterError, err.Error())
-			return true
-		}
+		// apply filters func.
+		if exist {
+			val, err := applyFilters(val, r.filters, v)
+			if err != nil { // has error
+				v.AddError(filterError, err.Error())
+				return true
+			}
 
-		// save filtered value.
-		v.filteredData[field] = val
+			// save filtered value.
+			v.filteredData[field] = val
+		}
 
 		// only one validator
 		if !strings.ContainsRune(r.validator, '|') {
@@ -204,26 +207,6 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 	return false
 }
 
-func (r *Rule) errorMessage(field, validator string) (msg string, ok bool) {
-	if r.messages != nil {
-		// use full key. "field.validator"
-		fKey := field + "." + validator
-		if msg, ok = r.messages[fKey]; ok {
-			return
-		}
-
-		if msg, ok = r.messages[field]; ok {
-			return
-		}
-	}
-
-	if r.message != "" {
-		return r.message, true
-	}
-
-	return
-}
-
 // Validate the field by validator name
 func (r *Rule) Validate(field, validator string, val interface{}, v *Validation) (ok bool) {
 	// "-" OR "safe" mark field value always is safe.
@@ -246,18 +229,23 @@ func (r *Rule) Validate(field, validator string, val interface{}, v *Validation)
 		}
 	}
 
+	// empty value AND skip on empty.
+	if v.SkipOnEmpty && validator != "required" && IsEmpty(val) {
+		return true
+	}
+
 	// some prepare and check.
 	argNum := len(r.arguments) + 1 // "+1" is the "val" position
+	rftVal := reflect.ValueOf(val)
 	// check arg num is match
 	fm.checkArgNum(argNum, validator)
 
 	// convert val type, is first arg.
 	ft := fm.fv.Type()
 	firstTyp := ft.In(0).Kind()
-	rftVal := reflect.ValueOf(val)
 	if firstTyp == rftVal.Kind() {
 		ak, err := basicKind(rftVal)
-		if err != nil {
+		if err != nil { // todo check?
 			return
 		}
 
@@ -271,13 +259,32 @@ func (r *Rule) Validate(field, validator string, val interface{}, v *Validation)
 	ok = callValidator(v, fm, val, r.arguments)
 	// build and collect error message
 	if !ok {
-		errMsg, has := r.errorMessage(field, validator)
-		if !has {
-			errMsg = v.trans.Message(validator, field, r.arguments...)
+		v.AddError(field, r.errorMessage(field, validator, v))
+	}
+
+	return
+}
+
+func (r *Rule) errorMessage(field, validator string, v *Validation) (msg string) {
+	if r.messages != nil {
+		var ok bool
+		// use full key. "field.validator"
+		fKey := field + "." + validator
+		if msg, ok = r.messages[fKey]; ok {
+			return
 		}
 
-		v.AddError(field, errMsg)
+		if msg, ok = r.messages[field]; ok {
+			return
+		}
 	}
+
+	if r.message != "" {
+		return r.message
+	}
+
+	// built in error messages
+	msg = v.trans.Message(validator, field, r.arguments...)
 
 	return
 }

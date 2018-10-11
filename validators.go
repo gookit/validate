@@ -351,7 +351,7 @@ func (v *Validation) Validators(withGlobal bool) map[string]int {
 
 // Required field val check
 func (v *Validation) Required(val interface{}) bool {
-	return !ValueIsEmpty(reflect.ValueOf(val))
+	return !IsEmpty(val)
 }
 
 // EqField value should EQ the dst field value
@@ -430,6 +430,10 @@ func (v *Validation) LteField(val interface{}, dstField string) bool {
 func IsEmpty(val interface{}) bool {
 	if val == nil {
 		return true
+	}
+
+	if s, ok := val.(string); ok {
+		return s == ""
 	}
 
 	if rv, ok := val.(reflect.Value); ok {

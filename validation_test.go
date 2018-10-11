@@ -3,6 +3,7 @@ package validate
 import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
+	"net/http"
 	"net/url"
 	"testing"
 	"time"
@@ -194,6 +195,20 @@ func TestFromQuery(t *testing.T) {
 	is.False(v.Validate())
 	is.Equal("name min length is 7", v.Errors.Field("name")[0])
 	is.Empty(v.SafeData())
+}
+
+func TestRequest(t *testing.T) {
+	is := assert.New(t)
+
+	// GET
+	r, _ := http.NewRequest("GET", "/users?page=1&size=10&name=inhere", nil)
+	v := Request(r)
+	v.StringRule("page", "required|min:1")
+	// v.StringRule("status", "required|min:1")
+	v.StringRule("status", "min:1")
+	v.Validate()
+
+	is.True(v.IsOK())
 }
 
 func TestValidationScene(t *testing.T) {

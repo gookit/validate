@@ -391,7 +391,11 @@ func (d *FormData) Set(field string, val interface{}) error {
 
 // Get value by key
 func (d FormData) Get(key string) (interface{}, bool) {
-	return d.Form.Get(key), true
+	if vs, ok := d.Form[key]; ok && len(vs) > 0 {
+		return vs[0], true
+	}
+
+	return nil, false
 }
 
 // Trimmed gets the first value by key, and apply strings.TrimSpace
@@ -441,8 +445,12 @@ func (d FormData) Int(key string) int {
 		return 0
 	}
 
-	str, _ := d.Get(key)
-	if result, err := strconv.Atoi(str.(string)); err != nil {
+	str := d.String(key)
+	if str == "" {
+		return 0
+	}
+
+	if result, err := strconv.Atoi(str); err != nil {
 		panic(err)
 	} else {
 		return result

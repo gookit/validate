@@ -195,16 +195,11 @@ func (v *Validation) ResetResult() {
 
 // Reset the Validation instance
 func (v *Validation) Reset() {
-	v.Errors = Errors{}
-	v.hasError = false
-	v.filtered = false
-	v.validated = false
+	v.ResetResult()
+
 	// rules
 	v.rules = v.rules[:0]
 	v.filterRules = v.filterRules[:0]
-	// result data
-	v.safeData = make(map[string]interface{})
-	v.filteredData = make(map[string]interface{})
 }
 
 // WithScenarios is alias of the WithScenes()
