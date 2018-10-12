@@ -340,12 +340,13 @@ func (v *Validation) Validate(scene ...string) bool {
 		return v.IsSuccess()
 	}
 
+	// init scene info
 	v.SetScene(scene...)
 	v.sceneFields = v.sceneFieldMap()
 
-	// apply filter rule before validate.
-	if !v.Filtering() {
-		return v.IsSuccess()
+	// apply filter rules before validate.
+	if false == v.Filtering() && v.StopOnError {
+		return false
 	}
 
 	// apply rule to validate data.

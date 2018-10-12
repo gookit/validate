@@ -41,7 +41,7 @@ type Rule struct {
 	scene string
 	// need validate fields. allow multi. eg "field1, field2"
 	fields string
-	// is optional, only validate on value is not empty.
+	// is optional, only validate on value is not empty. sometimes
 	optional bool
 	// default value setting
 	defValue interface{}
@@ -153,7 +153,7 @@ func (r *Rule) Fields() []string {
 
 // Apply rule for the rule fields
 func (r *Rule) Apply(v *Validation) (stop bool) {
-	// scene name is not match.
+	// scene name is not match. skip the rule
 	if r.scene != "" && r.scene != v.scene {
 		return false
 	}
@@ -166,9 +166,11 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 
 		// get field value.
 		val, exist := v.Get(field)
-		// if !exist && v.SkipOnEmpty { // empty value AND skip on empty
-		// 	return false
-		// }
+
+		// empty value AND r.optional=true. skip check the field.
+		if !exist && r.optional {
+			continue
+		}
 
 		// apply filters func.
 		if exist {
@@ -300,7 +302,7 @@ func callValidator(v *Validation, fm *funcMeta, val interface{}, args []interfac
 	// eg. "...int64" -> slice "[]int64"
 	if fm.isVariadic {
 		// get variadic kind. "[]int64" -> reflect.Int64
-		lastTyp = getVariadicKind(ft.In(lastArgIndex).String())
+		lastTyp = getSliceItemKind(ft.In(lastArgIndex).String())
 	}
 
 	var wantTyp reflect.Kind

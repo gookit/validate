@@ -1,6 +1,7 @@
 package validate
 
 import (
+	"bytes"
 	"encoding/json"
 	"github.com/gookit/filter"
 	"net"
@@ -436,10 +437,6 @@ func IsEmpty(val interface{}) bool {
 		return s == ""
 	}
 
-	if rv, ok := val.(reflect.Value); ok {
-		return ValueIsEmpty(rv)
-	}
-
 	return ValueIsEmpty(reflect.ValueOf(val))
 }
 
@@ -829,11 +826,44 @@ func IsJSON(str string) bool {
  * global: compare validators
  *************************************************************/
 
-// IsEqual check
+// IsEqual check two value is equals.
+// Support: bool, int(X), uint(X), string, float(X) AND slice, array, map
 func IsEqual(val, wantVal interface{}) bool {
-	equal, err := eq(reflect.ValueOf(val), reflect.ValueOf(wantVal))
-	if err != nil {
+	// check is nil
+	if val == nil || wantVal == nil {
+		return val == wantVal
+	}
+
+	sv := reflect.ValueOf(val)
+	wv := reflect.ValueOf(wantVal)
+
+	// don't compare func, struct
+	if sv.Kind() == reflect.Func || sv.Kind() == reflect.Struct {
 		return false
+	}
+	if wv.Kind() == reflect.Func || wv.Kind() == reflect.Struct {
+		return false
+	}
+
+	// compare basic type: bool, int(X), uint(X), string, float(X)
+	equal, err := eq(sv, wv)
+
+	// is not an basic type, eg: slice, array, map ...
+	if err != nil {
+		expBt, ok := val.([]byte)
+		if !ok {
+			return reflect.DeepEqual(val, wantVal)
+		}
+
+		actBt, ok := wantVal.([]byte)
+		if !ok {
+			return false
+		}
+		if expBt == nil || actBt == nil {
+			return expBt == nil && actBt == nil
+		}
+
+		return bytes.Equal(expBt, actBt)
 	}
 
 	return equal
@@ -855,7 +885,7 @@ func IntEqual(val interface{}, wantVal int64) bool {
 	return intVal == wantVal
 }
 
-// Gt check value greater dst value
+// Gt check value greater dst value. only check for: int(X), uint(X), float(X)
 func Gt(val interface{}, dstVal int64) bool {
 	intVal, err := filter.Int64(val)
 	if err != nil {
@@ -865,7 +895,8 @@ func Gt(val interface{}, dstVal int64) bool {
 	return intVal > dstVal
 }
 
-// Min check value greater or equal dst value. for int(8-64), uint(8-64). alias `Gte`
+// Min check value greater or equal dst value, alias `Gte`.
+// only check for: int(X), uint(X), float(X).
 func Min(val interface{}, min int64) bool {
 	intVal, err := filter.Int64(val)
 	if err != nil {
@@ -875,7 +906,7 @@ func Min(val interface{}, min int64) bool {
 	return intVal >= min
 }
 
-// Lt less than dst value
+// Lt less than dst value. only check for: int(X), uint(X), float(X).
 func Lt(val interface{}, dstVal int64) bool {
 	intVal, err := filter.Int64(val)
 	if err != nil {

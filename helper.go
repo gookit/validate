@@ -72,6 +72,8 @@ func buildArgs(val interface{}, args []interface{}) []interface{} {
 // ValueIsEmpty check
 func ValueIsEmpty(v reflect.Value) bool {
 	switch v.Kind() {
+	case reflect.Invalid:
+		return true
 	case reflect.String, reflect.Array:
 		return v.Len() == 0
 	case reflect.Map, reflect.Slice:
@@ -284,12 +286,20 @@ func toInt64Slice(enum interface{}) (ret []int64, ok bool) {
 	return
 }
 
-func getVariadicKind(typString string) reflect.Kind {
+func getSliceItemKind(typString string) reflect.Kind {
 	switch typString {
 	case "[]int":
 		return reflect.Int
+	case "[]int8":
+		return reflect.Int8
+	case "[]int16":
+		return reflect.Int16
 	case "[]int64":
 		return reflect.Int64
+	case "[]uint":
+		return reflect.Uint
+	case "[]uint64":
+		return reflect.Uint64
 	case "[]string":
 		return reflect.String
 	}

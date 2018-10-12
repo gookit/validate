@@ -9,11 +9,14 @@ func TestIsEmpty(t *testing.T) {
 	is := assert.New(t)
 
 	is.True(IsEmpty(nil))
+	is.True(IsEmpty(0))
+	is.True(IsEmpty(""))
+	is.True(IsEmpty([]int{}))
+	is.True(IsEmpty([]string{}))
+	is.True(IsEmpty(map[string]string{}))
 }
 
-/*************************************************************
- * global: type validators
- *************************************************************/
+// ------------------ type validator ------------------
 
 func TestIntCheck(t *testing.T) {
 	is := assert.New(t)
@@ -43,57 +46,22 @@ func TestIntCheck(t *testing.T) {
 	is.False(IsUint("2a"))
 }
 
-func TestIsFloat(t *testing.T) {
+func TestTypeCheck(t *testing.T) {
 	is := assert.New(t)
 
-	is.True(IsFloat("3.4"))
-	is.True(IsFloat("2"))
-	is.False(IsFloat(""))
-	is.False(IsFloat("ab"))
-}
-
-func TestIsBool(t *testing.T) {
-	is := assert.New(t)
-
+	// IsBool
 	is.True(IsBool("1"))
 	is.True(IsBool("true"))
 	is.True(IsBool("false"))
 	is.False(IsBool("3.4"))
-}
 
-func TestMin(t *testing.T) {
-	is := assert.New(t)
+	// IsFloat
+	is.True(IsFloat("3.4"))
+	is.True(IsFloat("2"))
+	is.False(IsFloat(""))
+	is.False(IsFloat("ab"))
 
-	// ok
-	is.True(Min(3, 2))
-	is.True(Min(3, 3))
-	is.True(Min(int64(3), 3))
-
-	// fail
-	is.False(Min(nil, 3))
-	is.False(Min("str", 3))
-	is.False(Min(3, 4))
-	is.False(Min(int64(3), 4))
-}
-
-func TestMax(t *testing.T) {
-	is := assert.New(t)
-
-	// ok
-	is.True(Max(3, 4))
-	is.True(Max(3, 3))
-	is.True(Max(int64(3), 3))
-
-	// fail
-	is.False(Max(nil, 3))
-	is.False(Max("str", 3))
-	is.False(Max(3, 2))
-	is.False(Max(int64(3), 2))
-}
-
-func TestIsString(t *testing.T) {
-	is := assert.New(t)
-
+	// IsString
 	is.True(IsString("str"))
 	is.False(IsString(nil))
 	is.False(IsString(2))
@@ -102,10 +70,6 @@ func TestIsString(t *testing.T) {
 	is.True(IsString("str", 3, 5))
 	is.False(IsString("str", 4))
 	is.False(IsString("str", 1, 2))
-}
-
-func TestTypeCheck(t *testing.T) {
-	is := assert.New(t)
 
 	// IsMap
 	is.True(IsMap(map[string]int{}))
@@ -143,11 +107,84 @@ func TestTypeCheck(t *testing.T) {
 	is.False(IsStrings(nil))
 	is.False(IsStrings([]int{}))
 	is.False(IsStrings(map[string]int{}))
+}
+
+// ------------------ value compare ------------------
+
+func TestValueCompare(t *testing.T) {
+	is := assert.New(t)
 
 	// IsEqual
 	is.True(IsEqual(2, 2))
+	is.True(IsEqual(nil, nil))
+
+	// -- array, slice, map ...
+	is.True(IsEqual([1]int{1}, [1]int{1}))
+	is.True(IsEqual([]int{1}, []int{1}))
+	is.True(IsEqual([]byte(`abc`), []byte(`abc`)))
+	is.True(IsEqual([]string{"a"}, []string{"a"}))
+	is.True(IsEqual([]interface{}{"a"}, []interface{}{"a"}))
+	is.True(IsEqual(map[string]string{"a": "v0"}, map[string]string{"a": "v0"}))
+
 	is.False(IsEqual(2, "2"))
+	is.False(IsEqual(2, nil))
+	is.False(IsEqual(nil, 2))
+	is.False(IsEqual(func() {}, func() {}))
+	is.False(IsEqual(2, func() {}))
+	is.False(IsEqual([]byte(`abc`), "abc"))
+
+	// NotEqual
+	is.True(NotEqual(2, nil))
+	is.False(NotEqual(2, 2))
+
+	// IntEqual
+	is.True(IntEqual(2, 2))
+	is.True(IntEqual("2", 2))
+	is.False(IntEqual("a", 97))
+	is.False(IntEqual("invalid", 2))
+
+	// Gt
+	is.True(Gt(3, 2))
+	is.False(Gt(2, 3))
+	is.False(Gt("invalid", 3))
+
+	// Lt
+	is.True(Lt(2, 3))
+	is.False(Lt(3, 2))
+	is.False(Lt("invalid", 3))
 }
+
+func TestMin(t *testing.T) {
+	is := assert.New(t)
+
+	// ok
+	is.True(Min(3, 2))
+	is.True(Min(3, 3))
+	is.True(Min(int64(3), 3))
+
+	// fail
+	is.False(Min(nil, 3))
+	is.False(Min("str", 3))
+	is.False(Min(3, 4))
+	is.False(Min(int64(3), 4))
+}
+
+func TestMax(t *testing.T) {
+	is := assert.New(t)
+
+	// ok
+	is.True(Max(3, 4))
+	is.True(Max(3, 3))
+	is.True(Max(int64(3), 3))
+
+	// fail
+	is.False(Max(nil, 3))
+	is.False(Max("str", 3))
+	is.False(Max(3, 2))
+	is.False(Max(int64(3), 2))
+}
+
+// ------------------ string check ------------------
 
 func TestStringCheck(t *testing.T) {
 	is := assert.New(t)
