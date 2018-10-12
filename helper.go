@@ -162,24 +162,6 @@ func CalcLength(val interface{}) int {
 	return ValueLen(reflect.ValueOf(val))
 }
 
-// IntVal of the val
-func IntVal(val interface{}) (intVal int64, ok bool) {
-	switch tv := val.(type) {
-	case int:
-		ok = true
-		intVal = int64(tv)
-	case int64:
-		ok = true
-		intVal = tv
-	case reflect.Value:
-		intVal, ok = ValueInt64(tv)
-	default:
-		intVal, ok = ValueInt64(reflect.ValueOf(val))
-	}
-
-	return
-}
-
 // value compare. use for compare int, string.
 func valueCompare(srcVal, dstVal interface{}, op string) bool {
 	var err error

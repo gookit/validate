@@ -8,10 +8,13 @@ var Locales = map[string]validate.MS{
 }
 
 // Register language data to Validation
-func Register(v *validate.Validation, name string) {
+func Register(v *validate.Validation, name string) bool {
 	if data, ok := Locales[name]; ok {
 		v.AddTranslates(data)
+		return true
 	}
+
+	return false
 }
 
 // zh-CN language messages

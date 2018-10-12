@@ -386,6 +386,8 @@ func callValidator(v *Validation, fm *funcMeta, val interface{}, args []interfac
 		} else { // argLn == 2
 			ok = IsInt(val, args[0].(int64), args[1].(int64))
 		}
+	case "isNumber":
+		ok = IsNumber(val.(string))
 	case "length":
 		ok = Length(val, args[0].(int))
 	case "minLength":
@@ -396,6 +398,8 @@ func callValidator(v *Validation, fm *funcMeta, val interface{}, args []interfac
 		ok = Regexp(val.(string), args[0].(string))
 	case "between":
 		ok = Between(val, args[0].(int64), args[1].(int64))
+	case "isJSON":
+		ok = IsJSON(val.(string))
 	default: // is user custom validators
 		ok = callValidatorValue(fm.fv, val, args)
 	}

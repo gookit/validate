@@ -90,6 +90,8 @@ func TestTypeCheck(t *testing.T) {
 	is.False(IsArray(new([]string)))
 
 	// IsSlice
+	is.True(IsSlice([]byte{'a'}))
+	is.True(IsSlice([]rune{'a'}))
 	is.True(IsSlice([]string{}))
 	is.True(IsSlice(new([]string)))
 	is.True(IsSlice(make([]string, 1)))
