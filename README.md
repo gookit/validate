@@ -162,16 +162,50 @@ func main()  {
 
 ## Built In Filters
 
-filter/aliases | description | simple example
--------------------|-----------------------|--------------------
-`int/integer`  | convert value(string) to int type | `v.FilterRule("id", "int")`
+filter/aliases | description 
+-------------------|-------------------------------------------
+`int/integer`  | convert value(string) to int type `v.FilterRule("id", "int")`
 
 ## Built In Validators
 
-validator/aliases | description | simple example
--------------------|-----------------------|--------------------
-`required`  | check value is not empty. | `v.AddRule("userId", "required")`
-`int/integer`  | check value is int type | `v.AddRule("userId", "int")`
+validator/aliases | description
+-------------------|-------------------------------------------
+`required`  | check value is not empty. 
+`int/integer/isInt`  | check value is int type
+`in/enum`  |  description
+`range/between`  |  description
+`eq/equal/isEqual`  |  description
+`minLen/minLength`  |  description
+`uint/isUint`  |  description
+`map/isMap`  |  description
+`max/lte`  |  description
+`ipv4/isIPv4`  |  description
+`intStr/intString/isIntString`  |  description
+`ne/notEq/notEqual`  |  description
+`gtField`  |  description
+`lteField`  |  description
+`arr/array/isArray`  |  description
+`lt`  |  description
+`email/isEmail`  |  description
+`eqField`  |  description
+`intEq/intEqual`  |  description
+`len/length`  |  description
+`float/isFloat`  |  description
+`min/gte`  |  description
+`neField`  |  description
+`slice/isSlice`  |  description
+`regex/regexp`  |  description
+`strings/isStrings`  |  description
+`ints/isInts`  |  description
+`ip/isIP`  |  description
+`gt`  |  description
+`maxLen/maxLength`  |  description
+`notIn`  |  description
+`gteField`  |  description
+`ltField`  |  description
+`ipv6/isIPv6`  |  description
+`bool/isBool`  |  description
+`string/isString`  |  description
 
 ## Reference
 

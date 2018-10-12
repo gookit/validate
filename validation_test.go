@@ -172,6 +172,8 @@ func TestStruct(t *testing.T) {
 	is.False(ok)
 	is.Equal("User Name min length is 7", v.Errors.Field("Name")[0])
 	is.Empty(v.SafeData())
+
+	fmt.Println(v.Validators(true))
 }
 
 func TestJSON(t *testing.T) {

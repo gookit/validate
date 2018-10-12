@@ -41,6 +41,7 @@ func TestIntCheck(t *testing.T) {
 	is.False(IsInt("str", 4, 6))
 
 	// IsUint
+	is.True(IsUint("0"))
 	is.True(IsUint("2"))
 	is.False(IsUint("-2"))
 	is.False(IsUint("2a"))

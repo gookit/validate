@@ -87,6 +87,7 @@ var validatorAliases = map[string]string{
 	"range": "between",
 	// type
 	"int":     "isInt",
+	"integer": "isInt",
 	"uint":    "isUint",
 	"bool":    "isBool",
 	"float":   "isFloat",
