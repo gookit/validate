@@ -68,6 +68,8 @@ func TestTypeCheck(t *testing.T) {
 
 	is.True(IsString("str", 3))
 	is.True(IsString("str", 3, 5))
+	is.False(IsString(nil, 4))
+	is.False(IsString(3, 4))
 	is.False(IsString("str", 4))
 	is.False(IsString("str", 1, 2))
 
@@ -152,6 +154,12 @@ func TestValueCompare(t *testing.T) {
 	is.True(Lt(2, 3))
 	is.False(Lt(3, 2))
 	is.False(Lt("invalid", 3))
+
+	// Between
+	is.True(Between(3, 2, 5))
+	is.True(Between("3", 2, 5))
+	is.False(Between(6, 2, 5))
+	is.False(Between("invalid", 2, 5))
 }
 
 func TestMin(t *testing.T) {
@@ -216,6 +224,9 @@ func TestStringCheck(t *testing.T) {
 	is.True(IsIPv4("1.1.1.1"))
 	is.False(IsIPv4("1.1.1.1.1"))
 
+	// IsIPv6
+	is.False(IsIPv6("1.1.1.1"))
+
 	// IsAlpha
 	is.True(IsAlpha("abc"))
 	is.True(IsAlpha("Abc"))
@@ -231,6 +242,11 @@ func TestStringCheck(t *testing.T) {
 	is.True(IsAlphaNum("abc"))
 	is.False(IsAlphaNum("#$"))
 	is.False(IsAlphaNum("123 abc"))
+
+	// IsNumber
+	is.True(IsNumber("0"))
+	is.True(IsNumber("123"))
+	is.False(IsNumber("-123"))
 
 	// IsMultiByte
 	is.True(IsMultiByte("你好"))
@@ -307,6 +323,9 @@ func TestStringCheck(t *testing.T) {
 	// IsIntString
 	is.True(IsIntString("123"))
 	is.False(IsIntString("a123"))
+
+	// Regexp
+	is.True(Regexp("123", "[0-9]+"))
 }
 
 func TestPath(t *testing.T) {
@@ -321,6 +340,8 @@ func TestPath(t *testing.T) {
 
 	// IsFilePath
 	is.True(IsFilePath("./testdata/test.txt"))
+	is.False(IsFilePath("./testdata/not-exist.txt"))
+	is.False(IsFilePath(""))
 }
 
 func TestIsJSON(t *testing.T) {
@@ -345,9 +366,14 @@ func TestLength(t *testing.T) {
 	is.False(Length("a中文", 3))
 	is.False(Length(nil, 3))
 
+	// ByteLength
+	is.True(ByteLength("a", 1))
+	is.True(ByteLength("abc", 1, 3))
+
 	// RuneLength
 	is.True(RuneLength("a", 1))
 	is.True(StringLength("a中文", 3))
+	is.True(StringLength("a中文", 3, 6))
 	// fmt.Println(len([]rune("a中文")))
 
 	// MinLength
@@ -361,13 +387,17 @@ func TestLength(t *testing.T) {
 
 func TestEnumAndNotIn(t *testing.T) {
 	is := assert.New(t)
-
 	tests := map[interface{}]interface{}{
 		1:   []int{1, 2, 3},
 		2:   []int8{1, 2, 3},
 		3:   []int16{1, 2, 3},
 		4:   []int32{4, 2, 3},
 		5:   []int64{5, 2, 3},
+		6:   []uint{6, 2, 3},
+		7:   []uint8{7, 2, 3},
+		8:   []uint16{8, 2, 3},
+		9:   []uint32{9, 2, 3},
+		10:  []uint64{10, 3},
 		'a': []int64{97},
 		'b': []rune{'a', 'b'},
 		'c': []byte{'a', 'b', 'c'}, // byte -> uint8
@@ -381,6 +411,8 @@ func TestEnumAndNotIn(t *testing.T) {
 
 	is.False(Enum(nil, []int{}))
 	is.False(Enum('a', []int{}))
+	//
+	is.False(Enum([]int{2}, []int{2, 3}))
 
 	tests1 := map[interface{}]interface{}{
 		2:   []int{1, 3},

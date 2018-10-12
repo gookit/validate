@@ -86,6 +86,27 @@ func TestValidation_StringRule(t *testing.T) {
 	v = Map(mpSample)
 	v.StringRule("newSt", "required|int:1,5")
 	is.True(v.Validate())
+	is.Equal("", v.Errors.One())
+}
+
+func TestErrorMessages(t *testing.T) {
+	is := assert.New(t)
+
+	v := Map(mpSample)
+	v.AddRule("name", "minLen", 8).SetMessage("custom msg0")
+	is.False(v.Validate())
+	is.Equal("custom msg0", v.Errors.One())
+
+	v = Map(mpSample)
+	v.StopOnError = false
+	v.AddRule("oldSt, newSt", "min", 3).SetMessages(MS{
+		"oldSt": "oldSt's err msg",
+		"newSt": "newSt's err msg",
+	})
+
+	is.False(v.Validate())
+	is.Equal("oldSt's err msg", v.Errors.Get("oldSt"))
+	is.Equal("newSt's err msg", v.Errors.Get("newSt"))
 }
 
 // UserForm struct

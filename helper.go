@@ -207,10 +207,6 @@ func valueCompare(srcVal, dstVal interface{}, op string) bool {
 	}
 
 	switch op {
-	case "eq":
-		return srcInt == dstInt
-	case "ne":
-		return srcInt != dstInt
 	case "lt":
 		return srcInt < dstInt
 	case "lte":

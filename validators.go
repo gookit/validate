@@ -72,11 +72,11 @@ var (
 	rxLatitude       = regexp.MustCompile(Latitude)
 	rxLongitude      = regexp.MustCompile(Longitude)
 	rxDNSName        = regexp.MustCompile(DNSName)
-	rxSSN            = regexp.MustCompile(`^\d{3}[- ]?\d{2}[- ]?\d{4}$`)
-	rxWinPath        = regexp.MustCompile(WinPath)
-	rxUnixPath       = regexp.MustCompile(UnixPath)
-	rxHasLowerCase   = regexp.MustCompile(hasLowerCase)
-	rxHasUpperCase   = regexp.MustCompile(hasUpperCase)
+	// rxSSN            = regexp.MustCompile(`^\d{3}[- ]?\d{2}[- ]?\d{4}$`)
+	rxWinPath      = regexp.MustCompile(WinPath)
+	rxUnixPath     = regexp.MustCompile(UnixPath)
+	rxHasLowerCase = regexp.MustCompile(hasLowerCase)
+	rxHasUpperCase = regexp.MustCompile(hasUpperCase)
 )
 
 // some validator alias name
@@ -714,7 +714,7 @@ func IsAlphaNum(str string) bool {
 	return rxAlphaNum.MatchString(str)
 }
 
-// IsNumber string.
+// IsNumber string. should >= 0
 func IsNumber(str string) bool {
 	return rxNumber.MatchString(str)
 }
@@ -769,11 +769,6 @@ func IsUUID5(str string) bool {
 	return rxUUID5.MatchString(str)
 }
 
-// IsSSN string
-func IsSSN(str string) bool {
-	return rxSSN.MatchString(str)
-}
-
 // IsIP is the validation function for validating if the field's value is a valid v4 or v6 IP address.
 func IsIP(str string) bool {
 	ip := net.ParseIP(str)
@@ -820,6 +815,12 @@ func IsCIDR(str string) bool {
 func IsJSON(str string) bool {
 	var js json.RawMessage
 	return Unmarshal([]byte(str), &js) == nil
+}
+
+// Regexp match value string
+func Regexp(str string, pattern string) bool {
+	ok, _ := regexp.MatchString(pattern, str)
+	return ok
 }
 
 /*************************************************************
@@ -916,7 +917,7 @@ func Lt(val interface{}, dstVal int64) bool {
 	return intVal < dstVal
 }
 
-// Max less than or equal dst value. for int(8-64), uint(8-64). alias `Lte`
+// Max less than or equal dst value, alias `Lte`. check for: int(X), uint(X), float(X).
 func Max(val interface{}, max int64) bool {
 	intVal, err := filter.Int64(val)
 	if err != nil {
@@ -936,17 +937,11 @@ func Between(val interface{}, min, max int64) bool {
 	return intVal >= min && intVal <= max
 }
 
-// Regexp match value string
-func Regexp(str string, pattern string) bool {
-	ok, _ := regexp.MatchString(pattern, str)
-	return ok
-}
-
 /*************************************************************
  * global: array, slice, map validators
  *************************************************************/
 
-// Enum value should be in the given enum(strings, ints, uints).
+// Enum value(int(X),string) should be in the given enum(strings, ints, uints).
 func Enum(val, enum interface{}) bool {
 	if val == nil {
 		return false
@@ -965,10 +960,9 @@ func Enum(val, enum interface{}) bool {
 		return false
 	}
 
-	// if is int value
-	rv := reflect.ValueOf(val)
-	intVal, isInt := ValueInt64(rv)
-	if !isInt {
+	// as int value
+	intVal, err := filter.Int64(val)
+	if err != nil {
 		return false
 	}
 
@@ -1023,16 +1017,16 @@ func MaxLength(val interface{}, maxLen int) bool {
 }
 
 // ByteLength check string's length
-func ByteLength(str string, params ...string) bool {
-	if len(params) == 2 {
-		min := filter.MustInt(params[0])
-		max := filter.MustInt(params[1])
-		strLen := len(str)
+func ByteLength(str string, minLen int, maxLen ...int) bool {
+	strLen := len(str)
 
-		return strLen >= min && strLen <= max
+	// only min length check.
+	if len(maxLen) == 0 {
+		return strLen >= minLen
 	}
 
-	return false
+	// min and max length check
+	return strLen >= minLen && strLen <= maxLen[0]
 }
 
 // RuneLength check string's length (including multi byte strings)
@@ -1046,7 +1040,7 @@ func RuneLength(str string, minLen int, maxLen ...int) bool {
 	}
 
 	// min and max length check
-	return strLen >= minLen && strLen <= maxLen[1]
+	return strLen >= minLen && strLen <= maxLen[0]
 }
 
 // StringLength check string's length (including multi byte strings)
