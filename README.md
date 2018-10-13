@@ -13,7 +13,7 @@ The package is a generic go data validate library.
 - Support scene settings, verify different fields in different scenes
 - Support custom error messages, field translates.
 - Support language messages, built in `en`, `zh-CN`
-- Many commonly used validators have been built in, see [Built In Validators](#built-in-validators)
+- Many commonly used validators have been built in(> 50), see [Built In Validators](#built-in-validators)
 
 > Inspired the projects [albrow/forms](https://github.com/albrow/forms) and [asaskevich/govalidator](https://github.com/asaskevich/govalidator). Thank you very much
 
@@ -167,6 +167,7 @@ func main()  {
 filter/aliases | description 
 -------------------|-------------------------------------------
 `int/integer`  | convert value(string) to int type `v.FilterRule("id", "int")`
+`trim`  | clear string.
 
 <a id="built-in-validators"></a>
 ## Built In Validators
@@ -192,8 +193,8 @@ validator/aliases | description
 `gtField`  |  description
 `lteField`  |  description
 `arr/array/isArray`  |   check value is array type
-`lt`  |  check value is less than the given size(use for `intX` `uintX` `floatX`)
-`gt`  |  check value is greater than the given size(use for `intX` `uintX` `floatX`)
+`lt/lessThan`  |  check value is less than the given size(use for `intX` `uintX` `floatX`)
+`gt/greaterThan`  |  check value is greater than the given size(use for `intX` `uintX` `floatX`)
 `email/isEmail`  |   check value is email address string.
 `eqField`  |  description
 `intEq/intEqual`  |  description
@@ -236,7 +237,7 @@ validator/aliases | description
 `lon/longitude/isLongitude` | check value is Longitude string.
 `mac/isMAC` | check value is MAC string.
 `multiByte/isMultiByte` | check value is MultiByte string.
-`number/isNumber` | check value is Number string.
+`num/number/isNumber` | check value is number string. `>= 0`
 `printableASCII/isPrintableASCII` | check value is PrintableASCII string.
 `rgbColor/RGBColor/isRGBColor` | check value is RGBColor string.
 `url/isURL` | check value is URL string.

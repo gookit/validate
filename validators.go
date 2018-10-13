@@ -107,8 +107,10 @@ var validatorAliases = map[string]string{
 	"ne":    "notEqual",
 	"notEq": "notEqual",
 	// int
-	"lte": "max",
-	"gte": "min",
+	"lte":         "max",
+	"gte":         "min",
+	"lessThan":    "lt",
+	"greaterThan": "gt",
 	// len
 	"len":      "length",
 	"lenEq":    "length",
@@ -502,6 +504,13 @@ func (v *Validation) LteField(val interface{}, dstField string) bool {
 
 	return valueCompare(val, dstVal, "lte")
 }
+
+/*************************************************************
+ * context: file validators todo
+ *************************************************************/
+
+// func (v *Validation) IsFile()
+// func (v *Validation) IsImage()
 
 /*************************************************************
  * global: basic validators
@@ -1129,7 +1138,7 @@ func StringLength(str string, minLen int, maxLen ...int) bool {
 }
 
 /*************************************************************
- * global: date/time validators
+ * global: date/time validators todo
  *************************************************************/
 
 // DateFormat check
