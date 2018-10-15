@@ -158,6 +158,8 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 		return false
 	}
 
+	hasFilters := len(r.filters) > 0
+
 	// validate field value
 	for _, field := range r.Fields() {
 		if v.isNoNeedToCheck(field) {
@@ -173,7 +175,7 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 		}
 
 		// apply filters func.
-		if exist {
+		if exist && hasFilters {
 			val, err := applyFilters(val, r.filters, v)
 			if err != nil { // has error
 				v.AddError(filterError, err.Error())

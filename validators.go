@@ -385,12 +385,27 @@ func (v *Validation) ValidatorValue(name string) (fv reflect.Value, ok bool) {
 
 // ValidatorMeta get by name
 func (v *Validation) validatorMeta(name string) *funcMeta {
+	// current validation
 	if fm, ok := v.validatorMetas[name]; ok {
 		return fm
 	}
 
+	// from global
 	if fm, ok := validatorMetas[name]; ok {
 		return fm
+	}
+
+	// if v.data is StructData instance.
+	if sd, ok := v.data.(*StructData); ok {
+		fv, ok := sd.FuncValue(name)
+		if ok {
+			fm := newFuncMeta(name, false, fv)
+			// storage it.
+			v.validators[name] = 2 // custom
+			v.validatorMetas[name] = fm
+
+			return fm
+		}
 	}
 
 	return nil
@@ -560,11 +575,7 @@ func IsArray(val interface{}) (ok bool) {
 		return false
 	}
 
-	var rv reflect.Value
-	if rv, ok = val.(reflect.Value); !ok {
-		rv = reflect.ValueOf(val)
-	}
-
+	rv := reflect.ValueOf(val)
 	if rv.Kind() == reflect.Ptr {
 		rv = rv.Elem()
 	}
@@ -578,11 +589,7 @@ func IsSlice(val interface{}) (ok bool) {
 		return false
 	}
 
-	var rv reflect.Value
-	if rv, ok = val.(reflect.Value); !ok {
-		rv = reflect.ValueOf(val)
-	}
-
+	rv := reflect.ValueOf(val)
 	if rv.Kind() == reflect.Ptr {
 		rv = rv.Elem()
 	}

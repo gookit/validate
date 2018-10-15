@@ -83,7 +83,11 @@ func TestValidation_StringRule(t *testing.T) {
 	ok := v.Validate()
 	is.True(ok)
 
-	v = Map(mpSample)
+	v = Map(M{
+		"oldSt": 2,
+		"newSt": 2,
+	})
+	v.StringRule("oldSt", "eqField:newSt")
 	v.StringRule("newSt", "required|int:1,5")
 	is.True(v.Validate())
 	is.Equal("", v.Errors.One())
@@ -111,19 +115,20 @@ func TestErrorMessages(t *testing.T) {
 
 // UserForm struct
 type UserForm struct {
-	Name     string    `validate:"required|minLen:7"`
-	Email    string    `validate:"email"`
-	CreateAt int       `validate:"email"`
-	Safe     int       `validate:"-"`
-	UpdateAt time.Time `validate:"required"`
-	Code     string    `validate:"customValidator"`
-	Status   int       `validate:"required|gtField:Extra.Status1"`
-	Extra    ExtraInfo `validate:"required"`
+	Name          string    `validate:"required|minLen:7"`
+	Email         string    `validate:"email"`
+	CreateAt      int       `validate:"email"`
+	Safe          int       `validate:"-"`
+	UpdateAt      time.Time `validate:"required"`
+	Code          string    `validate:"customValidator"`
+	Status        int       `validate:"required|gtField:Extra.Status1"`
+	Extra         ExtraInfo `validate:"required"`
+	cannotBeCheck string
 }
 
 // ExtraInfo data
 type ExtraInfo struct {
-	Github  string `validate:"required|url"`
+	Github  string `validate:"required|url"` // tags is invalid
 	Status1 int    `validate:"required|int"`
 }
 
@@ -168,21 +173,36 @@ func TestStruct(t *testing.T) {
 	is.True(v.Trans().HasMessage("Name.required"))
 
 	// validate
+	v.StopOnError = false
 	ok := v.Validate()
+	is.True(v.IsFail())
 	is.False(ok)
-	is.Equal("User Name min length is 7", v.Errors.Field("Name")[0])
+	is.Equal("User Name min length is 7", v.Errors.Get("Name"))
+	is.Equal("oh! the UpdateAt is required", v.Errors.Get("UpdateAt"))
+	is.Equal("oh! the Extra is required", v.Errors.Get("Extra"))
 	is.Empty(v.SafeData())
+	is.Empty(v.FilteredData())
+	// fmt.Println(v.Errors)
 
-	fmt.Println(v.Validators(true))
+	u.Name = "new name"
+	u.Status = 5
+	u.Extra = ExtraInfo{"xxx", 4}
+	u.UpdateAt = time.Now()
+	v = Struct(u)
+	v.Validate()
+
+	is.True(v.IsOK())
+	is.True(v.Validate())
 }
 
 func TestJSON(t *testing.T) {
 	is := assert.New(t)
 
-	v := JSON(`{
+	jsonStr := `{
 	"name": "inhere",
 	"age": 100
-}`)
+}`
+	v := JSON(jsonStr)
 
 	v.StopOnError = false
 	v.StringRules(MS{
@@ -197,6 +217,18 @@ func TestJSON(t *testing.T) {
 	is.Contains(v.Errors, "name")
 	is.Contains(v.Errors.String(), "name min length is 7")
 	is.Contains(v.Errors.String(), "age value must be in the range 1 - 99")
+
+	d, err := FromJSONBytes([]byte(jsonStr))
+	is.Nil(err)
+	v = d.Create()
+	v.StringRules(MS{
+		"name": "string:6,12",
+		"age":  "range:1,100",
+	})
+	v.FilterRule("age", "int") // float to int
+	is.True(v.Validate())
+	is.Equal(100, v.SafeData()["age"])
+	is.Equal("inhere", v.SafeData()["name"])
 }
 
 func TestFromQuery(t *testing.T) {

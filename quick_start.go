@@ -97,12 +97,7 @@ func FromRequest(r *http.Request, maxMemoryLimit ...int64) (DataFace, error) {
 		// collect from values
 		data := FromURLValues(r.MultipartForm.Value)
 		// collection uploaded files
-		for key, files := range r.MultipartForm.File {
-			if len(files) != 0 {
-				data.AddFile(key, files[0])
-			}
-		}
-
+		data.AddFiles(r.MultipartForm.File)
 		// add queries data
 		data.AddValues(r.URL.Query())
 		return data, nil

@@ -7,14 +7,18 @@ import (
 )
 
 var filterAliases = map[string]string{
-	"toInt":     "int",
+	"toInt":   "int",
+	"toInt64": "int64",
+	"camel":   "camelCase",
+	"snake":   "snakeCase",
+	//
+	"lcFirst":   "lowerFirst",
+	"ucFirst":   "upperFirst",
 	"str2arr":   "strToArray",
 	"str2array": "strToArray",
 	"strToArr":  "strToArray",
 	"str2time":  "strToTime",
 	"trimSpace": "trim",
-	"lcFirst":   "lowerFirst",
-	"ucFirst":   "upperFirst",
 }
 
 // FilterName get real filter name.
@@ -33,17 +37,22 @@ func FilterName(name string) string {
 var filterFuncs map[string]interface{}
 var filterValues = map[string]reflect.Value{
 	"int":   reflect.ValueOf(filter.Int),
+	"int64": reflect.ValueOf(filter.Int64),
 	"trim":  reflect.ValueOf(filter.Trim),
 	"ltrim": reflect.ValueOf(strings.TrimLeft),
 	"rtrim": reflect.ValueOf(strings.TrimRight),
 	"email": reflect.ValueOf(filter.Email),
+	// change string case.
+	"lower":  reflect.ValueOf(strings.ToLower),
+	"upper":  reflect.ValueOf(strings.ToUpper),
+	"title":  reflect.ValueOf(strings.ToTitle),
+	"substr": reflect.ValueOf(filter.Substr),
 	// change first case.
 	"lowerFirst": reflect.ValueOf(filter.LowerFirst),
 	"upperFirst": reflect.ValueOf(filter.UpperFirst),
-	// change string case.
-	"lower": reflect.ValueOf(strings.ToLower),
-	"upper": reflect.ValueOf(strings.ToUpper),
-	"title": reflect.ValueOf(strings.ToTitle),
+	// camel <=> snake
+	"camelCase": reflect.ValueOf(filter.CamelCase),
+	"snakeCase": reflect.ValueOf(filter.SnakeCase),
 	// string clear
 	"encodeUrl":  reflect.ValueOf(filter.UrlEncode),
 	"escapeJS":   reflect.ValueOf(filter.EscapeJS),

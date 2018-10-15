@@ -164,7 +164,6 @@ func (d *StructData) Create(err ...error) *Validation {
 // Validation create from the StructData
 func (d *StructData) Validation(err ...error) *Validation {
 	v := NewValidation(d)
-
 	if len(err) > 0 && err[0] != nil {
 		return v.WithError(err[0])
 	}
@@ -250,20 +249,13 @@ func (d *StructData) Get(field string) (interface{}, bool) {
 		fv = d.value.FieldByName(field)
 	}
 
-	// check can get value
-	if !fv.CanInterface() {
-		return nil, false
-	}
-
 	return fv.Interface(), true
 }
 
 // Set value by field name
 func (d *StructData) Set(field string, val interface{}) error {
 	fv := d.value.FieldByName(field)
-
-	// field not found
-	if !fv.IsValid() {
+	if !fv.IsValid() { // field not found
 		return ErrNoField
 	}
 
@@ -278,8 +270,7 @@ func (d *StructData) Set(field string, val interface{}) error {
 
 // FuncValue get
 func (d *StructData) FuncValue(name string) (reflect.Value, bool) {
-	fnName := filter.UpperFirst(name)
-	fv := d.value.MethodByName(fnName)
+	fv := d.value.MethodByName(filter.UpperFirst(name))
 
 	return fv, fv.IsValid()
 }
@@ -346,8 +337,8 @@ func (d *FormData) AddValues(values url.Values) {
 }
 
 // AddFiles adds the multipart form files to data
-func (d *FormData) AddFiles(files map[string][]*multipart.FileHeader) {
-	for key, files := range files {
+func (d *FormData) AddFiles(filesMap map[string][]*multipart.FileHeader) {
+	for key, files := range filesMap {
 		if len(files) != 0 {
 			d.AddFile(key, files[0])
 		}
@@ -450,11 +441,11 @@ func (d FormData) Int(key string) int {
 		return 0
 	}
 
-	if result, err := strconv.Atoi(str); err != nil {
-		panic(err)
-	} else {
-		return result
+	if iVal, err := strconv.Atoi(str); err == nil {
+		return iVal
 	}
+
+	return 0
 }
 
 // MustInt64 returns the first element in data[key] converted to an int64.
