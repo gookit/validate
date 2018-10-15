@@ -13,6 +13,7 @@ The package is a generic go data validate library.
 - Support scene settings, verify different fields in different scenes
 - Support custom error messages, field translates.
 - Support language messages, built in `en`, `zh-CN`
+- Built-in common data type filter/converter. see [Built In Filters](#built-in-filters)
 - Many commonly used validators have been built in(> 50), see [Built In Validators](#built-in-validators)
 
 > Inspired the projects [albrow/forms](https://github.com/albrow/forms) and [asaskevich/govalidator](https://github.com/asaskevich/govalidator). Thank you very much
@@ -172,12 +173,22 @@ func main()  {
 
 filter/aliases | description 
 -------------------|-------------------------------------------
+`trim/trimSpace`  | Clean up whitespace characters on both sides of the string
 `int/integer`  | convert value(string/intX/floatX) to int type `v.FilterRule("id", "int")`
+`uint`  | convert value(string/intX/floatX) to `uint` type `v.FilterRule("id", "uint")`
 `int64`  | convert value(string/intX/floatX) to `int64` type `v.FilterRule("id", "int64")`
-`trim`  | clear space string.
 `bool`  | convert string value to bool. (`true`: "1", "on", "yes", "true", `false`: "0", "off", "no", "false")
+`lower/lowercase` | Convert string to lowercase
+`upper/uppercase` | Convert string to uppercase
+`lcFirst/lowerFirst` | Convert the first character of a string to lowercase
+`ucFirst/upperFirst` | Convert the first character of a string to uppercase
+`ucWord/upperWord` | Convert the first character of each word to uppercase
 `camel/camelCase` | Convert string to camel naming style
 `snake/snakeCase` | Convert string to snake naming style
+`escapeJs/escapeJS` | escape JS string.
+`escapeHtml/escapeHTML` | escape HTML string.
+`str2time/strToTime` | Convert date string to `time.Time`.
+`str2arr/str2array/strToArray` | Convert string to string slice. eg. `v.FilterRule("ids", "str2arr:,")`
 
 <a id="built-in-validators"></a>
 ## Built In Validators
@@ -191,9 +202,7 @@ validator/aliases | description
 `bool/isBool`  |  check value is bool string(`true`: "1", "on", "yes", "true", `false`: "0", "off", "no", "false").
 `string/isString`  |  check value is string type.
 `float/isFloat`  |  check value is float(`floatX`) type
-`arr/array/isArray`  |   check value is array type
 `slice/isSlice`  |  check value is slice type(`[]intX` `[]uintX` `[]byte` `[]string` ...).
-`map/isMap`  |  Check value is a MAP type
 `in/enum`  |  Check if the value is in the given enumeration
 `notIn`  |  Check if the value is not in the given enumeration
 `range/between`  |  Check that the value is a number and is within the given range
@@ -208,8 +217,10 @@ validator/aliases | description
 `intEq/intEqual`  |  check value is int and equals to the given value.
 `len/length`  |  check value length is equals to the given size(use for `string` `array` `slice` `map`).
 `regex/regexp`  |  Check if the value can pass the regular verification
-`ints/isInts`  |  check value is int slice type(only allow `[]int`).
+`arr/array/isArray`  |   check value is array type
+`map/isMap`  |  Check value is a MAP type
 `strings/isStrings`  |  check value is string slice type(only allow `[]string`).
+`ints/isInts`  |  check value is int slice type(only allow `[]int`).
 `minLen/minLength`  |  check the minimum length of the value is the given size
 `maxLen/maxLength`  |  check the maximum length of the value is the given size
 `eqField`  |  Check that the field value is equals to the value of another field

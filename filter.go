@@ -8,17 +8,25 @@ import (
 
 var filterAliases = map[string]string{
 	"toInt":   "int",
+	"toUint":  "uint",
 	"toInt64": "int64",
+	"toBool":  "bool",
 	"camel":   "camelCase",
 	"snake":   "snakeCase",
 	//
-	"lcFirst":   "lowerFirst",
-	"ucFirst":   "upperFirst",
+	"lcFirst":    "lowerFirst",
+	"ucFirst":    "upperFirst",
+	"ucWord":     "upperWord",
+	"trimSpace":  "trim",
+	"uppercase":  "upper",
+	"lowercase":  "lower",
+	"escapeJs":   "escapeJS",
+	"escapeHtml": "escapeHTML",
+	//
 	"str2arr":   "strToArray",
 	"str2array": "strToArray",
 	"strToArr":  "strToArray",
 	"str2time":  "strToTime",
-	"trimSpace": "trim",
 }
 
 // FilterName get real filter name.
@@ -37,6 +45,7 @@ func FilterName(name string) string {
 var filterFuncs map[string]interface{}
 var filterValues = map[string]reflect.Value{
 	"int":   reflect.ValueOf(filter.Int),
+	"uint":  reflect.ValueOf(filter.Uint),
 	"int64": reflect.ValueOf(filter.Int64),
 	"trim":  reflect.ValueOf(filter.Trim),
 	"ltrim": reflect.ValueOf(strings.TrimLeft),
@@ -53,8 +62,10 @@ var filterValues = map[string]reflect.Value{
 	// camel <=> snake
 	"camelCase": reflect.ValueOf(filter.CamelCase),
 	"snakeCase": reflect.ValueOf(filter.SnakeCase),
+	"upperWord": reflect.ValueOf(filter.UpperWord),
 	// string clear
 	"encodeUrl":  reflect.ValueOf(filter.UrlEncode),
+	"decodeUrl":  reflect.ValueOf(filter.UrlDecode),
 	"escapeJS":   reflect.ValueOf(filter.EscapeJS),
 	"escapeHTML": reflect.ValueOf(filter.EscapeHTML),
 	// string to array/time
