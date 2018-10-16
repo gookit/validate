@@ -6,72 +6,11 @@ import (
 	"strings"
 )
 
-var filterAliases = map[string]string{
-	"toInt":   "int",
-	"toUint":  "uint",
-	"toInt64": "int64",
-	"toBool":  "bool",
-	"camel":   "camelCase",
-	"snake":   "snakeCase",
-	//
-	"lcFirst":    "lowerFirst",
-	"ucFirst":    "upperFirst",
-	"ucWord":     "upperWord",
-	"trimSpace":  "trim",
-	"uppercase":  "upper",
-	"lowercase":  "lower",
-	"escapeJs":   "escapeJS",
-	"escapeHtml": "escapeHTML",
-	//
-	"str2arr":   "strToArray",
-	"str2array": "strToArray",
-	"strToArr":  "strToArray",
-	"str2time":  "strToTime",
-}
-
-// FilterName get real filter name.
-func FilterName(name string) string {
-	if rName, ok := filterAliases[name]; ok {
-		return rName
-	}
-
-	return name
-}
-
 /*************************************************************
  * Global filters
  *************************************************************/
 
-var filterFuncs map[string]interface{}
-var filterValues = map[string]reflect.Value{
-	"int":   reflect.ValueOf(filter.Int),
-	"uint":  reflect.ValueOf(filter.Uint),
-	"int64": reflect.ValueOf(filter.Int64),
-	"trim":  reflect.ValueOf(filter.Trim),
-	"ltrim": reflect.ValueOf(strings.TrimLeft),
-	"rtrim": reflect.ValueOf(strings.TrimRight),
-	"email": reflect.ValueOf(filter.Email),
-	// change string case.
-	"lower":  reflect.ValueOf(strings.ToLower),
-	"upper":  reflect.ValueOf(strings.ToUpper),
-	"title":  reflect.ValueOf(strings.ToTitle),
-	"substr": reflect.ValueOf(filter.Substr),
-	// change first case.
-	"lowerFirst": reflect.ValueOf(filter.LowerFirst),
-	"upperFirst": reflect.ValueOf(filter.UpperFirst),
-	// camel <=> snake
-	"camelCase": reflect.ValueOf(filter.CamelCase),
-	"snakeCase": reflect.ValueOf(filter.SnakeCase),
-	"upperWord": reflect.ValueOf(filter.UpperWord),
-	// string clear
-	"encodeUrl":  reflect.ValueOf(filter.UrlEncode),
-	"decodeUrl":  reflect.ValueOf(filter.UrlDecode),
-	"escapeJS":   reflect.ValueOf(filter.EscapeJS),
-	"escapeHTML": reflect.ValueOf(filter.EscapeHTML),
-	// string to array/time
-	"strToArray": reflect.ValueOf(filter.StrToArray),
-	"strToTime":  reflect.ValueOf(filter.StrToTime),
-}
+var filterValues map[string]reflect.Value
 
 // AddFilters add global filters
 func AddFilters(m map[string]interface{}) {
@@ -87,18 +26,11 @@ func AddFilter(name string, filterFunc interface{}) {
 		panicf("'%s' invalid filter func, it must be an func type", name)
 	}
 
-	if filterFuncs == nil {
-		filterFuncs = make(map[string]interface{})
+	if filterValues == nil {
+		filterValues = make(map[string]reflect.Value)
 	}
 
-	filterFuncs[name] = filterFunc
 	filterValues[name] = fv
-}
-
-// FilterFunc get filter func by name
-func FilterFunc(name string) (fn interface{}, ok bool) {
-	fn, ok = filterFuncs[name]
-	return
 }
 
 /*************************************************************
@@ -107,11 +39,11 @@ func FilterFunc(name string) (fn interface{}, ok bool) {
 
 // HasFilter check
 func (v *Validation) HasFilter(name string) bool {
-	if _, ok := v.filterFuncs[name]; ok {
+	if _, ok := v.filterValues[name]; ok {
 		return true
 	}
 
-	name = FilterName(name)
+	name = filter.Name(name)
 	_, ok := filterValues[name]
 	return ok
 }
@@ -125,17 +57,16 @@ func (v *Validation) AddFilters(m map[string]interface{}) {
 
 // AddFilter to the Validation.
 func (v *Validation) AddFilter(name string, filterFunc interface{}) {
-	if v.filterFuncs == nil {
-		v.filterFuncs = make(map[string]interface{})
-	}
-
 	fv := reflect.ValueOf(filterFunc)
-
 	if filterFunc == nil || fv.Kind() != reflect.Func {
 		panicf("invalid filter '%s' func, it must be an func type", name)
 	}
 
-	v.filterFuncs[name] = filterFunc
+	if v.filterValues == nil {
+		v.filterValues = make(map[string]reflect.Value)
+	}
+
+	// v.filterFuncs[name] = filterFunc
 	v.filterValues[name] = fv
 }
 
@@ -145,41 +76,24 @@ func (v *Validation) FilterFuncValue(name string) reflect.Value {
 		return fv
 	}
 
-	name = FilterName(name)
 	if fv, ok := filterValues[name]; ok {
 		return fv
 	}
 
-	panicf("the filter '%s' is not exists ", name)
 	return emptyValue
-}
-
-// FilterFunc get filter by name
-func (v *Validation) FilterFunc(name string) interface{} {
-	if fn, ok := v.filterFuncs[name]; ok {
-		return fn
-	}
-
-	name = FilterName(name)
-	if fn, ok := filterFuncs[name]; ok {
-		return fn
-	}
-
-	// panicf("the filter '%s' is not exists ", name)
-	return nil
 }
 
 // FilterRule add filter rule.
 // Usage:
 // 	v.FilterRule("name", "trim")
 // 	v.FilterRule("age", "int")
-func (v *Validation) FilterRule(fields string, rule string) {
+func (v *Validation) FilterRule(field string, rule string) {
 	rule = strings.TrimSpace(rule)
 	rules := stringSplit(strings.Trim(rule, "|:"), "|")
+	fields := stringSplit(field, ",")
 
-	fieldList := stringSplit(fields, ",")
-	if len(fieldList) > 0 {
-		r := newFilterRule(fieldList)
+	if len(fields) > 0 {
+		r := newFilterRule(fields)
 		r.AddFilters(rules...)
 		v.filterRules = append(v.filterRules, r)
 	}
@@ -239,14 +153,23 @@ func (r *FilterRule) Apply(v *Validation) (err error) {
 		}
 
 		// call filters
-		val, err = applyFilters(val, r.filters, v)
-		if err != nil {
-			return err
+		for name, argStr := range r.filters {
+			fv := v.FilterFuncValue(name)
+			args := parseArgString(argStr)
+
+			if !fv.IsValid() {
+				val, err = filter.Apply(name, val, args)
+			} else {
+				val, err = callFilter(fv, val, strings2Args(args))
+			}
+
+			if err != nil {
+				return  err
+			}
 		}
 
 		// save filtered value.
 		v.filteredData[field] = val
-		// v.safeData[field] = val
 	}
 
 	return
@@ -259,13 +182,16 @@ func (r *FilterRule) Fields() []string {
 
 func applyFilters(val interface{}, filters map[string]string, v *Validation) (interface{}, error) {
 	var err error
-
-	// call filters
 	for name, argStr := range filters {
 		fv := v.FilterFuncValue(name)
 		args := parseArgString(argStr)
 
-		val, err = callFilter(fv, val, strings2Args(args))
+		if !fv.IsValid() {
+			val, err = filter.Apply(name, val, args)
+		} else {
+			val, err = callFilter(fv, val, strings2Args(args))
+		}
+
 		if err != nil {
 			return nil, err
 		}

@@ -114,8 +114,6 @@ type Validation struct {
 	sceneFields map[string]uint8
 	// filtering rules for the validation
 	filterRules []*FilterRule
-	// filters and functions for the validation
-	filterFuncs M
 	// filter func reflect.Value map
 	filterValues map[string]reflect.Value
 }
