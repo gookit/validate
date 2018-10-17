@@ -14,7 +14,7 @@ The package is a generic go data validate library.
 - Support custom error messages, field translates.
 - Support language messages, built in `en`, `zh-CN`
 - Built-in common data type filter/converter. see [Built In Filters](#built-in-filters)
-- Many commonly used validators have been built in(> 50), see [Built In Validators](#built-in-validators)
+- Many commonly used validators have been built in(> 60), see [Built In Validators](#built-in-validators)
 
 > Inspired the projects [albrow/forms](https://github.com/albrow/forms) and [asaskevich/govalidator](https://github.com/asaskevich/govalidator). Thank you very much
 
@@ -174,6 +174,8 @@ func main()  {
 filter/aliases | description 
 -------------------|-------------------------------------------
 `trim/trimSpace`  | Clean up whitespace characters on both sides of the string
+`ltrim`  | Clean up whitespace characters on left sides of the string
+`rtrim`  | Clean up whitespace characters on right sides of the string
 `int/integer`  | convert value(string/intX/floatX) to int type `v.FilterRule("id", "int")`
 `uint`  | convert value(string/intX/floatX) to `uint` type `v.FilterRule("id", "uint")`
 `int64`  | convert value(string/intX/floatX) to `int64` type `v.FilterRule("id", "int64")`
@@ -187,8 +189,9 @@ filter/aliases | description
 `snake/snakeCase` | Convert string to snake naming style
 `escapeJs/escapeJS` | escape JS string.
 `escapeHtml/escapeHTML` | escape HTML string.
+`str2ints/strToInts` | Convert string to int slice `[]int` 
 `str2time/strToTime` | Convert date string to `time.Time`.
-`str2arr/str2array/strToArray` | Convert string to string slice. eg. `v.FilterRule("ids", "str2arr:,")`
+`str2arr/str2array/strToArray` | Convert string to string slice `[]string`
 
 <a id="built-in-validators"></a>
 ## Built In Validators
@@ -273,4 +276,4 @@ validator/aliases | description
 
 ## License
 
-**MIT**
+**[MIT](LICENSE)**
