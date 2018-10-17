@@ -328,6 +328,86 @@ func (v *Validation) AppendRule(rule *Rule) *Rule {
 }
 
 /*************************************************************
+ * add validators for validation
+ *************************************************************/
+
+// AddValidators to the Validation
+func (v *Validation) AddValidators(m map[string]interface{}) {
+	for name, checkFunc := range m {
+		v.AddValidator(name, checkFunc)
+	}
+}
+
+// AddValidator to the Validation. checkFunc must return a bool
+func (v *Validation) AddValidator(name string, checkFunc interface{}) {
+	fv := checkValidatorFunc(name, checkFunc)
+
+	v.validators[name] = 2 // custom
+	v.validatorValues[name] = fv
+	v.validatorMetas[name] = newFuncMeta(name, false, fv)
+}
+
+// ValidatorMeta get by name
+func (v *Validation) validatorMeta(name string) *funcMeta {
+	// current validation
+	if fm, ok := v.validatorMetas[name]; ok {
+		return fm
+	}
+
+	// from global
+	if fm, ok := validatorMetas[name]; ok {
+		return fm
+	}
+
+	// if v.data is StructData instance.
+	if sd, ok := v.data.(*StructData); ok {
+		fv, ok := sd.FuncValue(name)
+		if ok {
+			fm := newFuncMeta(name, false, fv)
+			// storage it.
+			v.validators[name] = 2 // custom
+			v.validatorMetas[name] = fm
+
+			return fm
+		}
+	}
+
+	return nil
+}
+
+// HasValidator check
+func (v *Validation) HasValidator(name string) bool {
+	name = ValidatorName(name)
+
+	// current validation
+	if _, ok := v.validatorValues[name]; ok {
+		return true
+	}
+
+	// global validators
+	_, ok := validatorValues[name]
+	return ok
+}
+
+// Validators get all validator names
+func (v *Validation) Validators(withGlobal bool) map[string]int {
+	if withGlobal {
+		mp := make(map[string]int)
+		for name, typ := range validators {
+			mp[name] = typ
+		}
+
+		for name, typ := range v.validators {
+			mp[name] = typ
+		}
+
+		return mp
+	}
+
+	return v.validators
+}
+
+/*************************************************************
  * Do Validate
  *************************************************************/
 

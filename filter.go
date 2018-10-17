@@ -164,7 +164,7 @@ func (r *FilterRule) Apply(v *Validation) (err error) {
 			}
 
 			if err != nil {
-				return  err
+				return err
 			}
 		}
 
