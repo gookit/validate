@@ -5,6 +5,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/url"
+	"strings"
 	"testing"
 	"time"
 )
@@ -171,6 +172,10 @@ func TestStruct(t *testing.T) {
 	is.True(v.Trans().HasField("Name"))
 	is.True(v.Trans().HasField("Safe"))
 	is.True(v.Trans().HasMessage("Name.required"))
+	// test trans
+	v.Trans().AddMessage("custom", "message0")
+	is.True(v.Trans().HasMessage("custom"))
+	is.Contains(v.Trans().FieldMap(), "Name")
 
 	// validate
 	v.StopOnError = false
@@ -225,7 +230,9 @@ func TestJSON(t *testing.T) {
 		"name": "string:6,12",
 		"age":  "range:1,100",
 	})
-	v.FilterRule("age", "int") // float to int
+	// float to int
+	fl := v.FilterRule("age", "int")
+	is.Equal([]string{"age"}, fl.Fields())
 	is.True(v.Validate())
 	is.Equal(100, v.SafeData()["age"])
 	is.Equal("inhere", v.SafeData()["name"])
@@ -264,6 +271,38 @@ func TestRequest(t *testing.T) {
 	v.Validate()
 
 	is.True(v.IsOK())
+
+	// POST form data
+	body := strings.NewReader("name= inhere &age=50&remember=yes&email=eml@a.com")
+	r, _ = http.NewRequest("POST", "/users", body)
+	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	d, err := FromRequest(r) // create data
+	is.Nil(err)
+
+	v = d.Validation() // create validation
+	v.FilterRules(MS{
+		"age":      "trim|int",
+		"name":     "trim|ucFirst",
+		"remember": "bool",
+	})
+	v.StringRules(MS{
+		"name":     "string|minLen:5",
+		"age":      "int|min:1",
+		"email":    "email",
+		"remember": "-", // mark is safe. don't validate, collect to safe data.
+	})
+	v.Validate() // validate
+	// fmt.Println(v.Errors, v.safeData)
+	is.True(v.IsOK())
+
+	val, ok := v.Safe("name")
+	is.True(ok)
+	is.Equal("Inhere", val)
+	is.Equal(50, v.SafeVal("age"))
+	is.Equal("eml@a.com", v.SafeVal("email"))
+	is.Equal("Inhere", v.SafeVal("name"))
+	is.Equal(true, v.SafeVal("remember"))
 }
 
 func TestValidationScene(t *testing.T) {

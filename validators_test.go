@@ -7,13 +7,21 @@ import (
 
 func TestIsEmpty(t *testing.T) {
 	is := assert.New(t)
+	tests := []interface{}{
+		"",
+		nil,
+		0,
+		false,
+		int8(0), int16(0), int32(0), int64(0),
+		uint8(0), uint16(0), uint32(0), uint64(0),
+		float32(0), float64(0),
+		[]int{}, []string{},
+		map[string]string{},
+	}
 
-	is.True(IsEmpty(nil))
-	is.True(IsEmpty(0))
-	is.True(IsEmpty(""))
-	is.True(IsEmpty([]int{}))
-	is.True(IsEmpty([]string{}))
-	is.True(IsEmpty(map[string]string{}))
+	for _, val := range tests {
+		is.True(IsEmpty(val))
+	}
 }
 
 // ------------------ type validator ------------------

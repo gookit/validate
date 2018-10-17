@@ -1,27 +1,29 @@
 package validate
 
 import (
-	"encoding/json"
 	"fmt"
 	"reflect"
 	"strings"
-	"time"
 )
 
-const errorName = "_validate"
-const filterError = "_filter"
-const defaultTag = "validate"
-const defaultFilterTag = "filter"
-const defaultMaxMemory int64 = 32 << 20 // 32 MB
+// some default value settings.
+const (
+	filterTag     = "filter"
+	filterError   = "_filter"
+	validateTag   = "validate"
+	validateError = "_validate"
+	// 32 MB
+	defaultMaxMemory int64 = 32 << 20
+)
+
+// M is short name for map[string]interface{}
+type M map[string]interface{}
 
 // MS is short name for map[string]string
 type MS map[string]string
 
 // SValues simple values
 type SValues map[string][]string
-
-// M is short name for map[string]interface{}
-type M map[string]interface{}
 
 // DataFace interface definition
 type DataFace interface {
@@ -32,26 +34,13 @@ type DataFace interface {
 	Validation(err ...error) *Validation
 }
 
-// MarshalFunc define
-type MarshalFunc func(v interface{}) ([]byte, error)
-
-// UnmarshalFunc define
-type UnmarshalFunc func(data []byte, v interface{}) error
-
-// data (Un)marshal func
-var (
-	Marshal   MarshalFunc   = json.Marshal
-	Unmarshal UnmarshalFunc = json.Unmarshal
-)
-
-var timeType = reflect.TypeOf(time.Time{})
 var globalOpt = &GlobalOption{
 	StopOnError: true,
 	SkipOnEmpty: true,
 	// tag name in struct tags
-	FilterTag: defaultFilterTag,
+	FilterTag: filterTag,
 	// tag name in struct tags
-	ValidateTag: defaultTag,
+	ValidateTag: validateTag,
 }
 
 // GlobalOption settings for validate
@@ -71,11 +60,11 @@ type Validation struct {
 	// source input data
 	data DataFace
 	// all validated fields list
-	fields []string
-	// filtered clean data
-	filteredData M
+	// fields []string
 	// filtered/validated safe data
 	safeData M
+	// filtered clean data
+	filteredData M
 	// Errors for the validate
 	Errors Errors
 	// CacheKey for cache rules
@@ -85,11 +74,11 @@ type Validation struct {
 	// SkipOnEmpty Skip check on field not exist or value is empty
 	SkipOnEmpty bool
 	// CachingRules switch. default is False
-	CachingRules bool
+	// CachingRules bool
 	// mark has error occurs
 	hasError bool
 	// mark is filtered
-	filtered bool
+	hasFiltered bool
 	// mark is validated
 	validated bool
 	// validate rules for the validation
@@ -184,7 +173,7 @@ func (v *Validation) Config(fn func(v *Validation)) {
 func (v *Validation) ResetResult() {
 	v.Errors = Errors{}
 	v.hasError = false
-	v.filtered = false
+	v.hasFiltered = false
 	v.validated = false
 	// result data
 	v.safeData = make(map[string]interface{})
@@ -215,21 +204,6 @@ func (v *Validation) WithScenarios(scenes SValues) *Validation {
 func (v *Validation) WithScenes(scenes map[string][]string) *Validation {
 	v.scenes = scenes
 	return v
-}
-
-// SetRulesFromCaches key string
-func (v *Validation) SetRulesFromCaches(key string) *Validation {
-	v.rules = rulesCaches[key]
-	return v
-}
-
-// CacheRules to caches for repeat use.
-func (v *Validation) CacheRules(key string) {
-	if rulesCaches == nil {
-		rulesCaches = make(map[string]Rules)
-	}
-
-	rulesCaches[key] = v.rules
 }
 
 // AtScene setting current validate scene.
@@ -294,7 +268,7 @@ func (v *Validation) StringRule(field, rule string, filterRule ...string) *Valid
 	return v
 }
 
-// StringRules add multi rules by string map
+// StringRules add multi rules by string map.
 // Usage:
 // 	v.StringRules(map[string]string{
 // 		"name": "required|string|min:12",
@@ -380,12 +354,12 @@ func (v *Validation) HasValidator(name string) bool {
 	name = ValidatorName(name)
 
 	// current validation
-	if _, ok := v.validatorValues[name]; ok {
+	if _, ok := v.validatorMetas[name]; ok {
 		return true
 	}
 
 	// global validators
-	_, ok := validatorValues[name]
+	_, ok := validatorMetas[name]
 	return ok
 }
 
@@ -454,7 +428,7 @@ func (v *Validation) Sanitize() bool {
 
 // Filtering data by filter rules
 func (v *Validation) Filtering() bool {
-	if v.filtered {
+	if v.hasFiltered {
 		return v.IsSuccess()
 	}
 
@@ -466,7 +440,7 @@ func (v *Validation) Filtering() bool {
 		}
 	}
 
-	v.filtered = true
+	v.hasFiltered = true
 	return v.IsSuccess()
 }
 
@@ -506,15 +480,10 @@ func (v *Validation) AddMessages(m map[string]string) {
 	v.trans.LoadMessages(m)
 }
 
-// Fields returns the fields for all validated
-func (v *Validation) Fields() []string {
-	return v.fields
-}
-
 // WithError add error of the validation
 func (v *Validation) WithError(err error) *Validation {
 	if err != nil {
-		v.AddError(errorName, err.Error())
+		v.AddError(validateError, err.Error())
 	}
 
 	return v
@@ -565,6 +534,12 @@ func (v *Validation) Get(key string) (interface{}, bool) {
 	return v.data.Get(key)
 }
 
+// Filtered get filtered value by key
+func (v *Validation) Filtered(key string) interface{} {
+	val, _ := v.filteredData[key]
+	return val
+}
+
 // Safe get safe value by key
 func (v *Validation) Safe(key string) (val interface{}, ok bool) {
 	if v.data == nil { // check input data
@@ -573,6 +548,27 @@ func (v *Validation) Safe(key string) (val interface{}, ok bool) {
 
 	val, ok = v.safeData[key]
 	return
+}
+
+// SafeVal get safe value by key
+func (v *Validation) SafeVal(key string) interface{} {
+	val, _ := v.Safe(key)
+	return val
+}
+
+// BindSafeData to a struct.
+func (v *Validation) BindSafeData(ptr interface{}) error {
+	if len(v.safeData) == 0 { // no safe data.
+		return nil
+	}
+
+	// to json bytes
+	bts, err := Marshal(v.safeData)
+	if err != nil {
+		return err
+	}
+
+	return Unmarshal(bts, ptr)
 }
 
 // Set value by key
@@ -635,7 +631,7 @@ func (v *Validation) SafeData() M {
 	return v.safeData
 }
 
-// FilteredData get
+// FilteredData return filtered data.
 func (v *Validation) FilteredData() M {
 	return v.filteredData
 }

@@ -1,6 +1,7 @@
 package validate
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/gookit/filter"
 	"io/ioutil"
@@ -9,7 +10,22 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"time"
 )
+
+// MarshalFunc define
+type MarshalFunc func(v interface{}) ([]byte, error)
+
+// UnmarshalFunc define
+type UnmarshalFunc func(data []byte, v interface{}) error
+
+// data (Un)marshal func
+var (
+	Marshal   MarshalFunc   = json.Marshal
+	Unmarshal UnmarshalFunc = json.Unmarshal
+)
+
+var timeType = reflect.TypeOf(time.Time{})
 
 /*************************************************************
  * Map Data
@@ -490,6 +506,11 @@ func (d FormData) String(key string) string {
 	return d.Form.Get(key)
 }
 
+// Strings value get by key
+func (d FormData) Strings(key string) []string {
+	return d.Form[key]
+}
+
 // FileBytes returns the body of the file associated with key. If there is no
 // file associated with key, it returns nil (not an error). It may return an error if
 // there was a problem reading the file. If you need to know whether or not the file
@@ -508,14 +529,14 @@ func (d FormData) FileBytes(key string) ([]byte, error) {
 	return ioutil.ReadAll(file)
 }
 
-// BindJSON binds v to the json data in the request body. It calls json.Unmarshal and
-// sets the value of v.
-func (d FormData) BindJSON(v interface{}) error {
+// BindJSON binds v to the JSON data in the request body.
+// It calls json.Unmarshal and sets the value of v.
+func (d FormData) BindJSON(ptr interface{}) error {
 	if len(d.jsonBodies) == 0 {
 		return nil
 	}
 
-	return Unmarshal(d.jsonBodies, v)
+	return Unmarshal(d.jsonBodies, ptr)
 }
 
 // MapTo the v

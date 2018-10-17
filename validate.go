@@ -53,8 +53,6 @@ type Rule struct {
 	// 	"field.validator": "error message",
 	// }
 	messages map[string]string
-	// filter map. can with args. eg. "int", "str2arr:,"
-	filters map[string]string
 	// validator name, allow multi validators. eg "min", "range", "required"
 	validator string
 	// arguments for the validator
@@ -73,8 +71,6 @@ type Rule struct {
 func NewRule(fields, validator string, args ...interface{}) *Rule {
 	return &Rule{
 		fields: fields,
-		// filters
-		filters: make(map[string]string),
 		// validator args
 		arguments: args,
 		validator: validator,
@@ -129,23 +125,6 @@ func (r *Rule) SetMessages(msgMap MS) *Rule {
 	return r
 }
 
-// UseFilters add filter(s)
-func (r *Rule) UseFilters(filters ...string) *Rule {
-	for _, filterN := range filters {
-		pos := strings.IndexRune(filterN, ':')
-
-		// has args
-		if pos > 0 {
-			name := filterN[:pos]
-			r.filters[name] = filterN[pos+1:]
-		} else {
-			r.filters[filterN] = ""
-		}
-	}
-
-	return r
-}
-
 // Fields names list
 func (r *Rule) Fields() []string {
 	return stringSplit(r.fields, ",")
@@ -157,8 +136,6 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 	if r.scene != "" && r.scene != v.scene {
 		return false
 	}
-
-	hasFilters := len(r.filters) > 0
 
 	// validate field value
 	for _, field := range r.Fields() {
@@ -175,8 +152,8 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 		}
 
 		// apply filters func.
-		if exist && hasFilters {
-			val, err := applyFilters(val, r.filters, v)
+		if exist && r.filterFunc != nil {
+			val, err := r.filterFunc(val)
 			if err != nil { // has error
 				v.AddError(filterError, err.Error())
 				return true

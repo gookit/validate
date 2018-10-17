@@ -128,23 +128,6 @@ func ValueLen(v reflect.Value) int {
 	return -1
 }
 
-// ValueLenOrInt calc
-func ValueLenOrInt(v reflect.Value) int64 {
-	k := v.Kind()
-	switch k {
-	case reflect.Map, reflect.Array, reflect.Chan, reflect.Slice, reflect.String: // return len
-		return int64(v.Len())
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return v.Int()
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-		return int64(v.Uint())
-	case reflect.Float32, reflect.Float64:
-		return int64(v.Float())
-	}
-
-	return 0
-}
-
 // CalcLength for input value
 func CalcLength(val interface{}) int {
 	if val == nil {
@@ -205,6 +188,18 @@ func valueCompare(srcVal, dstVal interface{}, op string) bool {
 
 func nameOfFunc(fv reflect.Value) string {
 	return runtime.FuncForPC(fv.Pointer()).Name()
+}
+
+func parseArgString(argStr string) (ss []string) {
+	if argStr == "" { // no arg
+		return
+	}
+
+	if len(argStr) == 1 { // one char
+		return []string{argStr}
+	}
+
+	return stringSplit(argStr, ",")
 }
 
 func toInt64Slice(enum interface{}) (ret []int64, ok bool) {
@@ -321,7 +316,7 @@ var (
 
 func checkValidatorFunc(name string, fn interface{}) reflect.Value {
 	if !goodName(name) {
-		panic(fmt.Errorf("function name %s is not a valid identifier", name))
+		panic(fmt.Errorf("validate name %s is not a valid identifier", name))
 	}
 
 	fv := reflect.ValueOf(fn)
@@ -336,6 +331,28 @@ func checkValidatorFunc(name string, fn interface{}) reflect.Value {
 
 	if ft.NumOut() != 1 || ft.Out(0).Kind() != reflect.Bool {
 		panicf("validator '%s' func must be return a bool value", name)
+	}
+
+	return fv
+}
+
+func checkFilterFunc(name string, fn interface{}) reflect.Value {
+	if !goodName(name) {
+		panic(fmt.Errorf("filter name %s is not a valid identifier", name))
+	}
+
+	fv := reflect.ValueOf(fn)
+	if fn == nil || fv.Kind() != reflect.Func { // is nil or not is func
+		panicf("filter '%s'. 2th parameter is invalid, it must be an func", name)
+	}
+
+	ft := fv.Type()
+	if ft.NumIn() == 0 {
+		panicf("filter '%s' func at least one parameter position", name)
+	}
+
+	if !goodFunc(ft) {
+		panicf("can't install method/function %q with %d results", name, ft.NumOut())
 	}
 
 	return fv
