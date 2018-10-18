@@ -260,7 +260,7 @@ func TestRule(t *testing.T) {
 	is.Equal([]string{"name"}, r.Fields())
 	v.AppendRule(r)
 	v.AddRule("field0", "required").SetOptional(true)
-	v.AddRule("key0", "").SetCheckFunc(func(s string) bool {
+	v.AddRule("key0", "inRule").SetCheckFunc(func(s string) bool {
 		return s == "val0"
 	})
 

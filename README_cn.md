@@ -5,27 +5,25 @@
 [![Coverage Status](https://coveralls.io/repos/github/gookit/validate/badge.svg?branch=master)](https://coveralls.io/github/gookit/validate?branch=master)
 [![Go Report Card](https://goreportcard.com/badge/github.com/gookit/validate)](https://goreportcard.com/report/github.com/gookit/validate)
 
-The package is a generic Go data validate library.
+Go通用的数据验证与过滤库，使用简单，内置大部分常用验证器、过滤器，支持自定义消息、字段翻译。
 
-> **[中文说明](README_cn.md)**
+- 支持验证Map，Struct，Request（Form，JSON，url.Values）数据
+- 简单方便，支持前置验证检查, 支持添加自定义验证器
+- 支持将规则按场景进行分组设置。不同场景验证不同的字段
+- 支持自定义每个验证的错误消息，字段翻译，消息翻译(内置`en` `zh-CN`)
+- 支持在进行验证前对值使用过滤器进行净化过滤，查看 [内置过滤器](#built-in-filters)
+- 方便的获取错误信息，验证后的安全数据获取(只会收集有规则检查过的数据)
+- 已经内置了超多（> 60 个）常用的验证器，查看 [内置验证器](#built-in-validators)
+- 完善的单元测试，覆盖率 > 85%
 
-- Support validate Map, Struct, Request(Form, JSON, url.Values) data
-- Support filter/sanitize data before validate
-- Support add custom filter/validator func
-- Support scene settings, verify different fields in different scenes
-- Support custom error messages, field translates.
-- Support language messages, built in `en`, `zh-CN`
-- Built-in common data type filter/converter. see [Built In Filters](#built-in-filters)
-- Many commonly used validators have been built in(> 60), see [Built In Validators](#built-in-validators)
-
-> Inspired the projects [albrow/forms](https://github.com/albrow/forms) and [asaskevich/govalidator](https://github.com/asaskevich/govalidator). Thank you very much
+> 受到这些项目的启发 [albrow/forms](https://github.com/albrow/forms) 和 [asaskevich/govalidator](https://github.com/asaskevich/govalidator). 非常感谢它们
 
 ## Go Doc
 
 - [godoc for gopkg](https://godoc.org/gopkg.in/gookit/validate.v1)
 - [godoc for github](https://godoc.org/github.com/gookit/validate)
 
-## Validate Struct
+## 验证结构体(Struct)
 
 ```go
 package main
@@ -42,15 +40,15 @@ type UserForm struct {
 	CreateAt int       `validate:"min:1"`
 	Safe     int       `validate:"-"`
 	UpdateAt time.Time `validate:"required"`
-	Code     string    `validate:"customValidator"`
+	Code     string    `validate:"customValidator"` // 使用自定义验证器
 }
 
-// CustomValidator custom validator in the source struct.
+// CustomValidator 定义在结构体中的自定义验证器
 func (f UserForm) CustomValidator(val string) bool {
 	return len(val) == 4
 }
 
-// Messages you can custom validator error messages. 
+// Messages 您可以自定义验证器错误消息
 func (f UserForm) Messages() map[string]string {
 	return validate.MS{
 		"required": "oh! the {field} is required",
@@ -58,11 +56,11 @@ func (f UserForm) Messages() map[string]string {
 	}
 }
 
-// Translates you can custom field translates. 
+// Translates 你可以自定义字段翻译
 func (f UserForm) Translates() map[string]string {
 	return validate.MS{
-		"Name": "User Name",
-		"Email": "User Email",
+		"Name": "用户名称",
+		"Email": "用户Email",
 	}
 }
 
@@ -71,20 +69,21 @@ func main() {
 		Name: "inhere",
 	}
 	
+	// 创建 Validation 实例
 	v := validate.Struct(u)
 	// v := validate.New(u)
 
-	if v.Validate() { // validate ok
+	if v.Validate() { // 验证成功
 		// do something ...
 	} else {
-		fmt.Println(v.Errors) // all error messages
-		fmt.Println(v.Errors.One()) // returns a random error message text
-		fmt.Println(v.Errors.Field("Name")) // returns error messages of the field 
+		fmt.Println(v.Errors) // 所有的错误消息
+		fmt.Println(v.Errors.One()) // 返回随机一条错误消息
+		fmt.Println(v.Errors.Field("Name")) // 返回该字段的错误消息
 	}
 }
 ```
 
-## Validate Map
+## 验证`Map`数据
 
 ```go
 package main
@@ -110,10 +109,11 @@ func main()  {
 	v.AddRule("age", "min", 1)
 	v.AddRule("email", "email")
 	
-	// can also
+	// 也可以这样，一次添加多个验证器
 	v.StringRule("age", "required|int|min:1|max:99")
 	v.StringRule("name", "required|minLen:7")
 
+    // 设置不同场景验证不同的字段
 	// v.WithScenes(map[string]string{
 	//	 "create": []string{"name", "email"},
 	//	 "update": []string{"name"},
@@ -128,7 +128,14 @@ func main()  {
 }
 ```
 
-## Validate Request
+## 验证请求
+
+传入 `*http.Request`，快捷方法 `FromRequest()` 就会自动根据请求方法和请求数据类型收集相应的数据
+
+- `GET/DELETE/...` 等，会搜集 url query 数据
+- `POST/PUT/PATCH` 并且类型为 `application/json` 会搜集JSON数据
+- `POST/PUT/PATCH` 并且类型为 `multipart/form-data` 会搜集表单数据，同时回收集文件上传数据
+- `POST/PUT/PATCH` 并且类型为 `application/x-www-form-urlencoded` 会搜集表单数据
 
 ```go
 package main
@@ -165,17 +172,17 @@ func main()  {
 }
 ```
 
-## Quick Method
+## 常用方法
 
-Quick create `Validation` instance.
+快速创建 `Validation` 实例：
 
-- `New(data interface{}, scene ...string) *Validation`
 - `Request(r *http.Request) *Validation`
 - `JSON(s string, scene ...string) *Validation`
 - `Struct(s interface{}, scene ...string) *Validation`
 - `Map(m map[string]interface{}, scene ...string) *Validation`
+- `New(data interface{}, scene ...string) *Validation` 
 
-Quick create `DataFace` instance.
+快速创建 `DataFace` 实例：
 
 - `FromMap(m map[string]interface{}) *MapData`
 - `FromStruct(s interface{}) (*StructData, error)`
@@ -184,25 +191,32 @@ Quick create `DataFace` instance.
 - `FromURLValues(values url.Values) *FormData`
 - `FromRequest(r *http.Request, maxMemoryLimit ...int64) (DataFace, error)`
 
-> Create `Validation` by `DataFace`
+> 通过 `DataFace` 创建 `Validation` 
 
 ```go
 d := FromMap(map[string]interface{}{"key": "val"})
 v := d.Validation()
 ```
 
-**Notice:**
+`Validation` 常用方法：
 
-- `intX` is contains: int, int8, int16, int32, int64
-- `uintX` is contains: uint, uint8, uint16, uint32, uint64
-- `floatX` is contains: float32, float64
+- Validation.`AtScene(scene string) *Validation` 设置当前验证场景名
+- Validation.`Filtering() bool` 应用所有过滤规则
+- Validation.`Validate() bool` 应用所有验证和过滤规则
+- Validation.`SafeData() map[string]interface{}` 获取所有经过验证的数据
+
+**提示**
+
+- `intX` 包含: `int`, `int8`, `int16`, `int32`, `int64`
+- `uintX` 包含: `uint`, `uint8`, `uint16`, `uint32`, `uint64`
+- `floatX` 包含: `float32`, `float64`
 
 <a id="built-in-filters"></a>
-## Built In Filters
+## 内置过滤器
 
 > Filters powered by: [gookit/filter](https://github.com/gookit/filter)
 
-filter/aliases | description 
+过滤器/别名 | 描述信息 
 -------------------|-------------------------------------------
 `int`  | Convert value(string/intX/floatX) to `int` type `v.FilterRule("id", "int")`
 `uint`  | Convert value(string/intX/floatX) to `uint` type `v.FilterRule("id", "uint")`
@@ -227,28 +241,38 @@ filter/aliases | description
 `str2arr/str2array/strToArray` | Convert string to string slice `[]string`
 
 <a id="built-in-validators"></a>
-## Built In Validators
+## 内置验证器
 
-validator/aliases | description
+几大类别：
+
+- 类型验证
+- 字符串检查验证
+- 大小、长度验证
+- 字段值比较验证
+- 上传文件验证
+- 日期验证
+- 其他验证
+
+验证器/别名 | 描述信息
 -------------------|-------------------------------------------
-`required`  | Check value is not empty. 
-`-/safe`  | Tag field values ​​are safe and do not require validation
-`int/integer/isInt`  | Check value is `intX` `uintX` type
-`uint/isUint`  |  Check value is uint(`uintX`) type, `value >= 0`
-`bool/isBool`  |  Check value is bool string(`true`: "1", "on", "yes", "true", `false`: "0", "off", "no", "false").
-`string/isString`  |  Check value is string type.
-`float/isFloat`  |  Check value is float(`floatX`) type
-`slice/isSlice`  |  Check value is slice type(`[]intX` `[]uintX` `[]byte` `[]string` ...).
-`in/enum`  |  Check if the value is in the given enumeration
-`notIn`  |  Check if the value is not in the given enumeration
-`contains`  |  Check if the input value contains the given value
-`notContains`  |  Check if the input value not contains the given value
-`range/between`  |  Check that the value is a number and is within the given range
-`max/lte`  |  Check value is less than or equal to the given value
-`min/gte`  |  Check value is less than or equal to the given size(for `intX` `uintX` `floatX`)
+`required`  | 字段为必填项，值不能为空 
+`-/safe`  | 标记当前字段是安全的，无需验证
+`int/integer/isInt`  | 检查值是 `intX` `uintX` 类型
+`uint/isUint`  |  检查值是 `uintX` 类型（`value >= 0`）
+`bool/isBool`  |  检查值是布尔字符串(`true`: "1", "on", "yes", "true", `false`: "0", "off", "no", "false").
+`string/isString`  |  检查值是字符串类型.
+`float/isFloat`  |  检查值是 float(`floatX`) 类型
+`slice/isSlice`  |  检查值是 slice 类型(`[]intX` `[]uintX` `[]byte` `[]string` 等).
+`in/enum`  |  检查值是否在给定的枚举列表中
+`notIn`  |  检查值不是在给定的枚举列表中
+`contains`  |  检查输入值是否包含给定的值
+`notContains`  |  检查输入值是否不包含给定值
+`range/between`  |  检查值是否为数字且在给定范围内
+`max/lte`  |  检查输入值小于或等于给定值
+`min/gte`  |  检查输入值大于或等于给定值(for `intX` `uintX` `floatX`)
 `intStr/intString/isIntString`  |  Check value is an int string.
-`eq/equal/isEqual`  |  Check that the input value is equal to the given value
-`ne/notEq/notEqual`  |  Check that the input value is not equal to the given value
+`eq/equal/isEqual`  |  检查输入值是否等于给定值
+`ne/notEq/notEqual`  |  检查输入值是否不等于给定值
 `lt/lessThan`  |  Check value is less than the given size(use for `intX` `uintX` `floatX`)
 `gt/greaterThan`  |  Check value is greater than the given size(use for `intX` `uintX` `floatX`)
 `email/isEmail`  |   Check value is email address string.
@@ -267,9 +291,9 @@ validator/aliases | description
 `gtField`  |  Check that the field value is greater than the value of another field
 `lteField`  |  Check if the field value is less than or equal to the value of another field
 `ltField`  |  Check that the field value is less than the value of another field
-`file/isFile`  |  Verify if it is an uploaded file
-`image/isImage`  |  Check if it is an uploaded image file and support suffix check
-`mime/mimeType/inMimeTypes`  |  Check that it is an uploaded file and is in the specified MIME type
+`file/isFile`  |  验证是否是上传的文件
+`image/isImage`  |  验证是否是上传的图片文件，支持后缀检查
+`mime/mimeType/inMimeTypes`  |  验证是否是上传的文件，并且在指定的MIME类型中
 `date/isDate` | Check the field value is date string. eg `2018-10-25`
 `gtDate/afterDate` | Check that the input value is greater than the given date string.
 `ltDate/beforeDate` | Check that the input value is less than the given date string
@@ -277,9 +301,9 @@ validator/aliases | description
 `lteDate/beforeOrEqualDate` | Check that the input value is less than or equal to the given date string.
 `hasWhitespace` | Check value string has Whitespace.
 `ascii/ASCII/isASCII` | Check value is ASCII string.
-`alpha/isAlpha` | Verify that the value contains only alphabetic characters
-`alphaNum/isAlphaNum` | Check that only letters, numbers are included
-`alphaDash/isAlphaDash` | Check to include only letters, numbers, dashes ( - ), and underscores ( _ )
+`alpha/isAlpha` | 验证值是否仅包含字母字符
+`alphaNum/isAlphaNum` | 验证是否仅包含字母、数字
+`alphaDash/isAlphaDash` | 验证是否仅包含字母、数字、破折号（ - ）以及下划线（ _ ）
 `multiByte/isMultiByte` | Check value is MultiByte string.
 `base64/isBase64` | Check value is Base64 string.
 `dnsName/DNSName/isDNSName` | Check value is DNSName string.
@@ -311,7 +335,7 @@ validator/aliases | description
 `isbn10/ISBN10/isISBN10` | Check value is ISBN10 string.
 `isbn13/ISBN13/isISBN13` | Check value is ISBN13 string.
 
-## Reference
+## 参考项目
 
 - https://github.com/albrow/forms
 - https://github.com/asaskevich/govalidator

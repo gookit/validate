@@ -57,6 +57,7 @@ var (
 	rxUUID           = regexp.MustCompile(UUID)
 	rxAlpha          = regexp.MustCompile("^[a-zA-Z]+$")
 	rxAlphaNum       = regexp.MustCompile("^[a-zA-Z0-9]+$")
+	rxAlphaDash      = regexp.MustCompile(`^(?:[\w-]+)$`)
 	rxNumber         = regexp.MustCompile("^[0-9]+$")
 	rxInt            = regexp.MustCompile(Int)
 	rxFloat          = regexp.MustCompile(Float)
@@ -139,6 +140,7 @@ var validatorAliases = map[string]string{
 	"ASCII":     "isASCII",
 	"alpha":     "isAlpha",
 	"alphaNum":  "isAlphaNum",
+	"alphaDash": "isAlphaDash",
 	"base64":    "isBase64",
 	"CIDR":      "isCIDR",
 	"CIDRv4":    "isCIDRv4",
@@ -182,6 +184,13 @@ var validatorAliases = map[string]string{
 	"ltDate":  "beforeDate",
 	"gteDate": "afterOrEqualDate",
 	"lteDate": "beforeOrEqualDate",
+	// uploaded file
+	"img":       "isImage",
+	"file":      "isFile",
+	"image":     "isImage",
+	"mimes":     "inMimeTypes",
+	"mimeType":  "inMimeTypes",
+	"mimeTypes": "inMimeTypes",
 }
 
 // ValidatorName get real validator name.
@@ -246,6 +255,7 @@ var (
 		"isASCII":       reflect.ValueOf(IsASCII),
 		"isAlpha":       reflect.ValueOf(IsAlpha),
 		"isAlphaNum":    reflect.ValueOf(IsAlphaNum),
+		"isAlphaDash":   reflect.ValueOf(IsAlphaDash),
 		"isBase64":      reflect.ValueOf(IsBase64),
 		"isCIDR":        reflect.ValueOf(IsCIDR),
 		"isCIDRv4":      reflect.ValueOf(IsCIDRv4),
@@ -360,7 +370,14 @@ func Validators() map[string]int {
  *************************************************************/
 
 // Required field val check
-func (v *Validation) Required(val interface{}) bool {
+func (v *Validation) Required(field string, val interface{}) bool {
+	// check file
+	fd, ok := v.data.(*FormData)
+	if ok && fd.HasFile(field) {
+		return true
+	}
+
+	// check value
 	return !IsEmpty(val)
 }
 
@@ -436,14 +453,72 @@ func (v *Validation) LteField(val interface{}, dstField string) bool {
  * context: file validators todo
  *************************************************************/
 
+var fileValidators = "|isFile|isImage|inMimeTypes|"
+var imageMimeTypes = map[string]string{
+	"bmp":  "image/bmp",
+	"gif":  "image/gif",
+	"ief":  "image/ief",
+	"jpg":  "image/jpeg",
+	"jpe":  "image/jpeg",
+	"jpeg": "image/jpeg",
+	"png":  "image/png",
+	"svg":  "image/svg+xml",
+	"ico":  "image/x-icon",
+	"webp": "image/webp",
+}
+
+func isFileValidator(name string) bool {
+	return strings.Contains(fileValidators, "|"+name+"|")
+}
+
 // IsFile check field is uploaded file
-func (v *Validation) IsFile(s string) bool {
+func (v *Validation) IsFile(fd *FormData, field string) (ok bool) {
+	if fh := fd.GetFile(field); fh != nil {
+		_, err := fh.Open()
+		if err == nil {
+			return true
+		}
+	}
+
 	return false
 }
 
-// IsImage check field is uploaded image file
-func (v *Validation) IsImage() bool {
-	return false
+// IsImage check field is uploaded image file.
+// Usage:
+// 	v.AddRule("avatar", "image")
+// 	v.AddRule("avatar", "image", "jpg", "png", "gif") // set ext limit
+func (v *Validation) IsImage(fd *FormData, field string, exts ...string) (ok bool) {
+	var fileExt string
+	mime := fd.FileMimeType(field)
+	if mime == "" {
+		return false
+	}
+
+	for ext, imgMime := range imageMimeTypes {
+		if imgMime == mime {
+			fileExt = ext
+			break
+		}
+	}
+
+	if len(exts) == 0 { // don't limit mime type
+		return true // is an image
+	}
+
+	return Enum(fileExt, exts)
+}
+
+// InMimeTypes check field is uploaded file. and mime type is in the mimeTypes
+// Usage:
+// 	v.AddRule("video", "mimeTypes", "video/avi", "video/mpeg", "video/quicktime")
+func (v *Validation) InMimeTypes(fd *FormData, field, mimeType string, moreTypes ...string) bool {
+	mime := fd.FileMimeType(field)
+	if mime == "" {
+		return false
+	}
+
+	mimeTypes := append(moreTypes, mimeType)
+	return Enum(mime, mimeTypes)
 }
 
 /*************************************************************
@@ -751,6 +826,11 @@ func IsAlpha(str string) bool {
 // IsAlphaNum string.
 func IsAlphaNum(str string) bool {
 	return rxAlphaNum.MatchString(str)
+}
+
+// IsAlphaDash string.
+func IsAlphaDash(str string) bool {
+	return rxAlphaDash.MatchString(str)
 }
 
 // IsNumber string. should >= 0
@@ -1088,7 +1168,7 @@ func StringLength(str string, minLen int, maxLen ...int) bool {
 }
 
 /*************************************************************
- * global: date/time validators todo
+ * global: date/time validators
  *************************************************************/
 
 // IsDate check value is an date string.

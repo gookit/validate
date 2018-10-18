@@ -103,6 +103,9 @@ var defMessages = map[string]string{
 	// string length. calc rune
 	"stringLength": "{field} length must be in the range %d - %d",
 
+	"isFile":  "{field} must be an uploaded file",
+	"isImage": "{field} must be an uploaded image file",
+
 	"enum":  "{field} value must be in the enum %v",
 	"range": "{field} value must be in the range %d - %d",
 	// required

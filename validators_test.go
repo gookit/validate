@@ -285,6 +285,10 @@ func TestStringCheck(t *testing.T) {
 	is.False(IsAlphaNum("#$"))
 	is.False(IsAlphaNum("123 abc"))
 
+	// IsAlphaDash
+	is.True(IsAlphaDash("abc"))
+	is.False(IsAlphaDash("123 abc"))
+
 	// IsNumber
 	is.True(IsNumber("0"))
 	is.True(IsNumber("123"))

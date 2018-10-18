@@ -8,7 +8,6 @@ package validate
 
 import (
 	"reflect"
-	"strings"
 )
 
 type sourceType uint8
@@ -132,6 +131,10 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 	}
 
 	var err error
+	var ok bool
+
+	name := ValidatorName(r.validator)
+
 	// validate field value
 	for _, field := range r.Fields() {
 		if v.isNoNeedToCheck(field) {
@@ -158,35 +161,33 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 			v.filteredData[field] = val
 		}
 
-		// only one validator
-		if !strings.ContainsRune(r.validator, '|') {
-			r.Validate(field, r.validator, val, v)
-		} else { // has multi validators
-			vs := stringSplit(r.validator, "|")
-			for _, validator := range vs {
-				// stop on error
-				if r.Validate(field, validator, val, v) && v.StopOnError {
-					return true
-				}
+		// uploaded file check
+		if isFileValidator(name) {
+			ok = r.fileValidate(field, name, v)
+		} else {
+			ok = r.Validate(field, name, val, v)
+			if ok { // save validated value.
+				v.safeData[field] = val
 			}
+		}
+
+		if !ok { // build and collect error message
+			v.AddError(field, r.errorMessage(field, r.validator, v))
 		}
 
 		// stop on error
 		if v.shouldStop() {
 			return true
 		}
-
-		// save validated value.
-		v.safeData[field] = val
 	}
 
 	return false
 }
 
 // Validate the field by validator name
-func (r *Rule) Validate(field, validator string, val interface{}, v *Validation) (ok bool) {
+func (r *Rule) Validate(field, name string, val interface{}, v *Validation) (ok bool) {
 	// "-" OR "safe" mark field value always is safe.
-	if validator == "-" || validator == "safe" {
+	if name == "-" || name == "safe" {
 		return true
 	}
 
@@ -198,15 +199,15 @@ func (r *Rule) Validate(field, validator string, val interface{}, v *Validation)
 	// call custom validator in the rule.
 	fm := r.checkFuncMeta
 	if fm == nil {
-		name := ValidatorName(validator)
 		fm = v.validatorMeta(name)
 		if fm == nil {
-			panicf("the validator '%s' is not exists", validator)
+			panicf("the validator '%s' is not exists", r.validator)
 		}
 	}
 
 	// empty value AND skip on empty.
-	if v.SkipOnEmpty && validator != "required" && IsEmpty(val) {
+	isNotRequired := name != "required"
+	if v.SkipOnEmpty && isNotRequired && IsEmpty(val) {
 		return true
 	}
 
@@ -215,30 +216,28 @@ func (r *Rule) Validate(field, validator string, val interface{}, v *Validation)
 	rftVal := reflect.ValueOf(val)
 	valKind := rftVal.Kind()
 	// check arg num is match
-	fm.checkArgNum(argNum, validator)
+	if isNotRequired { // need exclude "required"
+		fm.checkArgNum(argNum, r.validator)
 
-	// convert val type, is first arg.
-	ft := fm.fv.Type()
-	firstTyp := ft.In(0).Kind()
-	if firstTyp != valKind && firstTyp != reflect.Interface {
-		ak, err := basicKind(rftVal)
-		if err != nil { // todo check?
-			v.convertArgTypeError(fm.name, valKind, firstTyp)
-			return
-		}
+		// convert val type, is first arg.
+		ft := fm.fv.Type()
+		firstTyp := ft.In(0).Kind()
+		if firstTyp != valKind && firstTyp != reflect.Interface {
+			ak, err := basicKind(rftVal)
+			if err != nil { // todo check?
+				v.convertArgTypeError(fm.name, valKind, firstTyp)
+				return
+			}
 
-		// manual converted
-		if nVal, _ := convertType(val, ak, firstTyp); nVal != nil {
-			val = nVal
+			// manual converted
+			if nVal, _ := convertType(val, ak, firstTyp); nVal != nil {
+				val = nVal
+			}
 		}
 	}
 
 	// call built in validators
-	ok = callValidator(v, fm, val, r.arguments)
-	if !ok { // build and collect error message
-		v.AddError(field, r.errorMessage(field, validator, v))
-	}
-
+	ok = callValidator(v, fm, field, val, r.arguments)
 	return
 }
 
@@ -262,6 +261,45 @@ func (r *Rule) errorMessage(field, validator string, v *Validation) (msg string)
 
 	// built in error messages
 	return v.trans.Message(validator, field, r.arguments...)
+}
+
+func (r *Rule) fileValidate(field, name string, v *Validation) (ok bool) {
+	// beforeFunc return false, skip validate
+	if r.beforeFunc != nil && !r.beforeFunc(field, v) {
+		return false
+	}
+
+	fd, ok := v.data.(*FormData)
+	if !ok {
+		return
+	}
+
+	// skip on empty AND field not exist
+	if v.SkipOnEmpty && !fd.HasFile(field) {
+		return true
+	}
+
+	var ss []string
+	for _, item := range r.arguments {
+		ss = append(ss, item.(string))
+	}
+
+	switch name {
+	case "isFile":
+		ok = v.IsFile(fd, field)
+	case "isImage":
+		ok = v.IsImage(fd, field, ss...)
+	case "inMimeTypes":
+		if ln := len(ss); ln == 0 {
+			return false
+		} else if ln == 1 {
+			ok = v.InMimeTypes(fd, field, ss[0])
+		} else {
+			ok = v.InMimeTypes(fd, field, ss[0], ss[1:]...)
+		}
+	}
+
+	return
 }
 
 // convert args data type
@@ -333,7 +371,7 @@ func convertArgsType(v *Validation, fm *funcMeta, args []interface{}) (ok bool) 
 	return true
 }
 
-func callValidator(v *Validation, fm *funcMeta, val interface{}, args []interface{}) (ok bool) {
+func callValidator(v *Validation, fm *funcMeta, field string, val interface{}, args []interface{}) (ok bool) {
 	// 1. args data type convert
 	if ok = convertArgsType(v, fm, args); !ok {
 		return
@@ -345,7 +383,7 @@ func callValidator(v *Validation, fm *funcMeta, val interface{}, args []interfac
 	// 2. call built in validator
 	switch fm.name {
 	case "required":
-		ok = v.Required(val)
+		ok = v.Required(field, val)
 	case "lt":
 		ok = Lt(val, args[0].(int64))
 	case "gt":

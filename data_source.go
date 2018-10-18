@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gookit/filter"
+	"io"
 	"io/ioutil"
 	"mime/multipart"
+	"net/http"
 	"net/url"
 	"reflect"
 	"strconv"
@@ -509,8 +511,8 @@ func (d FormData) Bool(key string) bool {
 // file associated with key, it returns nil (not an error). It may return an error if
 // there was a problem reading the file. If you need to know whether or not the file
 // exists (i.e. whether it was provided in the request), use the FileExists method.
-func (d FormData) FileBytes(key string) ([]byte, error) {
-	fileHeader, found := d.Files[key]
+func (d FormData) FileBytes(field string) ([]byte, error) {
+	fileHeader, found := d.Files[field]
 	if !found {
 		return nil, nil
 	}
@@ -521,4 +523,20 @@ func (d FormData) FileBytes(key string) ([]byte, error) {
 	}
 
 	return ioutil.ReadAll(file)
+}
+
+// FileMimeType get File Mime Type name. eg "image/png"
+func (d FormData) FileMimeType(field string) (mime string) {
+	fh, found := d.Files[field]
+	if !found {
+		return
+	}
+
+	if file, err := fh.Open(); err == nil {
+		var buf [sniffLen]byte
+		n, _ := io.ReadFull(file, buf[:])
+		mime = http.DetectContentType(buf[:n])
+	}
+
+	return
 }

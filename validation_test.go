@@ -318,9 +318,9 @@ func TestRequest(t *testing.T) {
 	// =================== POST file data form ===================
 	buf := new(bytes.Buffer)
 	mw := multipart.NewWriter(buf)
-	w, err := mw.CreateFormFile("file", "test.txt")
+	w, err := mw.CreateFormFile("file", "test.jpg")
 	if is.NoError(err) {
-		w.Write([]byte("content")) // write file content
+		w.Write([]byte("\xFF\xD8\xFF")) // write file content
 	}
 	mw.WriteField("age", "24")
 	mw.WriteField("name", "inhere")
@@ -328,7 +328,7 @@ func TestRequest(t *testing.T) {
 
 	r, _ = http.NewRequest("POST", "/users", buf)
 	r.Header.Set("Content-Type", mw.FormDataContentType())
-	// create data
+	// - create data
 	d, err = FromRequest(r)
 	is.NoError(err)
 	fd, ok := d.(*FormData)
@@ -336,12 +336,27 @@ func TestRequest(t *testing.T) {
 	is.True(fd.HasFile("file"))
 	is.Equal("inhere", fd.String("name"))
 	is.Equal(24, fd.Int("age"))
+
 	bts, err := fd.FileBytes("file")
 	is.NoError(err)
-	is.Equal([]byte("content"), bts)
+	is.Equal([]byte("\xFF\xD8\xFF"), bts)
 	bts, err = fd.FileBytes("not-exist")
 	is.Nil(bts)
 	is.NoError(err)
+	is.Equal("", fd.FileMimeType("not-exist"))
+	is.Equal("image/jpeg", fd.FileMimeType("file"))
+	// - create validation
+	v = d.Validation()
+	v.StringRules(MS{
+		"age":  "min:1",
+		"file": "required|mimeTypes:image/jpeg,image/jpg",
+	})
+	v.AddRule("name", "alpha")
+	v.AddRule("file", "file")
+	v.AddRule("file", "image", "jpg", "jpeg")
+	v.Validate()
+	is.True(v.IsOK())
+	fmt.Println(v.Errors)
 
 	// =================== POST JSON body ===================
 	body = strings.NewReader(`{
@@ -350,7 +365,7 @@ func TestRequest(t *testing.T) {
 }`)
 	r, _ = http.NewRequest("POST", "/users", body)
 	r.Header.Set("Content-Type", "application/json")
-	// create data
+	// - create data
 	d, err = FromRequest(r)
 	is.Nil(err)
 	user := &struct {
@@ -363,7 +378,7 @@ func TestRequest(t *testing.T) {
 	is.Nil(err)
 	is.Equal(100, user.Age)
 	is.Equal(" inhere ", user.Name)
-	// create validation
+	// - create validation
 	v = d.Create()
 	v.StringRule("name", "-", "trim|upper")
 	v.Validate()

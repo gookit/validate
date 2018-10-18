@@ -12,6 +12,8 @@ const (
 	filterError   = "_filter"
 	validateTag   = "validate"
 	validateError = "_validate"
+	// sniff Length, use for detect file mime type
+	sniffLen = 512
 	// 32 MB
 	defaultMaxMemory int64 = 32 << 20
 )
@@ -127,6 +129,10 @@ func NewValidation(data DataFace, scene ...string) *Validation {
 		"gteField": reflect.ValueOf(v.GteField),
 		"ltField":  reflect.ValueOf(v.LtField),
 		"lteField": reflect.ValueOf(v.LteField),
+		// file upload check
+		"isFile":      reflect.ValueOf(v.IsFile),
+		"isImage":     reflect.ValueOf(v.IsImage),
+		"inMimeTypes": reflect.ValueOf(v.InMimeTypes),
 	}
 
 	v.validatorMetas = make(map[string]*funcMeta)
