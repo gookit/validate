@@ -28,6 +28,21 @@ func TestIsEmpty(t *testing.T) {
 	is.True(ValueIsEmpty(reflect.ValueOf("")))
 }
 
+func TestContains(t *testing.T) {
+	is := assert.New(t)
+
+	// Contains
+	is.True(Contains("abc", "a"))
+	is.True(Contains([]string{"a", "b", "c"}, "a"))
+	is.True(Contains(map[int]string{1: "a", 2: "b", 3: "c"}, 2))
+	is.False(Contains(345, "a"))
+
+	// NotContains
+	is.True(NotContains("abc", "d"))
+	is.True(NotContains([]string{"a", "b", "c"}, "d"))
+	is.True(NotContains(map[int]string{1: "a", 2: "b", 3: "c"}, 4))
+}
+
 // ------------------ type validator ------------------
 
 func TestIntCheck(t *testing.T) {
@@ -132,8 +147,20 @@ func TestValueCompare(t *testing.T) {
 	is := assert.New(t)
 
 	// IsEqual
-	is.True(IsEqual(2, 2))
+	tests := []interface{}{
+		2,
+		int8(2), int16(2), int32(2), int64(2),
+		uint8(2), uint16(2), uint32(2), uint64(2),
+	}
+	for _, item := range tests {
+		is.True(IsEqual(item, 2))
+	}
+
+	is.True(IsEqual(uint(2), uint64(2)))
+	is.True(IsEqual(int(2), uint64(2)))
+	is.True(IsEqual(float32(2), float64(2)))
 	is.True(IsEqual(nil, nil))
+	is.True(IsEqual([]byte("abc"), []byte("abc")))
 
 	// -- array, slice, map ...
 	is.True(IsEqual([1]int{1}, [1]int{1}))
@@ -413,6 +440,7 @@ func TestEnumAndNotIn(t *testing.T) {
 		8:   []uint16{8, 2, 3},
 		9:   []uint32{9, 2, 3},
 		10:  []uint64{10, 3},
+		11:  []string{"11", "3"},
 		'a': []int64{97},
 		'b': []rune{'a', 'b'},
 		'c': []byte{'a', 'b', 'c'}, // byte -> uint8
@@ -428,6 +456,7 @@ func TestEnumAndNotIn(t *testing.T) {
 	is.False(Enum('a', []int{}))
 	//
 	is.False(Enum([]int{2}, []int{2, 3}))
+	is.False(Enum(12, map[int]string{1: "a", 2: "b"}))
 
 	tests1 := map[interface{}]interface{}{
 		2:   []int{1, 3},
@@ -438,4 +467,40 @@ func TestEnumAndNotIn(t *testing.T) {
 		is.True(NotIn(val, list))
 		is.False(Enum(val, list))
 	}
+}
+
+func TestDateCheck(t *testing.T) {
+	is := assert.New(t)
+	// Date
+	is.True(IsDate("2018-10-25"))
+
+	// DateFormat
+	is.True(DateFormat("2018-10-25", "2006-01-02"))
+	is.True(DateFormat("2018-10-25 23:34:45", "2006-01-02 15:04:05"))
+
+	// BeforeDate
+	is.True(BeforeDate("2018-10-25", "2018-10-26"))
+	is.False(BeforeDate("2018-10-26", "2018-10-26"))
+	is.False(BeforeDate("2018-10-26", "invalid"))
+	is.False(BeforeDate("invalid", "2018-10-26"))
+
+	// BeforeOrEqualDate
+	is.True(BeforeOrEqualDate("2018-10-25", "2018-10-26"))
+	is.True(BeforeOrEqualDate("2018-10-26", "2018-10-26"))
+	is.False(BeforeOrEqualDate("2018-10-27", "2018-10-26"))
+	is.False(BeforeOrEqualDate("2018-10-27", "invalid"))
+	is.False(BeforeOrEqualDate("invalid", "2018-10-26"))
+
+	// AfterDate
+	is.True(AfterDate("2018-10-26", "2018-10-25"))
+	is.False(AfterDate("2018-10-26", "2018-10-26"))
+	is.False(AfterDate("invalid", "2018-10-26"))
+	is.False(AfterDate("2018-10-26", "invalid"))
+
+	// AfterOrEqualDate
+	is.True(AfterOrEqualDate("2018-10-27", "2018-10-26"))
+	is.True(AfterOrEqualDate("2018-10-26", "2018-10-26"))
+	is.False(AfterOrEqualDate("2018-10-25", "2018-10-26"))
+	is.False(AfterOrEqualDate("invalid", "2018-10-26"))
+	is.False(AfterOrEqualDate("2018-10-25", "invalid"))
 }

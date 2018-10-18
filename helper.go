@@ -122,6 +122,8 @@ func ValueLen(v reflect.Value) int {
 		return len(fmt.Sprint(v.Uint()))
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		return len(fmt.Sprint(v.Int()))
+	case reflect.Float32, reflect.Float64:
+		return len(fmt.Sprint(v.Interface()))
 	}
 
 	// cannot get length
@@ -184,6 +186,27 @@ func valueCompare(srcVal, dstVal interface{}, op string) bool {
 
 func nameOfFunc(fv reflect.Value) string {
 	return runtime.FuncForPC(fv.Pointer()).Name()
+}
+
+func maybeTimeLayout(s string) (layout string) {
+	switch len(s) {
+	case 8:
+		layout = "20060102"
+	case 10:
+		layout = "2006-01-02"
+	case 16:
+		layout = "2006-01-02 15:04"
+		if strings.ContainsRune(s, 'T') {
+			layout = "2006-01-02T15:04"
+		}
+	case 19:
+		layout = "2006-01-02 15:04:05"
+		if strings.ContainsRune(s, 'T') {
+			layout = "2006-01-02T15:04:05"
+		}
+	}
+
+	return
 }
 
 func parseArgString(argStr string) (ss []string) {
@@ -517,4 +540,38 @@ func eq(arg1 reflect.Value, arg2 reflect.Value) (bool, error) {
 	}
 
 	return truth, nil
+}
+
+// from package: github.com/stretchr/testify/assert/assertions.go
+func includeElement(list, element interface{}) (ok, found bool) {
+	listValue := reflect.ValueOf(list)
+	elementValue := reflect.ValueOf(element)
+	if reflect.TypeOf(list).Kind() == reflect.String {
+		return true, strings.Contains(listValue.String(), elementValue.String())
+	}
+
+	defer func() {
+		if e := recover(); e != nil {
+			ok = false // call Value.Len() panic.
+			found = false
+		}
+	}()
+
+	if reflect.TypeOf(list).Kind() == reflect.Map {
+		mapKeys := listValue.MapKeys()
+		for i := 0; i < len(mapKeys); i++ {
+			if IsEqual(mapKeys[i].Interface(), element) {
+				return true, true
+			}
+		}
+		return true, false
+	}
+
+	for i := 0; i < listValue.Len(); i++ {
+		if IsEqual(listValue.Index(i).Interface(), element) {
+			return true, true
+		}
+	}
+
+	return true, false
 }

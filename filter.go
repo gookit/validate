@@ -10,6 +10,7 @@ import (
  * Global filters
  *************************************************************/
 
+var emptyValue = reflect.Value{}
 var filterValues map[string]reflect.Value
 
 // AddFilters add global filters

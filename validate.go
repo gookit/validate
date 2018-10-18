@@ -25,12 +25,6 @@ const (
 // Rules definition
 type Rules []*Rule
 
-// some global vars
-var (
-	rulesCaches map[string]Rules
-	emptyValue  = reflect.Value{}
-)
-
 /*************************************************************
  * validation rule
  *************************************************************/
@@ -59,9 +53,8 @@ type Rule struct {
 	arguments []interface{}
 	// some functions
 	beforeFunc func(field string, v *Validation) bool // func (val interface{}) bool
-	filterFunc func(val interface{}) (newVal interface{}, err error)
-	// custom check func's reflect.Value
-	checkFunc     reflect.Value
+	filterFunc func(val interface{}) (interface{}, error)
+	// custom check func's mate info
 	checkFuncMeta *funcMeta
 	// custom check is empty.
 	emptyChecker func(val interface{}) bool
@@ -77,32 +70,33 @@ func NewRule(fields, validator string, args ...interface{}) *Rule {
 	}
 }
 
-// Setting the rule
-func (r *Rule) Setting(fn func(r *Rule)) *Rule {
-	fn(r)
-	return r
-}
-
 // SetScene name for the rule.
 func (r *Rule) SetScene(scene string) *Rule {
 	r.scene = scene
 	return r
 }
 
-// SetCheckFunc use custom check func.
+// SetCheckFunc set custom validate func.
 func (r *Rule) SetCheckFunc(checkFunc interface{}) *Rule {
-	name := "rule." + r.fields
-	fv := checkValidatorFunc(name, checkFunc)
+	name := "rule_" + r.fields
+	if r.validator != "" {
+		name = "rule_" + r.validator
+	}
 
-	r.checkFunc = fv
+	fv := checkValidatorFunc(name, checkFunc)
 	r.checkFuncMeta = newFuncMeta(name, false, fv)
 	return r
 }
 
-// SetOptional only validate on value is not empty.
-func (r *Rule) SetOptional(optional bool) *Rule {
-	r.optional = optional
+// SetFilterFunc for the rule
+func (r *Rule) SetFilterFunc(fn func(val interface{}) (interface{}, error)) *Rule {
+	r.filterFunc = fn
 	return r
+}
+
+// SetOptional only validate on value is not empty.
+func (r *Rule) SetOptional(optional bool) {
+	r.optional = optional
 }
 
 // SetMessage set error message.
@@ -137,6 +131,7 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 		return false
 	}
 
+	var err error
 	// validate field value
 	for _, field := range r.Fields() {
 		if v.isNoNeedToCheck(field) {
@@ -153,7 +148,7 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 
 		// apply filters func.
 		if exist && r.filterFunc != nil {
-			val, err := r.filterFunc(val)
+			val, err = r.filterFunc(val)
 			if err != nil { // has error
 				v.AddError(filterError, err.Error())
 				return true
@@ -218,28 +213,29 @@ func (r *Rule) Validate(field, validator string, val interface{}, v *Validation)
 	// some prepare and check.
 	argNum := len(r.arguments) + 1 // "+1" is the "val" position
 	rftVal := reflect.ValueOf(val)
+	valKind := rftVal.Kind()
 	// check arg num is match
 	fm.checkArgNum(argNum, validator)
 
 	// convert val type, is first arg.
 	ft := fm.fv.Type()
 	firstTyp := ft.In(0).Kind()
-	if firstTyp == rftVal.Kind() {
+	if firstTyp != valKind && firstTyp != reflect.Interface {
 		ak, err := basicKind(rftVal)
 		if err != nil { // todo check?
+			v.convertArgTypeError(fm.name, valKind, firstTyp)
 			return
 		}
 
 		// manual converted
-		if nVal, _ := convertType(val, ak, rftVal.Kind()); nVal != nil {
+		if nVal, _ := convertType(val, ak, firstTyp); nVal != nil {
 			val = nVal
 		}
 	}
 
 	// call built in validators
 	ok = callValidator(v, fm, val, r.arguments)
-	// build and collect error message
-	if !ok {
+	if !ok { // build and collect error message
 		v.AddError(field, r.errorMessage(field, validator, v))
 	}
 
@@ -265,14 +261,11 @@ func (r *Rule) errorMessage(field, validator string, v *Validation) (msg string)
 	}
 
 	// built in error messages
-	msg = v.trans.Message(validator, field, r.arguments...)
-
-	return
+	return v.trans.Message(validator, field, r.arguments...)
 }
 
-func callValidator(v *Validation, fm *funcMeta, val interface{}, args []interface{}) (ok bool) {
-	// 1. args data type convert
-
+// convert args data type
+func convertArgsType(v *Validation, fm *funcMeta, args []interface{}) (ok bool) {
 	ft := fm.fv.Type()
 	lastTyp := reflect.Invalid
 	lastArgIndex := fm.numIn - 1
@@ -337,6 +330,15 @@ func callValidator(v *Validation, fm *funcMeta, val interface{}, args []interfac
 		}
 	}
 
+	return true
+}
+
+func callValidator(v *Validation, fm *funcMeta, val interface{}, args []interface{}) (ok bool) {
+	// 1. args data type convert
+	if ok = convertArgsType(v, fm, args); !ok {
+		return
+	}
+
 	// fmt.Println(fm.name, val)
 	// fmt.Printf("%#v\n", args)
 
@@ -365,6 +367,15 @@ func callValidator(v *Validation, fm *funcMeta, val interface{}, args []interfac
 		} else { // argLn == 2
 			ok = IsInt(val, args[0].(int64), args[1].(int64))
 		}
+	case "isString":
+		argLn := len(args)
+		if argLn == 0 {
+			ok = IsString(val)
+		} else if argLn == 1 {
+			ok = IsString(val, args[0].(int))
+		} else { // argLn == 2
+			ok = IsString(val, args[0].(int), args[1].(int))
+		}
 	case "isNumber":
 		ok = IsNumber(val.(string))
 	case "length":
@@ -379,7 +390,8 @@ func callValidator(v *Validation, fm *funcMeta, val interface{}, args []interfac
 		ok = Between(val, args[0].(int64), args[1].(int64))
 	case "isJSON":
 		ok = IsJSON(val.(string))
-	default: // is user custom validators
+	default:
+		// 3. call user custom validators
 		ok = callValidatorValue(fm.fv, val, args)
 	}
 

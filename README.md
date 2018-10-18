@@ -5,7 +5,7 @@
 [![Coverage Status](https://coveralls.io/repos/github/gookit/validate/badge.svg?branch=master)](https://coveralls.io/github/gookit/validate?branch=master)
 [![Go Report Card](https://goreportcard.com/badge/github.com/gookit/validate)](https://goreportcard.com/report/github.com/gookit/validate)
 
-The package is a generic go data validate library.
+The package is a generic Go data validate library.
 
 - Support validate Map, Struct, Request(Form, JSON, url.Values) data
 - Support filter/sanitize data before validate
@@ -202,13 +202,15 @@ func main()  {
 
 filter/aliases | description 
 -------------------|-------------------------------------------
+`int`  | Convert value(string/intX/floatX) to `int` type `v.FilterRule("id", "int")`
+`uint`  | Convert value(string/intX/floatX) to `uint` type `v.FilterRule("id", "uint")`
+`int64`  | Convert value(string/intX/floatX) to `int64` type `v.FilterRule("id", "int64")`
+`float`  | Convert value(string/intX/floatX) to `float` type
+`bool`  | Convert string value to bool. (`true`: "1", "on", "yes", "true", `false`: "0", "off", "no", "false")
 `trim/trimSpace`  | Clean up whitespace characters on both sides of the string
 `ltrim/trimLeft`  | Clean up whitespace characters on left sides of the string
 `rtrim/trimRight`  | Clean up whitespace characters on right sides of the string
 `int/integer`  | Convert value(string/intX/floatX) to int type `v.FilterRule("id", "int")`
-`uint`  | Convert value(string/intX/floatX) to `uint` type `v.FilterRule("id", "uint")`
-`int64`  | Convert value(string/intX/floatX) to `int64` type `v.FilterRule("id", "int64")`
-`bool`  | Convert string value to bool. (`true`: "1", "on", "yes", "true", `false`: "0", "off", "no", "false")
 `lower/lowercase` | Convert string to lowercase
 `upper/uppercase` | Convert string to uppercase
 `lcFirst/lowerFirst` | Convert the first character of a string to lowercase
@@ -237,6 +239,8 @@ validator/aliases | description
 `slice/isSlice`  |  Check value is slice type(`[]intX` `[]uintX` `[]byte` `[]string` ...).
 `in/enum`  |  Check if the value is in the given enumeration
 `notIn`  |  Check if the value is not in the given enumeration
+`contains`  |  Check if the input value contains the given value
+`notContains`  |  Check if the input value not contains the given value
 `range/between`  |  Check that the value is a number and is within the given range
 `max/lte`  |  Check value is less than or equal to the given value
 `min/gte`  |  Check value is less than or equal to the given size(for `intX` `uintX` `floatX`)
@@ -261,6 +265,11 @@ validator/aliases | description
 `gtField`  |  Check that the field value is greater than the value of another field
 `lteField`  |  Check if the field value is less than or equal to the value of another field
 `ltField`  |  Check that the field value is less than the value of another field
+`date/isDate` | Check the field value is date string. eg `2018-10-25`
+`gtDate/afterDate` | Check that the input value is greater than the given date string.
+`ltDate/beforeDate` | Check that the input value is less than the given date string
+`gteDate/afterOrEqualDate` | Check that the input value is greater than or equal to the given date string.
+`lteDate/beforeOrEqualDate` | Check that the input value is less than or equal to the given date string.
 `hasWhitespace` | Check value string has Whitespace.
 `ascii/ASCII/isASCII` | Check value is ASCII string.
 `alpha/isAlpha` | Check value is Alpha string.

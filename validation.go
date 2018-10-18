@@ -59,7 +59,7 @@ type Validation struct {
 	// Errors for the validate
 	Errors Errors
 	// CacheKey for cache rules
-	CacheKey string
+	// CacheKey string
 	// StopOnError If true: An error occurs, it will cease to continue to verify
 	StopOnError bool
 	// SkipOnEmpty Skip check on field not exist or value is empty
@@ -71,7 +71,7 @@ type Validation struct {
 	// mark is filtered
 	hasFiltered bool
 	// mark is validated
-	validated bool
+	hasValidated bool
 	// validate rules for the validation
 	rules []*Rule
 	// validators for the validation
@@ -104,16 +104,17 @@ func NewValidation(data DataFace, scene ...string) *Validation {
 		Errors: make(Errors),
 		// add data source
 		data: data,
+		// create message translator
+		trans: NewTranslator(),
 		// validated data
-		safeData:   make(map[string]interface{}),
+		safeData: make(map[string]interface{}),
+		// validator names
 		validators: make(map[string]int),
 		// filtered data
 		filteredData: make(map[string]interface{}),
 		// default config
 		StopOnError: globalOpt.StopOnError,
 		SkipOnEmpty: globalOpt.SkipOnEmpty,
-		// create message translator
-		trans: NewTranslator(),
 	}
 
 	// init build in context validator
@@ -165,7 +166,7 @@ func (v *Validation) ResetResult() {
 	v.Errors = Errors{}
 	v.hasError = false
 	v.hasFiltered = false
-	v.validated = false
+	v.hasValidated = false
 	// result data
 	v.safeData = make(map[string]interface{})
 	v.filteredData = make(map[string]interface{})
@@ -379,7 +380,7 @@ func (v *Validation) Validators(withGlobal bool) map[string]int {
 // Validate processing
 func (v *Validation) Validate(scene ...string) bool {
 	// has been validated OR has error
-	if v.validated || v.shouldStop() {
+	if v.hasValidated || v.shouldStop() {
 		return v.IsSuccess()
 	}
 
@@ -400,7 +401,7 @@ func (v *Validation) Validate(scene ...string) bool {
 		}
 	}
 
-	v.validated = true
+	v.hasValidated = true
 	if v.hasError { // clear safe data.
 		v.safeData = make(map[string]interface{})
 	}

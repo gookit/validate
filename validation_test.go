@@ -164,7 +164,6 @@ func (f UserForm) Translates() map[string]string {
 
 func TestStruct(t *testing.T) {
 	is := assert.New(t)
-
 	u := &UserForm{
 		Name: "inhere",
 	}

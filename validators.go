@@ -11,6 +11,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 	"unicode/utf8"
 )
 
@@ -175,6 +176,12 @@ var validatorAliases = map[string]string{
 	"UUID5":     "isUUID5",
 	"unixPath":  "isUnixPath",
 	"winPath":   "isWinPath",
+	// date
+	"date":    "isDate",
+	"gtDate":  "afterDate",
+	"ltDate":  "beforeDate",
+	"gteDate": "afterOrEqualDate",
+	"lteDate": "beforeOrEqualDate",
 }
 
 // ValidatorName get real validator name.
@@ -210,6 +217,9 @@ var (
 		"isEqual":  reflect.ValueOf(IsEqual),
 		"intEqual": reflect.ValueOf(IntEqual),
 		"notEqual": reflect.ValueOf(NotEqual),
+		// contains
+		"contains":    reflect.ValueOf(Contains),
+		"notContains": reflect.ValueOf(NotContains),
 		// data type check
 		"isInt":     reflect.ValueOf(IsInt),
 		"isMap":     reflect.ValueOf(IsMap),
@@ -265,6 +275,13 @@ var (
 		"isUUID5":    reflect.ValueOf(IsUUID5),
 		"isUnixPath": reflect.ValueOf(IsUnixPath),
 		"isWinPath":  reflect.ValueOf(IsWinPath),
+		// date check
+		"isDate":     reflect.ValueOf(IsDate),
+		"afterDate":  reflect.ValueOf(AfterDate),
+		"beforeDate": reflect.ValueOf(BeforeDate),
+		//
+		"afterOrEqualDate":  reflect.ValueOf(AfterOrEqualDate),
+		"beforeOrEqualDate": reflect.ValueOf(BeforeOrEqualDate),
 	}
 )
 
@@ -444,6 +461,30 @@ func IsEmpty(val interface{}) bool {
 	}
 
 	return ValueIsEmpty(reflect.ValueOf(val))
+}
+
+// Contains check that the specified string, list(array, slice) or map contains the
+// specified substring or element.
+//
+// Notice: list check value exist. map check key exist.
+func Contains(s, sub interface{}) bool {
+	ok, found := includeElement(s, sub)
+
+	// ok == false: 's' could not be applied builtin len()
+	// found == false: 's' does not contain 'sub'
+	return ok && found
+}
+
+// NotContains check that the specified string, list(array, slice) or map does NOT contain the
+// specified substring or element.
+//
+// Notice: list check value exist. map check key exist.
+func NotContains(s, sub interface{}) bool {
+	ok, found := includeElement(s, sub)
+
+	// ok == false: could not be applied builtin len()
+	// found == true: 's' contain 'sub'
+	return ok && !found
 }
 
 /*************************************************************
@@ -1050,7 +1091,81 @@ func StringLength(str string, minLen int, maxLen ...int) bool {
  * global: date/time validators todo
  *************************************************************/
 
+// IsDate check value is an date string.
+func IsDate(srcDate string) bool {
+	_, err := filter.StrToTime(srcDate)
+	return err == nil
+}
+
 // DateFormat check
-func DateFormat(str string, format string) bool {
-	return false
+func DateFormat(s string, layout string) bool {
+	_, err := time.Parse(layout, s)
+	return err == nil
+}
+
+// DateEquals check.
+// Usage:
+// 	DateEquals(val, "2017-05-12")
+// func DateEquals(srcDate, dstDate string) bool {
+// 	return false
+// }
+
+// BeforeDate check
+func BeforeDate(srcDate, dstDate string) bool {
+	st, err := filter.StrToTime(srcDate)
+	if err != nil {
+		return false
+	}
+
+	dt, err := filter.StrToTime(dstDate)
+	if err != nil {
+		return false
+	}
+
+	return st.Before(dt)
+}
+
+// BeforeOrEqualDate check
+func BeforeOrEqualDate(srcDate, dstDate string) bool {
+	st, err := filter.StrToTime(srcDate)
+	if err != nil {
+		return false
+	}
+
+	dt, err := filter.StrToTime(dstDate)
+	if err != nil {
+		return false
+	}
+
+	return st.Before(dt) || st.Equal(dt)
+}
+
+// AfterOrEqualDate check
+func AfterOrEqualDate(srcDate, dstDate string) bool {
+	st, err := filter.StrToTime(srcDate)
+	if err != nil {
+		return false
+	}
+
+	dt, err := filter.StrToTime(dstDate)
+	if err != nil {
+		return false
+	}
+
+	return st.After(dt) || st.Equal(dt)
+}
+
+// AfterDate check
+func AfterDate(srcDate, dstDate string) bool {
+	st, err := filter.StrToTime(srcDate)
+	if err != nil {
+		return false
+	}
+
+	dt, err := filter.StrToTime(dstDate)
+	if err != nil {
+		return false
+	}
+
+	return st.After(dt)
 }
