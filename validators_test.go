@@ -2,6 +2,7 @@ package validate
 
 import (
 	"github.com/stretchr/testify/assert"
+	"reflect"
 	"testing"
 )
 
@@ -22,6 +23,9 @@ func TestIsEmpty(t *testing.T) {
 	for _, val := range tests {
 		is.True(IsEmpty(val))
 	}
+
+	is.True(ValueIsEmpty(reflect.ValueOf(nil)))
+	is.True(ValueIsEmpty(reflect.ValueOf("")))
 }
 
 // ------------------ type validator ------------------

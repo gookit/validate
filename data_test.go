@@ -9,9 +9,39 @@ import (
 	"time"
 )
 
-func TestFormData_Add(t *testing.T) {
+func TestData(t *testing.T) {
 	is := assert.New(t)
+	// MapData
+	d := FromMap(M{
+		"age": 45,
+	})
 
+	err := d.Set("name", "inhere")
+	is.Nil(err)
+
+	val, ok := d.Get("name")
+	is.True(ok)
+	is.Equal("inhere", val)
+
+	// StructData
+	sd, err := FromStruct(&UserForm{Name: "abc"})
+	is.Nil(err)
+	val, ok = sd.Get("name")
+	is.True(ok)
+	is.Equal("abc", val)
+
+	// 上面的 &UserForm 必须使用地址，下面的set才能成功
+	err = sd.Set("name", "def")
+	is.Nil(err)
+	val, ok = sd.Get("name")
+	is.True(ok)
+	is.Equal("def", val)
+
+	is.Error(sd.Set("notExist", "val"))
+}
+
+func TestFormData(t *testing.T) {
+	is := assert.New(t)
 	d := FromURLValues(url.Values{
 		"name":   {"inhere"},
 		"age":    {"30"},
@@ -20,12 +50,16 @@ func TestFormData_Add(t *testing.T) {
 	})
 
 	is.True(d.Has("notify"))
+	is.True(d.HasField("notify"))
 	is.False(d.Has("not-exist"))
 	is.False(d.HasFile("file"))
+	is.False(d.HasField("file"))
 	is.True(d.Bool("notify"))
 	is.False(d.Bool("not-exist"))
 	is.Equal(30, d.Int("age"))
-	is.Equal(int64(30), d.MustInt64("age"))
+	is.Equal([]string{"30"}, d.Strings("age"))
+	is.Equal(int64(30), d.Int64("age"))
+	is.Equal(int64(0), d.Int64("not-exist"))
 	is.Equal(0, d.Int("not-exist"))
 	is.Equal(23.4, d.Float("money"))
 	is.Equal(float64(0), d.Float("not-exist"))
@@ -36,6 +70,7 @@ func TestFormData_Add(t *testing.T) {
 	is.Equal("strVal", d.String("newKey"))
 	d.Set("newInt", 23)
 	is.Equal(23, d.Int("newInt"))
+	is.Error(d.Set("invalid", []int{2}))
 
 	// form
 	d.Add("newKey1", "new val1")
@@ -59,9 +94,9 @@ func TestFormData_Add(t *testing.T) {
 
 func TestStructData_Create(t *testing.T) {
 	is := assert.New(t)
-	_, err := newStructData(time.Now())
+	_, err := FromStruct(time.Now())
 	is.Error(err)
-	_, err = newStructData("invalid")
+	_, err = FromStruct("invalid")
 	is.Error(err)
 
 	u := &UserForm{
@@ -71,11 +106,14 @@ func TestStructData_Create(t *testing.T) {
 		Extra:    ExtraInfo{"xxx", 2},
 	}
 
-	d, err := newStructData(u)
+	d, err := FromStruct(u)
 	is.Nil(err)
 
+	v := New(d, "test")
+	is.Equal("test", v.Scene())
+
 	// create validation
-	v := d.Create(fmt.Errorf("a error"))
+	v = d.Create(fmt.Errorf("a error"))
 	is.False(v.Validate())
 	is.Equal("a error", v.Errors.One())
 

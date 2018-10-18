@@ -171,6 +171,8 @@ func main()  {
 <a id="built-in-filters"></a>
 ## Built In Filters
 
+> Filters provide by: [gookit/filter](https://github.com/gookit/filter)
+
 filter/aliases | description 
 -------------------|-------------------------------------------
 `trim/trimSpace`  | Clean up whitespace characters on both sides of the string

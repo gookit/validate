@@ -13,11 +13,7 @@ import (
 	"time"
 )
 
-// MarshalFunc define
-type MarshalFunc func(v interface{}) ([]byte, error)
-
-// UnmarshalFunc define
-type UnmarshalFunc func(data []byte, v interface{}) error
+var timeType = reflect.TypeOf(time.Time{})
 
 // data (Un)marshal func
 var (
@@ -25,7 +21,20 @@ var (
 	Unmarshal UnmarshalFunc = json.Unmarshal
 )
 
-var timeType = reflect.TypeOf(time.Time{})
+// MarshalFunc define
+type MarshalFunc func(v interface{}) ([]byte, error)
+
+// UnmarshalFunc define
+type UnmarshalFunc func(data []byte, v interface{}) error
+
+// DataFace interface definition
+type DataFace interface {
+	Get(key string) (interface{}, bool)
+	Set(field string, val interface{}) error
+	// validation instance create func
+	Create(err ...error) *Validation
+	Validation(err ...error) *Validation
+}
 
 /*************************************************************
  * Map Data
@@ -33,14 +42,15 @@ var timeType = reflect.TypeOf(time.Time{})
 
 // MapData definition
 type MapData struct {
-	// Map form unmarshal JSON string, or user setting
+	// Map the source map data
 	Map map[string]interface{}
-	// from reflect Map or Struct
+	// from reflect Map
 	src reflect.Value
-	// bodyJSON from the original body of the request. only available for json http request.
+	// bodyJSON from the original JSON bytes/string.
+	// available for FromJSONBytes(), FormJSON().
 	bodyJSON []byte
 	// map field reflect.Value caches
-	fields map[string]reflect.Value
+	// fields map[string]reflect.Value
 }
 
 /*************************************************************
@@ -74,6 +84,16 @@ func (d *MapData) Validation(err ...error) *Validation {
 	}
 
 	return NewValidation(d)
+}
+
+// BindJSON binds v to the JSON data in the request body.
+// It calls json.Unmarshal and sets the value of v.
+func (d *MapData) BindJSON(ptr interface{}) error {
+	if len(d.bodyJSON) == 0 {
+		return nil
+	}
+
+	return Unmarshal(d.bodyJSON, ptr)
 }
 
 /*************************************************************
@@ -123,6 +143,8 @@ type StructData struct {
 	value reflect.Value
 	// source struct reflect.Type
 	valueTpy reflect.Type
+	// field names in the src struct
+	fieldNames map[string]int
 	// field values cache
 	fieldValues map[string]reflect.Value
 	// FilterTag name in the struct tags.
@@ -144,10 +166,12 @@ var (
 	cvFaceType = reflect.TypeOf(new(ConfigValidationFace)).Elem()
 )
 
-func newStructData(s interface{}) (*StructData, error) {
+// FromStruct create a Data from struct
+func FromStruct(s interface{}) (*StructData, error) {
 	data := &StructData{
 		ValidateTag: globalOpt.ValidateTag,
 		// init map
+		fieldNames:  make(map[string]int),
 		fieldValues: make(map[string]reflect.Value),
 	}
 
@@ -196,7 +220,7 @@ func (d *StructData) Validation(err ...error) *Validation {
 	// collect custom field translates config
 	if d.valueTpy.Implements(ftFaceType) {
 		fv := d.value.MethodByName("Translates")
-		vs := fv.Call([]reflect.Value{})
+		vs := fv.Call(nil)
 		v.WithTranslates(vs[0].Interface().(map[string]string))
 	}
 
@@ -204,7 +228,7 @@ func (d *StructData) Validation(err ...error) *Validation {
 	// if reflect.PtrTo(d.valueTpy).Implements(cmFaceType) {
 	if d.valueTpy.Implements(cmFaceType) {
 		fv := d.value.MethodByName("Messages")
-		vs := fv.Call([]reflect.Value{})
+		vs := fv.Call(nil)
 		v.WithMessages(vs[0].Interface().(map[string]string))
 	}
 
@@ -220,12 +244,13 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 	vt := d.valueTpy
 	for i := 0; i < vt.NumField(); i++ {
 		name := vt.Field(i).Name
-
-		// don't exported field
-		if name[0] >= 'a' && name[0] <= 'z' {
+		if name[0] >= 'a' && name[0] <= 'z' { // skip don't exported field
 			continue
 		}
 
+		d.fieldNames[name] = 1
+
+		// validate rule
 		rule := vt.Field(i).Tag.Get(d.ValidateTag)
 		if rule != "" {
 			v.StringRule(name, rule)
@@ -240,9 +265,12 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 // Get value by field name
 func (d *StructData) Get(field string) (interface{}, bool) {
 	var fv reflect.Value
+	field = filter.UpperFirst(field)
 
-	// not found field
-	if _, ok := d.valueTpy.FieldByName(field); !ok {
+	// found field
+	if d.HasField(field) {
+		fv = d.value.FieldByName(field)
+	} else {
 		// want get sub struct filed
 		if !strings.ContainsRune(field, '.') {
 			return nil, false
@@ -257,23 +285,25 @@ func (d *StructData) Get(field string) (interface{}, bool) {
 			return nil, false
 		}
 
+		// get field in sub-struct
 		fv = d.value.FieldByName(field).FieldByName(subField)
 		if !fv.IsValid() { // not found
 			return nil, false
 		}
-	} else {
-		fv = d.value.FieldByName(field)
 	}
 
 	return fv.Interface(), true
 }
 
-// Set value by field name
+// Set value by field name.
+// Notice: `StructData.src` the incoming struct must be a pointer to set the value
 func (d *StructData) Set(field string, val interface{}) error {
-	fv := d.value.FieldByName(field)
-	if !fv.IsValid() { // field not found
+	field = filter.UpperFirst(field)
+	if !d.HasField(field) { // field not found
 		return ErrNoField
 	}
+
+	fv := d.value.FieldByName(field)
 
 	// check whether the value of v can be changed.
 	if fv.CanSet() {
@@ -284,11 +314,25 @@ func (d *StructData) Set(field string, val interface{}) error {
 	return ErrSetValue
 }
 
-// FuncValue get
+// FuncValue get func value in the src struct
 func (d *StructData) FuncValue(name string) (reflect.Value, bool) {
 	fv := d.value.MethodByName(filter.UpperFirst(name))
 
 	return fv, fv.IsValid()
+}
+
+// HasField in the src struct
+func (d *StructData) HasField(field string) bool {
+	if _, ok := d.fieldNames[field]; ok {
+		return true
+	}
+
+	if _, ok := d.valueTpy.FieldByName(field); ok {
+		d.fieldNames[field] = 1 // cache it
+		return true
+	}
+
+	return false
 }
 
 /*************************************************************
@@ -393,7 +437,7 @@ func (d *FormData) Set(field string, val interface{}) error {
 		d.Form.Set(field, fmt.Sprint(val))
 	}
 
-	return nil
+	return ErrSetValue
 }
 
 // Get value by key
@@ -405,9 +449,14 @@ func (d FormData) Get(key string) (interface{}, bool) {
 	return nil, false
 }
 
-// Trimmed gets the first value by key, and apply strings.TrimSpace
-func (d FormData) Trimmed(key string) string {
-	return strings.TrimSpace(d.Form.Get(key))
+// String value get by key
+func (d FormData) String(key string) string {
+	return d.Form.Get(key)
+}
+
+// Strings value get by key
+func (d FormData) Strings(key string) []string {
+	return d.Form[key]
 }
 
 // GetFile returns the multipart form file associated with key, if any, as a *multipart.FileHeader.
@@ -448,67 +497,42 @@ func (d FormData) HasFile(key string) bool {
 
 // Int returns the first element in data[key] converted to an int.
 func (d FormData) Int(key string) int {
-	if !d.HasField(key) || len(d.Form[key]) == 0 {
-		return 0
-	}
-
-	str := d.String(key)
-	if str == "" {
-		return 0
-	}
-
-	if iVal, err := strconv.Atoi(str); err == nil {
+	if val := d.String(key); val != "" {
+		iVal, _ := strconv.Atoi(val)
 		return iVal
 	}
 
 	return 0
 }
 
-// MustInt64 returns the first element in data[key] converted to an int64.
-func (d FormData) MustInt64(key string) int64 {
-	if !d.HasField(key) || len(d.Form[key]) == 0 {
-		return 0
+// Int64 returns the first element in data[key] converted to an int64.
+func (d FormData) Int64(key string) int64 {
+	if val := d.String(key); val != "" {
+		i64, _ := strconv.ParseInt(val, 10, 0)
+		return i64
 	}
 
-	val, _ := strconv.ParseInt(d.Trimmed(key), 10, 0)
-	return val
+	return 0
 }
 
 // Float returns the first element in data[key] converted to a float.
 func (d FormData) Float(key string) float64 {
-	if !d.HasField(key) || len(d.Form[key]) == 0 {
-		return 0
+	if val := d.String(key); val != "" {
+		result, _ := strconv.ParseFloat(val, 0)
+		return result
 	}
 
-	result, err := strconv.ParseFloat(d.String(key), 64)
-	if err != nil {
-		panic(err)
-	}
-
-	return result
+	return 0
 }
 
 // Bool returns the first element in data[key] converted to a bool.
 func (d FormData) Bool(key string) bool {
-	if !d.HasField(key) || len(d.Form[key]) == 0 {
-		return false
+	if val := d.String(key); val != "" {
+		blVal, _ := filter.Bool(val)
+		return blVal
 	}
 
-	if result, err := strconv.ParseBool(d.String(key)); err != nil {
-		panic(err)
-	} else {
-		return result
-	}
-}
-
-// String value get by key
-func (d FormData) String(key string) string {
-	return d.Form.Get(key)
-}
-
-// Strings value get by key
-func (d FormData) Strings(key string) []string {
-	return d.Form[key]
+	return false
 }
 
 // FileBytes returns the body of the file associated with key. If there is no
@@ -527,19 +551,4 @@ func (d FormData) FileBytes(key string) ([]byte, error) {
 	}
 
 	return ioutil.ReadAll(file)
-}
-
-// BindJSON binds v to the JSON data in the request body.
-// It calls json.Unmarshal and sets the value of v.
-func (d FormData) BindJSON(ptr interface{}) error {
-	if len(d.jsonBodies) == 0 {
-		return nil
-	}
-
-	return Unmarshal(d.jsonBodies, ptr)
-}
-
-// MapTo the v
-func (d FormData) MapTo(v interface{}) error {
-	return d.BindJSON(v)
 }

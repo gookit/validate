@@ -1,8 +1,10 @@
 package validate
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/stretchr/testify/assert"
+	"mime/multipart"
 	"net/http"
 	"net/url"
 	"strings"
@@ -262,25 +264,30 @@ func TestFromQuery(t *testing.T) {
 func TestRequest(t *testing.T) {
 	is := assert.New(t)
 
-	// GET
-	r, _ := http.NewRequest("GET", "/users?page=1&size=10&name=inhere", nil)
+	// =================== GET query data ===================
+	r, _ := http.NewRequest("GET", "/users?page=1&size=10&name= inhere ", nil)
 	v := Request(r)
-	v.StringRule("page", "required|min:1")
+	v.StringRule("page", "required|min:1", "int")
 	// v.StringRule("status", "required|min:1")
-	v.StringRule("status", "min:1")
+	v.StringRule("size", "required|min:1", "int")
+	v.StringRule("status", "min:1", "int")
+	v.StringRule("name", "minLen:5", "trim|upper")
 	v.Validate()
-
 	is.True(v.IsOK())
+	is.Equal(10, v.SafeVal("size"))
+	is.Equal(1, v.SafeVal("page"))
+	is.Equal(nil, v.SafeVal("status"))
+	is.Equal("INHERE", v.SafeVal("name"))
 
-	// POST form data
+	// POST =================== form data ===================
 	body := strings.NewReader("name= inhere &age=50&remember=yes&email=eml@a.com")
 	r, _ = http.NewRequest("POST", "/users", body)
 	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-	d, err := FromRequest(r) // create data
+	// create data
+	d, err := FromRequest(r)
 	is.Nil(err)
-
-	v = d.Validation() // create validation
+	// create validation
+	v = d.Validation()
 	v.FilterRules(MS{
 		"age":      "trim|int",
 		"name":     "trim|ucFirst",
@@ -303,6 +310,59 @@ func TestRequest(t *testing.T) {
 	is.Equal("eml@a.com", v.SafeVal("email"))
 	is.Equal("Inhere", v.SafeVal("name"))
 	is.Equal(true, v.SafeVal("remember"))
+
+	// =================== POST file data form ===================
+	buf := new(bytes.Buffer)
+	mw := multipart.NewWriter(buf)
+	w, err := mw.CreateFormFile("file", "test.txt")
+	if is.NoError(err) {
+		w.Write([]byte("content")) // write file content
+	}
+	mw.WriteField("age", "24")
+	mw.WriteField("name", "inhere")
+	mw.Close()
+
+	r, _ = http.NewRequest("POST", "/users", buf)
+	r.Header.Set("Content-Type", mw.FormDataContentType())
+	// create data
+	d, err = FromRequest(r)
+	is.NoError(err)
+	fd, ok := d.(*FormData)
+	is.True(ok)
+	is.True(fd.HasFile("file"))
+	is.Equal("inhere", fd.String("name"))
+	is.Equal(24, fd.Int("age"))
+	bts, err := fd.FileBytes("file")
+	is.NoError(err)
+	is.Equal([]byte("content"), bts)
+
+	// =================== POST JSON body ===================
+	body = strings.NewReader(`{
+	"name": " inhere ",
+	"age": 100
+}`)
+	r, _ = http.NewRequest("POST", "/users", body)
+	r.Header.Set("Content-Type", "application/json")
+	// create data
+	d, err = FromRequest(r)
+	is.Nil(err)
+	user := &struct {
+		Age  int
+		Name string
+	}{}
+	md, ok := d.(*MapData)
+	is.True(ok)
+	err = md.BindJSON(user)
+	is.Nil(err)
+	is.Equal(100, user.Age)
+	is.Equal(" inhere ", user.Name)
+	// create validation
+	v = d.Create()
+	v.StringRule("name", "-", "trim|upper")
+	v.Validate()
+	is.True(v.IsOK())
+	v.BindSafeData(user)
+	is.Equal("INHERE", user.Name)
 }
 
 func TestValidationScene(t *testing.T) {
@@ -327,12 +387,15 @@ func TestValidationScene(t *testing.T) {
 	ok := v.Validate("create")
 	is.False(ok)
 	is.False(v.Errors.Empty())
+	is.Equal("create", v.Scene())
 	is.Contains(v.Errors.Error(), "age")
 	is.Contains(v.Errors.Error(), "name")
 
 	// on scene "update"
 	v.ResetResult()
 	v.InScene("update")
+	is.Equal("update", v.Scene())
+	is.Equal([]string{"name"}, v.SceneFields())
 	ok = v.Validate()
 	is.False(ok)
 	is.Contains(v.Errors, "name")
@@ -346,6 +409,12 @@ func TestAddValidator(t *testing.T) {
 
 	is.Panics(func() {
 		AddValidator("myCheck", "invalid")
+	})
+	is.Panics(func() {
+		AddValidator("bad-name", func() {})
+	})
+	is.Panics(func() {
+		AddValidator("", func() {})
 	})
 	is.Panics(func() {
 		AddValidator("myCheck", func() {})

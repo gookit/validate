@@ -25,15 +25,6 @@ type MS map[string]string
 // SValues simple values
 type SValues map[string][]string
 
-// DataFace interface definition
-type DataFace interface {
-	Get(key string) (interface{}, bool)
-	Set(field string, val interface{}) error
-	// validation instance create func
-	Create(err ...error) *Validation
-	Validation(err ...error) *Validation
-}
-
 var globalOpt = &GlobalOption{
 	StopOnError: true,
 	SkipOnEmpty: true,

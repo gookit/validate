@@ -419,8 +419,15 @@ func (v *Validation) LteField(val interface{}, dstField string) bool {
  * context: file validators todo
  *************************************************************/
 
-// func (v *Validation) IsFile()
-// func (v *Validation) IsImage()
+// IsFile check field is uploaded file
+func (v *Validation) IsFile(s string) bool {
+	return false
+}
+
+// IsImage check field is uploaded image file
+func (v *Validation) IsImage() bool {
+	return false
+}
 
 /*************************************************************
  * global: basic validators

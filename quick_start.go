@@ -23,7 +23,7 @@ func New(data interface{}, scene ...string) *Validation {
 	case url.Values:
 		return FromURLValues(td).Create().SetScene(scene...)
 	case map[string][]string:
-		return FromURLValues(data.(map[string][]string)).Create().SetScene(scene...)
+		return FromURLValues(td).Create().SetScene(scene...)
 	}
 
 	return Struct(data, scene...)
@@ -41,7 +41,7 @@ func JSON(s string, scene ...string) *Validation {
 
 // Struct validation create
 func Struct(s interface{}, scene ...string) *Validation {
-	return newWithError(newStructData(s)).SetScene(scene...)
+	return newWithError(FromStruct(s)).SetScene(scene...)
 }
 
 // Request validation create
@@ -74,6 +74,28 @@ func FromMap(m map[string]interface{}) *MapData {
 	return data
 }
 
+// FromJSON string build data instance.
+func FromJSON(s string) (*MapData, error) {
+	return FromJSONBytes([]byte(s))
+}
+
+// FromJSONBytes string build data instance.
+func FromJSONBytes(bs []byte) (*MapData, error) {
+	m := map[string]interface{}{}
+	if err := json.Unmarshal(bs, &m); err != nil {
+		return nil, err
+	}
+
+	data := &MapData{
+		src: reflect.ValueOf(m),
+		Map: m,
+		// save JSON bytes
+		bodyJSON: bs,
+	}
+
+	return data, nil
+}
+
 // FromRequest collect data from request instance
 func FromRequest(r *http.Request, maxMemoryLimit ...int64) (DataFace, error) {
 	// no body. like GET DELETE ....
@@ -84,6 +106,7 @@ func FromRequest(r *http.Request, maxMemoryLimit ...int64) (DataFace, error) {
 	cType := r.Header.Get("Content-Type")
 
 	// contains file uploaded form
+	// strings.HasPrefix(mediaType, "multipart/")
 	if strings.Contains(cType, "multipart/form-data") {
 		maxMemory := defaultMaxMemory
 		if len(maxMemoryLimit) > 0 {
@@ -96,14 +119,14 @@ func FromRequest(r *http.Request, maxMemoryLimit ...int64) (DataFace, error) {
 
 		// collect from values
 		data := FromURLValues(r.MultipartForm.Value)
-		// collection uploaded files
+		// collect uploaded files
 		data.AddFiles(r.MultipartForm.File)
 		// add queries data
 		data.AddValues(r.URL.Query())
 		return data, nil
 	}
 
-	// basic POST form
+	// basic POST form. content type: application/x-www-form-urlencoded
 	if strings.Contains(cType, "form-urlencoded") {
 		if err := r.ParseForm(); err != nil {
 			return nil, err
@@ -131,7 +154,6 @@ func FromRequest(r *http.Request, maxMemoryLimit ...int64) (DataFace, error) {
 // FromURLValues build data instance.
 func FromURLValues(values url.Values) *FormData {
 	data := newFormData()
-
 	for key, vals := range values {
 		for _, val := range vals {
 			data.Add(key, val)
@@ -146,24 +168,4 @@ func FromURLValues(values url.Values) *FormData {
 // 	validate.FromQuery(r.URL.Query()).Create()
 func FromQuery(values url.Values) *FormData {
 	return FromURLValues(values)
-}
-
-// FromJSON string build data instance.
-func FromJSON(s string) (*MapData, error) {
-	m := map[string]interface{}{}
-	if err := json.Unmarshal([]byte(s), &m); err != nil {
-		return nil, err
-	}
-
-	return FromMap(m), nil
-}
-
-// FromJSONBytes string build data instance.
-func FromJSONBytes(bs []byte) (*MapData, error) {
-	m := map[string]interface{}{}
-	if err := json.Unmarshal(bs, &m); err != nil {
-		return nil, err
-	}
-
-	return FromMap(m), nil
 }
