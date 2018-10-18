@@ -14,12 +14,12 @@ import (
 // CallByValue call func by reflect.Value
 func CallByValue(fv reflect.Value, args ...interface{}) []reflect.Value {
 	if fv.Kind() != reflect.Func {
-		panic("parameter must be an func type")
+		panicf("parameter must be an func type")
 	}
 
 	argNum := len(args)
 	if argNum < fv.Type().NumIn() {
-		fmt.Println("the number of input params not match!")
+		panicf("the number of input params not match!")
 	}
 
 	in := make([]reflect.Value, argNum)

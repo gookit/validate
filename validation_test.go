@@ -118,15 +118,15 @@ func TestErrorMessages(t *testing.T) {
 
 // UserForm struct
 type UserForm struct {
-	Name          string    `validate:"required|minLen:7"`
-	Email         string    `validate:"email"`
-	CreateAt      int       `validate:"email"`
-	Safe          int       `validate:"-"`
-	UpdateAt      time.Time `validate:"required"`
-	Code          string    `validate:"customValidator"`
-	Status        int       `validate:"required|gtField:Extra.Status1"`
-	Extra         ExtraInfo `validate:"required"`
-	cannotBeCheck string
+	Name      string    `validate:"required|minLen:7"`
+	Email     string    `validate:"email"`
+	CreateAt  int       `validate:"email"`
+	Safe      int       `validate:"-"`
+	UpdateAt  time.Time `validate:"required"`
+	Code      string    `validate:"customValidator"`
+	Status    int       `validate:"required|gtField:Extra.Status1"`
+	Extra     ExtraInfo `validate:"required"`
+	protected string
 }
 
 // ExtraInfo data
@@ -225,6 +225,8 @@ func TestJSON(t *testing.T) {
 	is.Contains(v.Errors.String(), "name min length is 7")
 	is.Contains(v.Errors.String(), "age value must be in the range 1 - 99")
 
+	_, err := FromJSONBytes([]byte("invalid"))
+	is.Error(err)
 	d, err := FromJSONBytes([]byte(jsonStr))
 	is.Nil(err)
 	v = d.Create()
@@ -259,6 +261,9 @@ func TestFromQuery(t *testing.T) {
 	is.False(v.Validate())
 	is.Equal("name min length is 7", v.Errors.Field("name")[0])
 	is.Empty(v.SafeData())
+
+	v = FromQuery(data).Validation(fmt.Errorf("an error"))
+	is.Equal("an error", v.Errors.One())
 }
 
 func TestRequest(t *testing.T) {
@@ -335,6 +340,9 @@ func TestRequest(t *testing.T) {
 	bts, err := fd.FileBytes("file")
 	is.NoError(err)
 	is.Equal([]byte("content"), bts)
+	bts, err = fd.FileBytes("not-exist")
+	is.Nil(bts)
+	is.NoError(err)
 
 	// =================== POST JSON body ===================
 	body = strings.NewReader(`{

@@ -23,6 +23,32 @@ The package is a generic go data validate library.
 - [godoc for gopkg](https://godoc.org/gopkg.in/gookit/validate.v1)
 - [godoc for github](https://godoc.org/github.com/gookit/validate)
 
+## Quick Start
+
+Quick create `Validation` instance.
+
+- `New(data interface{}, scene ...string) *Validation`
+- `Request(r *http.Request) *Validation`
+- `JSON(s string, scene ...string) *Validation`
+- `Struct(s interface{}, scene ...string) *Validation`
+- `Map(m map[string]interface{}, scene ...string) *Validation`
+
+Quick create `DataFace` instance.
+
+- `FromMap(m map[string]interface{}) *MapData`
+- `FromStruct(s interface{}) (*StructData, error)`
+- `FromJSON(s string) (*MapData, error)`
+- `FromJSONBytes(bs []byte) (*MapData, error)`
+- `FromURLValues(values url.Values) *FormData`
+- `FromRequest(r *http.Request, maxMemoryLimit ...int64) (DataFace, error)`
+
+> Create `Validation` by `DataFace`
+
+```go
+d := FromMap(map[string]interface{}{"key": "val"})
+v := d.Validation()
+```
+
 ## Validate Struct
 
 ```go
@@ -43,7 +69,7 @@ type UserForm struct {
 	Code     string    `validate:"customValidator"`
 }
 
-// custom validator in the source struct.
+// CustomValidator custom validator in the source struct.
 func (f UserForm) CustomValidator(val string) bool {
 	return len(val) == 4
 }
@@ -77,6 +103,7 @@ func main() {
 	} else {
 		fmt.Println(v.Errors) // all error messages
 		fmt.Println(v.Errors.One()) // returns a random error message text
+		fmt.Println(v.Errors.Field("Name")) // returns error messages of the field 
 	}
 }
 ```
@@ -171,17 +198,17 @@ func main()  {
 <a id="built-in-filters"></a>
 ## Built In Filters
 
-> Filters provide by: [gookit/filter](https://github.com/gookit/filter)
+> Filters powered by: [gookit/filter](https://github.com/gookit/filter)
 
 filter/aliases | description 
 -------------------|-------------------------------------------
 `trim/trimSpace`  | Clean up whitespace characters on both sides of the string
-`ltrim`  | Clean up whitespace characters on left sides of the string
-`rtrim`  | Clean up whitespace characters on right sides of the string
-`int/integer`  | convert value(string/intX/floatX) to int type `v.FilterRule("id", "int")`
-`uint`  | convert value(string/intX/floatX) to `uint` type `v.FilterRule("id", "uint")`
-`int64`  | convert value(string/intX/floatX) to `int64` type `v.FilterRule("id", "int64")`
-`bool`  | convert string value to bool. (`true`: "1", "on", "yes", "true", `false`: "0", "off", "no", "false")
+`ltrim/trimLeft`  | Clean up whitespace characters on left sides of the string
+`rtrim/trimRight`  | Clean up whitespace characters on right sides of the string
+`int/integer`  | Convert value(string/intX/floatX) to int type `v.FilterRule("id", "int")`
+`uint`  | Convert value(string/intX/floatX) to `uint` type `v.FilterRule("id", "uint")`
+`int64`  | Convert value(string/intX/floatX) to `int64` type `v.FilterRule("id", "int64")`
+`bool`  | Convert string value to bool. (`true`: "1", "on", "yes", "true", `false`: "0", "off", "no", "false")
 `lower/lowercase` | Convert string to lowercase
 `upper/uppercase` | Convert string to uppercase
 `lcFirst/lowerFirst` | Convert the first character of a string to lowercase
@@ -189,8 +216,8 @@ filter/aliases | description
 `ucWord/upperWord` | Convert the first character of each word to uppercase
 `camel/camelCase` | Convert string to camel naming style
 `snake/snakeCase` | Convert string to snake naming style
-`escapeJs/escapeJS` | escape JS string.
-`escapeHtml/escapeHTML` | escape HTML string.
+`escapeJs/escapeJS` | Escape JS string.
+`escapeHtml/escapeHTML` | Escape HTML string.
 `str2ints/strToInts` | Convert string to int slice `[]int` 
 `str2time/strToTime` | Convert date string to `time.Time`.
 `str2arr/str2array/strToArray` | Convert string to string slice `[]string`
@@ -200,74 +227,74 @@ filter/aliases | description
 
 validator/aliases | description
 -------------------|-------------------------------------------
-`required`  | check value is not empty. 
+`required`  | Check value is not empty. 
 `-/safe`  | Tag field values ​​are safe and do not require validation
-`int/integer/isInt`  | check value is `intX` `uintX` type
-`uint/isUint`  |  check value is uint(`uintX`) type, `value >= 0`
-`bool/isBool`  |  check value is bool string(`true`: "1", "on", "yes", "true", `false`: "0", "off", "no", "false").
-`string/isString`  |  check value is string type.
-`float/isFloat`  |  check value is float(`floatX`) type
-`slice/isSlice`  |  check value is slice type(`[]intX` `[]uintX` `[]byte` `[]string` ...).
+`int/integer/isInt`  | Check value is `intX` `uintX` type
+`uint/isUint`  |  Check value is uint(`uintX`) type, `value >= 0`
+`bool/isBool`  |  Check value is bool string(`true`: "1", "on", "yes", "true", `false`: "0", "off", "no", "false").
+`string/isString`  |  Check value is string type.
+`float/isFloat`  |  Check value is float(`floatX`) type
+`slice/isSlice`  |  Check value is slice type(`[]intX` `[]uintX` `[]byte` `[]string` ...).
 `in/enum`  |  Check if the value is in the given enumeration
 `notIn`  |  Check if the value is not in the given enumeration
 `range/between`  |  Check that the value is a number and is within the given range
 `max/lte`  |  Check value is less than or equal to the given value
 `min/gte`  |  Check value is less than or equal to the given size(for `intX` `uintX` `floatX`)
-`intStr/intString/isIntString`  |  check value is an int string.
+`intStr/intString/isIntString`  |  Check value is an int string.
 `eq/equal/isEqual`  |  Check that the input value is equal to the given value
 `ne/notEq/notEqual`  |  Check that the input value is not equal to the given value
-`lt/lessThan`  |  check value is less than the given size(use for `intX` `uintX` `floatX`)
-`gt/greaterThan`  |  check value is greater than the given size(use for `intX` `uintX` `floatX`)
-`email/isEmail`  |   check value is email address string.
-`intEq/intEqual`  |  check value is int and equals to the given value.
-`len/length`  |  check value length is equals to the given size(use for `string` `array` `slice` `map`).
+`lt/lessThan`  |  Check value is less than the given size(use for `intX` `uintX` `floatX`)
+`gt/greaterThan`  |  Check value is greater than the given size(use for `intX` `uintX` `floatX`)
+`email/isEmail`  |   Check value is email address string.
+`intEq/intEqual`  |  Check value is int and equals to the given value.
+`len/length`  |  Check value length is equals to the given size(use for `string` `array` `slice` `map`).
 `regex/regexp`  |  Check if the value can pass the regular verification
-`arr/array/isArray`  |   check value is array type
+`arr/array/isArray`  |   Check value is array type
 `map/isMap`  |  Check value is a MAP type
-`strings/isStrings`  |  check value is string slice type(only allow `[]string`).
-`ints/isInts`  |  check value is int slice type(only allow `[]int`).
-`minLen/minLength`  |  check the minimum length of the value is the given size
-`maxLen/maxLength`  |  check the maximum length of the value is the given size
+`strings/isStrings`  |  Check value is string slice type(only allow `[]string`).
+`ints/isInts`  |  Check value is int slice type(only allow `[]int`).
+`minLen/minLength`  |  Check the minimum length of the value is the given size
+`maxLen/maxLength`  |  Check the maximum length of the value is the given size
 `eqField`  |  Check that the field value is equals to the value of another field
 `neField`  |  Check that the field value is not equals to the value of another field
 `gteField`  |  Check that the field value is greater than or equal to the value of another field
 `gtField`  |  Check that the field value is greater than the value of another field
 `lteField`  |  Check if the field value is less than or equal to the value of another field
 `ltField`  |  Check that the field value is less than the value of another field
-`hasWhitespace` | check value string has Whitespace.
-`ascii/ASCII/isASCII` | check value is ASCII string.
-`alpha/isAlpha` | check value is Alpha string.
-`alphaNum/isAlphaNum` | check value is AlphaNum string.
-`multiByte/isMultiByte` | check value is MultiByte string.
-`base64/isBase64` | check value is Base64 string.
-`dnsName/DNSName/isDNSName` | check value is DNSName string.
-`dataURI/isDataURI` | check value is DataURI string.
-`empty/isEmpty` | check value is Empty string.
-`hexColor/isHexColor` | check value is HexColor string.
-`hexadecimal/isHexadecimal` | check value is Hexadecimal string.
-`json/JSON/isJSON` | check value is JSON string.
-`lat/latitude/isLatitude` | check value is Latitude string.
-`lon/longitude/isLongitude` | check value is Longitude string.
-`mac/isMAC` | check value is MAC string.
-`num/number/isNumber` | check value is number string. `>= 0`
-`printableASCII/isPrintableASCII` | check value is PrintableASCII string.
-`rgbColor/RGBColor/isRGBColor` | check value is RGBColor string.
-`url/isURL` | check value is URL string.
-`ip/isIP`  |  check value is IP(v4 or v6) string.
-`ipv4/isIPv4`  |  check value is IPv4 string.
-`ipv6/isIPv6`  |  check value is IPv6 string.
-`CIDR/isCIDR` | check value is CIDR string.
-`CIDRv4/isCIDRv4` | check value is CIDRv4 string.
-`CIDRv6/isCIDRv6` | check value is CIDRv6 string.
-`uuid/isUUID` | check value is UUID string.
-`uuid3/isUUID3` | check value is UUID3 string.
-`uuid4/isUUID4` | check value is UUID4 string.
-`uuid5/isUUID5` | check value is UUID5 string.
-`filePath/isFilePath` | check value is FilePath string.
-`unixPath/isUnixPath` | check value is UnixPath string.
-`winPath/isWinPath` | check value is WinPath string.
-`isbn10/ISBN10/isISBN10` | check value is ISBN10 string.
-`isbn13/ISBN13/isISBN13` | check value is ISBN13 string.
+`hasWhitespace` | Check value string has Whitespace.
+`ascii/ASCII/isASCII` | Check value is ASCII string.
+`alpha/isAlpha` | Check value is Alpha string.
+`alphaNum/isAlphaNum` | Check value is AlphaNum string.
+`multiByte/isMultiByte` | Check value is MultiByte string.
+`base64/isBase64` | Check value is Base64 string.
+`dnsName/DNSName/isDNSName` | Check value is DNSName string.
+`dataURI/isDataURI` | Check value is DataURI string.
+`empty/isEmpty` | Check value is Empty string.
+`hexColor/isHexColor` | Check value is HexColor string.
+`hexadecimal/isHexadecimal` | Check value is Hexadecimal string.
+`json/JSON/isJSON` | Check value is JSON string.
+`lat/latitude/isLatitude` | Check value is Latitude string.
+`lon/longitude/isLongitude` | Check value is Longitude string.
+`mac/isMAC` | Check value is MAC string.
+`num/number/isNumber` | Check value is number string. `>= 0`
+`printableASCII/isPrintableASCII` | Check value is PrintableASCII string.
+`rgbColor/RGBColor/isRGBColor` | Check value is RGBColor string.
+`url/isURL` | Check value is URL string.
+`ip/isIP`  |  Check value is IP(v4 or v6) string.
+`ipv4/isIPv4`  |  Check value is IPv4 string.
+`ipv6/isIPv6`  |  Check value is IPv6 string.
+`CIDR/isCIDR` | Check value is CIDR string.
+`CIDRv4/isCIDRv4` | Check value is CIDRv4 string.
+`CIDRv6/isCIDRv6` | Check value is CIDRv6 string.
+`uuid/isUUID` | Check value is UUID string.
+`uuid3/isUUID3` | Check value is UUID3 string.
+`uuid4/isUUID4` | Check value is UUID4 string.
+`uuid5/isUUID5` | Check value is UUID5 string.
+`filePath/isFilePath` | Check value is FilePath string.
+`unixPath/isUnixPath` | Check value is UnixPath string.
+`winPath/isWinPath` | Check value is WinPath string.
+`isbn10/ISBN10/isISBN10` | Check value is ISBN10 string.
+`isbn13/ISBN13/isISBN13` | Check value is ISBN13 string.
 
 ## Reference
 

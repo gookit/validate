@@ -100,10 +100,11 @@ func TestStructData_Create(t *testing.T) {
 	is.Error(err)
 
 	u := &UserForm{
-		Name:     "new name",
-		Status:   3,
-		UpdateAt: time.Now(),
-		Extra:    ExtraInfo{"xxx", 2},
+		Name:      "new name",
+		Status:    3,
+		UpdateAt:  time.Now(),
+		protected: "text",
+		Extra:     ExtraInfo{"xxx", 2},
 	}
 
 	d, err := FromStruct(u)
@@ -144,6 +145,8 @@ func TestStructData_Create(t *testing.T) {
 	is.Nil(ret)
 
 	// set value
+	err = d.Set("protected", "new text")
+	is.Error(err)
 	err = d.Set("Name", "inhere")
 	is.Nil(err)
 	str, ok = d.Get("Name")

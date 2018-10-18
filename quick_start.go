@@ -96,6 +96,36 @@ func FromJSONBytes(bs []byte) (*MapData, error) {
 	return data, nil
 }
 
+// FromStruct create a Data from struct
+func FromStruct(s interface{}) (*StructData, error) {
+	data := &StructData{
+		ValidateTag: globalOpt.ValidateTag,
+		// init map
+		fieldNames:  make(map[string]int),
+		fieldValues: make(map[string]reflect.Value),
+	}
+
+	if s == nil {
+		return data, ErrInvalidData
+	}
+
+	val := reflect.ValueOf(s)
+	if val.Kind() == reflect.Ptr && !val.IsNil() {
+		val = val.Elem()
+	}
+
+	typ := val.Type()
+	if val.Kind() != reflect.Struct || typ == timeType {
+		return data, ErrInvalidData
+	}
+
+	data.src = s
+	data.value = val
+	data.valueTpy = typ
+
+	return data, nil
+}
+
 // FromRequest collect data from request instance
 func FromRequest(r *http.Request, maxMemoryLimit ...int64) (DataFace, error) {
 	// no body. like GET DELETE ....
