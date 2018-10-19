@@ -243,7 +243,6 @@ func TestJSON(t *testing.T) {
 
 func TestFromQuery(t *testing.T) {
 	is := assert.New(t)
-
 	data := url.Values{
 		"name": []string{"inhere"},
 		"age":  []string{"10"},
@@ -263,6 +262,25 @@ func TestFromQuery(t *testing.T) {
 
 	v = FromQuery(data).Validation(fmt.Errorf("an error"))
 	is.Equal("an error", v.Errors.One())
+
+	// change global opts
+	Config(func(opt *GlobalOption) {
+		opt.StopOnError = false
+		opt.SkipOnEmpty = false
+	})
+	v = FromQuery(data).Create()
+	v.StringRules(MS{
+		"name": "file",
+		"age":  "image",
+	})
+
+	is.False(v.Validate())
+	// revert
+	globalOpt.StopOnError = true
+	globalOpt.SkipOnEmpty = true
+	is.Len(v.Errors, 2)
+	is.Contains(v.Errors.All(), "age")
+	is.Contains(v.Errors.All(), "name")
 }
 
 func TestRequest(t *testing.T) {
@@ -329,7 +347,7 @@ func TestRequest(t *testing.T) {
 	r, _ = http.NewRequest("POST", "/users", buf)
 	r.Header.Set("Content-Type", mw.FormDataContentType())
 	// - create data
-	d, err = FromRequest(r)
+	d, err = FromRequest(r, defaultMaxMemory)
 	is.NoError(err)
 	fd, ok := d.(*FormData)
 	is.True(ok)
@@ -356,7 +374,6 @@ func TestRequest(t *testing.T) {
 	v.AddRule("file", "image", "jpg", "jpeg")
 	v.Validate()
 	is.True(v.IsOK())
-	fmt.Println(v.Errors)
 
 	// =================== POST JSON body ===================
 	body = strings.NewReader(`{
@@ -381,10 +398,30 @@ func TestRequest(t *testing.T) {
 	// - create validation
 	v = d.Create()
 	v.StringRule("name", "-", "trim|upper")
-	v.Validate()
+	v.Validate() // validate
 	is.True(v.IsOK())
 	v.BindSafeData(user)
 	is.Equal("INHERE", user.Name)
+}
+
+func TestFieldCompare(t *testing.T) {
+	is := assert.New(t)
+	v := Map(mpSample)
+	v.StopOnError = false
+	v.StringRules(MS{
+		"oldSt": "gteField:notExist|gtField:notExist",
+		"newSt": "lteField:notExist|ltField:notExist",
+		"name":  "neField:notExist",
+		"age":   "eqField:notExist",
+	})
+	v.Validate()
+	is.False(v.IsOK())
+	emp := v.Errors.All()
+	is.Len(emp, 4)
+	is.Contains(emp, "age")
+	is.Contains(emp, "name")
+	is.Contains(emp, "oldSt")
+	is.Contains(emp, "newSt")
 }
 
 func TestValidationScene(t *testing.T) {

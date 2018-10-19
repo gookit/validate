@@ -455,11 +455,11 @@ func (v *Validation) LteField(val interface{}, dstField string) bool {
 
 var fileValidators = "|isFile|isImage|inMimeTypes|"
 var imageMimeTypes = map[string]string{
-	"bmp":  "image/bmp",
-	"gif":  "image/gif",
-	"ief":  "image/ief",
-	"jpg":  "image/jpeg",
-	"jpe":  "image/jpeg",
+	"bmp": "image/bmp",
+	"gif": "image/gif",
+	"ief": "image/ief",
+	"jpg": "image/jpeg",
+	// "jpe":  "image/jpeg",
 	"jpeg": "image/jpeg",
 	"png":  "image/png",
 	"svg":  "image/svg+xml",
@@ -488,21 +488,23 @@ func (v *Validation) IsFile(fd *FormData, field string) (ok bool) {
 // 	v.AddRule("avatar", "image")
 // 	v.AddRule("avatar", "image", "jpg", "png", "gif") // set ext limit
 func (v *Validation) IsImage(fd *FormData, field string, exts ...string) (ok bool) {
-	var fileExt string
 	mime := fd.FileMimeType(field)
 	if mime == "" {
-		return false
+		return
 	}
 
+	var fileExt string
 	for ext, imgMime := range imageMimeTypes {
 		if imgMime == mime {
 			fileExt = ext
+			ok = true
 			break
 		}
 	}
 
-	if len(exts) == 0 { // don't limit mime type
-		return true // is an image
+	// don't limit mime type
+	if len(exts) == 0 {
+		return ok // only check is an image
 	}
 
 	return Enum(fileExt, exts)

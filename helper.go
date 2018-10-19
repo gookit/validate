@@ -17,12 +17,7 @@ func CallByValue(fv reflect.Value, args ...interface{}) []reflect.Value {
 		panicf("parameter must be an func type")
 	}
 
-	argNum := len(args)
-	if argNum < fv.Type().NumIn() {
-		panicf("the number of input params not match!")
-	}
-
-	in := make([]reflect.Value, argNum)
+	in := make([]reflect.Value, len(args))
 	for k, v := range args {
 		in[k] = reflect.ValueOf(v)
 	}
@@ -30,11 +25,6 @@ func CallByValue(fv reflect.Value, args ...interface{}) []reflect.Value {
 	// CallSlice()与Call() 不一样的是，参数的最后一个会被展开
 	// f.CallSlice()
 	return fv.Call(in)
-}
-
-// Call call func by reflection
-func Call(fn interface{}, args ...interface{}) []reflect.Value {
-	return CallByValue(reflect.ValueOf(fn), args...)
 }
 
 func stringSplit(str, sep string) (ss []string) {
@@ -186,27 +176,6 @@ func valueCompare(srcVal, dstVal interface{}, op string) bool {
 
 func nameOfFunc(fv reflect.Value) string {
 	return runtime.FuncForPC(fv.Pointer()).Name()
-}
-
-func maybeTimeLayout(s string) (layout string) {
-	switch len(s) {
-	case 8:
-		layout = "20060102"
-	case 10:
-		layout = "2006-01-02"
-	case 16:
-		layout = "2006-01-02 15:04"
-		if strings.ContainsRune(s, 'T') {
-			layout = "2006-01-02T15:04"
-		}
-	case 19:
-		layout = "2006-01-02 15:04:05"
-		if strings.ContainsRune(s, 'T') {
-			layout = "2006-01-02T15:04:05"
-		}
-	}
-
-	return
 }
 
 func parseArgString(argStr string) (ss []string) {

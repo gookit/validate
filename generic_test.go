@@ -27,6 +27,16 @@ func TestValueLen(t *testing.T) {
 	}
 }
 
+func TestCallByValue(t *testing.T) {
+	is := assert.New(t)
+	is.Panics(func() {
+		CallByValue(reflect.ValueOf("invalid"))
+	})
+	is.Panics(func() {
+		CallByValue(reflect.ValueOf(IsJSON), "age0", "age1")
+	})
+}
+
 func TestData(t *testing.T) {
 	is := assert.New(t)
 	// MapData
@@ -40,6 +50,10 @@ func TestData(t *testing.T) {
 	val, ok := d.Get("name")
 	is.True(ok)
 	is.Equal("inhere", val)
+	is.Nil(d.BindJSON(nil))
+
+	// mp := map[string]interface{}{"age": "45"}
+	// d = FromMap(&mp)
 
 	// StructData
 	sd, err := FromStruct(&UserForm{Name: "abc"})
@@ -233,12 +247,28 @@ func TestAddFilter(t *testing.T) {
 	v = New(SValues{
 		"name": {"inhere"},
 	})
+	v.AddFilter("myFilter3", func(s string) (string, error) {
+		return s, fmt.Errorf("report a error")
+	})
 	v.FilterRules(MS{
 		"name": "invalid|int",
 	})
 	v.Filtering()
 	is.True(v.IsFail())
 	is.Contains(v.Errors, "_filter")
+
+	v = New(SValues{
+		"age": {"invalid"},
+	})
+	v.AddFilter("myFilter3", func(s string) (string, error) {
+		return s, fmt.Errorf("report a error")
+	})
+	v.FilterRules(MS{
+		"age": "myFilter3",
+	})
+	v.Filtering()
+	is.True(v.IsFail())
+	is.Equal("report a error", v.Errors.Get("_filter"))
 }
 
 func TestRule(t *testing.T) {
@@ -255,6 +285,9 @@ func TestRule(t *testing.T) {
 	r.SetScene("test") // only validate on scene "test"
 	r.SetFilterFunc(func(val interface{}) (interface{}, error) {
 		return val.(string) + "-HI", nil
+	})
+	r.SetBeforeFunc(func(field string, v *Validation) bool {
+		return true
 	})
 
 	is.Equal([]string{"name"}, r.Fields())

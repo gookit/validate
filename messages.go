@@ -66,6 +66,11 @@ func (es Errors) Field(field string) (fieldErs []string) {
 	return es[field]
 }
 
+// All all error get
+func (es Errors) All() map[string][]string {
+	return map[string][]string(es)
+}
+
 // Error string get
 func (es Errors) Error() string {
 	return es.String()

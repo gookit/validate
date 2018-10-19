@@ -8,6 +8,7 @@ package validate
 
 import (
 	"reflect"
+	"strings"
 )
 
 type sourceType uint8
@@ -32,8 +33,8 @@ type Rules []*Rule
 type Rule struct {
 	// eg "create" "update"
 	scene string
-	// need validate fields. allow multi. eg "field1, field2"
-	fields string
+	// need validate fields. allow multi.
+	fields []string
 	// is optional, only validate on value is not empty. sometimes
 	optional bool
 	// default value setting
@@ -62,7 +63,7 @@ type Rule struct {
 // NewRule instance
 func NewRule(fields, validator string, args ...interface{}) *Rule {
 	return &Rule{
-		fields: fields,
+		fields: stringSplit(fields, ","),
 		// validator args
 		arguments: args,
 		validator: validator,
@@ -77,9 +78,11 @@ func (r *Rule) SetScene(scene string) *Rule {
 
 // SetCheckFunc set custom validate func.
 func (r *Rule) SetCheckFunc(checkFunc interface{}) *Rule {
-	name := "rule_" + r.fields
+	var name string
 	if r.validator != "" {
 		name = "rule_" + r.validator
+	} else {
+		name = "rule_" + strings.Join(r.fields, "_")
 	}
 
 	fv := checkValidatorFunc(name, checkFunc)
@@ -91,6 +94,11 @@ func (r *Rule) SetCheckFunc(checkFunc interface{}) *Rule {
 func (r *Rule) SetFilterFunc(fn func(val interface{}) (interface{}, error)) *Rule {
 	r.filterFunc = fn
 	return r
+}
+
+// SetBeforeFunc for the rule. will call it before validate.
+func (r *Rule) SetBeforeFunc(fn func(field string, v *Validation) bool) {
+	r.beforeFunc = fn
 }
 
 // SetOptional only validate on value is not empty.
@@ -118,9 +126,9 @@ func (r *Rule) SetMessages(msgMap MS) *Rule {
 	return r
 }
 
-// Fields names list
+// Fields field names list
 func (r *Rule) Fields() []string {
-	return stringSplit(r.fields, ",")
+	return r.fields
 }
 
 // Apply rule for the rule fields
@@ -131,28 +139,38 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 	}
 
 	var err error
-	var ok bool
-
 	name := ValidatorName(r.validator)
 
-	// validate field value
-	for _, field := range r.Fields() {
+	// validate each field
+	for _, field := range r.fields {
 		if v.isNoNeedToCheck(field) {
 			continue
 		}
 
-		// get field value.
-		val, exist := v.Get(field)
+		// uploaded file check
+		if isFileValidator(name) {
+			// build and collect error message
+			if !r.fileValidate(field, name, v) {
+				v.AddError(field, r.errorMessage(field, r.validator, v))
+				// stop on error
+				if v.StopOnError {
+					return true
+				}
+			}
 
-		// empty value AND r.optional=true. skip check the field.
-		if !exist && r.optional {
 			continue
 		}
 
-		// apply filters func.
+		// field value check:
+		// get field value.
+		val, exist := v.Get(field)
+		if !exist && r.optional { // not exist AND r.optional=true. skip check.
+			continue
+		}
+
+		// apply filter func.
 		if exist && r.filterFunc != nil {
-			val, err = r.filterFunc(val)
-			if err != nil { // has error
+			if val, err = r.filterFunc(val); err != nil { // has error
 				v.AddError(filterError, err.Error())
 				return true
 			}
@@ -161,17 +179,9 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 			v.filteredData[field] = val
 		}
 
-		// uploaded file check
-		if isFileValidator(name) {
-			ok = r.fileValidate(field, name, v)
-		} else {
-			ok = r.Validate(field, name, val, v)
-			if ok { // save validated value.
-				v.safeData[field] = val
-			}
-		}
-
-		if !ok { // build and collect error message
+		if r.valueValidate(field, name, val, v) {
+			v.safeData[field] = val // save validated value.
+		} else { // build and collect error message
 			v.AddError(field, r.errorMessage(field, r.validator, v))
 		}
 
@@ -184,8 +194,8 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 	return false
 }
 
-// Validate the field by validator name
-func (r *Rule) Validate(field, name string, val interface{}, v *Validation) (ok bool) {
+// validate the field value
+func (r *Rule) valueValidate(field, name string, val interface{}, v *Validation) (ok bool) {
 	// "-" OR "safe" mark field value always is safe.
 	if name == "-" || name == "safe" {
 		return true
@@ -241,28 +251,6 @@ func (r *Rule) Validate(field, name string, val interface{}, v *Validation) (ok 
 	return
 }
 
-func (r *Rule) errorMessage(field, validator string, v *Validation) (msg string) {
-	if r.messages != nil {
-		var ok bool
-		// use full key. "field.validator"
-		fKey := field + "." + validator
-		if msg, ok = r.messages[fKey]; ok {
-			return
-		}
-
-		if msg, ok = r.messages[field]; ok {
-			return
-		}
-	}
-
-	if r.message != "" {
-		return r.message
-	}
-
-	// built in error messages
-	return v.trans.Message(validator, field, r.arguments...)
-}
-
 func (r *Rule) fileValidate(field, name string, v *Validation) (ok bool) {
 	// beforeFunc return false, skip validate
 	if r.beforeFunc != nil && !r.beforeFunc(field, v) {
@@ -300,6 +288,28 @@ func (r *Rule) fileValidate(field, name string, v *Validation) (ok bool) {
 	}
 
 	return
+}
+
+func (r *Rule) errorMessage(field, validator string, v *Validation) (msg string) {
+	if r.messages != nil {
+		var ok bool
+		// use full key. "field.validator"
+		fKey := field + "." + validator
+		if msg, ok = r.messages[fKey]; ok {
+			return
+		}
+
+		if msg, ok = r.messages[field]; ok {
+			return
+		}
+	}
+
+	if r.message != "" {
+		return r.message
+	}
+
+	// built in error messages
+	return v.trans.Message(validator, field, r.arguments...)
 }
 
 // convert args data type

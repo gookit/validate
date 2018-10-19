@@ -282,13 +282,7 @@ func (v *Validation) StringRules(mp MS) *Validation {
 
 // AddRule for current validate
 func (v *Validation) AddRule(fields, validator string, args ...interface{}) *Rule {
-	rule := &Rule{
-		fields: fields,
-		// args for the validator
-		arguments: args,
-		validator: validator,
-	}
-
+	rule := NewRule(fields, validator, args...)
 	v.rules = append(v.rules, rule)
 	return rule
 }

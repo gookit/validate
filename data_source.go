@@ -47,7 +47,7 @@ type MapData struct {
 	// Map the source map data
 	Map map[string]interface{}
 	// from reflect Map
-	src reflect.Value
+	value reflect.Value
 	// bodyJSON from the original JSON bytes/string.
 	// available for FromJSONBytes(), FormJSON().
 	bodyJSON []byte
@@ -512,12 +512,12 @@ func (d FormData) Bool(key string) bool {
 // there was a problem reading the file. If you need to know whether or not the file
 // exists (i.e. whether it was provided in the request), use the FileExists method.
 func (d FormData) FileBytes(field string) ([]byte, error) {
-	fileHeader, found := d.Files[field]
+	fh, found := d.Files[field]
 	if !found {
 		return nil, nil
 	}
 
-	file, err := fileHeader.Open()
+	file, err := fh.Open()
 	if err != nil {
 		return nil, err
 	}

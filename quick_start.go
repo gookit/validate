@@ -62,13 +62,8 @@ func Config(fn func(opt *GlobalOption)) {
 func FromMap(m map[string]interface{}) *MapData {
 	data := &MapData{}
 	if m != nil {
-		val := reflect.ValueOf(m)
-		if val.Kind() == reflect.Ptr {
-			val = val.Elem()
-		}
-
 		data.Map = m
-		data.src = val
+		data.value = reflect.ValueOf(m)
 	}
 
 	return data
@@ -81,14 +76,14 @@ func FromJSON(s string) (*MapData, error) {
 
 // FromJSONBytes string build data instance.
 func FromJSONBytes(bs []byte) (*MapData, error) {
-	m := map[string]interface{}{}
-	if err := json.Unmarshal(bs, &m); err != nil {
+	mp := map[string]interface{}{}
+	if err := json.Unmarshal(bs, &mp); err != nil {
 		return nil, err
 	}
 
 	data := &MapData{
-		src: reflect.ValueOf(m),
-		Map: m,
+		Map:   mp,
+		value: reflect.ValueOf(mp),
 		// save JSON bytes
 		bodyJSON: bs,
 	}

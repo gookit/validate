@@ -54,6 +54,8 @@ func TestIntCheck(t *testing.T) {
 	is.True(IsInt(int16(2)))
 	is.True(IsInt(int32(2)))
 	is.True(IsInt(int64(2)))
+	is.True(IsInt(uint(2)))
+	is.True(IsInt(uint64(2)))
 	is.False(IsInt(nil))
 	is.False(IsInt("str"))
 	is.False(IsInt([]int{}))
