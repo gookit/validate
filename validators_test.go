@@ -462,7 +462,8 @@ func TestEnumAndNotIn(t *testing.T) {
 	is.False(Enum('a', []int{}))
 	//
 	is.False(Enum([]int{2}, []int{2, 3}))
-	is.False(Enum(12, map[int]string{1: "a", 2: "b"}))
+	is.False(Enum(12, []string{"a", "b"}))
+	is.False(Enum(12, nil))
 
 	tests1 := map[interface{}]interface{}{
 		2:   []int{1, 3},

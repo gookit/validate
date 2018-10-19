@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/gookit/filter"
 	"reflect"
-	"runtime"
 	"strconv"
 	"strings"
 	"unicode"
@@ -135,7 +134,7 @@ func CalcLength(val interface{}) int {
 }
 
 // value compare. use for compare int, string.
-func valueCompare(srcVal, dstVal interface{}, op string) bool {
+func valueCompare(srcVal, dstVal interface{}, op string) (ok bool) {
 	var err error
 	var srcInt, dstInt int64
 
@@ -162,21 +161,21 @@ func valueCompare(srcVal, dstVal interface{}, op string) bool {
 
 	switch op {
 	case "lt":
-		return srcInt < dstInt
+		ok = srcInt < dstInt
 	case "lte":
-		return srcInt <= dstInt
+		ok = srcInt <= dstInt
 	case "gt":
-		return srcInt > dstInt
+		ok = srcInt > dstInt
 	case "gte":
-		return srcInt >= dstInt
+		ok = srcInt >= dstInt
 	}
 
-	return false
+	return
 }
 
-func nameOfFunc(fv reflect.Value) string {
-	return runtime.FuncForPC(fv.Pointer()).Name()
-}
+// func nameOfFunc(fv reflect.Value) string {
+// 	return runtime.FuncForPC(fv.Pointer()).Name()
+// }
 
 func parseArgString(argStr string) (ss []string) {
 	if argStr == "" { // no arg

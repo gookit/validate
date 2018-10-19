@@ -29,6 +29,7 @@ var mpSample = M{
 	"oldSt": 1,
 	"newSt": 2,
 	"email": "some@e.com",
+	"items": []string{"a"},
 }
 
 func TestMap(t *testing.T) {
@@ -114,6 +115,10 @@ func TestErrorMessages(t *testing.T) {
 	is.False(v.Validate())
 	is.Equal("oldSt's err msg", v.Errors.Get("oldSt"))
 	is.Equal("newSt's err msg", v.Errors.Get("newSt"))
+
+	is.False(v.GtField([]int{2}, "age"))
+	is.False(v.GtField(2, "items"))
+	is.False(v.GtField("a", "items"))
 }
 
 // UserForm struct
@@ -256,6 +261,9 @@ func TestFromQuery(t *testing.T) {
 		"age":  "required|int|min:10",
 	})
 
+	val, ok := v.Raw("name")
+	is.True(ok)
+	is.Equal("inhere", val)
 	is.False(v.Validate())
 	is.Equal("name min length is 7", v.Errors.Field("name")[0])
 	is.Empty(v.SafeData())

@@ -9,7 +9,7 @@ The package is a generic Go data validate library.
 
 > **[中文说明](README_cn.md)**
 
-- Support validate Map, Struct, Request(Form, JSON, url.Values) data
+- Support validate Map, Struct, Request(Form, JSON, url.Values, UploadedFile) data
 - Support filter/sanitize data before validate
 - Support add custom filter/validator func
 - Support scene settings, verify different fields in different scenes
@@ -285,7 +285,7 @@ validator/aliases | description
 `dnsName/DNSName/isDNSName` | Check value is DNSName string.
 `dataURI/isDataURI` | Check value is DataURI string.
 `empty/isEmpty` | Check value is Empty string.
-`hexColor/isHexColor` | Check value is HexColor string.
+`hexColor/isHexColor` | Check value is Hex color string.
 `hexadecimal/isHexadecimal` | Check value is Hexadecimal string.
 `json/JSON/isJSON` | Check value is JSON string.
 `lat/latitude/isLatitude` | Check value is Latitude string.
@@ -293,7 +293,7 @@ validator/aliases | description
 `mac/isMAC` | Check value is MAC string.
 `num/number/isNumber` | Check value is number string. `>= 0`
 `printableASCII/isPrintableASCII` | Check value is PrintableASCII string.
-`rgbColor/RGBColor/isRGBColor` | Check value is RGBColor string.
+`rgbColor/RGBColor/isRGBColor` | Check value is RGB color string.
 `url/isURL` | Check value is URL string.
 `ip/isIP`  |  Check value is IP(v4 or v6) string.
 `ipv4/isIPv4`  |  Check value is IPv4 string.

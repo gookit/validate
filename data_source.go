@@ -414,8 +414,14 @@ func (d *FormData) Set(field string, val interface{}) error {
 
 // Get value by key
 func (d FormData) Get(key string) (interface{}, bool) {
+	// get form value
 	if vs, ok := d.Form[key]; ok && len(vs) > 0 {
 		return vs[0], true
+	}
+
+	// get uploaded file
+	if fh, ok := d.Files[key]; ok {
+		return fh, true
 	}
 
 	return nil, false

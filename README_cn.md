@@ -7,13 +7,15 @@
 
 Go通用的数据验证与过滤库，使用简单，内置大部分常用验证器、过滤器，支持自定义消息、字段翻译。
 
-- 支持验证Map，Struct，Request（Form，JSON，url.Values）数据
+> **[EN README](README.md)**
+
+- 支持验证Map，Struct，Request（Form，JSON，url.Values, UploadedFile）数据
 - 简单方便，支持前置验证检查, 支持添加自定义验证器
 - 支持将规则按场景进行分组设置。不同场景验证不同的字段
-- 支持自定义每个验证的错误消息，字段翻译，消息翻译(内置`en` `zh-CN`)
 - 支持在进行验证前对值使用过滤器进行净化过滤，查看 [内置过滤器](#built-in-filters)
-- 方便的获取错误信息，验证后的安全数据获取(只会收集有规则检查过的数据)
 - 已经内置了超多（> 60 个）常用的验证器，查看 [内置验证器](#built-in-validators)
+- 方便的获取错误信息，验证后的安全数据获取(只会收集有规则检查过的数据)
+- 支持自定义每个验证的错误消息，字段翻译，消息翻译(内置`en` `zh-CN`)
 - 完善的单元测试，覆盖率 > 85%
 
 > 受到这些项目的启发 [albrow/forms](https://github.com/albrow/forms) 和 [asaskevich/govalidator](https://github.com/asaskevich/govalidator). 非常感谢它们
@@ -270,58 +272,57 @@ v := d.Validation()
 `range/between`  |  检查值是否为数字且在给定范围内
 `max/lte`  |  检查输入值小于或等于给定值
 `min/gte`  |  检查输入值大于或等于给定值(for `intX` `uintX` `floatX`)
-`intStr/intString/isIntString`  |  Check value is an int string.
 `eq/equal/isEqual`  |  检查输入值是否等于给定值
 `ne/notEq/notEqual`  |  检查输入值是否不等于给定值
-`lt/lessThan`  |  Check value is less than the given size(use for `intX` `uintX` `floatX`)
-`gt/greaterThan`  |  Check value is greater than the given size(use for `intX` `uintX` `floatX`)
-`email/isEmail`  |   Check value is email address string.
-`intEq/intEqual`  |  Check value is int and equals to the given value.
-`len/length`  |  Check value length is equals to the given size(use for `string` `array` `slice` `map`).
-`regex/regexp`  |  Check if the value can pass the regular verification
-`arr/array/isArray`  |   Check value is array type
-`map/isMap`  |  Check value is a MAP type
-`strings/isStrings`  |  Check value is string slice type(only allow `[]string`).
-`ints/isInts`  |  Check value is int slice type(only allow `[]int`).
-`minLen/minLength`  |  Check the minimum length of the value is the given size
-`maxLen/maxLength`  |  Check the maximum length of the value is the given size
-`eqField`  |  Check that the field value is equals to the value of another field
-`neField`  |  Check that the field value is not equals to the value of another field
-`gteField`  |  Check that the field value is greater than or equal to the value of another field
-`gtField`  |  Check that the field value is greater than the value of another field
-`lteField`  |  Check if the field value is less than or equal to the value of another field
-`ltField`  |  Check that the field value is less than the value of another field
+`lt/lessThan`  |  检查值小于给定大小(use for `intX` `uintX` `floatX`)
+`gt/greaterThan`  |  检查值大于给定大小(use for `intX` `uintX` `floatX`)
+`intEq/intEqual`  |  检查值为int且等于给定值
+`len/length`  |  检查值长度等于给定大小(use for `string` `array` `slice` `map`).
+`minLen/minLength`  |  检查值的最小长度是给定大小
+`maxLen/maxLength`  |  检查值的最大长度是给定大小
+`email/isEmail`  |   检查值是Email地址字符串
+`regex/regexp`  |  检查该值是否可以通过正则验证
+`arr/array/isArray`  |  检查值是数组`array`类型
+`map/isMap`  |  检查值是MAP类型
+`strings/isStrings`  |  检查值是字符串切片类型(`[]string`).
+`ints/isInts`  |  检查值是int slice类型(only allow `[]int`).
+`eqField`  |  检查字段值是否等于另一个字段的值
+`neField`  |  检查字段值是否不等于另一个字段的值
+`gtField`  |  检查字段值是否大于另一个字段的值
+`gteField`  | 检查字段值是否大于或等于另一个字段的值
+`ltField`  |  检查字段值是否小于另一个字段的值
+`lteField`  |  检查字段值是否小于或等于另一个字段的值
 `file/isFile`  |  验证是否是上传的文件
 `image/isImage`  |  验证是否是上传的图片文件，支持后缀检查
 `mime/mimeType/inMimeTypes`  |  验证是否是上传的文件，并且在指定的MIME类型中
-`date/isDate` | Check the field value is date string. eg `2018-10-25`
-`gtDate/afterDate` | Check that the input value is greater than the given date string.
-`ltDate/beforeDate` | Check that the input value is less than the given date string
-`gteDate/afterOrEqualDate` | Check that the input value is greater than or equal to the given date string.
-`lteDate/beforeOrEqualDate` | Check that the input value is less than or equal to the given date string.
-`hasWhitespace` | Check value string has Whitespace.
-`ascii/ASCII/isASCII` | Check value is ASCII string.
+`date/isDate` | 检查字段值是否为日期字符串。（只支持几种常用的格式） eg `2018-10-25`
+`gtDate/afterDate` | 检查输入值是否大于给定的日期字符串
+`ltDate/beforeDate` | 检查输入值是否小于给定的日期字符串
+`gteDate/afterOrEqualDate` | 检查输入值是否大于或等于给定的日期字符串
+`lteDate/beforeOrEqualDate` | 检查输入值是否小于或等于给定的日期字符串
+`hasWhitespace` | 检查字符串值是否有空格
+`ascii/ASCII/isASCII` | 检查值是ASCII字符串
 `alpha/isAlpha` | 验证值是否仅包含字母字符
 `alphaNum/isAlphaNum` | 验证是否仅包含字母、数字
 `alphaDash/isAlphaDash` | 验证是否仅包含字母、数字、破折号（ - ）以及下划线（ _ ）
 `multiByte/isMultiByte` | Check value is MultiByte string.
-`base64/isBase64` | Check value is Base64 string.
-`dnsName/DNSName/isDNSName` | Check value is DNSName string.
+`base64/isBase64` | 检查值是Base64字符串
+`dnsName/DNSName/isDNSName` | 检查值是DNS名称字符串
 `dataURI/isDataURI` | Check value is DataURI string.
 `empty/isEmpty` | Check value is Empty string.
-`hexColor/isHexColor` | Check value is HexColor string.
-`hexadecimal/isHexadecimal` | Check value is Hexadecimal string.
-`json/JSON/isJSON` | Check value is JSON string.
-`lat/latitude/isLatitude` | Check value is Latitude string.
-`lon/longitude/isLongitude` | Check value is Longitude string.
-`mac/isMAC` | Check value is MAC string.
-`num/number/isNumber` | Check value is number string. `>= 0`
+`hexColor/isHexColor` | 检查值是16进制的颜色字符串
+`hexadecimal/isHexadecimal` | 检查值是十六进制字符串
+`json/JSON/isJSON` | 检查值是JSON字符串。
+`lat/latitude/isLatitude` | 检查值是纬度坐标
+`lon/longitude/isLongitude` | 检查值是经度坐标
+`mac/isMAC` | 检查值是MAC字符串
+`num/number/isNumber` | 检查值是数字字符串. `>= 0`
 `printableASCII/isPrintableASCII` | Check value is PrintableASCII string.
-`rgbColor/RGBColor/isRGBColor` | Check value is RGBColor string.
-`url/isURL` | Check value is URL string.
-`ip/isIP`  |  Check value is IP(v4 or v6) string.
-`ipv4/isIPv4`  |  Check value is IPv4 string.
-`ipv6/isIPv6`  |  Check value is IPv6 string.
+`rgbColor/RGBColor/isRGBColor` | 检查值是RGB颜色字符串
+`url/isURL` | 检查值是URL字符串
+`ip/isIP`  |  检查值是IP（v4或v6）字符串
+`ipv4/isIPv4`  |  检查值是IPv4字符串
+`ipv6/isIPv6`  |  检查值是IPv6字符串
 `CIDR/isCIDR` | Check value is CIDR string.
 `CIDRv4/isCIDRv4` | Check value is CIDRv4 string.
 `CIDRv6/isCIDRv6` | Check value is CIDRv6 string.

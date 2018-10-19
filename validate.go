@@ -37,6 +37,8 @@ type Rule struct {
 	fields []string
 	// is optional, only validate on value is not empty. sometimes
 	optional bool
+	// skip validate not exist field/empty value
+	skipEmpty bool
 	// default value setting
 	defValue interface{}
 	// error message
@@ -76,6 +78,16 @@ func (r *Rule) SetScene(scene string) *Rule {
 	return r
 }
 
+// SetOptional only validate on value is not empty.
+func (r *Rule) SetOptional(optional bool) {
+	r.optional = optional
+}
+
+// SetSkipEmpty skip validate not exist field/empty value
+func (r *Rule) SetSkipEmpty(skipEmpty bool) {
+	r.skipEmpty = skipEmpty
+}
+
 // SetCheckFunc set custom validate func.
 func (r *Rule) SetCheckFunc(checkFunc interface{}) *Rule {
 	var name string
@@ -99,11 +111,6 @@ func (r *Rule) SetFilterFunc(fn func(val interface{}) (interface{}, error)) *Rul
 // SetBeforeFunc for the rule. will call it before validate.
 func (r *Rule) SetBeforeFunc(fn func(field string, v *Validation) bool) {
 	r.beforeFunc = fn
-}
-
-// SetOptional only validate on value is not empty.
-func (r *Rule) SetOptional(optional bool) {
-	r.optional = optional
 }
 
 // SetMessage set error message.
@@ -161,7 +168,6 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 			continue
 		}
 
-		// field value check:
 		// get field value.
 		val, exist := v.Get(field)
 		if !exist && r.optional { // not exist AND r.optional=true. skip check.
@@ -192,6 +198,45 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 	}
 
 	return false
+}
+
+func (r *Rule) fileValidate(field, name string, v *Validation) (ok bool) {
+	// beforeFunc return false, skip validate
+	if r.beforeFunc != nil && !r.beforeFunc(field, v) {
+		return false
+	}
+
+	fd, ok := v.data.(*FormData)
+	if !ok {
+		return
+	}
+
+	// skip on empty AND field not exist
+	if v.SkipOnEmpty && !fd.HasFile(field) {
+		return true
+	}
+
+	var ss []string
+	for _, item := range r.arguments {
+		ss = append(ss, item.(string))
+	}
+
+	switch name {
+	case "isFile":
+		ok = v.IsFile(fd, field)
+	case "isImage":
+		ok = v.IsImage(fd, field, ss...)
+	case "inMimeTypes":
+		if ln := len(ss); ln == 0 {
+			return false
+		} else if ln == 1 {
+			ok = v.InMimeTypes(fd, field, ss[0])
+		} else {
+			ok = v.InMimeTypes(fd, field, ss[0], ss[1:]...)
+		}
+	}
+
+	return
 }
 
 // validate the field value
@@ -248,45 +293,6 @@ func (r *Rule) valueValidate(field, name string, val interface{}, v *Validation)
 
 	// call built in validators
 	ok = callValidator(v, fm, field, val, r.arguments)
-	return
-}
-
-func (r *Rule) fileValidate(field, name string, v *Validation) (ok bool) {
-	// beforeFunc return false, skip validate
-	if r.beforeFunc != nil && !r.beforeFunc(field, v) {
-		return false
-	}
-
-	fd, ok := v.data.(*FormData)
-	if !ok {
-		return
-	}
-
-	// skip on empty AND field not exist
-	if v.SkipOnEmpty && !fd.HasFile(field) {
-		return true
-	}
-
-	var ss []string
-	for _, item := range r.arguments {
-		ss = append(ss, item.(string))
-	}
-
-	switch name {
-	case "isFile":
-		ok = v.IsFile(fd, field)
-	case "isImage":
-		ok = v.IsImage(fd, field, ss...)
-	case "inMimeTypes":
-		if ln := len(ss); ln == 0 {
-			return false
-		} else if ln == 1 {
-			ok = v.InMimeTypes(fd, field, ss[0])
-		} else {
-			ok = v.InMimeTypes(fd, field, ss[0], ss[1:]...)
-		}
-	}
-
 	return
 }
 

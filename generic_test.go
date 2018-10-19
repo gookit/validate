@@ -25,6 +25,8 @@ func TestValueLen(t *testing.T) {
 	for _, sample := range tests {
 		is.Equal(3, ValueLen(reflect.ValueOf(sample)))
 	}
+
+	is.Equal(-1, ValueLen(reflect.ValueOf(nil)))
 }
 
 func TestCallByValue(t *testing.T) {
@@ -296,12 +298,13 @@ func TestRule(t *testing.T) {
 	v.AddRule("key0", "inRule").SetCheckFunc(func(s string) bool {
 		return s == "val0"
 	})
+	v.AddRule("name", "gtField", "key0")
 
 	// validate. will skip validate field "name"
 	v.Validate()
 	is.True(v.IsOK())
 	is.Equal("val0", v.SafeVal("key0"))
-	is.Equal(nil, v.SafeVal("name"))
+	is.Equal(nil, v.SafeVal("not-exist"))
 
 	// validate on "test". will validate field "name"
 	v.ResetResult()
