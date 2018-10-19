@@ -90,7 +90,7 @@ func (es Errors) String() string {
  * validators messages
  *************************************************************/
 
-// defMessages internal error message for some rules.
+// default internal error message for some rules.
 var defMessages = map[string]string{
 	"_":       "{field} did not pass validate", // default message
 	"_filter": "{field} data is invalid",       // data filter error

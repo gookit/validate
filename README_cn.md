@@ -16,7 +16,7 @@ Go通用的数据验证与过滤库，使用简单，内置大部分常用验证
 - 已经内置了超多（> 60 个）常用的验证器，查看 [内置验证器](#built-in-validators)
 - 方便的获取错误信息，验证后的安全数据获取(只会收集有规则检查过的数据)
 - 支持自定义每个验证的错误消息，字段翻译，消息翻译(内置`en` `zh-CN`)
-- 完善的单元测试，覆盖率 > 85%
+- 完善的单元测试，测试覆盖率 > 90%
 
 > 受到这些项目的启发 [albrow/forms](https://github.com/albrow/forms) 和 [asaskevich/govalidator](https://github.com/asaskevich/govalidator). 非常感谢它们
 
@@ -136,7 +136,7 @@ func main()  {
 
 - `GET/DELETE/...` 等，会搜集 url query 数据
 - `POST/PUT/PATCH` 并且类型为 `application/json` 会搜集JSON数据
-- `POST/PUT/PATCH` 并且类型为 `multipart/form-data` 会搜集表单数据，同时回收集文件上传数据
+- `POST/PUT/PATCH` 并且类型为 `multipart/form-data` 会搜集表单数据，同时会收集文件上传数据
 - `POST/PUT/PATCH` 并且类型为 `application/x-www-form-urlencoded` 会搜集表单数据
 
 ```go

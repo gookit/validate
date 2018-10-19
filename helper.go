@@ -430,27 +430,27 @@ func eq(arg1 reflect.Value, arg2 reflect.Value) (bool, error) {
 			truth = v1.Int() >= 0 && uint64(v1.Int()) == v2.Uint()
 		case k1 == uintKind && k2 == intKind:
 			truth = v2.Int() >= 0 && v1.Uint() == uint64(v2.Int())
-		default:
-			// return false, errBadComparison
-			return false, nil
-		}
-	} else {
-		switch k1 {
-		case boolKind:
-			truth = v1.Bool() == v2.Bool()
-		case complexKind:
-			truth = v1.Complex() == v2.Complex()
-		case floatKind:
-			truth = v1.Float() == v2.Float()
-		case intKind:
-			truth = v1.Int() == v2.Int()
-		case stringKind:
-			truth = v1.String() == v2.String()
-		case uintKind:
-			truth = v1.Uint() == v2.Uint()
 			// default:
-			// 	panic("invalid kind")
+			// 	 return false, errBadComparison
 		}
+		return truth, nil
+	}
+
+	switch k1 {
+	case boolKind:
+		truth = v1.Bool() == v2.Bool()
+	case complexKind:
+		truth = v1.Complex() == v2.Complex()
+	case floatKind:
+		truth = v1.Float() == v2.Float()
+	case intKind:
+		truth = v1.Int() == v2.Int()
+	case stringKind:
+		truth = v1.String() == v2.String()
+	case uintKind:
+		truth = v1.Uint() == v2.Uint()
+		// default:
+		// 	panic("invalid kind")
 	}
 
 	return truth, nil
@@ -460,7 +460,9 @@ func eq(arg1 reflect.Value, arg2 reflect.Value) (bool, error) {
 func includeElement(list, element interface{}) (ok, found bool) {
 	listValue := reflect.ValueOf(list)
 	elementValue := reflect.ValueOf(element)
-	if reflect.TypeOf(list).Kind() == reflect.String {
+	listKind := listValue.Type().Kind()
+
+	if listKind == reflect.String {
 		return true, strings.Contains(listValue.String(), elementValue.String())
 	}
 
@@ -471,7 +473,7 @@ func includeElement(list, element interface{}) (ok, found bool) {
 		}
 	}()
 
-	if reflect.TypeOf(list).Kind() == reflect.Map {
+	if listKind == reflect.Map {
 		mapKeys := listValue.MapKeys()
 		for i := 0; i < len(mapKeys); i++ {
 			if IsEqual(mapKeys[i].Interface(), element) {
