@@ -246,7 +246,6 @@ validator/aliases | description
 `range/between`  |  Check that the value is a number and is within the given range
 `max/lte`  |  Check value is less than or equal to the given value
 `min/gte`  |  Check value is less than or equal to the given size(for `intX` `uintX` `floatX`)
-`intStr/intString/isIntString`  |  Check value is an int string.
 `eq/equal/isEqual`  |  Check that the input value is equal to the given value
 `ne/notEq/notEqual`  |  Check that the input value is not equal to the given value
 `lt/lessThan`  |  Check value is less than the given size(use for `intX` `uintX` `floatX`)
@@ -305,9 +304,9 @@ validator/aliases | description
 `uuid3/isUUID3` | Check value is UUID3 string.
 `uuid4/isUUID4` | Check value is UUID4 string.
 `uuid5/isUUID5` | Check value is UUID5 string.
-`filePath/isFilePath` | Check value is FilePath string.
-`unixPath/isUnixPath` | Check value is UnixPath string.
-`winPath/isWinPath` | Check value is WinPath string.
+`filePath/isFilePath` | Check value is an existing file path
+`unixPath/isUnixPath` | Check value is Unix Path string.
+`winPath/isWinPath` | Check value is Windows Path string.
 `isbn10/ISBN10/isISBN10` | Check value is ISBN10 string.
 `isbn13/ISBN13/isISBN13` | Check value is ISBN13 string.
 

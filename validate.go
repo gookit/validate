@@ -413,8 +413,7 @@ func callValidator(v *Validation, fm *funcMeta, field string, val interface{}, a
 	case "notIn":
 		ok = NotIn(val, args[0])
 	case "isInt":
-		argLn := len(args)
-		if argLn == 0 {
+		if argLn := len(args); argLn == 0 {
 			ok = IsInt(val)
 		} else if argLn == 1 {
 			ok = IsInt(val, args[0].(int64))
@@ -422,8 +421,7 @@ func callValidator(v *Validation, fm *funcMeta, field string, val interface{}, a
 			ok = IsInt(val, args[0].(int64), args[1].(int64))
 		}
 	case "isString":
-		argLn := len(args)
-		if argLn == 0 {
+		if argLn := len(args); argLn == 0 {
 			ok = IsString(val)
 		} else if argLn == 1 {
 			ok = IsString(val, args[0].(int))

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/gookit/filter"
 	"reflect"
-	"strconv"
 	"strings"
 	"unicode"
 )
@@ -190,60 +189,21 @@ func parseArgString(argStr string) (ss []string) {
 }
 
 func toInt64Slice(enum interface{}) (ret []int64, ok bool) {
-	ok = true
-	switch td := enum.(type) {
-	case []int:
-		for _, val := range td {
-			ret = append(ret, int64(val))
-		}
-	case []int8:
-		for _, val := range td {
-			ret = append(ret, int64(val))
-		}
-	case []int16:
-		for _, val := range td {
-			ret = append(ret, int64(val))
-		}
-	case []int32:
-		for _, val := range td {
-			ret = append(ret, int64(val))
-		}
-	case []int64:
-		ret = td
-	case []uint:
-		for _, val := range td {
-			ret = append(ret, int64(val))
-		}
-	case []uint8:
-		for _, val := range td {
-			ret = append(ret, int64(val))
-		}
-	case []uint16:
-		for _, val := range td {
-			ret = append(ret, int64(val))
-		}
-	case []uint32:
-		for _, val := range td {
-			ret = append(ret, int64(val))
-		}
-	case []uint64:
-		for _, val := range td {
-			ret = append(ret, int64(val))
-		}
-	case []string: // try convert string to int
-		for _, val := range td {
-			i64, err := strconv.ParseInt(val, 10, 0)
-			if err != nil {
-				ret = []int64{} // reset
-				break
-			}
-
-			ret = append(ret, i64)
-		}
-	default:
-		ok = false
+	rv := reflect.ValueOf(enum)
+	if rv.Kind() != reflect.Slice {
+		return
 	}
 
+	for i := 0; i < rv.Len(); i++ {
+		i64, err := filter.Int64(rv.Index(i).Interface())
+		if err != nil {
+			return []int64{}, false
+		}
+
+		ret = append(ret, i64)
+	}
+
+	ok = true
 	return
 }
 
@@ -345,23 +305,6 @@ func checkFilterFunc(name string, fn interface{}) reflect.Value {
 	return fv
 }
 
-// addValueFuncs adds to values the functions in funcs, converting them to reflect.Values.
-func addValueFuncs(out map[string]reflect.Value, in M) {
-	for name, fn := range in {
-		if !goodName(name) {
-			panic(fmt.Errorf("function name %s is not a valid identifier", name))
-		}
-		v := reflect.ValueOf(fn)
-		if v.Kind() != reflect.Func {
-			panic("value for " + name + " not a function")
-		}
-		if !goodFunc(v.Type()) {
-			panic(fmt.Errorf("can't install method/function %q with %d results", name, v.Type().NumOut()))
-		}
-		out[name] = v
-	}
-}
-
 // goodFunc reports whether the function or method has the right result signature.
 func goodFunc(typ reflect.Type) bool {
 	// We allow functions with 1 result or 2 results where the second is an error.
@@ -400,6 +343,7 @@ func indirect(v reflect.Value) (rv reflect.Value, isNil bool) {
 			return v, true
 		}
 	}
+
 	return v, false
 }
 
@@ -411,9 +355,11 @@ func indirectInterface(v reflect.Value) reflect.Value {
 	if v.Kind() != reflect.Interface {
 		return v
 	}
+
 	if v.IsNil() {
-		return reflect.Value{}
+		return emptyValue
 	}
+
 	return v.Elem()
 }
 
@@ -502,8 +448,8 @@ func eq(arg1 reflect.Value, arg2 reflect.Value) (bool, error) {
 			truth = v1.String() == v2.String()
 		case uintKind:
 			truth = v1.Uint() == v2.Uint()
-		default:
-			panic("invalid kind")
+			// default:
+			// 	panic("invalid kind")
 		}
 	}
 

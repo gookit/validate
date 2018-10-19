@@ -248,11 +248,11 @@ v := d.Validation()
 几大类别：
 
 - 类型验证
-- 字符串检查验证
 - 大小、长度验证
 - 字段值比较验证
 - 上传文件验证
 - 日期验证
+- 字符串检查验证
 - 其他验证
 
 验证器/别名 | 描述信息
@@ -323,18 +323,18 @@ v := d.Validation()
 `ip/isIP`  |  检查值是IP（v4或v6）字符串
 `ipv4/isIPv4`  |  检查值是IPv4字符串
 `ipv6/isIPv6`  |  检查值是IPv6字符串
-`CIDR/isCIDR` | Check value is CIDR string.
-`CIDRv4/isCIDRv4` | Check value is CIDRv4 string.
-`CIDRv6/isCIDRv6` | Check value is CIDRv6 string.
-`uuid/isUUID` | Check value is UUID string.
-`uuid3/isUUID3` | Check value is UUID3 string.
-`uuid4/isUUID4` | Check value is UUID4 string.
-`uuid5/isUUID5` | Check value is UUID5 string.
-`filePath/isFilePath` | Check value is FilePath string.
-`unixPath/isUnixPath` | Check value is UnixPath string.
-`winPath/isWinPath` | Check value is WinPath string.
-`isbn10/ISBN10/isISBN10` | Check value is ISBN10 string.
-`isbn13/ISBN13/isISBN13` | Check value is ISBN13 string.
+`CIDR/isCIDR` | 检查值是 CIDR 字符串
+`CIDRv4/isCIDRv4` | 检查值是 CIDR v4 字符串
+`CIDRv6/isCIDRv6` | 检查值是 CIDR v6 字符串
+`uuid/isUUID` | 检查值是UUID字符串
+`uuid3/isUUID3` | 检查值是UUID3字符串
+`uuid4/isUUID4` | 检查值是UUID4字符串
+`uuid5/isUUID5` | 检查值是UUID5字符串
+`filePath/isFilePath` | 检查值是一个存在的文件路径
+`unixPath/isUnixPath` | 检查值是Unix Path字符串
+`winPath/isWinPath` | 检查值是Windows路径字符串
+`isbn10/ISBN10/isISBN10` | 检查值是ISBN10字符串
+`isbn13/ISBN13/isISBN13` | 检查值是ISBN13字符串
 
 ## 参考项目
 

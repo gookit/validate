@@ -1064,7 +1064,7 @@ func Between(val interface{}, min, max int64) bool {
 
 // Enum value(int(X),string) should be in the given enum(strings, ints, uints).
 func Enum(val, enum interface{}) bool {
-	if val == nil {
+	if val == nil || enum == nil {
 		return false
 	}
 

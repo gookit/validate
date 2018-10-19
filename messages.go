@@ -134,12 +134,25 @@ type Translator struct {
 
 // NewTranslator instance
 func NewTranslator() *Translator {
-	return &Translator{fieldMap: make(map[string]string), messages: defMessages}
+	newMessages := make(map[string]string)
+	for k, v := range defMessages {
+		newMessages[k] = v
+	}
+
+	return &Translator{
+		fieldMap: make(map[string]string),
+		messages: newMessages,
+	}
 }
 
 // Reset translator to default
 func (t *Translator) Reset() {
-	t.messages = defMessages
+	newMessages := make(map[string]string)
+	for k, v := range defMessages {
+		newMessages[k] = v
+	}
+
+	t.messages = newMessages
 	t.fieldMap = make(map[string]string)
 }
 
@@ -182,7 +195,6 @@ func (t *Translator) HasMessage(key string) bool {
 // Message get by validator name and field name.
 func (t *Translator) Message(validator, field string, args ...interface{}) (msg string) {
 	var ok bool
-
 	if rName, has := validatorAliases[validator]; has {
 		msg, ok = t.format(rName, field, args...)
 	}
@@ -210,6 +222,7 @@ func (t *Translator) Message(validator, field string, args ...interface{}) (msg 
 // format message for the validator
 func (t *Translator) format(validator, field string, args ...interface{}) (msg string, ok bool) {
 	key := field + "." + validator
+
 	if msg, ok = t.messages[key]; ok { // "field.required"
 		msg = fmt.Sprintf(msg, args...)
 	} else if msg, ok = t.messages[validator]; ok { // "required"

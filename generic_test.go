@@ -238,12 +238,20 @@ func TestAddFilter(t *testing.T) {
 	})
 
 	v.Sanitize() // do filtering
+	v.Sanitize() // repeat call
 	is.True(v.IsOK())
 	is.Equal(50, v.Filtered("age"))
 	is.Equal("INHERE", v.Filtered("name"))
 	is.Equal("myFilter0", v.Filtered("key0"))
 	is.Equal("myFilter2:ab", v.Filtered("key1"))
 	is.Contains(fmt.Sprint(v.FilteredData()), "key0:myFilter0")
+
+	v.Trans().AddMessage("new-key", "msg text")
+	is.True(v.Trans().HasMessage("new-key"))
+	is.Equal("msg text", v.Trans().Message("new-key", "some"))
+	is.Equal("some did not pass validate", v.Trans().Message("not-exist", "some"))
+	v.Trans().Reset()
+	is.False(v.Trans().HasMessage("new-key"))
 
 	// filter fail
 	v = New(SValues{
@@ -259,7 +267,7 @@ func TestAddFilter(t *testing.T) {
 	is.True(v.IsFail())
 	is.Contains(v.Errors, "_filter")
 
-	v = New(SValues{
+	v = New(url.Values{
 		"age": {"invalid"},
 	})
 	v.AddFilter("myFilter3", func(s string) (string, error) {

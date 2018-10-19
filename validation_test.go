@@ -410,6 +410,12 @@ func TestRequest(t *testing.T) {
 	is.True(v.IsOK())
 	v.BindSafeData(user)
 	is.Equal("INHERE", user.Name)
+
+	// error content type
+	r, _ = http.NewRequest("POST", "/users", nil)
+	d, err = FromRequest(r)
+	is.Nil(d)
+	is.Error(err)
 }
 
 func TestFieldCompare(t *testing.T) {
