@@ -338,8 +338,8 @@ v := d.Validation()
 
 ## 欢迎star
 
-- [gitee](https://gitee.com/gookit/validate)
-- [github](https://github.com/gookit/validate)
+- **[github](https://github.com/gookit/validate)**
+- [gitee](https://gitee.com/inhere/validate)
 
 ## 参考项目
 
