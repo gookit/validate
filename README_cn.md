@@ -336,6 +336,11 @@ v := d.Validation()
 `isbn10/ISBN10/isISBN10` | 检查值是ISBN10字符串
 `isbn13/ISBN13/isISBN13` | 检查值是ISBN13字符串
 
+## 欢迎star
+
+- [gitee](https://gitee.com/gookit/validate)
+- [github](https://github.com/gookit/validate)
+
 ## 参考项目
 
 - https://github.com/albrow/forms
