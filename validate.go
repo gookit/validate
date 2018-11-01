@@ -349,7 +349,8 @@ func convertArgsType(v *Validation, fm *funcMeta, args []interface{}) (ok bool) 
 				return
 			}
 
-			if nVal, _ := convertType(args[i], ak, lastTyp); nVal != nil { // manual converted
+			// manual converted
+			if nVal, _ := convertType(args[i], ak, lastTyp); nVal != nil {
 				args[i] = nVal
 				continue
 			}
