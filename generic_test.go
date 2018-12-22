@@ -100,9 +100,11 @@ func TestFormData(t *testing.T) {
 	is.Equal("inhere", d.String("name"))
 	is.Equal("age=30&money=23.4&name=inhere&notify=true", d.Encode())
 
-	d.Set("newKey", "strVal")
+	err := d.Set("newKey", "strVal")
+	is.NoError(err)
 	is.Equal("strVal", d.String("newKey"))
-	d.Set("newInt", 23)
+	err = d.Set("newInt", 23)
+	is.NoError(err)
 	is.Equal(23, d.Int("newInt"))
 	is.Error(d.Set("invalid", []int{2}))
 

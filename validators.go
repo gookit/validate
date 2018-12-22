@@ -366,7 +366,7 @@ func Validators() map[string]int {
 }
 
 /*************************************************************
- * context validators
+ * context validators(TODO requiredIf, requiredUnless)
  *************************************************************/
 
 // Required field val check
@@ -450,7 +450,7 @@ func (v *Validation) LteField(val interface{}, dstField string) bool {
 }
 
 /*************************************************************
- * context: file validators todo
+ * context: file validators
  *************************************************************/
 
 var fileValidators = "|isFile|isImage|inMimeTypes|"
@@ -479,7 +479,6 @@ func (v *Validation) IsFile(fd *FormData, field string) (ok bool) {
 			return true
 		}
 	}
-
 	return false
 }
 
@@ -510,7 +509,7 @@ func (v *Validation) IsImage(fd *FormData, field string, exts ...string) (ok boo
 	return Enum(fileExt, exts)
 }
 
-// InMimeTypes check field is uploaded file. and mime type is in the mimeTypes
+// InMimeTypes check field is uploaded file and mime type is in the mimeTypes.
 // Usage:
 // 	v.AddRule("video", "mimeTypes", "video/avi", "video/mpeg", "video/quicktime")
 func (v *Validation) InMimeTypes(fd *FormData, field, mimeType string, moreTypes ...string) bool {
@@ -536,7 +535,6 @@ func IsEmpty(val interface{}) bool {
 	if s, ok := val.(string); ok {
 		return s == ""
 	}
-
 	return ValueIsEmpty(reflect.ValueOf(val))
 }
 
@@ -568,25 +566,54 @@ func NotContains(s, sub interface{}) bool {
  * global: type validators
  *************************************************************/
 
-// IsUint string
-func IsUint(str string) bool {
-	_, err := strconv.ParseUint(str, 10, 32)
-	return err == nil
+// IsUint check, allow: intX, uintX, string
+func IsUint(val interface{}) bool {
+	switch typVal := val.(type) {
+	case int:
+		return typVal >= 0
+	case int8:
+		return typVal >= 0
+	case int16:
+		return typVal >= 0
+	case int32:
+		return typVal >= 0
+	case int64:
+		return typVal >= 0
+	case uint, uint8, uint16, uint32, uint64:
+		return true
+	case string:
+		_, err := strconv.ParseUint(typVal, 10, 32)
+		return err == nil
+	}
+	return false
 }
 
-// IsBool string.
-func IsBool(str string) bool {
-	_, err := filter.Bool(str)
-	return err == nil
+// IsBool check. allow: bool, string.
+func IsBool(val interface{}) bool {
+	if _, ok := val.(bool); ok {
+		return true
+	}
+
+	if typVal, ok := val.(string); ok {
+		_, err := filter.Bool(typVal)
+		return err == nil
+	}
+	return false
 }
 
-// IsFloat string
-func IsFloat(str string) bool {
-	if str == "" {
+// IsFloat check. allow: floatX, string
+func IsFloat(val interface{}) bool {
+	if val == nil {
 		return false
 	}
 
-	return rxFloat.MatchString(str)
+	switch rv := val.(type) {
+	case float32, float64:
+		return true
+	case string:
+		return rv != "" && rxFloat.MatchString(rv)
+	}
+	return false
 }
 
 // IsArray check
@@ -613,7 +640,6 @@ func IsSlice(val interface{}) (ok bool) {
 	if rv.Kind() == reflect.Ptr {
 		rv = rv.Elem()
 	}
-
 	return rv.Kind() == reflect.Slice
 }
 
@@ -627,7 +653,6 @@ func IsInts(val interface{}) bool {
 	case []int, []int8, []int16, []int32, []int64, []uint, []uint8, []uint16, []uint32, []uint64:
 		return true
 	}
-
 	return false
 }
 
@@ -738,106 +763,110 @@ func IsString(val interface{}, minAndMaxLen ...int) (ok bool) {
  *************************************************************/
 
 // HasWhitespace check. eg "10"
-func HasWhitespace(str string) bool {
-	return strings.ContainsRune(str, ' ')
+func HasWhitespace(s string) bool {
+	return s != "" && strings.ContainsRune(s, ' ')
 }
 
 // IsIntString check. eg "10"
-func IsIntString(str string) bool {
-	return rxInt.MatchString(str)
+func IsIntString(s string) bool {
+	return s != "" && rxInt.MatchString(s)
 }
 
 // IsASCII string.
-func IsASCII(str string) bool {
-	return rxASCII.MatchString(str)
+func IsASCII(s string) bool {
+	return s != "" && rxASCII.MatchString(s)
 }
 
 // IsPrintableASCII string.
-func IsPrintableASCII(str string) bool {
-	return rxPrintableASCII.MatchString(str)
+func IsPrintableASCII(s string) bool {
+	return s != "" && rxPrintableASCII.MatchString(s)
 }
 
 // IsBase64 string.
-func IsBase64(str string) bool {
-	return rxBase64.MatchString(str)
+func IsBase64(s string) bool {
+	return s != "" && rxBase64.MatchString(s)
 }
 
 // IsLatitude string.
-func IsLatitude(str string) bool {
-	return rxLatitude.MatchString(str)
+func IsLatitude(s string) bool {
+	return s != "" && rxLatitude.MatchString(s)
 }
 
 // IsLongitude string.
-func IsLongitude(str string) bool {
-	return rxLongitude.MatchString(str)
+func IsLongitude(s string) bool {
+	return s != "" && rxLongitude.MatchString(s)
 }
 
 // IsDNSName string.
-func IsDNSName(str string) bool {
-	return rxDNSName.MatchString(str)
+func IsDNSName(s string) bool {
+	return s != "" && rxDNSName.MatchString(s)
 }
 
 // IsURL string.
-func IsURL(str string) bool {
-	_, err := url.Parse(str)
+func IsURL(s string) bool {
+	if s == "" {
+		return false
+	}
+
+	_, err := url.Parse(s)
 	return err == nil
 }
 
 // IsDataURI string.
 // data:[<mime type>] ( [;charset=<charset>] ) [;base64],码内容
 // eg. "data:image/gif;base64,R0lGODlhA..."
-func IsDataURI(str string) bool {
-	return rxDataURI.MatchString(str)
+func IsDataURI(s string) bool {
+	return s != "" && rxDataURI.MatchString(s)
 }
 
 // IsMultiByte string.
-func IsMultiByte(str string) bool {
-	return rxMultiByte.MatchString(str)
+func IsMultiByte(s string) bool {
+	return s != "" && rxMultiByte.MatchString(s)
 }
 
 // IsISBN10 string.
-func IsISBN10(str string) bool {
-	return rxISBN10.MatchString(str)
+func IsISBN10(s string) bool {
+	return s != "" && rxISBN10.MatchString(s)
 }
 
 // IsISBN13 string.
-func IsISBN13(str string) bool {
-	return rxISBN13.MatchString(str)
+func IsISBN13(s string) bool {
+	return s != "" && rxISBN13.MatchString(s)
 }
 
 // IsHexadecimal string.
-func IsHexadecimal(str string) bool {
-	return rxHexadecimal.MatchString(str)
+func IsHexadecimal(s string) bool {
+	return s != "" && rxHexadecimal.MatchString(s)
 }
 
 // IsHexColor string.
-func IsHexColor(str string) bool {
-	return rxHexColor.MatchString(str)
+func IsHexColor(s string) bool {
+	return s != "" && rxHexColor.MatchString(s)
 }
 
 // IsRGBColor string.
-func IsRGBColor(str string) bool {
-	return rxRGBColor.MatchString(str)
+func IsRGBColor(s string) bool {
+	return s != "" && rxRGBColor.MatchString(s)
 }
 
 // IsAlpha string.
-func IsAlpha(str string) bool {
-	return rxAlpha.MatchString(str)
+func IsAlpha(s string) bool {
+	return s != "" && rxAlpha.MatchString(s)
 }
 
 // IsAlphaNum string.
-func IsAlphaNum(str string) bool {
-	return rxAlphaNum.MatchString(str)
+func IsAlphaNum(s string) bool {
+	return s != "" && rxAlphaNum.MatchString(s)
 }
 
 // IsAlphaDash string.
-func IsAlphaDash(str string) bool {
-	return rxAlphaDash.MatchString(str)
+func IsAlphaDash(s string) bool {
+	return s != "" && rxAlphaDash.MatchString(s)
 }
 
 // IsNumber string. should >= 0
-func IsNumber(str string) bool {
-	return rxNumber.MatchString(str)
+func IsNumber(s string) bool {
+	return s != "" && rxNumber.MatchString(s)
 }
 
 // IsFilePath string
@@ -851,91 +880,112 @@ func IsFilePath(str string) bool {
 			return false
 		}
 	}
-
 	return true
 }
 
 // IsWinPath string
-func IsWinPath(str string) bool {
-	return rxWinPath.MatchString(str)
+func IsWinPath(s string) bool {
+	return s != "" && rxWinPath.MatchString(s)
 }
 
 // IsUnixPath string
-func IsUnixPath(str string) bool {
-	return rxUnixPath.MatchString(str)
+func IsUnixPath(s string) bool {
+	return s != "" && rxUnixPath.MatchString(s)
 }
 
 // IsEmail check
-func IsEmail(str string) bool {
-	return rxEmail.MatchString(str)
+func IsEmail(s string) bool {
+	return s != "" && rxEmail.MatchString(s)
 }
 
 // IsUUID string
-func IsUUID(str string) bool {
-	return rxUUID.MatchString(str)
+func IsUUID(s string) bool {
+	return s != "" && rxUUID.MatchString(s)
 }
 
 // IsUUID3 string
-func IsUUID3(str string) bool {
-	return rxUUID3.MatchString(str)
+func IsUUID3(s string) bool {
+	return s != "" && rxUUID3.MatchString(s)
 }
 
 // IsUUID4 string
-func IsUUID4(str string) bool {
-	return rxUUID4.MatchString(str)
+func IsUUID4(s string) bool {
+	return s != "" && rxUUID4.MatchString(s)
 }
 
 // IsUUID5 string
-func IsUUID5(str string) bool {
-	return rxUUID5.MatchString(str)
+func IsUUID5(s string) bool {
+	return s != "" && rxUUID5.MatchString(s)
 }
 
 // IsIP is the validation function for validating if the field's value is a valid v4 or v6 IP address.
-func IsIP(str string) bool {
-	ip := net.ParseIP(str)
-	return ip != nil
+func IsIP(s string) bool {
+	// ip := net.ParseIP(s)
+	return s != "" && net.ParseIP(s) != nil
 }
 
 // IsIPv4 is the validation function for validating if a value is a valid v4 IP address.
-func IsIPv4(str string) bool {
-	ip := net.ParseIP(str)
+func IsIPv4(s string) bool {
+	if s == "" {
+		return false
+	}
+
+	ip := net.ParseIP(s)
 	return ip != nil && ip.To4() != nil
 }
 
 // IsIPv6 is the validation function for validating if the field's value is a valid v6 IP address.
-func IsIPv6(str string) bool {
-	ip := net.ParseIP(str)
+func IsIPv6(s string) bool {
+	ip := net.ParseIP(s)
 	return ip != nil && ip.To4() == nil
 }
 
 // IsMAC is the validation function for validating if the field's value is a valid MAC address.
-func IsMAC(str string) bool {
-	_, err := net.ParseMAC(str)
+func IsMAC(s string) bool {
+	if s == "" {
+		return false
+	}
+	_, err := net.ParseMAC(s)
 	return err == nil
 }
 
 // IsCIDRv4 is the validation function for validating if the field's value is a valid v4 CIDR address.
-func IsCIDRv4(str string) bool {
-	ip, _, err := net.ParseCIDR(str)
+func IsCIDRv4(s string) bool {
+	if s == "" {
+		return false
+	}
+	ip, _, err := net.ParseCIDR(s)
 	return err == nil && ip.To4() != nil
 }
 
 // IsCIDRv6 is the validation function for validating if the field's value is a valid v6 CIDR address.
-func IsCIDRv6(str string) bool {
-	ip, _, err := net.ParseCIDR(str)
+func IsCIDRv6(s string) bool {
+	if s == "" {
+		return false
+	}
+
+	ip, _, err := net.ParseCIDR(s)
 	return err == nil && ip.To4() == nil
 }
 
 // IsCIDR is the validation function for validating if the field's value is a valid v4 or v6 CIDR address.
-func IsCIDR(str string) bool {
-	_, _, err := net.ParseCIDR(str)
+func IsCIDR(s string) bool {
+	if s == "" {
+		return false
+	}
+
+	_, _, err := net.ParseCIDR(s)
 	return err == nil
 }
 
 // IsJSON check if the string is valid JSON (note: uses json.Unmarshal).
-func IsJSON(str string) bool {
+func IsJSON(s string) bool {
+	if s == "" {
+		return false
+	}
+
 	var js json.RawMessage
-	return Unmarshal([]byte(str), &js) == nil
+	return Unmarshal([]byte(s), &js) == nil
 }
 
 // Regexp match value string
@@ -1094,7 +1144,6 @@ func Enum(val, enum interface{}) bool {
 			}
 		}
 	}
-
 	return false
 }
 

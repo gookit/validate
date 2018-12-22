@@ -36,7 +36,6 @@ func stringSplit(str, sep string) (ss []string) {
 			ss = append(ss, val)
 		}
 	}
-
 	return
 }
 
@@ -45,7 +44,6 @@ func strings2Args(strings []string) []interface{} {
 	for i, s := range strings {
 		args[i] = s
 	}
-
 	return args
 }
 
@@ -128,7 +126,6 @@ func CalcLength(val interface{}) int {
 	if str, ok := val.(string); ok {
 		return len(str)
 	}
-
 	return ValueLen(reflect.ValueOf(val))
 }
 
@@ -168,7 +165,6 @@ func valueCompare(srcVal, dstVal interface{}, op string) (ok bool) {
 	case "gte":
 		ok = srcInt >= dstInt
 	}
-
 	return
 }
 
@@ -224,7 +220,6 @@ func getSliceItemKind(typString string) reflect.Kind {
 	case "[]string":
 		return reflect.String
 	}
-
 	return reflect.Invalid
 }
 
@@ -246,7 +241,6 @@ func convertType(srcVal interface{}, srcKind kind, dstType reflect.Kind) (interf
 			return fmt.Sprint(i64), nil
 		}
 	}
-
 	return nil, nil
 }
 
@@ -343,7 +337,6 @@ func indirect(v reflect.Value) (rv reflect.Value, isNil bool) {
 			return v, true
 		}
 	}
-
 	return v, false
 }
 

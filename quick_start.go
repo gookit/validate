@@ -65,7 +65,6 @@ func FromMap(m map[string]interface{}) *MapData {
 		data.Map = m
 		data.value = reflect.ValueOf(m)
 	}
-
 	return data
 }
 

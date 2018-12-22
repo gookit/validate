@@ -164,7 +164,6 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 					return true
 				}
 			}
-
 			continue
 		}
 
@@ -235,7 +234,6 @@ func (r *Rule) fileValidate(field, name string, v *Validation) (ok bool) {
 			ok = v.InMimeTypes(fd, field, ss[0], ss[1:]...)
 		}
 	}
-
 	return
 }
 
@@ -394,8 +392,8 @@ func callValidator(v *Validation, fm *funcMeta, field string, val interface{}, a
 		return
 	}
 
-	// fmt.Println(fm.name, val)
-	// fmt.Printf("%#v\n", args)
+	// fmt.Println(fm.name)
+	// fmt.Printf("%T %+v | %#v\n", val, val, args)
 
 	// 2. call built in validator
 	switch fm.name {
@@ -447,7 +445,6 @@ func callValidator(v *Validation, fm *funcMeta, field string, val interface{}, a
 		// 3. call user custom validators
 		ok = callValidatorValue(fm.fv, val, args)
 	}
-
 	return
 }
 

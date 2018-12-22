@@ -66,6 +66,7 @@ func TestMap(t *testing.T) {
 	is.Contains(v.Errors.String(), "cannot convert invalid to int64")
 
 	v = New(mpSample)
+	v.StringRule("newSt", "") // will ignore
 	v.StringRule("newSt", "gtField:oldSt")
 	v.StringRule("newSt", "gteField:oldSt")
 	v.StringRule("newSt", "neField:oldSt")
@@ -346,11 +347,11 @@ func TestRequest(t *testing.T) {
 	mw := multipart.NewWriter(buf)
 	w, err := mw.CreateFormFile("file", "test.jpg")
 	if is.NoError(err) {
-		w.Write([]byte("\xFF\xD8\xFF")) // write file content
+		_, _ = w.Write([]byte("\xFF\xD8\xFF")) // write file content
 	}
-	mw.WriteField("age", "24")
-	mw.WriteField("name", "inhere")
-	mw.Close()
+	_ = mw.WriteField("age", "24")
+	_ = mw.WriteField("name", "inhere")
+	_ = mw.Close()
 
 	r, _ = http.NewRequest("POST", "/users", buf)
 	r.Header.Set("Content-Type", mw.FormDataContentType())
@@ -408,7 +409,8 @@ func TestRequest(t *testing.T) {
 	v.StringRule("name", "-", "trim|upper")
 	v.Validate() // validate
 	is.True(v.IsOK())
-	v.BindSafeData(user)
+	err = v.BindSafeData(user)
+	is.NoError(err)
 	is.Equal("INHERE", user.Name)
 
 	// error content type
@@ -537,4 +539,36 @@ func TestAddValidator(t *testing.T) {
 	is.Contains(v.Validators(false), "myFunc4")
 	is.NotContains(v.Validators(false), "min")
 	is.Contains(v.Validators(true), "min")
+}
+
+func TestValidation_ValidateData(t *testing.T) {
+	d := FromMap(M{
+		"name": "inhere",
+		"json": `{"k": "v"}`,
+	})
+
+	v := NewEmpty()
+	v.StringRules(MS{
+		"json": "json",
+	})
+
+	ok := v.ValidateData(d)
+	assert.True(t, ok)
+
+	v.Reset()
+	assert.Len(t, v.Validators(false), 0)
+}
+
+func TestIssue2(t *testing.T) {
+	type Fl struct {
+		A float64 `validate:"float"`
+	}
+
+	fl := Fl{123}
+	v := Struct(fl)
+	assert.True(t, v.Validate())
+}
+
+func TestBuiltInValidators(t *testing.T) {
+
 }

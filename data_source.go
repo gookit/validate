@@ -84,7 +84,6 @@ func (d *MapData) Validation(err ...error) *Validation {
 	if len(err) > 0 {
 		return NewValidation(d).WithError(err[0])
 	}
-
 	return NewValidation(d)
 }
 
@@ -94,7 +93,6 @@ func (d *MapData) BindJSON(ptr interface{}) error {
 	if len(d.bodyJSON) == 0 {
 		return nil
 	}
-
 	return Unmarshal(d.bodyJSON, ptr)
 }
 
@@ -350,7 +348,6 @@ func (d *FormData) Validation(err ...error) *Validation {
 	if len(err) > 0 && err[0] != nil {
 		return NewValidation(d).WithError(err[0])
 	}
-
 	return NewValidation(d)
 }
 
@@ -401,15 +398,16 @@ func (d *FormData) Encode() string {
 }
 
 // Set sets the key to value. It replaces any existing values.
-func (d *FormData) Set(field string, val interface{}) error {
+func (d *FormData) Set(field string, val interface{}) (err error) {
 	switch val.(type) {
 	case string:
 		d.Form.Set(field, val.(string))
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64:
 		d.Form.Set(field, fmt.Sprint(val))
+	default:
+		err = ErrSetValue
 	}
-
-	return ErrSetValue
+	return
 }
 
 // Get value by key

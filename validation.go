@@ -100,7 +100,12 @@ type Validation struct {
 	filterValues map[string]reflect.Value
 }
 
-// NewValidation instance
+// NewEmpty new validation instance, but not add data.
+func NewEmpty(scene ...string) *Validation {
+	return NewValidation(nil, scene...)
+}
+
+// NewValidation new validation instance
 func NewValidation(data DataFace, scene ...string) *Validation {
 	v := &Validation{
 		Errors: make(Errors),
@@ -151,7 +156,6 @@ func newWithError(d DataFace, err error) *Validation {
 		if err != nil {
 			return NewValidation(d).WithError(err)
 		}
-
 		return NewValidation(d)
 	}
 
@@ -163,9 +167,9 @@ func newWithError(d DataFace, err error) *Validation {
  *************************************************************/
 
 // Config the Validation instance
-func (v *Validation) Config(fn func(v *Validation)) {
-	fn(v)
-}
+// func (v *Validation) Config(fn func(v *Validation)) {
+// 	fn(v)
+// }
 
 // ResetResult reset the validate result.
 func (v *Validation) ResetResult() {
@@ -185,6 +189,7 @@ func (v *Validation) Reset() {
 	// rules
 	v.rules = v.rules[:0]
 	v.filterRules = v.filterRules[:0]
+	v.validators = make(map[string]int)
 }
 
 // WithScenarios is alias of the WithScenes()
@@ -192,7 +197,7 @@ func (v *Validation) WithScenarios(scenes SValues) *Validation {
 	return v.WithScenes(scenes)
 }
 
-// WithScenes config.
+// WithScenes set scene config.
 // Usage:
 // 	v.WithScenes(SValues{
 // 		"create": []string{"name", "email"},
@@ -220,7 +225,6 @@ func (v *Validation) SetScene(scene ...string) *Validation {
 	if len(scene) > 0 {
 		v.AtScene(scene[0])
 	}
-
 	return v
 }
 
@@ -276,7 +280,6 @@ func (v *Validation) StringRules(mp MS) *Validation {
 	for name, rule := range mp {
 		v.StringRule(name, rule)
 	}
-
 	return v
 }
 
@@ -337,7 +340,6 @@ func (v *Validation) validatorMeta(name string) *funcMeta {
 			return fm
 		}
 	}
-
 	return nil
 }
 
@@ -366,7 +368,6 @@ func (v *Validation) Validators(withGlobal bool) map[string]int {
 		for name, typ := range v.validators {
 			mp[name] = typ
 		}
-
 		return mp
 	}
 
@@ -395,18 +396,23 @@ func (v *Validation) Validate(scene ...string) bool {
 
 	// apply rule to validate data.
 	for _, rule := range v.rules {
-		// has error and v.StopOnError is true.
 		if rule.Apply(v) {
 			break
 		}
 	}
 
 	v.hasValidated = true
-	if v.hasError { // clear safe data.
+	if v.hasError {
+		// clear safe data will error.
 		v.safeData = make(map[string]interface{})
 	}
-
 	return v.IsSuccess()
+}
+
+// ValidateData validate given data
+func (v *Validation) ValidateData(data DataFace) bool {
+	v.data = data
+	return v.Validate()
 }
 
 /*************************************************************
@@ -594,7 +600,6 @@ func (v *Validation) sceneFieldMap() (m map[string]uint8) {
 			m[field] = 1
 		}
 	}
-
 	return
 }
 
