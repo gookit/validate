@@ -148,7 +148,7 @@ type StructData struct {
 	// field values cache
 	fieldValues map[string]reflect.Value
 	// FilterTag name in the struct tags.
-	FilterTag string
+	// FilterTag string
 	// ValidateTag name in the struct tags.
 	ValidateTag string
 }
@@ -157,7 +157,7 @@ type StructData struct {
 type StructOption struct {
 	// ValidateTag in the struct tags.
 	ValidateTag string
-	MethodName  string
+	// MethodName  string
 }
 
 var (
