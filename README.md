@@ -5,7 +5,7 @@
 [![Coverage Status](https://coveralls.io/repos/github/gookit/validate/badge.svg?branch=master)](https://coveralls.io/github/gookit/validate?branch=master)
 [![Go Report Card](https://goreportcard.com/badge/github.com/gookit/validate)](https://goreportcard.com/report/github.com/gookit/validate)
 
-The package is a generic Go data validate library.
+The package is a generic Go data validate and filter tool library.
 
 > **[中文说明](README_cn.md)**
 
