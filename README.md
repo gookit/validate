@@ -245,11 +245,11 @@ validator/aliases | description
 `notContains`  |  Check if the input value not contains the given value
 `range/between`  |  Check that the value is a number and is within the given range
 `max/lte`  |  Check value is less than or equal to the given value
-`min/gte`  |  Check value is less than or equal to the given size(for `intX` `uintX` `floatX`)
+`min/gte`  |  Check value is greater than or equal to the given value(for `intX` `uintX` `floatX`)
 `eq/equal/isEqual`  |  Check that the input value is equal to the given value
 `ne/notEq/notEqual`  |  Check that the input value is not equal to the given value
-`lt/lessThan`  |  Check value is less than the given size(use for `intX` `uintX` `floatX`)
-`gt/greaterThan`  |  Check value is greater than the given size(use for `intX` `uintX` `floatX`)
+`lt/lessThan`  |  Check value is less than the given value(use for `intX` `uintX` `floatX`)
+`gt/greaterThan`  |  Check value is greater than the given value(use for `intX` `uintX` `floatX`)
 `email/isEmail`  |   Check value is email address string.
 `intEq/intEqual`  |  Check value is int and equals to the given value.
 `len/length`  |  Check value length is equals to the given size(use for `string` `array` `slice` `map`).
