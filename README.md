@@ -248,8 +248,8 @@ validator/aliases | description
 `min/gte`  |  Check value is greater than or equal to the given value(for `intX` `uintX` `floatX`)
 `eq/equal/isEqual`  |  Check that the input value is equal to the given value
 `ne/notEq/notEqual`  |  Check that the input value is not equal to the given value
-`lt/lessThan`  |  Check value is less than the given size(use for `intX` `uintX` `floatX`)
-`gt/greaterThan`  |  Check value is greater than the given size(use for `intX` `uintX` `floatX`)
+`lt/lessThan`  |  Check value is less than the given value(use for `intX` `uintX` `floatX`)
+`gt/greaterThan`  |  Check value is greater than the given value(use for `intX` `uintX` `floatX`)
 `email/isEmail`  |   Check value is email address string.
 `intEq/intEqual`  |  Check value is int and equals to the given value.
 `len/length`  |  Check value length is equals to the given size(use for `string` `array` `slice` `map`).
