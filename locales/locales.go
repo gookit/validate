@@ -10,7 +10,7 @@ var Locales = map[string]validate.MS{
 // Register language data to Validation
 func Register(v *validate.Validation, name string) bool {
 	if data, ok := Locales[name]; ok {
-		v.AddTranslates(data)
+		v.AddMessages(data)
 		return true
 	}
 
@@ -31,6 +31,8 @@ var zhCN = map[string]string{
 	"range": "{field} 值必须在此范围内 %d - %d",
 	// required
 	"required": "{field} 是必填项",
+	// email
+	"email": "{field}不是合法邮箱",
 	// field compare
 	"eqField":  "{field} 值必须等于该字段 %s",
 	"neField":  "{field} 值不能等于该字段 %s",
