@@ -1,4 +1,4 @@
-// Package validate is a generic go data validate library.
+// Package validate is a generic go data validate, filtering library.
 //
 // Source code and other details for the project are available at GitHub:
 //
