@@ -3,10 +3,12 @@ package validate
 import (
 	"errors"
 	"fmt"
-	"github.com/gookit/filter"
 	"reflect"
+	"strconv"
 	"strings"
 	"unicode"
+
+	"github.com/gookit/filter"
 )
 
 // CallByValue call func by reflect.Value
@@ -114,6 +116,53 @@ func ValueLen(v reflect.Value) int {
 
 	// cannot get length
 	return -1
+}
+
+var (
+	errConvertFail = errors.New("convert value is failure")
+)
+
+func valueToInt64(v interface{}, strict bool) (i64 int64, err error) {
+	switch tVal := v.(type) {
+	case string:
+		if strict {
+			return 0, errConvertFail
+		}
+		i64, err = strconv.ParseInt(filter.Trim(tVal), 10, 0)
+	case int:
+		i64 = int64(tVal)
+	case int8:
+		i64 = int64(tVal)
+	case int16:
+		i64 = int64(tVal)
+	case int32:
+		i64 = int64(tVal)
+	case int64:
+		i64 = tVal
+	case uint:
+		i64 = int64(tVal)
+	case uint8:
+		i64 = int64(tVal)
+	case uint16:
+		i64 = int64(tVal)
+	case uint32:
+		i64 = int64(tVal)
+	case uint64:
+		i64 = int64(tVal)
+	case float32:
+		if strict {
+			return 0, errConvertFail
+		}
+		i64 = int64(tVal)
+	case float64:
+		if strict {
+			return 0, errConvertFail
+		}
+		i64 = int64(tVal)
+	default:
+		err = errConvertFail
+	}
+	return
 }
 
 // CalcLength for input value

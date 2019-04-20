@@ -3,7 +3,6 @@ package validate
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/gookit/filter"
 	"io"
 	"io/ioutil"
 	"mime/multipart"
@@ -13,6 +12,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/gookit/filter"
 )
 
 var timeType = reflect.TypeOf(time.Time{})

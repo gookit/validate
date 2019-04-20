@@ -3,13 +3,14 @@ package validate
 import (
 	"bytes"
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"mime/multipart"
 	"net/http"
 	"net/url"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func ExampleStruct() {

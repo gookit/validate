@@ -1,9 +1,10 @@
 package validate
 
 import (
-	"github.com/gookit/filter"
 	"reflect"
 	"strings"
+
+	"github.com/gookit/filter"
 )
 
 /*************************************************************

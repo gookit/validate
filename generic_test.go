@@ -2,12 +2,13 @@ package validate
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"mime/multipart"
 	"net/url"
 	"reflect"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestValueLen(t *testing.T) {

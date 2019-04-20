@@ -3,7 +3,6 @@ package validate
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/gookit/filter"
 	"net"
 	"net/url"
 	"os"
@@ -13,6 +12,8 @@ import (
 	"strings"
 	"time"
 	"unicode/utf8"
+
+	"github.com/gookit/filter"
 )
 
 // Basic regular expressions for validating strings.(it is from package "asaskevich/govalidator")
@@ -39,8 +40,6 @@ const (
 	URLSubdomain string = `((www\.)|([a-zA-Z0-9]+([-_\.]?[a-zA-Z0-9])*[a-zA-Z0-9]\.[a-zA-Z0-9]+))`
 	WinPath      string = `^[a-zA-Z]:\\(?:[^\\/:*?"<>|\r\n]+\\)*[^\\/:*?"<>|\r\n]*$`
 	UnixPath     string = `^(/[^/\x00]*)+/?$`
-	hasLowerCase string = ".*[[:lower:]]"
-	hasUpperCase string = ".*[[:upper:]]"
 )
 
 // some string regexp. (it is from package "asaskevich/govalidator")
@@ -67,18 +66,18 @@ var (
 	rxASCII          = regexp.MustCompile("^[\x00-\x7F]+$")
 	rxPrintableASCII = regexp.MustCompile("^[\x20-\x7E]+$")
 	rxMultiByte      = regexp.MustCompile("[^\x00-\x7F]")
-	rxFullWidth      = regexp.MustCompile(FullWidth)
-	rxHalfWidth      = regexp.MustCompile(HalfWidth)
-	rxBase64         = regexp.MustCompile(Base64)
-	rxDataURI        = regexp.MustCompile(`^data:.+/(.+);base64,(?:.+)`)
-	rxLatitude       = regexp.MustCompile(Latitude)
-	rxLongitude      = regexp.MustCompile(Longitude)
-	rxDNSName        = regexp.MustCompile(DNSName)
+	// rxFullWidth      = regexp.MustCompile(FullWidth)
+	// rxHalfWidth      = regexp.MustCompile(HalfWidth)
+	rxBase64    = regexp.MustCompile(Base64)
+	rxDataURI   = regexp.MustCompile(`^data:.+/(.+);base64,(?:.+)`)
+	rxLatitude  = regexp.MustCompile(Latitude)
+	rxLongitude = regexp.MustCompile(Longitude)
+	rxDNSName   = regexp.MustCompile(DNSName)
 	// rxSSN            = regexp.MustCompile(`^\d{3}[- ]?\d{2}[- ]?\d{4}$`)
 	rxWinPath      = regexp.MustCompile(WinPath)
 	rxUnixPath     = regexp.MustCompile(UnixPath)
-	rxHasLowerCase = regexp.MustCompile(hasLowerCase)
-	rxHasUpperCase = regexp.MustCompile(hasUpperCase)
+	rxHasLowerCase = regexp.MustCompile(".*[[:lower:]]")
+	rxHasUpperCase = regexp.MustCompile(".*[[:upper:]]")
 )
 
 // some validator alias name
@@ -690,24 +689,14 @@ func IsInt(val interface{}, minAndMax ...int64) (ok bool) {
 		return false
 	}
 
-	var rv reflect.Value
-	if rv, ok = val.(reflect.Value); !ok {
-		rv = reflect.ValueOf(val)
+	intVal, err := valueToInt64(val, true)
+	if err != nil {
+		return false
 	}
-
-	intVal, isInt := ValueInt64(rv)
-
-	// @todo convert string to int?
-	// if !isInt && rv.Kind() == reflect.String {
-	// }
 
 	argLn := len(minAndMax)
 	if argLn == 0 { // only check type
-		return isInt
-	}
-
-	if !isInt {
-		return false
+		return true
 	}
 
 	// value check
@@ -986,6 +975,24 @@ func IsJSON(s string) bool {
 
 	var js json.RawMessage
 	return Unmarshal([]byte(s), &js) == nil
+}
+
+// HasLowerCase check string has lower case
+func HasLowerCase(s string) bool {
+	if s == "" {
+		return false
+	}
+
+	return rxHasLowerCase.MatchString(s)
+}
+
+// HasUpperCase check string has upper case
+func HasUpperCase(s string) bool {
+	if s == "" {
+		return false
+	}
+
+	return rxHasUpperCase.MatchString(s)
 }
 
 // Regexp match value string

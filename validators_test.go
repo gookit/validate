@@ -50,15 +50,19 @@ func TestIntCheck(t *testing.T) {
 	is := assert.New(t)
 
 	// type check
-	is.True(IsInt(2))
-	is.True(IsInt(int8(2)))
-	is.True(IsInt(int16(2)))
-	is.True(IsInt(int32(2)))
-	is.True(IsInt(int64(2)))
-	is.True(IsInt(uint(2)))
-	is.True(IsInt(uint64(2)))
+	tests := []interface{}{
+		2, -2,
+		int8(2), int16(2), int32(2), int64(2),
+		uint(2), uint8(2), uint16(2), uint32(2), uint64(2),
+	}
+	for _, item := range tests {
+		is.True(IsInt(item))
+	}
 	is.False(IsInt(nil))
 	is.False(IsInt("str"))
+	is.False(IsInt(2.3))
+	is.False(IsInt(float32(2.3)))
+	is.False(IsInt(-2.3))
 	is.False(IsInt([]int{}))
 	is.False(IsInt([]int{2}))
 	is.False(IsInt(map[string]int{"key": 2}))
@@ -410,6 +414,18 @@ func TestStringCheck(t *testing.T) {
 	is.True(IsIntString("123"))
 	is.False(IsIntString(""))
 	is.False(IsIntString("a123"))
+
+	// HasLowerCase
+	is.True(HasLowerCase("abc"))
+	is.True(HasLowerCase("abC"))
+	is.False(HasLowerCase("123"))
+	is.False(HasLowerCase("ABC"))
+
+	// HasUpperCase
+	is.True(HasUpperCase("ABC"))
+	is.True(HasUpperCase("Abc"))
+	is.False(HasUpperCase("abc"))
+	is.False(HasUpperCase("123"))
 
 	// Regexp
 	is.True(Regexp("123", "[0-9]+"))
