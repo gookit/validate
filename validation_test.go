@@ -74,6 +74,11 @@ func TestMap(t *testing.T) {
 	v.StringRule("oldSt", "ltField:newSt")
 	v.StringRule("oldSt", "lteField:newSt")
 	is.True(v.Validate())
+
+	v = New(M{"age": 12.34})
+	v.AddRule("age", "int")
+	is.False(v.Validate())
+	is.Equal("age value must be an integer", v.Errors.One())
 }
 
 func TestValidation_StringRule(t *testing.T) {
