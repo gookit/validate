@@ -149,7 +149,7 @@ type StructData struct {
 	// field values cache
 	fieldValues map[string]reflect.Value
 	// FilterTag name in the struct tags.
-	// FilterTag string
+	FilterTag string
 	// ValidateTag name in the struct tags.
 	ValidateTag string
 }
@@ -179,7 +179,7 @@ func (d *StructData) Validation(err ...error) *Validation {
 		return v.WithError(err[0])
 	}
 
-	// collect field validate rules
+	// collect field filter/validate rules from struct tags
 	d.parseRulesFromTag(v)
 
 	// if has custom config func
@@ -212,19 +212,31 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 		d.ValidateTag = globalOpt.ValidateTag
 	}
 
+	if d.FilterTag == "" {
+		d.FilterTag = globalOpt.FilterTag
+	}
+
 	vt := d.valueTpy
 	for i := 0; i < vt.NumField(); i++ {
 		name := vt.Field(i).Name
-		if name[0] >= 'a' && name[0] <= 'z' { // skip don't exported field
+
+		// skip don't exported field
+		if name[0] >= 'a' && name[0] <= 'z' {
 			continue
 		}
 
 		d.fieldNames[name] = 1
 
 		// validate rule
-		rule := vt.Field(i).Tag.Get(d.ValidateTag)
-		if rule != "" {
-			v.StringRule(name, rule)
+		vRule := vt.Field(i).Tag.Get(d.ValidateTag)
+		if vRule != "" {
+			v.StringRule(name, vRule)
+		}
+
+		// filter rule
+		fRule := vt.Field(i).Tag.Get(d.FilterTag)
+		if fRule != "" {
+			v.FilterRule(name, fRule)
 		}
 	}
 }
