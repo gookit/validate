@@ -121,6 +121,8 @@ var validatorAliases = map[string]string{
 	"minSize":  "minLength",
 	"maxSize":  "maxLength",
 	// string rune length
+	"strlen":     "stringLength",
+	"strLen":     "stringLength",
 	"strLength":  "stringLength",
 	"runeLength": "stringLength",
 	// string
@@ -129,6 +131,7 @@ var validatorAliases = map[string]string{
 	"ipv6":      "isIPv6",
 	"email":     "isEmail",
 	"intStr":    "isIntString",
+	"strInt":    "isIntString",
 	"intString": "isIntString",
 	//
 	"hexadecimal":    "isHexadecimal",
@@ -240,9 +243,10 @@ var (
 		"isString":  reflect.ValueOf(IsString),
 		"isStrings": reflect.ValueOf(IsStrings),
 		// length
-		"length":    reflect.ValueOf(Length),
-		"minLength": reflect.ValueOf(MinLength),
-		"maxLength": reflect.ValueOf(MaxLength),
+		"length":       reflect.ValueOf(Length),
+		"minLength":    reflect.ValueOf(MinLength),
+		"maxLength":    reflect.ValueOf(MaxLength),
+		"stringLength": reflect.ValueOf(StringLength),
 		// string
 		"isIntString": reflect.ValueOf(IsIntString),
 		// ip
@@ -1207,7 +1211,12 @@ func ByteLength(str string, minLen int, maxLen ...int) bool {
 }
 
 // RuneLength check string's length (including multi byte strings)
-func RuneLength(str string, minLen int, maxLen ...int) bool {
+func RuneLength(val interface{}, minLen int, maxLen ...int) bool {
+	str, isString := val.(string)
+	if !isString {
+		return false
+	}
+
 	// strLen := len([]rune(str))
 	strLen := utf8.RuneCountInString(str)
 
@@ -1221,8 +1230,8 @@ func RuneLength(str string, minLen int, maxLen ...int) bool {
 }
 
 // StringLength check string's length (including multi byte strings)
-func StringLength(str string, minLen int, maxLen ...int) bool {
-	return RuneLength(str, minLen, maxLen...)
+func StringLength(val interface{}, minLen int, maxLen ...int) bool {
+	return RuneLength(val, minLen, maxLen...)
 }
 
 /*************************************************************

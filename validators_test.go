@@ -27,6 +27,7 @@ func TestIsEmpty(t *testing.T) {
 
 	is.True(ValueIsEmpty(reflect.ValueOf(nil)))
 	is.True(ValueIsEmpty(reflect.ValueOf("")))
+	// is.True(ValueIsEmpty(reflect.ValueOf(new(DataFace))))
 }
 
 func TestContains(t *testing.T) {

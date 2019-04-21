@@ -122,10 +122,34 @@ func TestErrorMessages(t *testing.T) {
 	is.False(v.Validate())
 	is.Equal("oldSt's err msg", v.Errors.Get("oldSt"))
 	is.Equal("newSt's err msg", v.Errors.Get("newSt"))
+	// test binding
+	u := struct {
+		Age int
+		Name string
+	}{}
+	err := v.BindSafeData(&u)
+	is.Nil(err)
+	is.Equal(0, u.Age)
 
+	// context validators
 	is.False(v.GtField([]int{2}, "age"))
 	is.False(v.GtField(2, "items"))
 	is.False(v.GtField("a", "items"))
+
+	// SetMessages, key is "field.validator"
+	v = Map(mpSample)
+	v.AddRule("name", "int").SetMessages(MS{
+		"name.int": "HH, value must be INTEGER",
+	})
+	is.False(v.Validate())
+	is.Equal("HH, value must be INTEGER", v.Errors.Get("name"))
+
+	// AddMessages
+	v = Map(mpSample)
+	v.AddMessages(MS{"isInt": "value must be INTEGER!"})
+	v.AddRule("name", "isInt")
+	is.False(v.Validate())
+	is.Equal("value must be INTEGER!", v.Errors.Get("name"))
 }
 
 // UserForm struct
@@ -236,7 +260,18 @@ func TestJSON(t *testing.T) {
 	is.Contains(v.Errors.String(), "name min length is 7")
 	is.Contains(v.Errors.String(), "age value must be in the range 1 - 99")
 
-	_, err := FromJSONBytes([]byte("invalid"))
+	// test set
+	iv, ok := v.Raw("type")
+	is.False(ok)
+	is.Nil(iv)
+	// set new field
+	err := v.Set("type", 2)
+	is.Nil(err)
+	iv, ok = v.Raw("type")
+	is.True(ok)
+	is.Equal(2, iv)
+
+	_, err = FromJSONBytes([]byte("invalid"))
 	is.Error(err)
 	d, err := FromJSONBytes([]byte(jsonStr))
 	is.Nil(err)
@@ -573,8 +608,75 @@ func TestIssue2(t *testing.T) {
 	fl := Fl{123}
 	v := Struct(fl)
 	assert.True(t, v.Validate())
+	assert.Equal(t, float64(123), v.SafeVal("A"))
+
+	val, ok := v.Raw("A")
+	assert.True(t, ok)
+	assert.Equal(t, float64(123), val)
+
+	// Set value
+	err := v.Set("A", float64(234))
+	assert.Error(t, err)
+	// field not exist
+	err = v.Set("B", 234)
+	assert.Error(t, err)
+
+	// NOTICE: Must use ptr for set value
+	v = Struct(&fl)
+	err = v.Set("A", float64(234))
+	assert.Nil(t, err)
+
+	// check new value
+	val, ok = v.Raw("A")
+	assert.True(t, ok)
+	assert.Equal(t, float64(234), val)
+
+	// type is error
+	assert.Panics(t, func() {
+		_= v.Set("A", 234)
+	})
+}
+
+func TestGetSetOnNilData(t *testing.T) {
+	ris := assert.New(t)
+
+	// custom new
+	v := &Validation{}
+
+	// Get
+	val, ok := v.Get("age")
+	ris.Nil(val)
+	ris.False(ok)
+
+	// Safe
+	val, ok = v.Safe("age")
+	ris.Nil(val)
+	ris.False(ok)
+
+	// Raw
+	val, ok = v.Raw("age")
+	ris.Nil(val)
+	ris.False(ok)
+
+	// Set
+	err := v.Set("age", 12)
+	ris.Error(err)
 }
 
 func TestBuiltInValidators(t *testing.T) {
+	ris := assert.New(t)
+	v := New(M{"age": "12"})
+	v.StringRule("age", "isNumber")
+	ris.True(v.Validate())
+	v.Reset()
 
+	v.StringRule("age", "isInt", "int")
+	ris.True(v.Validate())
+	ris.Equal(12, v.SafeVal("age"))
+	v.Reset()
+
+	ris.Panics(func() {
+		v.StringRule("age", "not-exist")
+		v.Validate()
+	})
 }

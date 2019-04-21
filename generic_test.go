@@ -324,3 +324,16 @@ func TestRule(t *testing.T) {
 	is.Equal("val0", v.SafeVal("key0"))
 	is.Equal("inhere-HI", v.SafeVal("name"))
 }
+
+func TestNew(t *testing.T) {
+	v := New(map[string][]string{
+		"age": {"12"},
+		"name": {"inhere"},
+	})
+	v.StringRules(MS{
+		"age": "required|strInt",
+		"name": "required|string:3|strLen:4,6",
+	})
+	// fmt.Println(v)
+	assert.True(t, v.Validate())
+}

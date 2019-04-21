@@ -323,7 +323,7 @@ func (v *Validation) validatorMeta(name string) *funcMeta {
 		return fm
 	}
 
-	// from global
+	// from global validators
 	if fm, ok := validatorMetas[name]; ok {
 		return fm
 	}

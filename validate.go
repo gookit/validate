@@ -11,8 +11,6 @@ import (
 	"strings"
 )
 
-type sourceType uint8
-
 const (
 	// from user setting, unmarshal JSON
 	sourceMap sourceType = iota + 1
@@ -21,6 +19,8 @@ const (
 	// from user setting
 	sourceStruct
 )
+
+type sourceType uint8
 
 // Rules definition
 type Rules []*Rule
@@ -392,9 +392,6 @@ func callValidator(v *Validation, fm *funcMeta, field string, val interface{}, a
 		return
 	}
 
-	// fmt.Println(fm.name)
-	// fmt.Printf("%T %+v | %#v\n", val, val, args)
-
 	// 2. call built in validator
 	switch fm.name {
 	case "required":
@@ -435,6 +432,12 @@ func callValidator(v *Validation, fm *funcMeta, field string, val interface{}, a
 		ok = MinLength(val, args[0].(int))
 	case "maxLength":
 		ok = MaxLength(val, args[0].(int))
+	case "stringLength":
+		if argLn := len(args); argLn == 1 {
+			ok = RuneLength(val, args[0].(int))
+		} else if argLn == 2 {
+			ok = RuneLength(val, args[0].(int), args[1].(int))
+		}
 	case "regexp":
 		ok = Regexp(val.(string), args[0].(string))
 	case "between":
@@ -442,7 +445,7 @@ func callValidator(v *Validation, fm *funcMeta, field string, val interface{}, a
 	case "isJSON":
 		ok = IsJSON(val.(string))
 	default:
-		// 3. call user custom validators
+		// 3. call user custom validators, will call by reflect
 		ok = callValidatorValue(fm.fv, val, args)
 	}
 	return
@@ -459,7 +462,7 @@ func callValidatorValue(fv reflect.Value, val interface{}, args []interface{}) b
 		argIn[i+1] = reflect.ValueOf(args[i])
 	}
 
-	// f.CallSlice()与Call() 不一样的是，CallSlice参数的最后一个会被展开
+	// NOTICE: f.CallSlice()与Call() 不一样的是，CallSlice参数的最后一个会被展开
 	// vs := fv.Call(argIn)
 	return fv.Call(argIn)[0].Bool()
 }

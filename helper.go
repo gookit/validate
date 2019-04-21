@@ -22,7 +22,7 @@ func CallByValue(fv reflect.Value, args ...interface{}) []reflect.Value {
 		in[k] = reflect.ValueOf(v)
 	}
 
-	// CallSlice()与Call() 不一样的是，参数的最后一个会被展开
+	// NOTICE: CallSlice()与Call() 不一样的是，参数的最后一个会被展开
 	// f.CallSlice()
 	return fv.Call(in)
 }
@@ -80,22 +80,6 @@ func ValueIsEmpty(v reflect.Value) bool {
 	}
 
 	return reflect.DeepEqual(v.Interface(), reflect.Zero(v.Type()).Interface())
-}
-
-// ValueInt64 get int64 value
-func ValueInt64(v reflect.Value) (int64, bool) {
-	k := v.Kind()
-	switch k {
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return v.Int(), true
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-		return int64(v.Uint()), true
-	case reflect.Float32, reflect.Float64:
-		return int64(v.Float()), true
-	}
-
-	// cannot get int value
-	return 0, false
 }
 
 // ValueLen get value length

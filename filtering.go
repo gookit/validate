@@ -11,8 +11,11 @@ import (
  * Global filters
  *************************************************************/
 
-var emptyValue = reflect.Value{}
-var filterValues map[string]reflect.Value
+var (
+	filterValues map[string]reflect.Value
+
+	emptyValue = reflect.Value{}
+)
 
 // AddFilters add global filters
 func AddFilters(m map[string]interface{}) {
@@ -89,7 +92,6 @@ func (v *Validation) FilterRules(rules map[string]string) *Validation {
 	for field, rule := range rules {
 		v.FilterRule(field, rule)
 	}
-
 	return v
 }
 
