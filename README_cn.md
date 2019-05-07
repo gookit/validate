@@ -27,6 +27,12 @@ Go通用的数据验证与过滤库，使用简单，内置大部分常用验证
 
 ## 验证结构体(Struct)
 
+结构体可以实现3个接口方法，方便做一些自定义：
+
+- `ConfigValidation(v *Validation)` 将在创建验证器实例后调用
+- `Messages() map[string]string` 可以自定义验证器错误消息
+- `Translates() map[string]string` 可以自定义字段翻译
+
 ```go
 package main
 
