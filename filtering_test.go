@@ -124,3 +124,19 @@ func TestAddFilter(t *testing.T) {
 	is.True(v.IsFail())
 	is.Equal("report a error", v.Errors.Get("_filter"))
 }
+
+// check panic caused nil value with custom filter
+func TestFilterRuleNilValue(t *testing.T) {
+	AddFilter("X", func(in interface{}) interface{} {
+		return in
+	})
+
+	v := Map(map[string]interface{}{
+		"bad": nil,
+	})
+	v.FilterRule("bad", "X")
+
+	assert.NotPanics(t, func() {
+		v.Validate()
+	})
+}
