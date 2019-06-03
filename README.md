@@ -27,6 +27,12 @@ The package is a generic Go data validate and filter tool library.
 
 ## Validate Struct
 
+The struct can implement three interface methods, which is convenient to do some customization:
+
+- `ConfigValidation(v *Validation)` will be called after the validator instance is created
+- `Messages() map[string]string` can customize the validator error message
+- `Translates() map[string]string` can customize field translation
+
 ```go
 package main
 
