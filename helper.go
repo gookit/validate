@@ -11,6 +11,9 @@ import (
 	"github.com/gookit/filter"
 )
 
+// NilObject represent nil value for calling functions and should be reflected at custom filters as nil variable.
+type NilObject struct{}
+
 // CallByValue call func by reflect.Value
 func CallByValue(fv reflect.Value, args ...interface{}) []reflect.Value {
 	if fv.Kind() != reflect.Func {
@@ -19,7 +22,10 @@ func CallByValue(fv reflect.Value, args ...interface{}) []reflect.Value {
 
 	in := make([]reflect.Value, len(args))
 	for k, v := range args {
-		in[k] = reflect.ValueOf(v)
+		// NOTICE: reflect.Call emit panic if kind is Invalid
+		if in[k] = reflect.ValueOf(v); in[k].Kind() == reflect.Invalid {
+			in[k] = reflect.ValueOf(NilObject{})
+		}
 	}
 
 	// NOTICE: CallSlice()与Call() 不一样的是，参数的最后一个会被展开
