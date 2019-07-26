@@ -18,7 +18,7 @@ Go通用的数据验证与过滤库，使用简单，内置大部分常用验证
 - 支持自定义每个验证的错误消息，字段翻译，消息翻译(内置`en` `zh-CN`)
 - 完善的单元测试，测试覆盖率 > 90%
 
-> 受到这些项目的启发 [albrow/forms](https://github.com/albrow/forms) 和 [asaskevich/govalidator](https://github.com/asaskevich/govalidator). 非常感谢它们
+> 受到 [albrow/forms](https://github.com/albrow/forms) 和 [asaskevich/govalidator](https://github.com/asaskevich/govalidator) 这些项目的启发. 非常感谢它们
 
 ## Go Doc
 
