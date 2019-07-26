@@ -14,7 +14,7 @@ The package is a generic Go data validate and filter tool library.
 - Support add custom filter/validator func
 - Support scene settings, verify different fields in different scenes
 - Support custom error messages, field translates.
-- Support language messages, built in `en`, `zh-CN`
+- Customizable i18n aware error messages, built in `en`, `zh-CN`
 - Built-in common data type filter/converter. see [Built In Filters](#built-in-filters)
 - Many commonly used validators have been built in(> 60), see [Built In Validators](#built-in-validators)
 
