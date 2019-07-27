@@ -208,10 +208,11 @@ v := d.Validation()
 
 `Validation` 常用方法：
 
-- Validation.`AtScene(scene string) *Validation` 设置当前验证场景名
-- Validation.`Filtering() bool` 应用所有过滤规则
-- Validation.`Validate() bool` 应用所有验证和过滤规则
-- Validation.`SafeData() map[string]interface{}` 获取所有经过验证的数据
+- `func (v *Validation) AtScene(scene string) *Validation` 设置当前验证场景名
+- `func (v *Validation) Filtering() bool` 应用所有过滤规则
+- `func (v *Validation) Validate() bool` 应用所有验证和过滤规则
+- `func (v *Validation) SafeData() map[string]interface{}` 获取所有经过验证的数据
+- `func (v *Validation) BindSafeData(ptr interface{}) error` 将验证后的安全数据绑定到一个结构体
 
 **提示**
 
