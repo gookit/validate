@@ -7,7 +7,7 @@
 
 The package is a generic Go data validate and filter tool library.
 
-> **[中文说明](README_cn.md)**
+> **[中文说明](README.zh-CN.md)**
 
 - Support validate Map, Struct, Request(Form, JSON, url.Values, UploadedFile) data
 - Support filter/sanitize data before validate

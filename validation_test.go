@@ -124,7 +124,7 @@ func TestErrorMessages(t *testing.T) {
 	is.Equal("newSt's err msg", v.Errors.Get("newSt"))
 	// test binding
 	u := struct {
-		Age int
+		Age  int
 		Name string
 	}{}
 	err := v.BindSafeData(&u)
@@ -633,7 +633,7 @@ func TestIssue2(t *testing.T) {
 
 	// type is error
 	assert.Panics(t, func() {
-		_= v.Set("A", 234)
+		_ = v.Set("A", 234)
 	})
 }
 

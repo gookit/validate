@@ -234,11 +234,11 @@ func TestRule(t *testing.T) {
 
 func TestNew(t *testing.T) {
 	v := New(map[string][]string{
-		"age": {"12"},
+		"age":  {"12"},
 		"name": {"inhere"},
 	})
 	v.StringRules(MS{
-		"age": "required|strInt",
+		"age":  "required|strInt",
 		"name": "required|string:3|strLen:4,6",
 	})
 	// fmt.Println(v)
