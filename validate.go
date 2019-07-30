@@ -11,16 +11,16 @@ import (
 	"strings"
 )
 
-const (
-	// from user setting, unmarshal JSON
-	sourceMap sourceType = iota + 1
-	// from URL.Values, PostForm. contains Files data
-	sourceForm
-	// from user setting
-	sourceStruct
-)
+// type sourceType uint8
 
-type sourceType uint8
+// const (
+// from user setting, unmarshal JSON
+// sourceMap sourceType = iota + 1
+// from URL.Values, PostForm. contains Files data
+// sourceForm
+// from user setting
+// sourceStruct
+// )
 
 // Rules definition
 type Rules []*Rule
@@ -226,11 +226,14 @@ func (r *Rule) fileValidate(field, name string, v *Validation) (ok bool) {
 	case "isImage":
 		ok = v.IsImage(fd, field, ss...)
 	case "inMimeTypes":
-		if ln := len(ss); ln == 0 {
+		ln := len(ss)
+		if ln == 0 {
 			return false
 		} else if ln == 1 {
+			//noinspection GoNilness
 			ok = v.InMimeTypes(fd, field, ss[0])
-		} else {
+		} else { // ln > 1
+			//noinspection GoNilness
 			ok = v.InMimeTypes(fd, field, ss[0], ss[1:]...)
 		}
 	}
@@ -270,14 +273,17 @@ func (r *Rule) valueValidate(field, name string, val interface{}, v *Validation)
 	valKind := rftVal.Kind()
 	// check arg num is match
 	if isNotRequired { // need exclude "required"
+		//noinspection GoNilness
 		fm.checkArgNum(argNum, r.validator)
 
 		// convert val type, is first arg.
+		//noinspection GoNilness
 		ft := fm.fv.Type()
 		firstTyp := ft.In(0).Kind()
 		if firstTyp != valKind && firstTyp != reflect.Interface {
 			ak, err := basicKind(rftVal)
 			if err != nil { // todo check?
+				//noinspection GoNilness
 				v.convertArgTypeError(fm.name, valKind, firstTyp)
 				return
 			}

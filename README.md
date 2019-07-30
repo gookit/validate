@@ -36,9 +36,12 @@ The struct can implement three interface methods, which is convenient to do some
 ```go
 package main
 
-import "fmt"
-import "time"
-import "github.com/gookit/validate"
+import (
+	"fmt"
+	"time"
+
+	"github.com/gookit/validate"
+)
 
 // UserForm struct
 type UserForm struct {
@@ -139,10 +142,13 @@ func main()  {
 ```go
 package main
 
-import "fmt"
-import "time"
-import "net/http"
-import "github.com/gookit/validate"
+import (
+	"fmt"
+	"net/http"
+	"time"
+
+	"github.com/gookit/validate"
+)
 
 func main()  {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -197,11 +203,75 @@ d := FromMap(map[string]interface{}{"key": "val"})
 v := d.Validation()
 ```
 
-**Notice:**
+## More Usage
 
-- `intX` is contains: int, int8, int16, int32, int64
-- `uintX` is contains: uint, uint8, uint16, uint32, uint64
-- `floatX` is contains: float32, float64
+### Global Option
+
+```go
+// GlobalOption settings for validate
+type GlobalOption struct {
+	// FilterTag name in the struct tags.
+	FilterTag string
+	// ValidateTag in the struct tags.
+	ValidateTag string
+	// StopOnError If true: An error occurs, it will cease to continue to verify
+	StopOnError bool
+	// SkipOnEmpty Skip check on field not exist or value is empty
+	SkipOnEmpty bool
+}
+```
+
+Usage:
+
+```go
+	// change global opts
+	validate.Config(func(opt *validate.GlobalOption) {
+		opt.StopOnError = false
+		opt.SkipOnEmpty = false
+	})
+```
+
+### Add Custom Validator
+
+`validate` supports adding custom validators, and supports adding `global validator` and `temporary validator`.
+
+- **Global Validator** is globally valid and can be used everywhere
+- **Temporary Validator** added to the current validation instance, only the current validation is available
+
+#### Add Global Validator
+
+You can add one or more custom validators at once.
+
+```go
+	validate.AddValidator("myCheck0", func(val interface{}) bool {
+		// do validate val ...
+		return true
+	})
+	validate.AddValidators(M{
+		"myCheck1": func(val interface{}) bool {
+			// do validate val ...
+			return true
+		},
+	})
+```
+
+#### Add Temporary Validator
+
+Again, you can add one or more custom validators at once.
+
+```go
+	v := validate.Struct(u)
+	v.AddValidator("myFunc3", func(val interface{}) bool {
+		// do validate val ...
+		return true
+	})
+	v.AddValidators(M{
+		"myFunc4": func(val interface{}) bool {
+			// do validate val ...
+			return true
+		},
+	})
+```
 
 <a id="built-in-filters"></a>
 ## Built In Filters
@@ -315,6 +385,12 @@ validator/aliases | description
 `winPath/isWinPath` | Check value is Windows Path string.
 `isbn10/ISBN10/isISBN10` | Check value is ISBN10 string.
 `isbn13/ISBN13/isISBN13` | Check value is ISBN13 string.
+
+**Notice:**
+
+- `intX` is contains: int, int8, int16, int32, int64
+- `uintX` is contains: uint, uint8, uint16, uint32, uint64
+- `floatX` is contains: float32, float64
 
 ## Gookit packages
 

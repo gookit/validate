@@ -68,7 +68,7 @@ func (es Errors) Field(field string) (fieldErs []string) {
 
 // All all error get
 func (es Errors) All() map[string][]string {
-	return map[string][]string(es)
+	return es
 }
 
 // Error string get

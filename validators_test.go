@@ -167,7 +167,7 @@ func TestValueCompare(t *testing.T) {
 	}
 
 	is.True(IsEqual(uint(2), uint64(2)))
-	is.True(IsEqual(int(2), uint64(2)))
+	is.True(IsEqual(2, uint64(2)))
 	is.True(IsEqual(float32(2), float64(2)))
 	is.True(IsEqual(nil, nil))
 	is.True(IsEqual([]byte("abc"), []byte("abc")))

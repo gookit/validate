@@ -293,7 +293,6 @@ func (d *StructData) Set(field string, val interface{}) error {
 		fv.Set(reflect.ValueOf(val))
 		return nil
 	}
-
 	return ErrSetValue
 }
 

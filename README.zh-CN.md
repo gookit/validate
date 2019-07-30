@@ -214,11 +214,75 @@ v := d.Validation()
 - `func (v *Validation) SafeData() map[string]interface{}` 获取所有经过验证的数据
 - `func (v *Validation) BindSafeData(ptr interface{}) error` 将验证后的安全数据绑定到一个结构体
 
-**提示**
+## 更多使用
 
-- `intX` 包含: `int`, `int8`, `int16`, `int32`, `int64`
-- `uintX` 包含: `uint`, `uint8`, `uint16`, `uint32`, `uint64`
-- `floatX` 包含: `float32`, `float64`
+### 全局选项
+
+```go
+// GlobalOption settings for validate
+type GlobalOption struct {
+	// FilterTag name in the struct tags.
+	FilterTag string
+	// ValidateTag in the struct tags.
+	ValidateTag string
+	// StopOnError If true: An error occurs, it will cease to continue to verify
+	StopOnError bool
+	// SkipOnEmpty Skip check on field not exist or value is empty
+	SkipOnEmpty bool
+}
+```
+
+如何配置:
+
+```go
+	// change global opts
+	validate.Config(func(opt *validate.GlobalOption) {
+		opt.StopOnError = false
+		opt.SkipOnEmpty = false
+	})
+```
+
+### 自定义验证器
+
+`validate` 支持添加自定义验证器，并且支持添加 `全局验证器` 和 `临时验证器` 两种
+
+- **全局验证器** 全局有效，所有地方都可以使用
+- **临时验证器** 添加到当前验证实例上，仅当次验证可用
+
+#### 添加全局验证器
+
+你可以一次添加一个或者多个自定义验证器
+
+```go
+	validate.AddValidator("myCheck0", func(val interface{}) bool {
+		// do validate val ...
+		return true
+	})
+	validate.AddValidators(M{
+		"myCheck1": func(val interface{}) bool {
+			// do validate val ...
+			return true
+		},
+	})
+```
+
+#### 添加临时验证器
+
+同样，你可以一次添加一个或者多个自定义验证器
+
+```go
+	v := validate.Struct(u)
+	v.AddValidator("myFunc3", func(val interface{}) bool {
+		// do validate val ...
+		return true
+	})
+	v.AddValidators(M{
+		"myFunc4": func(val interface{}) bool {
+			// do validate val ...
+			return true
+		},
+	})
+```
 
 <a id="built-in-filters"></a>
 ## 内置过滤器
@@ -342,6 +406,12 @@ v := d.Validation()
 `winPath/isWinPath` | 检查值是Windows路径字符串
 `isbn10/ISBN10/isISBN10` | 检查值是ISBN10字符串
 `isbn13/ISBN13/isISBN13` | 检查值是ISBN13字符串
+
+**提示**
+
+- `intX` 包含: `int`, `int8`, `int16`, `int32`, `int64`
+- `uintX` 包含: `uint`, `uint8`, `uint16`, `uint32`, `uint64`
+- `floatX` 包含: `float32`, `float64`
 
 ## 欢迎star
 
