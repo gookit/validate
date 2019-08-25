@@ -3,7 +3,6 @@ package validate
 import (
 	"fmt"
 	"reflect"
-	"strings"
 )
 
 // some default value settings.
@@ -228,87 +227,6 @@ func (v *Validation) SetScene(scene ...string) *Validation {
 		v.AtScene(scene[0])
 	}
 	return v
-}
-
-/*************************************************************
- * add validate rules
- *************************************************************/
-
-// StringRule add field rules by string
-// Usage:
-// 	v.StringRule("name", "required|string|minLen:6")
-// 	// will try convert to int before apply validate.
-// 	v.StringRule("age", "required|int|min:12", "toInt")
-func (v *Validation) StringRule(field, rule string, filterRule ...string) *Validation {
-	rule = strings.TrimSpace(rule)
-	rules := stringSplit(strings.Trim(rule, "|:"), "|")
-	for _, validator := range rules {
-		validator = strings.Trim(validator, ":")
-		if validator == "" { // empty
-			continue
-		}
-
-		// has args
-		if strings.ContainsRune(validator, ':') {
-			list := stringSplit(validator, ":")
-			args := parseArgString(list[1])
-			name := ValidatorName(list[0])
-			switch name {
-			// some special validator. need merge args to one.
-			case "enum", "notIn":
-				v.AddRule(field, list[0], args)
-			default:
-				v.AddRule(field, list[0], strings2Args(args)...)
-			}
-		} else {
-			v.AddRule(field, validator)
-		}
-	}
-
-	if len(filterRule) > 0 {
-		v.FilterRule(field, filterRule[0])
-	}
-
-	return v
-}
-
-// StringRules add multi rules by string map.
-// Usage:
-// 	v.StringRules(map[string]string{
-// 		"name": "required|string|min:12",
-// 		"age": "required|int|min:12",
-// 	})
-func (v *Validation) StringRules(mp MS) *Validation {
-	for name, rule := range mp {
-		v.StringRule(name, rule)
-	}
-	return v
-}
-
-// ConfigRules add multi rules by string map. alias of StringRules()
-// Usage:
-// 	v.ConfigRules(map[string]string{
-// 		"name": "required|string|min:12",
-// 		"age": "required|int|min:12",
-// 	})
-func (v *Validation) ConfigRules(mp MS) *Validation {
-	for name, rule := range mp {
-		v.StringRule(name, rule)
-	}
-	return v
-}
-
-// AddRule for current validate
-func (v *Validation) AddRule(fields, validator string, args ...interface{}) *Rule {
-	rule := NewRule(fields, validator, args...)
-	v.rules = append(v.rules, rule)
-	return rule
-}
-
-// AppendRule instance
-func (v *Validation) AppendRule(rule *Rule) *Rule {
-	v.rules = append(v.rules, rule)
-	return rule
 }
 
 /*************************************************************

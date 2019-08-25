@@ -139,7 +139,7 @@ func (r *Rule) valueValidate(field, name string, val interface{}, v *Validation)
 
 	// empty value AND skip on empty.
 	isNotRequired := name != "required"
-	if v.SkipOnEmpty && isNotRequired && IsEmpty(val) {
+	if r.skipEmpty && isNotRequired && IsEmpty(val) {
 		return true
 	}
 
