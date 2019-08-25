@@ -487,6 +487,12 @@ func (v *Validation) SafeVal(key string) interface{} {
 	return val
 }
 
+// GetSafe get safe value by key
+func (v *Validation) GetSafe(key string) interface{} {
+	val, _ := v.Safe(key)
+	return val
+}
+
 // BindSafeData to a struct.
 func (v *Validation) BindSafeData(ptr interface{}) error {
 	if len(v.safeData) == 0 { // no safe data.

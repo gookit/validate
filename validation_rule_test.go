@@ -78,7 +78,7 @@ func TestRule_SetFilterFunc(t *testing.T) {
 	is := assert.New(t)
 	v := Map(M{
 		"name": "inhere",
-		"age": "abc",
+		"age":  "abc",
 	})
 
 	v.
@@ -89,4 +89,28 @@ func TestRule_SetFilterFunc(t *testing.T) {
 
 	is.False(v.Validate())
 	is.Equal(`strconv.Atoi: parsing "abc": invalid syntax`, v.Errors.One())
+}
+
+func TestRule_SetSkipEmpty(t *testing.T) {
+	is := assert.New(t)
+	mp := M{
+		"name": "inhere",
+		"age":  0,
+	}
+
+	v := Map(mp)
+	v.AddRule("age", "int", 1)
+	v.AddRule("name", "string", 1, 10)
+	is.True(v.Validate())
+	sd := v.SafeData()
+	is.Contains(sd, "name")
+	is.NotContains(sd, "age")
+	is.Equal("inhere", v.GetSafe("name"))
+	is.Equal(nil, v.GetSafe("age"))
+
+	v = Map(mp)
+	v.AddRule("age", "int", 1).SetSkipEmpty(false)
+	v.AddRule("name", "string", 1, 10)
+	is.False(v.Validate())
+	is.Equal("age value must be an integer and mix value is 1", v.Errors.One())
 }

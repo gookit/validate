@@ -16,6 +16,16 @@ import (
 	"github.com/gookit/filter"
 )
 
+// type sourceType uint8
+// const (
+// from user setting, unmarshal JSON
+// sourceMap sourceType = iota + 1
+// from URL.Values, PostForm. contains Files data
+// sourceForm
+// from user setting
+// sourceStruct
+// )
+
 var timeType = reflect.TypeOf(time.Time{})
 
 // data (Un)marshal func

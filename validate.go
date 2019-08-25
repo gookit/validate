@@ -10,17 +10,15 @@ import (
 	"reflect"
 )
 
-// type sourceType uint8
 // const requiredValidator = "required"
 
-// const (
-// from user setting, unmarshal JSON
-// sourceMap sourceType = iota + 1
-// from URL.Values, PostForm. contains Files data
-// sourceForm
-// from user setting
-// sourceStruct
-// )
+// validate result status:
+// 0 ok 1 skip 2 fail
+const (
+	ok = iota
+	skip
+	fail
+)
 
 // Apply current rule for the rule fields
 func (r *Rule) Apply(v *Validation) (stop bool) {
@@ -74,7 +72,14 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 			v.filteredData[field] = val
 		}
 
-		if r.valueValidate(field, name, val, v) {
+		// empty value AND skip on empty.
+		isNotRequired := name != "required"
+		if r.skipEmpty && isNotRequired && IsEmpty(val) {
+			continue
+		}
+
+		// validate field value
+		if r.valueValidate(field, name, isNotRequired, val, v) {
 			v.safeData[field] = val // save validated value.
 		} else { // build and collect error message
 			v.AddError(field, r.errorMessage(field, r.validator, v))
@@ -87,6 +92,10 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 	}
 
 	return false
+}
+
+func (r *Rule) doValidating() {
+
 }
 
 func (r *Rule) fileValidate(field, name string, v *Validation) (ok bool) {
@@ -127,15 +136,9 @@ func (r *Rule) fileValidate(field, name string, v *Validation) (ok bool) {
 }
 
 // validate the field value
-func (r *Rule) valueValidate(field, name string, val interface{}, v *Validation) (ok bool) {
+func (r *Rule) valueValidate(field, name string, isNotRequired bool, val interface{}, v *Validation) bool {
 	// "-" OR "safe" mark field value always is safe.
 	if name == "-" || name == "safe" {
-		return true
-	}
-
-	// empty value AND skip on empty.
-	isNotRequired := name != "required"
-	if r.skipEmpty && isNotRequired && IsEmpty(val) {
 		return true
 	}
 
@@ -167,7 +170,7 @@ func (r *Rule) valueValidate(field, name string, val interface{}, v *Validation)
 			if err != nil { // todo check?
 				//noinspection GoNilness
 				v.convertArgTypeError(fm.name, valKind, firstTyp)
-				return
+				return false
 			}
 
 			// manual converted
@@ -178,8 +181,7 @@ func (r *Rule) valueValidate(field, name string, val interface{}, v *Validation)
 	}
 
 	// call built in validators
-	ok = callValidator(v, fm, field, val, r.arguments)
-	return
+	return callValidator(v, fm, field, val, r.arguments)
 }
 
 // convert args data type

@@ -97,11 +97,15 @@ var defMessages = map[string]string{
 	// int value
 	"min": "{field} min value is %d",
 	"max": "{field} max value is %d",
-	// type check
-	"isInt":    "{field} value must be an integer",
-	"isInts":   "{field} value must be an int slice",
-	"isUint":   "{field} value must be an unsigned integer(>= 0)",
-	"isString": "{field} value must be an string",
+	// type check: int
+	"isInt":  "{field} value must be an integer",
+	"isInt1": "{field} value must be an integer and mix value is %d",      // has min check
+	"isInt2": "{field} value must be an integer and in the range %d - %d", // has min, max check
+	"isInts": "{field} value must be an int slice",
+	"isUint": "{field} value must be an unsigned integer(>= 0)",
+	// type check: string
+	"isString":  "{field} value must be an string",
+	"isString1": "{field} value must be an string and min length is %d", // has min len check
 	// length
 	"minLength": "{field} min length is %d",
 	"maxLength": "{field} max length is %d",
@@ -221,13 +225,23 @@ func (t *Translator) Message(validator, field string, args ...interface{}) (msg 
 
 // format message for the validator
 func (t *Translator) format(validator, field string, args ...interface{}) (msg string, ok bool) {
-	key := field + "." + validator
-
-	if msg, ok = t.messages[key]; ok { // "field.required"
-		msg = fmt.Sprintf(msg, args...)
-	} else if msg, ok = t.messages[validator]; ok { // "required"
-		msg = fmt.Sprintf(msg, args...)
+	// validator support variable params. eg: isInt1 isInt2
+	if ln := len(args); ln > 0 {
+		newKey := fmt.Sprint(validator, ln)
+		if msg, ok = t.messages[newKey]; ok {
+			msg = fmt.Sprintf(msg, args...)
+			return
+		}
 	}
 
+	key := field + "." + validator
+
+	// "field.required"
+	if msg, ok = t.messages[key]; ok {
+		msg = fmt.Sprintf(msg, args...)
+		// only validator name. "required"
+	} else if msg, ok = t.messages[validator]; ok {
+		msg = fmt.Sprintf(msg, args...)
+	}
 	return
 }
