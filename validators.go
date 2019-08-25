@@ -594,7 +594,7 @@ func IsInt(val interface{}, minAndMax ...int64) (ok bool) {
 	return intVal >= minVal && intVal <= maxVal
 }
 
-// IsString check, and support length check.
+// IsString check and support length check.
 // Usage:
 // 	ok := IsString(val)
 // 	ok := IsString(val, 5) // with min len check

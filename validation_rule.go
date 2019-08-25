@@ -33,8 +33,10 @@ type Rule struct {
 	validator string
 	// arguments for the validator
 	arguments []interface{}
-	// some functions
+	// --- some hook functions
+	// has beforeFunc. if return false, skip validate current rule
 	beforeFunc func(field string, v *Validation) bool // func (val interface{}) bool
+	// you can custom filter func
 	filterFunc func(val interface{}) (interface{}, error)
 	// custom check func's mate info
 	checkFuncMeta *funcMeta

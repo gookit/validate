@@ -4,6 +4,7 @@ import (
 	"net/url"
 	"testing"
 
+	"github.com/gookit/filter"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -49,5 +50,43 @@ func TestRule(t *testing.T) {
 }
 
 func TestRule_SetBeforeFunc(t *testing.T) {
+	is := assert.New(t)
+	mp := M{
+		"name":   "inhere",
+		"avatar": "/some/file",
+	}
 
+	v := Map(mp)
+	v.AddRule("avatar", "isFile")
+	is.False(v.Validate())
+	is.Equal("avatar must be an uploaded file", v.Errors.One())
+
+	// use SetBeforeFunc
+	v = Map(mp)
+	v.
+		AddRule("avatar", "isFile").
+		SetBeforeFunc(func(field string, v *Validation) bool {
+			// return false for skip validate
+			return false
+		})
+
+	v.Validate()
+	is.True(v.IsOK())
+}
+
+func TestRule_SetFilterFunc(t *testing.T) {
+	is := assert.New(t)
+	v := Map(M{
+		"name": "inhere",
+		"age": "abc",
+	})
+
+	v.
+		AddRule("age", "int", 1, 100).
+		SetFilterFunc(func(val interface{}) (i interface{}, e error) {
+			return filter.Int(val)
+		})
+
+	is.False(v.Validate())
+	is.Equal(`strconv.Atoi: parsing "abc": invalid syntax`, v.Errors.One())
 }

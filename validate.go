@@ -38,6 +38,11 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 			continue
 		}
 
+		// has beforeFunc. if return false, skip validate
+		if r.beforeFunc != nil && !r.beforeFunc(field, v) {
+			continue
+		}
+
 		// uploaded file check
 		if isFileValidator(name) {
 			// build and collect error message
@@ -85,18 +90,14 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 }
 
 func (r *Rule) fileValidate(field, name string, v *Validation) (ok bool) {
-	// beforeFunc return false, skip validate
-	if r.beforeFunc != nil && !r.beforeFunc(field, v) {
-		return false
-	}
-
+	// check data source
 	form, ok := v.data.(*FormData)
 	if !ok {
 		return
 	}
 
 	// skip on empty AND field not exist
-	if v.SkipOnEmpty && !form.HasFile(field) {
+	if r.skipEmpty && !form.HasFile(field) {
 		return true
 	}
 
@@ -130,11 +131,6 @@ func (r *Rule) valueValidate(field, name string, val interface{}, v *Validation)
 	// "-" OR "safe" mark field value always is safe.
 	if name == "-" || name == "safe" {
 		return true
-	}
-
-	// beforeFunc return false, skip validate
-	if r.beforeFunc != nil && !r.beforeFunc(field, v) {
-		return false
 	}
 
 	// empty value AND skip on empty.
