@@ -327,6 +327,11 @@ func TestStringCheck(t *testing.T) {
 	is.True(IsDNSName("8.8.8.8"))
 	is.False(IsDNSName(""))
 
+	// HasURLSchema
+	is.True(HasURLSchema("http://a.com"))
+	is.False(HasURLSchema("abd://a.com"))
+	is.False(HasURLSchema("/ab/cd"))
+
 	// IsURL
 	is.True(IsURL("a.com?p=1"))
 	is.True(IsURL("http://a.com?p=1"))

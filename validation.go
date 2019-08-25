@@ -27,15 +27,6 @@ type MS map[string]string
 // SValues simple values
 type SValues map[string][]string
 
-var globalOpt = &GlobalOption{
-	StopOnError: true,
-	SkipOnEmpty: true,
-	// tag name in struct tags
-	FilterTag: filterTag,
-	// tag name in struct tags
-	ValidateTag: validateTag,
-}
-
 // GlobalOption settings for validate
 type GlobalOption struct {
 	// FilterTag name in the struct tags.
@@ -46,6 +37,17 @@ type GlobalOption struct {
 	StopOnError bool
 	// SkipOnEmpty Skip check on field not exist or value is empty
 	SkipOnEmpty bool
+	// CheckDefault whether validate the default value
+	CheckDefault bool
+}
+
+var globalOpt = &GlobalOption{
+	StopOnError: true,
+	SkipOnEmpty: true,
+	// tag name in struct tags
+	FilterTag: filterTag,
+	// tag name in struct tags
+	ValidateTag: validateTag,
 }
 
 // Validation definition
@@ -88,8 +90,8 @@ type Validation struct {
 	scene string
 	// scenes config.
 	// {
-	// 	"create": {"field", "field1"}
-	// 	"update": {"field", "field2"}
+	// 	"create": {"field0", "field1"}
+	// 	"update": {"field0", "field2"}
 	// }
 	scenes SValues
 	// should checked fields in current scene.
@@ -277,6 +279,19 @@ func (v *Validation) StringRule(field, rule string, filterRule ...string) *Valid
 // 		"age": "required|int|min:12",
 // 	})
 func (v *Validation) StringRules(mp MS) *Validation {
+	for name, rule := range mp {
+		v.StringRule(name, rule)
+	}
+	return v
+}
+
+// ConfigRules add multi rules by string map. alias of StringRules()
+// Usage:
+// 	v.ConfigRules(map[string]string{
+// 		"name": "required|string|min:12",
+// 		"age": "required|int|min:12",
+// 	})
+func (v *Validation) ConfigRules(mp MS) *Validation {
 	for name, rule := range mp {
 		v.StringRule(name, rule)
 	}

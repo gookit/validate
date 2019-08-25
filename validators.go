@@ -16,7 +16,8 @@ import (
 	"github.com/gookit/filter"
 )
 
-// Basic regular expressions for validating strings.(it is from package "asaskevich/govalidator")
+// Basic regular expressions for validating strings.
+// (there are from package "asaskevich/govalidator")
 const (
 	Email        string = "^(((([a-zA-Z]|\\d|[!#\\$%&'\\*\\+\\-\\/=\\?\\^_`{\\|}~]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])+(\\.([a-zA-Z]|\\d|[!#\\$%&'\\*\\+\\-\\/=\\?\\^_`{\\|}~]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])+)*)|((\\x22)((((\\x20|\\x09)*(\\x0d\\x0a))?(\\x20|\\x09)+)?(([\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x7f]|\\x21|[\\x23-\\x5b]|[\\x5d-\\x7e]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])|(\\([\\x01-\\x09\\x0b\\x0c\\x0d-\\x7f]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}]))))*(((\\x20|\\x09)*(\\x0d\\x0a))?(\\x20|\\x09)+)?(\\x22)))@((([a-zA-Z]|\\d|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])|(([a-zA-Z]|\\d|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])([a-zA-Z]|\\d|-|\\.|_|~|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])*([a-zA-Z]|\\d|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])))\\.)+(([a-zA-Z]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])|(([a-zA-Z]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])([a-zA-Z]|\\d|-|_|~|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])*([a-zA-Z]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])))\\.?$"
 	UUID3        string = "^[0-9a-f]{8}-[0-9a-f]{4}-3[0-9a-f]{3}-[0-9a-f]{4}-[0-9a-f]{12}$"
@@ -73,136 +74,13 @@ var (
 	rxLatitude  = regexp.MustCompile(Latitude)
 	rxLongitude = regexp.MustCompile(Longitude)
 	rxDNSName   = regexp.MustCompile(DNSName)
+	rxURLSchema = regexp.MustCompile(URLSchema)
 	// rxSSN            = regexp.MustCompile(`^\d{3}[- ]?\d{2}[- ]?\d{4}$`)
 	rxWinPath      = regexp.MustCompile(WinPath)
 	rxUnixPath     = regexp.MustCompile(UnixPath)
 	rxHasLowerCase = regexp.MustCompile(".*[[:lower:]]")
 	rxHasUpperCase = regexp.MustCompile(".*[[:upper:]]")
 )
-
-// some validator alias name
-var validatorAliases = map[string]string{
-	// alias -> real name
-	"in":    "enum",
-	"num":   "number",
-	"range": "between",
-	// type
-	"int":     "isInt",
-	"integer": "isInt",
-	"uint":    "isUint",
-	"bool":    "isBool",
-	"float":   "isFloat",
-	"map":     "isMap",
-	"ints":    "isInts", // []int
-	"str":     "isString",
-	"string":  "isString",
-	"strings": "isStrings", // []string
-	"arr":     "isArray",
-	"array":   "isArray",
-	"slice":   "isSlice",
-	// val
-	"regex": "regexp",
-	"eq":    "isEqual",
-	"equal": "isEqual",
-	"intEq": "intEqual",
-	"ne":    "notEqual",
-	"notEq": "notEqual",
-	// int
-	"lte":         "max",
-	"gte":         "min",
-	"lessThan":    "lt",
-	"greaterThan": "gt",
-	// len
-	"len":      "length",
-	"lenEq":    "length",
-	"lengthEq": "length",
-	"minLen":   "minLength",
-	"maxLen":   "maxLength",
-	"minSize":  "minLength",
-	"maxSize":  "maxLength",
-	// string rune length
-	"strlen":     "stringLength",
-	"strLen":     "stringLength",
-	"strLength":  "stringLength",
-	"runeLength": "stringLength",
-	// string
-	"ip":        "isIP",
-	"ipv4":      "isIPv4",
-	"ipv6":      "isIPv6",
-	"email":     "isEmail",
-	"intStr":    "isIntString",
-	"strInt":    "isIntString",
-	"intString": "isIntString",
-	//
-	"hexadecimal":    "isHexadecimal",
-	"hasWhitespace":  "hasWhitespace",
-	"printableASCII": "isPrintableASCII",
-	//
-	"ascii":     "isASCII",
-	"ASCII":     "isASCII",
-	"alpha":     "isAlpha",
-	"alphaNum":  "isAlphaNum",
-	"alphaDash": "isAlphaDash",
-	"base64":    "isBase64",
-	"CIDR":      "isCIDR",
-	"CIDRv4":    "isCIDRv4",
-	"CIDRv6":    "isCIDRv6",
-	"dnsName":   "isDNSName",
-	"DNSName":   "isDNSName",
-	"dataURI":   "isDataURI",
-	"empty":     "isEmpty",
-	"filePath":  "isFilePath",
-	"hexColor":  "isHexColor",
-	"isbn10":    "isISBN10",
-	"ISBN10":    "isISBN10",
-	"isbn13":    "isISBN13",
-	"ISBN13":    "isISBN13",
-	"json":      "isJSON",
-	"JSON":      "isJSON",
-	"lat":       "isLatitude",
-	"latitude":  "isLatitude",
-	"lon":       "isLongitude",
-	"longitude": "isLongitude",
-	"mac":       "isMAC",
-	"multiByte": "isMultiByte",
-	"number":    "isNumber",
-	"rgbColor":  "isRGBColor",
-	"RGBColor":  "isRGBColor",
-	"url":       "isURL",
-	"URL":       "isURL",
-	"uuid":      "isUUID",
-	"uuid3":     "isUUID3",
-	"uuid4":     "isUUID4",
-	"uuid5":     "isUUID5",
-	"UUID":      "isUUID",
-	"UUID3":     "isUUID3",
-	"UUID4":     "isUUID4",
-	"UUID5":     "isUUID5",
-	"unixPath":  "isUnixPath",
-	"winPath":   "isWinPath",
-	// date
-	"date":    "isDate",
-	"gtDate":  "afterDate",
-	"ltDate":  "beforeDate",
-	"gteDate": "afterOrEqualDate",
-	"lteDate": "beforeOrEqualDate",
-	// uploaded file
-	"img":       "isImage",
-	"file":      "isFile",
-	"image":     "isImage",
-	"mimes":     "inMimeTypes",
-	"mimeType":  "inMimeTypes",
-	"mimeTypes": "inMimeTypes",
-}
-
-// ValidatorName get real validator name.
-func ValidatorName(name string) string {
-	if rName, ok := validatorAliases[name]; ok {
-		return rName
-	}
-
-	return name
-}
 
 /*************************************************************
  * global validators
@@ -453,7 +331,8 @@ func (v *Validation) LteField(val interface{}, dstField string) bool {
 }
 
 /*************************************************************
- * context: file validators
+ * context validators:
+ *  - file validators
  *************************************************************/
 
 var fileValidators = "|isFile|isImage|inMimeTypes|"
@@ -793,6 +672,11 @@ func IsLongitude(s string) bool {
 // IsDNSName string.
 func IsDNSName(s string) bool {
 	return s != "" && rxDNSName.MatchString(s)
+}
+
+// HasURLSchema string.
+func HasURLSchema(s string) bool {
+	return s != "" && rxURLSchema.MatchString(s)
 }
 
 // IsURL string.

@@ -247,7 +247,7 @@ func TestJSON(t *testing.T) {
 	v := JSON(jsonStr)
 
 	v.StopOnError = false
-	v.StringRules(MS{
+	v.ConfigRules(MS{
 		"name": "required|minLen:7",
 		"age":  "required|int|range:1,99",
 	})
