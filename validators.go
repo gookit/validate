@@ -894,7 +894,8 @@ func Regexp(str string, pattern string) bool {
  *************************************************************/
 
 // IsEqual check two value is equals.
-// Support: bool, int(X), uint(X), string, float(X) AND slice, array, map
+// Support:
+// 	bool, int(X), uint(X), string, float(X) AND slice, array, map
 func IsEqual(val, wantVal interface{}) bool {
 	// check is nil
 	if val == nil || wantVal == nil {

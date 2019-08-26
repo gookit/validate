@@ -225,9 +225,10 @@ func (t *Translator) Message(validator, field string, args ...interface{}) (msg 
 
 // format message for the validator
 func (t *Translator) format(validator, field string, args ...interface{}) (msg string, ok bool) {
-	// validator support variable params. eg: isInt1 isInt2
+	// validator support variadic params. eg: isInt1 isInt2
 	if ln := len(args); ln > 0 {
 		newKey := fmt.Sprint(validator, ln)
+
 		if msg, ok = t.messages[newKey]; ok {
 			msg = fmt.Sprintf(msg, args...)
 			return

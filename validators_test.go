@@ -76,6 +76,14 @@ func TestIntCheck(t *testing.T) {
 	is.False(IsInt("str", 4, 6))
 
 	// IsUint
+	cases := []interface{}{
+		2,
+		int8(2), int16(2), int32(2), int64(2),
+		uint(2), uint8(2), uint16(2), uint32(2), uint64(2),
+	}
+	for _, item := range cases {
+		is.True(IsUint(item))
+	}
 	is.True(IsUint("0"))
 	is.True(IsUint("2"))
 	is.False(IsUint("-2"))
@@ -166,6 +174,7 @@ func TestValueCompare(t *testing.T) {
 		is.True(IsEqual(item, 2))
 	}
 
+	is.True(IsEqual(true, true))
 	is.True(IsEqual(uint(2), uint64(2)))
 	is.True(IsEqual(2, uint64(2)))
 	is.True(IsEqual(float32(2), float64(2)))
@@ -186,6 +195,8 @@ func TestValueCompare(t *testing.T) {
 	is.False(IsEqual(func() {}, func() {}))
 	is.False(IsEqual(2, func() {}))
 	is.False(IsEqual([]byte(`abc`), "abc"))
+	is.False(IsEqual(complex64(1 + 2i), "abc"))
+	is.False(IsEqual(complex128(1 + 2), complex128(1 + 1)))
 
 	// NotEqual
 	is.True(NotEqual(2, nil))

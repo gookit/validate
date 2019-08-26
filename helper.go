@@ -367,8 +367,7 @@ func goodName(name string) bool {
 	return true
 }
 
-// From package "text/template" -> text/template/exec.go
-
+// ---- From package "text/template" -> text/template/exec.go
 // indirect returns the item at the end of indirection, and a bool to indicate if it's nil.
 func indirect(v reflect.Value) (rv reflect.Value, isNil bool) {
 	for ; v.Kind() == reflect.Ptr || v.Kind() == reflect.Interface; v = v.Elem() {
@@ -396,7 +395,7 @@ func indirectInterface(v reflect.Value) reflect.Value {
 }
 
 /*************************************************************
- * Comparison
+ * Comparison:
  * From package "text/template" -> text/template/funcs.go
  *************************************************************/
 
