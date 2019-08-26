@@ -224,12 +224,17 @@ func TestStruct(t *testing.T) {
 	is.Equal("oh! the Extra is required", v.Errors.Get("Extra"))
 	is.Empty(v.SafeData())
 	is.Empty(v.FilteredData())
-	// fmt.Println(v.Errors)
 
 	u.Name = "new name"
-	u.Status = 5
+	u.Status = 3
 	u.Extra = ExtraInfo{"xxx", 4}
 	u.UpdateAt = time.Now()
+	v = Struct(u)
+	is.False(v.Validate())
+	is.Equal("Status value must be greater the field Extra.Status1", v.Errors.One())
+
+	u.Status = 5
+	u.Extra = ExtraInfo{"xxx", 4}
 	v = Struct(u)
 	v.Validate()
 
@@ -424,6 +429,12 @@ func TestRequest(t *testing.T) {
 	v.AddRule("file", "image", "jpg", "jpeg")
 	v.Validate()
 	is.True(v.IsOK())
+
+	ok = v.IsImage(fd, "file")
+	is.True(ok)
+
+	ok = v.InMimeTypes(fd, "not-exist", "image/jpg")
+	is.False(ok)
 
 	// =================== POST JSON body ===================
 	body = strings.NewReader(`{

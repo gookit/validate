@@ -336,7 +336,7 @@ func (v *Validation) Validate(scene ...string) bool {
 
 	v.hasValidated = true
 	if v.hasError {
-		// clear safe data will error.
+		// clear safe data on error.
 		v.safeData = make(map[string]interface{})
 	}
 	return v.IsSuccess()

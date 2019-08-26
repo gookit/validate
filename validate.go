@@ -12,12 +12,12 @@ import (
 
 // const requiredValidator = "required"
 
-// validate result status:
+// the validate result status:
 // 0 ok 1 skip 2 fail
 const (
-	ok = iota
-	skip
-	fail
+	statusOk uint8 = iota
+	statusSkip
+	statusFail
 )
 
 // Apply current rule for the rule fields
@@ -29,6 +29,8 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 
 	var err error
 	name := ValidatorName(r.validator)
+	// validator name is not "required"
+	isNotRequired := name != "required"
 
 	// validate each field
 	for _, field := range r.fields {
@@ -36,17 +38,17 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 			continue
 		}
 
-		// has beforeFunc. if return false, skip validate
+		// has beforeFunc. if return FALSE, skip validate
 		if r.beforeFunc != nil && !r.beforeFunc(field, v) {
 			continue
 		}
 
-		// uploaded file check
+		// uploaded file validate
 		if isFileValidator(name) {
-			// build and collect error message
-			if !r.fileValidate(field, name, v) {
+			status := r.fileValidate(field, name, v)
+			if status == statusFail {
+				// build and collect error message
 				v.AddError(field, r.errorMessage(field, r.validator, v))
-				// stop on error
 				if v.StopOnError {
 					return true
 				}
@@ -73,7 +75,6 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 		}
 
 		// empty value AND skip on empty.
-		isNotRequired := name != "required"
 		if r.skipEmpty && isNotRequired && IsEmpty(val) {
 			continue
 		}
@@ -94,20 +95,20 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 	return false
 }
 
-func (r *Rule) doValidating() {
+// func (r *Rule) doValidating() {
+//
+// }
 
-}
-
-func (r *Rule) fileValidate(field, name string, v *Validation) (ok bool) {
+func (r *Rule) fileValidate(field, name string, v *Validation) uint8 {
 	// check data source
 	form, ok := v.data.(*FormData)
 	if !ok {
-		return
+		return statusFail
 	}
 
 	// skip on empty AND field not exist
 	if r.skipEmpty && !form.HasFile(field) {
-		return true
+		return statusSkip
 	}
 
 	var ss []string
@@ -123,8 +124,10 @@ func (r *Rule) fileValidate(field, name string, v *Validation) (ok bool) {
 	case "inMimeTypes":
 		ln := len(ss)
 		if ln == 0 {
-			return false
-		} else if ln == 1 {
+			return statusFail
+		}
+
+		if ln == 1 {
 			//noinspection GoNilness
 			ok = v.InMimeTypes(form, field, ss[0])
 		} else { // ln > 1
@@ -132,7 +135,11 @@ func (r *Rule) fileValidate(field, name string, v *Validation) (ok bool) {
 			ok = v.InMimeTypes(form, field, ss[0], ss[1:]...)
 		}
 	}
-	return
+
+	if ok {
+		return statusOk
+	}
+	return statusFail
 }
 
 // validate the field value

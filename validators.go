@@ -247,7 +247,9 @@ func Validators() map[string]int {
 }
 
 /*************************************************************
- * context validators(TODO requiredIf, requiredUnless)
+ * context validators:
+ *  - field value compare
+ * (TODO requiredIf, requiredUnless)
  *************************************************************/
 
 // Required field val check
@@ -335,19 +337,21 @@ func (v *Validation) LteField(val interface{}, dstField string) bool {
  *  - file validators
  *************************************************************/
 
-var fileValidators = "|isFile|isImage|inMimeTypes|"
-var imageMimeTypes = map[string]string{
-	"bmp": "image/bmp",
-	"gif": "image/gif",
-	"ief": "image/ief",
-	"jpg": "image/jpeg",
-	// "jpe":  "image/jpeg",
-	"jpeg": "image/jpeg",
-	"png":  "image/png",
-	"svg":  "image/svg+xml",
-	"ico":  "image/x-icon",
-	"webp": "image/webp",
-}
+var (
+	fileValidators = "|isFile|isImage|inMimeTypes|"
+	imageMimeTypes = map[string]string{
+		"bmp": "image/bmp",
+		"gif": "image/gif",
+		"ief": "image/ief",
+		"jpg": "image/jpeg",
+		// "jpe":  "image/jpeg",
+		"jpeg": "image/jpeg",
+		"png":  "image/png",
+		"svg":  "image/svg+xml",
+		"ico":  "image/x-icon",
+		"webp": "image/webp",
+	}
+)
 
 func isFileValidator(name string) bool {
 	return strings.Contains(fileValidators, "|"+name+"|")

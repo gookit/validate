@@ -190,16 +190,3 @@ func TestStructData_Create(t *testing.T) {
 	is.True(ok)
 	is.Equal("inhere", str)
 }
-
-func TestNew(t *testing.T) {
-	v := New(map[string][]string{
-		"age":  {"12"},
-		"name": {"inhere"},
-	})
-	v.StringRules(MS{
-		"age":  "required|strInt",
-		"name": "required|string:3|strLen:4,6",
-	})
-	// fmt.Println(v)
-	assert.True(t, v.Validate())
-}
