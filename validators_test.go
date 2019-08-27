@@ -27,7 +27,10 @@ func TestIsEmpty(t *testing.T) {
 
 	is.True(ValueIsEmpty(reflect.ValueOf(nil)))
 	is.True(ValueIsEmpty(reflect.ValueOf("")))
-	// is.True(ValueIsEmpty(reflect.ValueOf(new(DataFace))))
+
+	type T struct{ v interface{} }
+	rv := reflect.ValueOf(T{}).Field(0)
+	is.True(ValueIsEmpty(rv))
 }
 
 func TestContains(t *testing.T) {
@@ -195,8 +198,8 @@ func TestValueCompare(t *testing.T) {
 	is.False(IsEqual(func() {}, func() {}))
 	is.False(IsEqual(2, func() {}))
 	is.False(IsEqual([]byte(`abc`), "abc"))
-	is.False(IsEqual(complex64(1 + 2i), "abc"))
-	is.False(IsEqual(complex128(1 + 2), complex128(1 + 1)))
+	is.False(IsEqual(complex64(1+2i), "abc"))
+	is.False(IsEqual(complex128(1+2), complex128(1+1)))
 
 	// NotEqual
 	is.True(NotEqual(2, nil))
@@ -536,6 +539,7 @@ func TestEnumAndNotIn(t *testing.T) {
 	is.False(Enum([]int{2}, []int{2, 3}))
 	is.False(Enum(12, []string{"a", "b"}))
 	is.False(Enum(12, nil))
+	is.False(Enum(12, map[int]int{2: 3}))
 
 	tests1 := map[interface{}]interface{}{
 		2:   []int{1, 3},

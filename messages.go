@@ -111,6 +111,8 @@ var defMessages = map[string]string{
 	"maxLength": "{field} max length is %d",
 	// string length. calc rune
 	"stringLength": "{field} length must be in the range %d - %d",
+	"stringLength1": "{field} min length is %d",
+	"stringLength2": "{field} length must be in the range %d - %d",
 
 	"isFile":  "{field} must be an uploaded file",
 	"isImage": "{field} must be an uploaded image file",

@@ -163,12 +163,12 @@ func (r *Rule) valueValidate(field, name string, isNotRequired bool, val interfa
 	argNum := len(r.arguments) + 1 // "+1" is the "val" position
 	rftVal := reflect.ValueOf(val)
 	valKind := rftVal.Kind()
-	// check arg num is match
-	if isNotRequired { // need exclude "required"
+	// check arg num is match, need exclude "required"
+	if isNotRequired {
 		//noinspection GoNilness
 		fm.checkArgNum(argNum, r.validator)
 
-		// convert val type, is first arg.
+		// convert field val type, is first argument.
 		//noinspection GoNilness
 		ft := fm.fv.Type()
 		firstTyp := ft.In(0).Kind()
@@ -210,7 +210,7 @@ func convertArgsType(v *Validation, fm *funcMeta, args []interface{}) (ok bool) 
 	for i, arg := range args {
 		av := reflect.ValueOf(arg)
 
-		// "+1" because first arg is val, need exclude it.
+		// Notice: "+1" because first arg is val, need exclude it.
 		if fm.isVariadic && i+1 >= lastArgIndex {
 			if lastTyp == av.Kind() { // type is same
 				continue

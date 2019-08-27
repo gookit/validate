@@ -18,3 +18,18 @@ func TestNew(t *testing.T) {
 
 	assert.True(t, v.Validate())
 }
+
+func TestRule_Apply(t *testing.T) {
+	is := assert.New(t)
+	mp := M{
+		"name": "inhere",
+	}
+
+	v := Map(mp)
+	v.ConfigRules(MS{
+		"name": `regex:\w+`,
+	})
+	v.AddRule("name", "stringLength", 3)
+
+	is.True(v.Validate())
+}
