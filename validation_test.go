@@ -356,7 +356,7 @@ func TestRequest(t *testing.T) {
 	is.Equal(nil, v.SafeVal("status"))
 	is.Equal("INHERE", v.SafeVal("name"))
 
-	// POST =================== form data ===================
+	// =================== POST: form data ===================
 	body := strings.NewReader("name= inhere &age=50&remember=yes&email=eml@a.com")
 	r, _ = http.NewRequest("POST", "/users", body)
 	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -387,22 +387,27 @@ func TestRequest(t *testing.T) {
 	is.Equal("eml@a.com", v.SafeVal("email"))
 	is.Equal("Inhere", v.SafeVal("name"))
 	is.Equal(true, v.SafeVal("remember"))
+}
 
-	// =================== POST file data form ===================
+func TestFromRequest_FileForm(t *testing.T) {
+	is := assert.New(t)
+
+	// =================== POST: file data form ===================
 	buf := new(bytes.Buffer)
 	mw := multipart.NewWriter(buf)
 	w, err := mw.CreateFormFile("file", "test.jpg")
 	if is.NoError(err) {
-		_, _ = w.Write([]byte("\xFF\xD8\xFF")) // write file content
+		// write file content, this is jpg file start content
+		_, _ = w.Write([]byte("\xFF\xD8\xFF"))
 	}
 	_ = mw.WriteField("age", "24")
 	_ = mw.WriteField("name", "inhere")
 	_ = mw.Close()
 
-	r, _ = http.NewRequest("POST", "/users", buf)
+	r, _ := http.NewRequest("POST", "/users", buf)
 	r.Header.Set("Content-Type", mw.FormDataContentType())
 	// - create data
-	d, err = FromRequest(r, defaultMaxMemory)
+	d, err := FromRequest(r, defaultMaxMemory)
 	is.NoError(err)
 	fd, ok := d.(*FormData)
 	is.True(ok)
@@ -418,8 +423,9 @@ func TestRequest(t *testing.T) {
 	is.NoError(err)
 	is.Equal("", fd.FileMimeType("not-exist"))
 	is.Equal("image/jpeg", fd.FileMimeType("file"))
+
 	// - create validation
-	v = d.Validation()
+	v := d.Validation()
 	v.StringRules(MS{
 		"age":  "min:1",
 		"file": "required|mimeTypes:image/jpeg,image/jpg",
@@ -427,6 +433,7 @@ func TestRequest(t *testing.T) {
 	v.AddRule("name", "alpha")
 	v.AddRule("file", "file")
 	v.AddRule("file", "image", "jpg", "jpeg")
+	v.AddRule("file", "mimeTypes", "image/jpeg")
 	v.Validate()
 	is.True(v.IsOK())
 
@@ -436,15 +443,26 @@ func TestRequest(t *testing.T) {
 	ok = v.InMimeTypes(fd, "not-exist", "image/jpg")
 	is.False(ok)
 
-	// =================== POST JSON body ===================
-	body = strings.NewReader(`{
+	// clear rules
+	v.Reset()
+	v.AddRule("file", "mimes")
+	is.PanicsWithValue("validate: not enough parameters for validator 'mimes'!", func() {
+		v.Validate()
+	})
+}
+
+func TestFromRequest_JSON(t *testing.T) {
+	is := assert.New(t)
+
+	// =================== POST: JSON body ===================
+	body := strings.NewReader(`{
 	"name": " inhere ",
 	"age": 100
 }`)
-	r, _ = http.NewRequest("POST", "/users", body)
+	r, _ := http.NewRequest("POST", "/users", body)
 	r.Header.Set("Content-Type", "application/json")
 	// - create data
-	d, err = FromRequest(r)
+	d, err := FromRequest(r)
 	is.Nil(err)
 	user := &struct {
 		Age  int
@@ -456,8 +474,9 @@ func TestRequest(t *testing.T) {
 	is.Nil(err)
 	is.Equal(100, user.Age)
 	is.Equal(" inhere ", user.Name)
+
 	// - create validation
-	v = d.Create()
+	v := d.Create()
 	v.StringRule("name", "-", "trim|upper")
 	v.Validate() // validate
 	is.True(v.IsOK())

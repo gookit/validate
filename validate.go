@@ -122,12 +122,9 @@ func (r *Rule) fileValidate(field, name string, v *Validation) uint8 {
 	case "isImage":
 		ok = v.IsImage(form, field, ss...)
 	case "inMimeTypes":
-		ln := len(ss)
-		if ln == 0 {
-			return statusFail
-		}
-
-		if ln == 1 {
+		if ln := len(ss); ln == 0 {
+			panicf("not enough parameters for validator '%s'!", r.validator)
+		} else if ln == 1 {
 			//noinspection GoNilness
 			ok = v.InMimeTypes(form, field, ss[0])
 		} else { // ln > 1

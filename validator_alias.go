@@ -110,6 +110,7 @@ var validatorAliases = map[string]string{
 	"img":       "isImage",
 	"file":      "isFile",
 	"image":     "isImage",
+	"mime":      "inMimeTypes",
 	"mimes":     "inMimeTypes",
 	"mimeType":  "inMimeTypes",
 	"mimeTypes": "inMimeTypes",
