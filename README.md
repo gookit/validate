@@ -27,6 +27,10 @@ The package is a generic Go data validate and filter tool library.
 
 ## Validate Struct
 
+With the TAG tag of the structure, you can quickly verify a structure data.
+
+And provides extended functionality:
+
 The struct can implement three interface methods, which is convenient to do some customization:
 
 - `ConfigValidation(v *Validation)` will be called after the validator instance is created
@@ -95,6 +99,8 @@ func main() {
 
 ## Validate Map
 
+You can also validate a MAP data directly.
+
 ```go
 package main
 
@@ -129,6 +135,7 @@ func main()  {
 	// })
 	
 	if v.Validate() { // validate ok
+		safeData := v.SafeData()
 		// do something ...
 	} else {
 		fmt.Println(v.Errors) // all error messages
@@ -138,6 +145,8 @@ func main()  {
 ```
 
 ## Validate Request
+
+If it is an HTTP request, you can quickly validate the data and pass the verification. Then bind the secure data to the structure.
 
 ```go
 package main
@@ -149,6 +158,17 @@ import (
 
 	"github.com/gookit/validate"
 )
+
+// UserForm struct
+type UserForm struct {
+	Name     string
+	Email    string
+	Age      int
+	CreateAt int
+	Safe     int
+	UpdateAt time.Time
+	Code     string
+}
 
 func main()  {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -164,9 +184,15 @@ func main()  {
 		v.AddRule("name", "required")
 		v.AddRule("name", "minLen", 7)
 		v.AddRule("age", "max", 99)
-		
+		v.FieldRule("code", "required|regex:\d{4,6}")
+
 		if v.Validate() { // validate ok
+			// safeData := v.SafeData()
+			userForm := &UserForm{}
+			v.BindSafeData(userForm)
+			
 			// do something ...
+			fmt.Println(userForm.Name)
 		} else {
 			fmt.Println(v.Errors) // all error messages
 			fmt.Println(v.Errors.One()) // returns a random error message text
@@ -224,11 +250,11 @@ type GlobalOption struct {
 Usage:
 
 ```go
-	// change global opts
-	validate.Config(func(opt *validate.GlobalOption) {
-		opt.StopOnError = false
-		opt.SkipOnEmpty = false
-	})
+// change global opts
+validate.Config(func(opt *validate.GlobalOption) {
+	opt.StopOnError = false
+	opt.SkipOnEmpty = false
+})
 ```
 
 ### Add Custom Validator
@@ -243,16 +269,16 @@ Usage:
 You can add one or more custom validators at once.
 
 ```go
-	validate.AddValidator("myCheck0", func(val interface{}) bool {
+validate.AddValidator("myCheck0", func(val interface{}) bool {
+	// do validate val ...
+	return true
+})
+validate.AddValidators(M{
+	"myCheck1": func(val interface{}) bool {
 		// do validate val ...
 		return true
-	})
-	validate.AddValidators(M{
-		"myCheck1": func(val interface{}) bool {
-			// do validate val ...
-			return true
-		},
-	})
+	},
+})
 ```
 
 #### Add Temporary Validator
@@ -260,17 +286,17 @@ You can add one or more custom validators at once.
 Again, you can add one or more custom validators at once.
 
 ```go
-	v := validate.Struct(u)
-	v.AddValidator("myFunc3", func(val interface{}) bool {
+v := validate.Struct(u)
+v.AddValidator("myFunc3", func(val interface{}) bool {
+	// do validate val ...
+	return true
+})
+v.AddValidators(M{
+	"myFunc4": func(val interface{}) bool {
 		// do validate val ...
 		return true
-	})
-	v.AddValidators(M{
-		"myFunc4": func(val interface{}) bool {
-			// do validate val ...
-			return true
-		},
-	})
+	},
+})
 ```
 
 <a id="built-in-filters"></a>
