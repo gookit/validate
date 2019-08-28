@@ -184,7 +184,7 @@ func main()  {
 		v.AddRule("name", "required")
 		v.AddRule("name", "minLen", 7)
 		v.AddRule("age", "max", 99)
-		v.FieldRule("code", "required|regex:\d{4,6}")
+		v.FieldRule("code", `required|regex:\d{4,6}`)
 
 		if v.Validate() { // validate ok
 			// safeData := v.SafeData()
