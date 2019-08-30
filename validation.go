@@ -462,6 +462,12 @@ func (v *Validation) Get(key string) (interface{}, bool) {
 		return val, true
 	}
 
+	// find from validated data. (such as has default value)
+	if val, ok := v.safeData[key]; ok {
+		return val, true
+	}
+
+	// get from source data
 	return v.data.Get(key)
 }
 

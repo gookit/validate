@@ -95,9 +95,7 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 	return false
 }
 
-// func (r *Rule) doValidating() {
-//
-// }
+// func (r *Rule) doValidating() {}
 
 func (r *Rule) fileValidate(field, name string, v *Validation) uint8 {
 	// check data source
@@ -188,6 +186,71 @@ func (r *Rule) valueValidate(field, name string, isNotRequired bool, val interfa
 	return callValidator(v, fm, field, val, r.arguments)
 }
 
+func callValidator(v *Validation, fm *funcMeta, field string, val interface{}, args []interface{}) (ok bool) {
+	// 1. args data type convert
+	if ok = convertArgsType(v, fm, args); !ok {
+		return
+	}
+
+	// 2. call built in validator
+	switch fm.name {
+	case "required":
+		ok = v.Required(field, val)
+	case "lt":
+		ok = Lt(val, args[0].(int64))
+	case "gt":
+		ok = Gt(val, args[0].(int64))
+	case "min":
+		ok = Min(val, args[0].(int64))
+	case "max":
+		ok = Max(val, args[0].(int64))
+	case "enum":
+		ok = Enum(val, args[0])
+	case "notIn":
+		ok = NotIn(val, args[0])
+	case "isInt":
+		if argLn := len(args); argLn == 0 {
+			ok = IsInt(val)
+		} else if argLn == 1 {
+			ok = IsInt(val, args[0].(int64))
+		} else { // argLn == 2
+			ok = IsInt(val, args[0].(int64), args[1].(int64))
+		}
+	case "isString":
+		if argLn := len(args); argLn == 0 {
+			ok = IsString(val)
+		} else if argLn == 1 {
+			ok = IsString(val, args[0].(int))
+		} else { // argLn == 2
+			ok = IsString(val, args[0].(int), args[1].(int))
+		}
+	case "isNumber":
+		ok = IsNumber(val.(string))
+	case "length":
+		ok = Length(val, args[0].(int))
+	case "minLength":
+		ok = MinLength(val, args[0].(int))
+	case "maxLength":
+		ok = MaxLength(val, args[0].(int))
+	case "stringLength":
+		if argLn := len(args); argLn == 1 {
+			ok = RuneLength(val, args[0].(int))
+		} else if argLn == 2 {
+			ok = RuneLength(val, args[0].(int), args[1].(int))
+		}
+	case "regexp":
+		ok = Regexp(val.(string), args[0].(string))
+	case "between":
+		ok = Between(val, args[0].(int64), args[1].(int64))
+	case "isJSON":
+		ok = IsJSON(val.(string))
+	default:
+		// 3. call user custom validators, will call by reflect
+		ok = callValidatorValue(fm.fv, val, args)
+	}
+	return
+}
+
 // convert args data type
 func convertArgsType(v *Validation, fm *funcMeta, args []interface{}) (ok bool) {
 	ft := fm.fv.Type()
@@ -256,71 +319,6 @@ func convertArgsType(v *Validation, fm *funcMeta, args []interface{}) (ok bool) 
 	}
 
 	return true
-}
-
-func callValidator(v *Validation, fm *funcMeta, field string, val interface{}, args []interface{}) (ok bool) {
-	// 1. args data type convert
-	if ok = convertArgsType(v, fm, args); !ok {
-		return
-	}
-
-	// 2. call built in validator
-	switch fm.name {
-	case "required":
-		ok = v.Required(field, val)
-	case "lt":
-		ok = Lt(val, args[0].(int64))
-	case "gt":
-		ok = Gt(val, args[0].(int64))
-	case "min":
-		ok = Min(val, args[0].(int64))
-	case "max":
-		ok = Max(val, args[0].(int64))
-	case "enum":
-		ok = Enum(val, args[0])
-	case "notIn":
-		ok = NotIn(val, args[0])
-	case "isInt":
-		if argLn := len(args); argLn == 0 {
-			ok = IsInt(val)
-		} else if argLn == 1 {
-			ok = IsInt(val, args[0].(int64))
-		} else { // argLn == 2
-			ok = IsInt(val, args[0].(int64), args[1].(int64))
-		}
-	case "isString":
-		if argLn := len(args); argLn == 0 {
-			ok = IsString(val)
-		} else if argLn == 1 {
-			ok = IsString(val, args[0].(int))
-		} else { // argLn == 2
-			ok = IsString(val, args[0].(int), args[1].(int))
-		}
-	case "isNumber":
-		ok = IsNumber(val.(string))
-	case "length":
-		ok = Length(val, args[0].(int))
-	case "minLength":
-		ok = MinLength(val, args[0].(int))
-	case "maxLength":
-		ok = MaxLength(val, args[0].(int))
-	case "stringLength":
-		if argLn := len(args); argLn == 1 {
-			ok = RuneLength(val, args[0].(int))
-		} else if argLn == 2 {
-			ok = RuneLength(val, args[0].(int), args[1].(int))
-		}
-	case "regexp":
-		ok = Regexp(val.(string), args[0].(string))
-	case "between":
-		ok = Between(val, args[0].(int64), args[1].(int64))
-	case "isJSON":
-		ok = IsJSON(val.(string))
-	default:
-		// 3. call user custom validators, will call by reflect
-		ok = callValidatorValue(fm.fv, val, args)
-	}
-	return
 }
 
 func callValidatorValue(fv reflect.Value, val interface{}, args []interface{}) bool {

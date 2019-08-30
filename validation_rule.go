@@ -1,6 +1,8 @@
 package validate
 
-import "strings"
+import (
+	"strings"
+)
 
 // Rules definition
 type Rules []*Rule
@@ -44,7 +46,7 @@ type Rule struct {
 	emptyChecker func(val interface{}) bool
 }
 
-// NewRule instance
+// NewRule create new Rule instance
 func NewRule(fields, validator string, args ...interface{}) *Rule {
 	return &Rule{
 		fields: stringSplit(fields, ","),
@@ -68,6 +70,11 @@ func (r *Rule) SetOptional(optional bool) {
 // SetSkipEmpty skip validate not exist field/empty value
 func (r *Rule) SetSkipEmpty(skipEmpty bool) {
 	r.skipEmpty = skipEmpty
+}
+
+// SetDefValue for the rule
+func (r *Rule) SetDefValue(defValue interface{}) {
+	r.defValue = defValue
 }
 
 // SetCheckFunc set custom validate func.
@@ -165,6 +172,9 @@ func (v *Validation) StringRule(field, rule string, filterRule ...string) *Valid
 			args := parseArgString(list[1])
 			name := ValidatorName(list[0])
 			switch name {
+			// eg 'regex:\d{4,6}' dont need split
+			case "regexp":
+				v.AddRule(field, list[0], list[1])
 			// some special validator. need merge args to one.
 			case "enum", "notIn":
 				v.AddRule(field, list[0], args)
