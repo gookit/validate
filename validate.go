@@ -75,7 +75,9 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 		}
 
 		// empty value AND skip on empty.
-		if r.skipEmpty && isNotRequired && IsEmpty(val) {
+		// checkDefault assume exist value is valid even it's empty
+		if !(v.CheckDefault && exist) && // is exist in CheckDefault should not skip
+			r.skipEmpty && isNotRequired && IsEmpty(val) {
 			continue
 		}
 

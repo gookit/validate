@@ -67,6 +67,15 @@ type Validation struct {
 	StopOnError bool
 	// SkipOnEmpty Skip check on field not exist or value is empty
 	SkipOnEmpty bool
+	// CheckDefault whether validate the default value
+	// Extend and little constrain SkipOnEmpty option.
+	// Allow provide validation for default type values(bool:false, int:0, string:"") for sending their validation errors
+	// for example:
+	// required|min:1 with StopOnError=false,SkipOnEmpty=true,CheckDefault=true
+	// or min:1|required with StopOnError=false,SkipOnEmpty=true,CheckDefault=true
+	// in case of pulling zero value through JSON, MAP OR REQUEST tell that value should be at least 1 and won't argue
+	// about required case
+	CheckDefault bool
 	// CachingRules switch. default is False
 	// CachingRules bool
 	// mark has error occurs
