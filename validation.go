@@ -36,8 +36,10 @@ type GlobalOption struct {
 	StopOnError bool
 	// SkipOnEmpty Skip check on field not exist or value is empty
 	SkipOnEmpty bool
-	// CheckDefault whether validate the default value
+	// CheckDefault Whether to validate the default value set by the user
 	CheckDefault bool
+	// CheckZero Whether validate the default zero value. (intX,uintX: 0, string: "")
+	CheckZero bool
 }
 
 var globalOpt = &GlobalOption{
@@ -67,8 +69,12 @@ type Validation struct {
 	StopOnError bool
 	// SkipOnEmpty Skip check on field not exist or value is empty
 	SkipOnEmpty bool
+	// CheckDefault Whether to validate the default value set by the user
+	CheckDefault bool
 	// CachingRules switch. default is False
 	// CachingRules bool
+	// save user set default values
+	defValues map[string]interface{}
 	// mark has error occurs
 	hasError bool
 	// mark is filtered
@@ -521,6 +527,21 @@ func (v *Validation) Set(field string, val interface{}) error {
 	}
 
 	return v.data.Set(field, val)
+}
+
+// SetDefValue set an default value of given field
+func (v *Validation) SetDefValue(field string, val interface{}) {
+	if v.defValues == nil {
+		v.defValues = make(map[string]interface{})
+	}
+
+	v.defValues[field] = val
+}
+
+// GetDefValue get default value of the field
+func (v *Validation) GetDefValue(field string) (interface{}, bool) {
+	defVal, ok := v.defValues[field]
+	return defVal, ok
 }
 
 // Trans get message Translator

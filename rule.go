@@ -35,7 +35,7 @@ type Rule struct {
 	validator string
 	// arguments for the validator
 	arguments []interface{}
-	// --- some hook functions
+	// --- some hooks function
 	// has beforeFunc. if return false, skip validate current rule
 	beforeFunc func(field string, v *Validation) bool // func (val interface{}) bool
 	// you can custom filter func
@@ -172,6 +172,9 @@ func (v *Validation) StringRule(field, rule string, filterRule ...string) *Valid
 			args := parseArgString(list[1])
 			name := ValidatorName(list[0])
 			switch name {
+			// add default value for the field
+			case "default":
+				v.SetDefValue(field, list[1])
 			// eg 'regex:\d{4,6}' dont need split
 			case "regexp":
 				v.AddRule(field, list[0], list[1])

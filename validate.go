@@ -58,9 +58,25 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 
 		// get field value.
 		val, exist := v.Get(field)
-		// not exist AND r.optional=true. skip check.
-		if !exist && r.optional {
-			continue
+		// field not exist
+		if !exist {
+			defVal, ok := v.GetDefValue(field)
+			// has default value
+			if ok {
+				val = defVal
+				// if err = v.Set(field, val); err != nil {
+				// 	panicf(err.Error())
+				// }
+
+				// dont need check default value
+				if !v.CheckDefault {
+					// save validated value.
+					v.safeData[field] = val
+					continue
+				}
+			} else if r.optional { // r.optional=true. skip check.
+				continue
+			}
 		}
 
 		// apply filter func.
@@ -70,7 +86,7 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 				return true
 			}
 
-			// save filtered value.
+			// save filtered value. TODO update raw value
 			v.filteredData[field] = val
 		}
 
