@@ -35,3 +35,25 @@ func TestRule_Apply(t *testing.T) {
 
 	is.True(v.Validate())
 }
+
+func TestStructUseDefault(t *testing.T) {
+	is := assert.New(t)
+
+	type user struct {
+		Name string `validate:"required|default:tom" filter:"trim|upper"`
+		Age int
+	}
+
+	u := &user{Age: 90}
+	v := New(u)
+	is.True(v.Validate())
+	is.Equal("tom", u.Name)
+
+	// check/filter default value
+	u = &user{Age: 90}
+	v = New(u)
+	v.CheckDefault = true
+
+	is.True(v.Validate())
+	is.Equal("TOM", u.Name)
+}

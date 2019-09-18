@@ -21,9 +21,9 @@ func TestFilterOnStruct(t *testing.T) {
 	v := New(u)
 	ris.True(v.Validate())
 
-	// dont change raw data.
-	ris.Equal("one", u.Tres)
-	ris.Equal("inhere", u.Name)
+	// since 1.1.4 filtered value will update to source
+	ris.Equal("ONE", u.Tres)
+	ris.Equal("INHERE", u.Name)
 
 	// bind filtering and validated data to struct
 	err := v.BindSafeData(u)

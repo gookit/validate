@@ -73,9 +73,9 @@ func (r *Rule) SetSkipEmpty(skipEmpty bool) {
 }
 
 // SetDefValue for the rule
-func (r *Rule) SetDefValue(defValue interface{}) {
-	r.defValue = defValue
-}
+// func (r *Rule) SetDefValue(defValue interface{}) {
+// 	r.defValue = defValue
+// }
 
 // SetCheckFunc set custom validate func.
 func (r *Rule) SetCheckFunc(checkFunc interface{}) *Rule {

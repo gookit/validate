@@ -58,15 +58,18 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 
 		// get field value.
 		val, exist := v.Get(field)
+		// 	if sd, ok := v.data.(*StructData); ok {}
+
 		// field not exist
 		if !exist {
 			defVal, ok := v.GetDefValue(field)
 			// has default value
 			if ok {
 				val = defVal
-				// if err = v.Set(field, val); err != nil {
-				// 	panicf(err.Error())
-				// }
+				// update source data field value
+				if err = v.updateValue(field, val); err != nil {
+					panicf(err.Error())
+				}
 
 				// dont need check default value
 				if !v.CheckDefault {
@@ -74,6 +77,9 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 					v.safeData[field] = val
 					continue
 				}
+
+				// go on check custom default value
+				exist = true
 			} else if r.optional { // r.optional=true. skip check.
 				continue
 			}
@@ -86,7 +92,15 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 				return true
 			}
 
-			// save filtered value. TODO update raw value
+			// TODO update source field value
+			if v.UpdateSource {
+				err = v.data.Set(field, val)
+				if err != nil {
+					panicf(err.Error())
+				}
+			}
+
+			// save filtered value.
 			v.filteredData[field] = val
 		}
 

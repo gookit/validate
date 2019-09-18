@@ -36,6 +36,8 @@ type GlobalOption struct {
 	StopOnError bool
 	// SkipOnEmpty Skip check on field not exist or value is empty
 	SkipOnEmpty bool
+	// UpdateSource Whether to update source field value, useful for struct validate
+	UpdateSource bool
 	// CheckDefault Whether to validate the default value set by the user
 	CheckDefault bool
 	// CheckZero Whether validate the default zero value. (intX,uintX: 0, string: "")
@@ -69,6 +71,8 @@ type Validation struct {
 	StopOnError bool
 	// SkipOnEmpty Skip check on field not exist or value is empty
 	SkipOnEmpty bool
+	// UpdateSource Whether to update source field value, useful for struct validate
+	UpdateSource bool
 	// CheckDefault Whether to validate the default value set by the user
 	CheckDefault bool
 	// CachingRules switch. default is False
@@ -527,6 +531,17 @@ func (v *Validation) Set(field string, val interface{}) error {
 	}
 
 	return v.data.Set(field, val)
+}
+
+// only update set value by key for struct
+func (v *Validation) updateValue(field string, val interface{}) error {
+	// data is struct
+	if _, ok := v.data.(*StructData); ok {
+		return v.data.Set(field, val)
+	}
+
+	// TODO dont update value for Form and Map data source
+	return nil
 }
 
 // SetDefValue set an default value of given field

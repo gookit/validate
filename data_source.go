@@ -16,15 +16,15 @@ import (
 	"github.com/gookit/filter"
 )
 
-// type sourceType uint8
-// const (
-// from user setting, unmarshal JSON
-// sourceMap sourceType = iota + 1
-// from URL.Values, PostForm. contains Files data
-// sourceForm
-// from user setting
-// sourceStruct
-// )
+type sourceType uint8
+const (
+	// from user setting, unmarshal JSON
+	sourceMap sourceType = iota + 1
+	// from URL.Values, PostForm. contains Files data
+	sourceForm
+	// from user setting
+	sourceStruct
+)
 
 var timeType = reflect.TypeOf(time.Time{})
 
@@ -42,6 +42,7 @@ type UnmarshalFunc func(data []byte, v interface{}) error
 
 // DataFace interface definition
 type DataFace interface {
+	Type() uint8
 	Get(key string) (interface{}, bool)
 	Set(field string, val interface{}) error
 	// validation instance create func
@@ -69,6 +70,11 @@ type MapData struct {
 /*************************************************************
  * Map data operate
  *************************************************************/
+
+// Type get
+func (d *MapData) Type() uint8 {
+	return uint8(sourceMap)
+}
 
 // Set value by key
 func (d *MapData) Set(field string, val interface{}) error {
@@ -157,7 +163,7 @@ type StructData struct {
 	// field names in the src struct
 	fieldNames map[string]int
 	// field values cache
-	fieldValues map[string]reflect.Value
+	fieldValues map[string]interface{}
 	// FilterTag name in the struct tags.
 	FilterTag string
 	// ValidateTag name in the struct tags.
@@ -176,6 +182,11 @@ var (
 	ftFaceType = reflect.TypeOf(new(FieldTranslatorFace)).Elem()
 	cvFaceType = reflect.TypeOf(new(ConfigValidationFace)).Elem()
 )
+
+// Type get
+func (d *StructData) Type() uint8 {
+	return uint8(sourceStruct)
+}
 
 // Create a Validation from the StructData
 func (d *StructData) Create(err ...error) *Validation {
@@ -213,6 +224,8 @@ func (d *StructData) Validation(err ...error) *Validation {
 		v.WithMessages(vs[0].Interface().(map[string]string))
 	}
 
+	// for struct, default update source value
+	v.UpdateSource = true
 	return v
 }
 
@@ -236,6 +249,10 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 		}
 
 		d.fieldNames[name] = 1
+		// TODO cache field values
+		// if vt.Field(i).Type.Kind() != reflect.Struct {
+		// 	d.fieldValues[name] = d.value.Field(i).Interface()
+		// }
 
 		// validate rule
 		vRule := vt.Field(i).Tag.Get(d.ValidateTag)
@@ -259,6 +276,11 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 func (d *StructData) Get(field string) (interface{}, bool) {
 	var fv reflect.Value
 	field = filter.UpperFirst(field)
+
+	// TODO get from caches
+	// if val, ok := d.fieldValues[field]; ok {
+	// 	return val, true
+	// }
 
 	// found field
 	if d.HasField(field) {
@@ -285,6 +307,11 @@ func (d *StructData) Get(field string) (interface{}, bool) {
 		}
 	}
 
+	// up: if is zero value, as not exist.
+	if fv.IsZero() {
+		return nil, false
+	}
+
 	return fv.Interface(), true
 }
 
@@ -309,7 +336,6 @@ func (d *StructData) Set(field string, val interface{}) error {
 // FuncValue get func value in the src struct
 func (d *StructData) FuncValue(name string) (reflect.Value, bool) {
 	fv := d.value.MethodByName(filter.UpperFirst(name))
-
 	return fv, fv.IsValid()
 }
 
@@ -359,6 +385,11 @@ func newFormData() *FormData {
 /*************************************************************
  * Form data operate
  *************************************************************/
+
+// Type get
+func (d *FormData) Type() uint8 {
+	return uint8(sourceForm)
+}
 
 // Create a Validation from data
 func (d *FormData) Create(err ...error) *Validation {
@@ -427,7 +458,7 @@ func (d *FormData) Set(field string, val interface{}) (err error) {
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64:
 		d.Form.Set(field, fmt.Sprint(val))
 	default:
-		err = ErrSetValue
+		err = fmt.Errorf("set value failure for filed: %s", field)
 	}
 	return
 }

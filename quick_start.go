@@ -29,6 +29,10 @@ func New(data interface{}, scene ...string) *Validation {
 	return Struct(data, scene...)
 }
 
+// TODO since v1.2 ...
+// func NewWithOptions(data interface{}, func(Options))  {
+// }
+
 // Map validation create
 func Map(m map[string]interface{}, scene ...string) *Validation {
 	return FromMap(m).Create().SetScene(scene...)
@@ -96,7 +100,7 @@ func FromStruct(s interface{}) (*StructData, error) {
 		ValidateTag: globalOpt.ValidateTag,
 		// init map
 		fieldNames:  make(map[string]int),
-		fieldValues: make(map[string]reflect.Value),
+		fieldValues: make(map[string]interface{}),
 	}
 
 	if s == nil {

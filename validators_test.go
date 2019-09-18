@@ -382,6 +382,11 @@ func TestStringCheck(t *testing.T) {
 	is.True(IsHexadecimal("0a23"))
 	is.False(IsHexadecimal(""))
 
+	// IsCnMobile
+	is.True(IsCnMobile("13677778888"))
+	is.False(IsCnMobile("136777888"))
+	is.False(IsISBN10(""))
+
 	// IsISBN10
 	is.True(IsISBN10("0596528310"))
 	is.False(IsISBN10(""))

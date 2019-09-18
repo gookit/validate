@@ -379,7 +379,7 @@ func TestRequest(t *testing.T) {
 	v.Validate() // validate
 	// fmt.Println(v.Errors, v.safeData)
 	is.True(v.IsOK())
-
+fmt.Println(v.Errors)
 	val, ok := v.Safe("name")
 	is.True(ok)
 	is.Equal("Inhere", val)
