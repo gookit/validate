@@ -341,21 +341,6 @@ func TestStringCheck(t *testing.T) {
 	is.True(IsDNSName("8.8.8.8"))
 	is.False(IsDNSName(""))
 
-	// HasURLSchema
-	is.True(HasURLSchema("http://a.com"))
-	is.False(HasURLSchema("abd://a.com"))
-	is.False(HasURLSchema("/ab/cd"))
-
-	// IsURL
-	is.True(IsURL("a.com?p=1"))
-	is.True(IsURL("http://a.com?p=1"))
-	is.True(IsURL("/users/profile/1"))
-	is.False(IsURL(""))
-
-	// IsDataURI
-	is.True(IsDataURI("data:image/gif;base64,AB...CD..."))
-	is.False(IsDataURI(""))
-
 	// IsMAC
 	is.True(IsMAC("01:23:45:67:89:ab"))
 	is.False(IsMAC("123 abc"))
@@ -449,6 +434,41 @@ func TestStringCheck(t *testing.T) {
 
 	// Regexp
 	is.True(Regexp("123", "[0-9]+"))
+}
+
+func TestURLString(t *testing.T) {
+	is := assert.New(t)
+
+	// HasURLSchema
+	is.True(HasURLSchema("http://a.com"))
+	is.False(HasURLSchema("abd://a.com"))
+	is.False(HasURLSchema("/ab/cd"))
+
+	// IsURL
+	is.True(IsURL("a.com?p=1"))
+	is.True(IsURL("http://a.com?p=1"))
+	is.True(IsURL("/users/profile/1"))
+	is.True(IsURL("123"))
+	is.False(IsURL(""))
+
+	// IsFullURL
+	is.True(IsFullURL("http://a.com?p=1"))
+	is.True(IsFullURL("http://www.a.com"))
+	is.True(IsFullURL("https://www.a.com"))
+	is.True(IsFullURL("http://a.com?p=1&c=b"))
+	is.True(IsFullURL("http://a.com/ab/index"))
+	is.True(IsFullURL("http://a.com/ab/index?p=1&c=b"))
+	is.True(IsFullURL("http://www.a.com/ab/index?p=1&c=b"))
+	is.False(IsFullURL(""))
+	is.False(IsFullURL("a.com"))
+	is.False(IsFullURL("a.com/ab/c"))
+	is.False(IsFullURL("www.a.com"))
+	is.False(IsFullURL("www.a.com?a=1"))
+	is.False(IsFullURL("/users/profile/1"))
+
+	// IsDataURI
+	is.True(IsDataURI("data:image/gif;base64,AB...CD..."))
+	is.False(IsDataURI(""))
 }
 
 func TestPath(t *testing.T) {

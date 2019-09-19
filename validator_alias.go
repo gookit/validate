@@ -90,6 +90,8 @@ var validatorAliases = map[string]string{
 	"RGBColor":  "isRGBColor",
 	"url":       "isURL",
 	"URL":       "isURL",
+	"fullURL":   "isFullURL",
+	"fullUrl":   "isFullURL",
 	"uuid":      "isUUID",
 	"uuid3":     "isUUID3",
 	"uuid4":     "isUUID4",

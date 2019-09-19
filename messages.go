@@ -25,6 +25,7 @@ var (
 // 	{
 // 		"field": ["error msg 0", "error msg 1"]
 // 	}
+// TODO change error format [field: {validator: message}]
 type Errors map[string][]string
 
 // Empty no error
@@ -48,7 +49,6 @@ func (es Errors) One() string {
 			return ss[0]
 		}
 	}
-
 	return ""
 }
 
@@ -110,9 +110,12 @@ var defMessages = map[string]string{
 	"minLength": "{field} min length is %d",
 	"maxLength": "{field} max length is %d",
 	// string length. calc rune
-	"stringLength": "{field} length must be in the range %d - %d",
+	"stringLength":  "{field} length must be in the range %d - %d",
 	"stringLength1": "{field} min length is %d",
 	"stringLength2": "{field} length must be in the range %d - %d",
+
+	"isURL":     "{field} must be an valid URL address",
+	"isFullURL": "{field} must be an valid full URL address",
 
 	"isFile":  "{field} must be an uploaded file",
 	"isImage": "{field} must be an uploaded image file",
