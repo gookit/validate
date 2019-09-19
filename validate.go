@@ -93,11 +93,10 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 			}
 
 			// TODO update source field value
-			if v.UpdateSource {
-				err = v.data.Set(field, val)
-				if err != nil {
-					panicf(err.Error())
-				}
+			// if v.UpdateSource {}
+			err = v.updateValue(field, val)
+			if err != nil {
+				panicf(err.Error())
 			}
 
 			// save filtered value.
