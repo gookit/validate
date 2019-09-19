@@ -394,9 +394,11 @@ validator/aliases | description
 `lon/longitude/isLongitude` | Check value is Longitude string.
 `mac/isMAC` | Check value is MAC string.
 `num/number/isNumber` | Check value is number string. `>= 0`
+`cnMobile/isCnMobile` | Check value is china mobile number string.
 `printableASCII/isPrintableASCII` | Check value is PrintableASCII string.
 `rgbColor/RGBColor/isRGBColor` | Check value is RGB color string.
 `url/isURL` | Check value is URL string.
+`fullUrl/isFullURL` | Check value is full URL string(_must start with http,https_).
 `ip/isIP`  |  Check value is IP(v4 or v6) string.
 `ipv4/isIPv4`  |  Check value is IPv4 string.
 `ipv6/isIPv6`  |  Check value is IPv6 string.

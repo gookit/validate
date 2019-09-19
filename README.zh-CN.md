@@ -389,8 +389,10 @@ type GlobalOption struct {
 `lon/longitude/isLongitude` | 检查值是经度坐标
 `mac/isMAC` | 检查值是MAC字符串
 `num/number/isNumber` | 检查值是数字字符串. `>= 0`
+`cnMobile/isCnMobile` | 检查值是中国11位手机号码字符串
 `printableASCII/isPrintableASCII` | Check value is PrintableASCII string.
 `rgbColor/RGBColor/isRGBColor` | 检查值是RGB颜色字符串
+`fullUrl/isFullURL` | 检查值是完整的URL字符串(_必须以http,https开始的URL_).
 `url/isURL` | 检查值是URL字符串
 `ip/isIP`  |  检查值是IP（v4或v6）字符串
 `ipv4/isIPv4`  |  检查值是IPv4字符串
