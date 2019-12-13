@@ -7,6 +7,7 @@
 package validate
 
 import (
+	"fmt"
 	"reflect"
 )
 
@@ -30,7 +31,7 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 	var err error
 	name := ValidatorName(r.validator)
 	// validator name is not "required"
-	isNotRequired := name != "required"
+	isNotRequired := name != "required" && name != "required_if"
 
 	// validate each field
 	for _, field := range r.fields {
@@ -225,6 +226,12 @@ func callValidator(v *Validation, fm *funcMeta, field string, val interface{}, a
 	switch fm.name {
 	case "required":
 		ok = v.Required(field, val)
+	case "required_if":
+		var strArgs []string
+		for idx := range args {
+			strArgs = append(strArgs, fmt.Sprintf("%v", args[idx]))
+		}
+		ok = v.RequiredIf(field, val, strArgs...)
 	case "lt":
 		ok = Lt(val, args[0].(int64))
 	case "gt":

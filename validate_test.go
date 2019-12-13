@@ -12,9 +12,13 @@ func TestNew(t *testing.T) {
 		"name": {"inhere"},
 	})
 	v.StringRules(MS{
-		"age":  "required|strInt",
-		"name": "required|string:3|strLen:4,6",
+		"age":     "required|strInt",
+		"name":    "required|string:3|strLen:4,6",
+		//"nothing": "required_if:age,12,13,14",
 	})
+
+	//v.Validate()
+	//assert.Equal(t, v.Errors.One(), "nothing is required when age is [12 13 14]")
 
 	assert.True(t, v.Validate())
 }
@@ -41,7 +45,7 @@ func TestStructUseDefault(t *testing.T) {
 
 	type user struct {
 		Name string `validate:"required|default:tom" filter:"trim|upper"`
-		Age int
+		Age  int
 	}
 
 	u := &user{Age: 90}

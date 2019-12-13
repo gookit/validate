@@ -270,6 +270,25 @@ func (v *Validation) Required(field string, val interface{}) bool {
 	// check value
 	return !IsEmpty(val)
 }
+func (v *Validation) RequiredIf(field string, val interface{}, kvs ...string) bool {
+	if len(kvs) < 2 {
+		return false
+	}
+	k := kvs[0]
+	if d, ok := v.Get(k); ok {
+		for i := 1; i < len(kvs); i ++ {
+			if IsEqual(d, kvs[i]) {
+				if vd, ok := v.Get(field); ok {
+					return vd != nil
+				} else {
+					return false
+				}
+			}
+		}
+	}
+
+	return true
+}
 
 // EqField value should EQ the dst field value
 func (v *Validation) EqField(val interface{}, dstField string) bool {

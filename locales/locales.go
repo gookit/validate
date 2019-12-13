@@ -31,6 +31,7 @@ var zhCN = map[string]string{
 	"range": "{field} 值必须在此范围内 %d - %d",
 	// required
 	"required": "{field} 是必填项",
+	"required_if":"当 %v 的值在下列枚举中时 {sArgs}, {field} 是必填项",
 	// email
 	"email": "{field}不是合法邮箱",
 	// field compare
