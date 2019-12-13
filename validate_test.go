@@ -14,13 +14,13 @@ func TestNew(t *testing.T) {
 	v.StringRules(MS{
 		"age":     "required|strInt",
 		"name":    "required|string:3|strLen:4,6",
-		//"nothing": "required_if:age,12,13,14",
+		"nothing": "required_if:age,12,13,14",
 	})
 
-	//v.Validate()
-	//assert.Equal(t, v.Errors.One(), "nothing is required when age is [12 13 14]")
+	v.Validate()
+	assert.Equal(t, v.Errors.One(), "nothing is required when age is [12 13 14]")
 
-	assert.True(t, v.Validate())
+	//assert.True(t, v.Validate())
 }
 
 func TestRule_Apply(t *testing.T) {
