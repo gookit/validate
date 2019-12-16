@@ -8,6 +8,7 @@ package validate
 
 import (
 	"reflect"
+	"strings"
 )
 
 // const requiredValidator = "required"
@@ -30,11 +31,11 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 	var err error
 	name := ValidatorName(r.validator)
 	// validator name is not "required"
-	isNotRequired := name != "required"
+	isNotRequired := !strings.HasPrefix(name, "required")
 
 	// validate each field
 	for _, field := range r.fields {
-		if v.isNoNeedToCheck(field) {
+		if v.isNotNeedToCheck(field) {
 			continue
 		}
 
@@ -65,11 +66,14 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 			defVal, ok := v.GetDefValue(field)
 			// has default value
 			if ok {
-				val = defVal
 				// update source data field value
-				if err = v.updateValue(field, val); err != nil {
+				newVal, err := v.updateValue(field, defVal)
+				if err != nil {
 					panicf(err.Error())
 				}
+
+				// re-set value
+				val = newVal
 
 				// dont need check default value
 				if !v.CheckDefault {
@@ -92,13 +96,14 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 				return true
 			}
 
-			// TODO update source field value
-			// if v.UpdateSource {}
-			err = v.updateValue(field, val)
+			// update source field value
+			newVal, err := v.updateValue(field, val)
 			if err != nil {
 				panicf(err.Error())
 			}
 
+			// re-set value
+			val = newVal
 			// save filtered value.
 			v.filteredData[field] = val
 		}
@@ -192,9 +197,9 @@ func (r *Rule) valueValidate(field, name string, isNotRequired bool, val interfa
 		//noinspection GoNilness
 		fm.checkArgNum(argNum, r.validator)
 
-		// convert field val type, is first argument.
 		//noinspection GoNilness
 		ft := fm.fv.Type()
+		// convert field val type, is first argument.
 		firstTyp := ft.In(0).Kind()
 		if firstTyp != valKind && firstTyp != reflect.Interface {
 			ak, err := basicKind(rftVal)

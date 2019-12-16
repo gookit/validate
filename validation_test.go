@@ -379,7 +379,7 @@ func TestRequest(t *testing.T) {
 	v.Validate() // validate
 	// fmt.Println(v.Errors, v.safeData)
 	is.True(v.IsOK())
-fmt.Println(v.Errors)
+	fmt.Println(v.Errors)
 	val, ok := v.Safe("name")
 	is.True(ok)
 	is.Equal("Inhere", val)
@@ -661,9 +661,13 @@ func TestIssue2(t *testing.T) {
 	assert.True(t, ok)
 	assert.Equal(t, float64(234), val)
 
+	// int will convert to float
+	err = v.Set("A", 23)
+	assert.Nil(t, err)
+
 	// type is error
 	assert.Panics(t, func() {
-		_ = v.Set("A", 234)
+		_ = v.Set("A", "abc")
 	})
 }
 

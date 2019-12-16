@@ -47,8 +47,9 @@ func TestData(t *testing.T) {
 		"age": 45,
 	})
 
-	err := d.Set("name", "inhere")
+	nval, err := d.Set("name", "inhere")
 	is.Nil(err)
+	is.Equal("inhere", nval)
 
 	val, ok := d.Get("name")
 	is.True(ok)
@@ -66,13 +67,15 @@ func TestData(t *testing.T) {
 	is.Equal("abc", val)
 
 	// 上面的 &UserForm 必须使用地址，下面的set才能成功
-	err = sd.Set("name", "def")
+	nval, err = sd.Set("name", "def")
 	is.Nil(err)
+	is.Equal("def", nval)
 	val, ok = sd.Get("name")
 	is.True(ok)
 	is.Equal("def", val)
 
-	is.Error(sd.Set("notExist", "val"))
+	_, err = sd.Set("notExist", "val")
+	is.Error(err)
 }
 
 func TestFormData(t *testing.T) {
@@ -101,13 +104,16 @@ func TestFormData(t *testing.T) {
 	is.Equal("inhere", d.String("name"))
 	is.Equal("age=30&money=23.4&name=inhere&notify=true", d.Encode())
 
-	err := d.Set("newKey", "strVal")
+	nval, err := d.Set("newKey", "strVal")
 	is.NoError(err)
+	is.Equal("strVal", nval)
 	is.Equal("strVal", d.String("newKey"))
-	err = d.Set("newInt", 23)
+	_, err = d.Set("newInt", 23)
 	is.NoError(err)
 	is.Equal(23, d.Int("newInt"))
-	is.Error(d.Set("invalid", []int{2}))
+	_, err = d.Set("invalid", []int{2})
+	is.Error(err)
+	is.Equal("set value failure for filed: invalid", err.Error())
 
 	// form
 	d.Add("newKey1", "new val1")
@@ -182,10 +188,11 @@ func TestStructData_Create(t *testing.T) {
 	is.Nil(ret)
 
 	// set value
-	err = d.Set("protected", "new text")
+	_, err = d.Set("protected", "new text")
 	is.Error(err)
-	err = d.Set("Name", "inhere")
+	nval, err := d.Set("Name", "inhere")
 	is.Nil(err)
+	is.Equal("inhere", nval)
 	str, ok = d.Get("Name")
 	is.True(ok)
 	is.Equal("inhere", str)

@@ -14,6 +14,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/gookit/filter"
+	"github.com/gookit/goutil/mathutil"
 )
 
 // Basic regular expressions for validating strings.
@@ -1007,7 +1008,7 @@ func Lt(val interface{}, dstVal int64) bool {
 
 // Max less than or equal dst value, alias `Lte`. check for: int(X), uint(X), float(X).
 func Max(val interface{}, max int64) bool {
-	intVal, err := filter.Int64(val)
+	intVal, err := mathutil.Int64(val)
 	if err != nil {
 		return false
 	}
@@ -1222,3 +1223,5 @@ func AfterDate(srcDate, dstDate string) bool {
 
 	return st.After(dt)
 }
+
+// TODO more: IsDir IsDiskFile

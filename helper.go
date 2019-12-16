@@ -9,6 +9,8 @@ import (
 	"unicode"
 
 	"github.com/gookit/filter"
+	"github.com/gookit/goutil/mathutil"
+	"github.com/gookit/goutil/strutil"
 )
 
 // NilObject represent nil value for calling functions and should be reflected at custom filters as nil variable.
@@ -267,9 +269,9 @@ func convertType(srcVal interface{}, srcKind kind, dstType reflect.Kind) (interf
 	case stringKind:
 		switch dstType {
 		case reflect.Int:
-			return filter.Int(srcVal)
+			return mathutil.Int(srcVal)
 		case reflect.Int64:
-			return filter.Int64(srcVal)
+			return mathutil.Int64(srcVal)
 		}
 	case intKind, uintKind:
 		i64 := filter.MustInt64(srcVal)
@@ -277,7 +279,8 @@ func convertType(srcVal interface{}, srcKind kind, dstType reflect.Kind) (interf
 		case reflect.Int64:
 			return i64, nil
 		case reflect.String:
-			return fmt.Sprint(i64), nil
+			// fmt is slow : return fmt.Sprint(i64), nil
+			return strutil.ToString(srcVal)
 		}
 	}
 	return nil, nil
@@ -402,7 +405,7 @@ func indirectInterface(v reflect.Value) reflect.Value {
 // TODO: Perhaps allow comparison between signed and unsigned integers.
 
 var (
-	errBadComparisonType = errors.New("invalid type for comparison")
+	errBadComparisonType = errors.New("invalid type for operation")
 	// errBadComparison     = errors.New("incompatible types for comparison")
 	// errNoComparison      = errors.New("missing argument for comparison")
 )

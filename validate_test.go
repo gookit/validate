@@ -41,13 +41,18 @@ func TestStructUseDefault(t *testing.T) {
 
 	type user struct {
 		Name string `validate:"required|default:tom" filter:"trim|upper"`
-		Age int
+		Age  int    `validate:"uint|default:23"`
 	}
 
 	u := &user{Age: 90}
 	v := New(u)
 	is.True(v.Validate())
 	is.Equal("tom", u.Name)
+
+	u = &user{Name: "inhere"}
+	v = New(u)
+	is.True(v.Validate())
+	// fmt.Println(v.SafeData())
 
 	// check/filter default value
 	u = &user{Age: 90}

@@ -526,22 +526,25 @@ func (v *Validation) BindSafeData(ptr interface{}) error {
 
 // Set value by key
 func (v *Validation) Set(field string, val interface{}) error {
-	if v.data == nil { // check input data
+	// check input data
+	if v.data == nil {
 		return ErrEmptyData
 	}
 
-	return v.data.Set(field, val)
+	_, err := v.data.Set(field, val)
+	return err
 }
 
 // only update set value by key for struct
-func (v *Validation) updateValue(field string, val interface{}) error {
-	// data is struct
-	if _, ok := v.data.(*StructData); ok {
+func (v *Validation) updateValue(field string, val interface{}) (interface{}, error) {
+	// data source is struct
+	// if _, ok := v.data.(*StructData); ok {
+	if v.data.Type() == uint8(sourceStruct) {
 		return v.data.Set(field, val)
 	}
 
 	// TODO dont update value for Form and Map data source
-	return nil
+	return val, nil
 }
 
 // SetDefValue set an default value of given field
@@ -622,7 +625,7 @@ func (v *Validation) shouldStop() bool {
 	return v.hasError && v.StopOnError
 }
 
-func (v *Validation) isNoNeedToCheck(field string) bool {
+func (v *Validation) isNotNeedToCheck(field string) bool {
 	if len(v.sceneFields) == 0 {
 		return false
 	}
