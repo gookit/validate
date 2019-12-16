@@ -287,6 +287,82 @@ func (v *Validation) RequiredIf(field string, val interface{}, kvs ...string) bo
 	return true
 }
 
+//required_unless:anotherfield,value,...
+//The field under validation must be present and not empty unless the anotherfield field is equal to any value.
+func (v *Validation) RequiredUnless(field string, val interface{}, kvs ...string) bool {
+	if len(kvs) < 2 {
+		return false
+	}
+
+	if d, ok := v.Get(kvs[0]); ok {
+		if !Enum(d, kvs[1:]) {
+			return NotEqual(val, nil) && NotEqual(val, "")
+		}
+	}
+
+	return false
+}
+
+//The field under validation must be present and not empty only if any of the other specified fields are present.
+func (v *Validation) RequiredWith(field string, val interface{}, kvs ...string) bool {
+	if len(kvs) == 0 {
+		return false
+	}
+
+	for idx, _ := range kvs {
+		if _, b := v.Get(kvs[idx]); b {
+			return NotEqual(val, nil) && NotEqual(val, "")
+		}
+	}
+
+	return false
+}
+
+//The field under validation must be present and not empty only if all of the other specified fields are present.
+func (v *Validation) RequiredWithAll(field string, val interface{}, kvs ...string) bool {
+	if len(kvs) == 0 {
+		return false
+	}
+
+	for idx, _ := range kvs {
+		if _, b := v.Get(kvs[idx]); !b {
+			return false
+		}
+	}
+
+	return NotEqual(val, nil) && NotEqual(val, "")
+}
+
+//The field under validation must be present and not empty only when any of the other specified fields are not present.
+func (v *Validation) RequiredWithout(field string, val interface{}, kvs ...string) bool {
+	if len(kvs) == 0 {
+		return false
+	}
+
+	for idx, _ := range kvs {
+		if _, b := v.Get(kvs[idx]); !b {
+			return NotEqual(val, nil) && NotEqual(val, "")
+		}
+	}
+
+	return false
+}
+
+//The field under validation must be present and not empty only when any of the other specified fields are not present.
+func (v *Validation) RequiredWithoutAll(field string, val interface{}, kvs ...string) bool {
+	if len(kvs) == 0 {
+		return false
+	}
+
+	for idx, _ := range kvs {
+		if _, b := v.Get(kvs[idx]); b {
+			return false
+		}
+	}
+
+	return NotEqual(val, nil) && NotEqual(val, "")
+}
+
 // EqField value should EQ the dst field value
 func (v *Validation) EqField(val interface{}, dstField string) bool {
 	// get dst field value.

@@ -123,8 +123,13 @@ var defMessages = map[string]string{
 	"enum":  "{field} value must be in the enum %v",
 	"range": "{field} value must be in the range %d - %d",
 	// required
-	"required":    "{field} is required",
-	"required_if": "{field} is required when %v is {sArgs}",
+	"required":             "{field} is required",
+	"required_if":          "{field} is required when %v is {sArgs}",
+	"required_unless":      "{field} field is required unless %v is in {sArgs}",
+	"required_with":        "{field} field is required when {args} is present",
+	"required_with_all":    "{field} field is required when {args} is present",
+	"required_without":     "{field} field is required when {args} is not present",
+	"required_without_all": "{field} field is required when none of {args} are present",
 	// field compare
 	"eqField":  "{field} value must be equal the field %s",
 	"neField":  "{field} value cannot be equal the field %s",

@@ -7,7 +7,6 @@
 package validate
 
 import (
-	"fmt"
 	"reflect"
 )
 
@@ -21,6 +20,18 @@ const (
 	statusFail
 )
 
+var (
+	requiredRules = []string{
+		"required",
+		"required_if",
+		"required_unless",
+		"required_with",
+		"required_with_all",
+		"required_without",
+		"required_without_all",
+	}
+)
+
 // Apply current rule for the rule fields
 func (r *Rule) Apply(v *Validation) (stop bool) {
 	// scene name is not match. skip the rule
@@ -30,8 +41,8 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 
 	var err error
 	name := ValidatorName(r.validator)
-	// validator name is not "required"
-	isNotRequired := name != "required" && name != "required_if"
+	// validator name is not "required rules"
+	isNotRequired := !Enum(name, requiredRules)
 
 	// validate each field
 	for _, field := range r.fields {
@@ -227,11 +238,17 @@ func callValidator(v *Validation, fm *funcMeta, field string, val interface{}, a
 	case "required":
 		ok = v.Required(field, val)
 	case "required_if":
-		var strArgs []string
-		for idx := range args {
-			strArgs = append(strArgs, fmt.Sprintf("%v", args[idx]))
-		}
-		ok = v.RequiredIf(field, val, strArgs...)
+		ok = v.RequiredIf(field, val, args2strings(args)...)
+	case "required_unless":
+		ok = v.RequiredUnless(field, val, args2strings(args)...)
+	case "required_with":
+		ok = v.RequiredWith(field, val, args2strings(args)...)
+	case "required_with_all":
+		ok = v.RequiredWithAll(field, val, args2strings(args)...)
+	case "required_without":
+		ok = v.RequiredWithout(field, val, args2strings(args)...)
+	case "required_without_all":
+		ok = v.RequiredWithoutAll(field, val, args2strings(args)...)
 	case "lt":
 		ok = Lt(val, args[0].(int64))
 	case "gt":
