@@ -41,7 +41,7 @@ func TestStructUseDefault(t *testing.T) {
 
 	type user struct {
 		Name string `validate:"required|default:tom" filter:"trim|upper"`
-		Age int
+		Age  int
 	}
 
 	u := &user{Age: 90}
@@ -56,4 +56,17 @@ func TestStructUseDefault(t *testing.T) {
 
 	is.True(v.Validate())
 	is.Equal("TOM", u.Name)
+}
+
+func TestValidation_RequiredIf(t *testing.T) {
+	v := New(M{
+		"age":     "12",
+		"nothing": "",
+	})
+	v.StringRules(MS{
+		"nothing": "required_if:age,12,13,14",
+	})
+
+	v.Validate()
+	assert.Equal(t, v.Errors.One(), "nothing is required when age is [12 13 14]")
 }

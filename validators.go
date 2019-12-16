@@ -271,6 +271,22 @@ func (v *Validation) Required(field string, val interface{}) bool {
 	return !IsEmpty(val)
 }
 
+//required_if:anotherfield,value,...
+//The field under validation must be present and not empty if the anotherfield field is equal to any value.
+func (v *Validation) RequiredIf(field string, val interface{}, kvs ...string) bool {
+	if len(kvs) < 2 {
+		return false
+	}
+
+	if d, ok := v.Get(kvs[0]); ok {
+		if Enum(d, kvs[1:]) {
+			return NotEqual(val, nil) && NotEqual(val, "")
+		}
+	}
+
+	return true
+}
+
 // EqField value should EQ the dst field value
 func (v *Validation) EqField(val interface{}, dstField string) bool {
 	// get dst field value.
