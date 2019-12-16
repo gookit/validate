@@ -550,7 +550,8 @@ func IsZero(v reflect.Value) bool {
 		return math.Float64bits(real(c)) == 0 && math.Float64bits(imag(c)) == 0
 	case reflect.Array:
 		for i := 0; i < v.Len(); i++ {
-			if !v.Index(i).IsZero() {
+			// if !v.Index(i).IsZero() {
+			if !IsZero(v.Index(i)) {
 				return false
 			}
 		}
@@ -561,7 +562,8 @@ func IsZero(v reflect.Value) bool {
 		return v.Len() == 0
 	case reflect.Struct:
 		for i := 0; i < v.NumField(); i++ {
-			if !v.Field(i).IsZero() {
+			// if !v.Index(i).IsZero() {
+			if !IsZero(v.Field(i)) {
 				return false
 			}
 		}
