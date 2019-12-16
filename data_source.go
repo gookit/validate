@@ -314,7 +314,7 @@ func (d *StructData) Get(field string) (interface{}, bool) {
 	// check can interface
 	if fv.CanInterface() {
 		// up: if is zero value, as not exist.
-		if fv.IsZero() {
+		if IsZero(fv) {
 			return nil, false
 		}
 		return fv.Interface(), true
