@@ -164,8 +164,10 @@ type StructData struct {
 	valueTpy reflect.Type
 	// field names in the src struct
 	fieldNames map[string]int
-	// field values cache
+	// TODO field values cache
 	fieldValues map[string]interface{}
+	// TODO field reflect values cache
+	fieldRftValues map[string]interface{}
 	// FilterTag name in the struct tags.
 	FilterTag string
 	// ValidateTag name in the struct tags.
@@ -309,12 +311,15 @@ func (d *StructData) Get(field string) (interface{}, bool) {
 		}
 	}
 
-	// up: if is zero value, as not exist.
-	if fv.IsZero() {
-		return nil, false
+	// check can interface
+	if fv.CanInterface() {
+		// up: if is zero value, as not exist.
+		if fv.IsZero() {
+			return nil, false
+		}
+		return fv.Interface(), true
 	}
-
-	return fv.Interface(), true
+	return nil, false
 }
 
 // Set value by field name.
@@ -369,8 +374,9 @@ func (d *StructData) HasField(field string) bool {
 		return true
 	}
 
+	// has field, cache it
 	if _, ok := d.valueTpy.FieldByName(field); ok {
-		d.fieldNames[field] = 1 // cache it
+		d.fieldNames[field] = 1
 		return true
 	}
 
