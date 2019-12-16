@@ -269,7 +269,6 @@ func (v *Validation) Required(field string, val interface{}) bool {
 	return !IsEmpty(val)
 }
 
-// required_if:anotherfield,value,...
 // The field under validation must be present and not empty if the anotherfield field is equal to any value.
 func (v *Validation) RequiredIf(field string, val interface{}, kvs ...string) bool {
 	if len(kvs) < 2 {
@@ -285,7 +284,6 @@ func (v *Validation) RequiredIf(field string, val interface{}, kvs ...string) bo
 	return true
 }
 
-// required_unless:anotherfield,value,...
 // The field under validation must be present and not empty unless the anotherfield field is equal to any value.
 func (v *Validation) RequiredUnless(field string, val interface{}, kvs ...string) bool {
 	if len(kvs) < 2 {
@@ -303,7 +301,6 @@ func (v *Validation) RequiredUnless(field string, val interface{}, kvs ...string
 	return false
 }
 
-// required_with:foo,bar,...
 // The field under validation must be present and not empty only if any of the other specified fields are present.
 func (v *Validation) RequiredWith(field string, val interface{}, kvs ...string) bool {
 	if len(kvs) == 0 {
@@ -319,7 +316,6 @@ func (v *Validation) RequiredWith(field string, val interface{}, kvs ...string) 
 	return false
 }
 
-// required_with_all:foo,bar,...
 // The field under validation must be present and not empty only if all of the other specified fields are present.
 func (v *Validation) RequiredWithAll(field string, val interface{}, kvs ...string) bool {
 	if len(kvs) == 0 {
@@ -335,7 +331,6 @@ func (v *Validation) RequiredWithAll(field string, val interface{}, kvs ...strin
 	return NotEqual(val, nil) && NotEqual(val, "")
 }
 
-// required_without:foo,bar,...
 // The field under validation must be present and not empty only when any of the other specified fields are not present.
 func (v *Validation) RequiredWithout(field string, val interface{}, kvs ...string) bool {
 	if len(kvs) == 0 {
