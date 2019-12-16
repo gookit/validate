@@ -123,7 +123,13 @@ var defMessages = map[string]string{
 	"enum":  "{field} value must be in the enum %v",
 	"range": "{field} value must be in the range %d - %d",
 	// required
-	"required": "{field} is required",
+	"required":             "{field} is required",
+	"required_if":          "{field} is required when %v is {args}",
+	"required_unless":      "{field} field is required unless %v is in {args}",
+	"required_with":        "{field} field is required when {values} is present",
+	"required_with_all":    "{field} field is required when {values} is present",
+	"required_without":     "{field} field is required when {values} is not present",
+	"required_without_all": "{field} field is required when none of {values} are present",
 	// field compare
 	"eqField":  "{field} value must be equal the field %s",
 	"neField":  "{field} value cannot be equal the field %s",
@@ -225,7 +231,16 @@ func (t *Translator) Message(validator, field string, args ...interface{}) (msg 
 		field = trName
 	}
 
-	return strings.Replace(msg, "{field}", field, 1)
+	values := fmt.Sprintf("%v", args)
+	msg = strings.Replace(msg, "{values}", values, 1)
+	msg = strings.Replace(msg, "{field}", field, 1)
+
+	if len(args) > 0 {
+		args := fmt.Sprintf("%v", args[1:])
+		msg = strings.Replace(msg, "{args}", args, 1)
+	}
+
+	return strings.Split(msg, "%!(EXTRA")[0] //todo gracefully avoid exceptions when formatting strings
 }
 
 // format message for the validator

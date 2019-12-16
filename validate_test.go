@@ -35,3 +35,86 @@ func TestRule_Apply(t *testing.T) {
 
 	is.True(v.Validate())
 }
+
+func TestValidation_RequiredIf(t *testing.T) {
+	v := New(M{
+		"age":     "12",
+		"nothing": "",
+	})
+	v.StringRules(MS{
+		"nothing": "required_if:age,12,13,14",
+	})
+
+	v.Validate()
+	assert.Equal(t, v.Errors.One(), "nothing is required when age is [12 13 14]")
+}
+
+func TestValidation_RequiredUnless(t *testing.T) {
+	v := New(M{
+		"age":     "18",
+		"nothing": "",
+	})
+	v.StringRules(MS{
+		"nothing": "required_unless:age,12,13,14",
+	})
+
+	v.Validate()
+	assert.Equal(t, v.Errors.One(), "nothing field is required unless age is in [12 13 14]")
+}
+
+func TestValidation_RequiredWith(t *testing.T) {
+	v := New(M{
+		"age":     "18",
+		"name":    "test",
+		"nothing": "",
+	})
+	v.StringRules(MS{
+		"nothing": "required_with:age,name",
+	})
+
+	v.Validate()
+	assert.Equal(t, v.Errors.One(), "nothing field is required when [age name] is present")
+}
+
+func TestValidation_RequiredWithAll(t *testing.T) {
+	v := New(M{
+		"age":     "18",
+		"name":    "test",
+		"nothing": "",
+	})
+	v.StringRules(MS{
+		"nothing": "required_with:age,name,sex",
+	})
+
+	v.Validate()
+	assert.Equal(t, v.Errors.One(), "nothing field is required when [age name sex] is present")
+}
+
+
+func TestValidation_RequiredWithout(t *testing.T) {
+	v := New(M{
+		"age":     "18",
+		"name":    "test",
+		"nothing": "",
+	})
+	v.StringRules(MS{
+		"nothing": "required_with:big,sex",
+	})
+
+	v.Validate()
+	assert.Equal(t, v.Errors.One(), "nothing field is required when [big sex] is present")
+}
+
+func TestValidation_RequiredWithoutAll(t *testing.T) {
+	v := New(M{
+		"age":     "18",
+		"name":    "test",
+		"nothing": "",
+	})
+	v.StringRules(MS{
+		"nothing": "required_with:big,age",
+	})
+
+	v.Validate()
+	assert.Equal(t, v.Errors.One(), "nothing field is required when [big age] is present")
+}

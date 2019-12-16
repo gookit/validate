@@ -55,6 +55,14 @@ func strings2Args(strings []string) []interface{} {
 	return args
 }
 
+func args2strings(args []interface{}) []string {
+	strSlice := make([]string, len(args))
+	for i, s := range args {
+		strSlice[i] = fmt.Sprintf("%v", s)
+	}
+	return strSlice
+}
+
 func buildArgs(val interface{}, args []interface{}) []interface{} {
 	newArgs := make([]interface{}, len(args)+1)
 	newArgs[0] = val
