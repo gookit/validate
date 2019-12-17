@@ -88,9 +88,9 @@ func TestValidation_RequiredWithAll(t *testing.T) {
 		"nothing": "",
 	})
 	v.StringRules(MS{
-		"age":      "required_with:name,sex,city",
-		"anything": "required_with:school,city",
-		"nothing":  "required_with:age,name,sex",
+		"age":      "required_with_all:name,sex,city",
+		"anything": "required_with_all:school,city",
+		"nothing":  "required_with_all:age,name,sex",
 	})
 
 	v.Validate()
