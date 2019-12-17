@@ -102,6 +102,7 @@ var validatorAliases = map[string]string{
 	"UUID5":     "isUUID5",
 	"unixPath":  "isUnixPath",
 	"winPath":   "isWinPath",
+	"cnMobile":  "isCnMobile",
 	// date
 	"date":    "isDate",
 	"gtDate":  "afterDate",

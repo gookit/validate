@@ -333,14 +333,14 @@ filter/aliases | description
 
 validator/aliases | description
 -------------------|-------------------------------------------
-`required`  | Check value is not empty. 
-`required_if`  | required_if:anotherfield,value,... The field under validation must be present and not empty if the anotherfield field is equal to any value.
-`required_unless`  | required_unless:anotherfield,value,... The field under validation must be present and not empty unless the anotherfield field is equal to any value. 
-`required_with`  | required_with:foo,bar,... The field under validation must be present and not empty only if any of the other specified fields are present.
-`required_with_all`  | required_with_all:foo,bar,... The field under validation must be present and not empty only if all of the other specified fields are present.
-`required_without`  | required_without:foo,bar,... The field under validation must be present and not empty only when any of the other specified fields are not present.
-`required_without_all`  | required_without_all:foo,bar,... The field under validation must be present and not empty only when all of the other specified fields are not present. 
-`-/safe`  | Tag field values ​​are safe and do not require validation
+`required`  | Check value is required and cannot be empty. 
+`required_if`  | `required_if:anotherfield,value,...` The field under validation must be present and not empty if the anotherfield field is equal to any value.
+`required_unless`  | `required_unless:anotherfield,value,...` The field under validation must be present and not empty unless the anotherfield field is equal to any value. 
+`required_with`  | `required_with:foo,bar,...` The field under validation must be present and not empty only if any of the other specified fields are present.
+`required_with_all`  | `required_with_all:foo,bar,...` The field under validation must be present and not empty only if all of the other specified fields are present.
+`required_without`  | `required_without:foo,bar,...` The field under validation must be present and not empty only when any of the other specified fields are not present.
+`required_without_all`  | `required_without_all:foo,bar,...` The field under validation must be present and not empty only when all of the other specified fields are not present. 
+`-/safe`  | The field values ​​are safe and do not require validation
 `int/integer/isInt`  | Check value is `intX` `uintX` type
 `uint/isUint`  |  Check value is uint(`uintX`) type, `value >= 0`
 `bool/isBool`  |  Check value is bool string(`true`: "1", "on", "yes", "true", `false`: "0", "off", "no", "false").
@@ -399,6 +399,7 @@ validator/aliases | description
 `lon/longitude/isLongitude` | Check value is Longitude string.
 `mac/isMAC` | Check value is MAC string.
 `num/number/isNumber` | Check value is number string. `>= 0`
+`cnMobile/isCnMobile` | Check value is china mobile number string.
 `printableASCII/isPrintableASCII` | Check value is PrintableASCII string.
 `rgbColor/RGBColor/isRGBColor` | Check value is RGB color string.
 `url/isURL` | Check value is URL string.

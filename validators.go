@@ -62,6 +62,7 @@ var (
 	rxNumber    = regexp.MustCompile("^[0-9]+$")
 	rxInt       = regexp.MustCompile(Int)
 	rxFloat     = regexp.MustCompile(Float)
+	rxCnMobile  = regexp.MustCompile(`^1\d{10}$`)
 	rxHexColor  = regexp.MustCompile("^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$")
 	rxRGBColor  = regexp.MustCompile(RGBColor)
 	rxASCII     = regexp.MustCompile("^[\x00-\x7F]+$")
@@ -157,6 +158,7 @@ var (
 		"isMAC":       reflect.ValueOf(IsMAC),
 		"isMultiByte": reflect.ValueOf(IsMultiByte),
 		"isNumber":    reflect.ValueOf(IsNumber),
+		"isCnMobile":  reflect.ValueOf(IsCnMobile),
 		//
 		"hasWhitespace":    reflect.ValueOf(HasWhitespace),
 		"isHexadecimal":    reflect.ValueOf(IsHexadecimal),
@@ -835,6 +837,11 @@ func IsISBN13(s string) bool {
 // IsHexadecimal string.
 func IsHexadecimal(s string) bool {
 	return s != "" && rxHexadecimal.MatchString(s)
+}
+
+// IsCnMobile string.
+func IsCnMobile(s string) bool {
+	return s != "" && rxCnMobile.MatchString(s)
 }
 
 // IsHexColor string.

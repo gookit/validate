@@ -329,12 +329,12 @@ type GlobalOption struct {
 验证器/别名 | 描述信息
 -------------------|-------------------------------------------
 `required`  | 字段为必填项，值不能为空 
-`required_if`  | required_if:anotherfield,value,...如果其它字段 _anotherfield_ 为任一值 _value_ ，则此验证字段必须存在且不为空。
-`required_unless`  | required_unless:anotherfield,value,...如果其它字段 _anotherfield_ 不等于任一值 _value_ ，则此验证字段必须存在且不为空。 
-`required_with`  | required_with:foo,bar,... 在其他任一指定字段出现时，验证的字段才必须存在且不为空 
-`required_with_all`  | required_with_all:foo,bar,...只有在其他指定字段全部出现时，验证的字段才必须存在且不为空 
-`required_without`  | required_without:foo,bar,...在其他指定任一字段不出现时，验证的字段才必须存在且不为空
-`required_without_all`  | required_without_all:foo,bar,...只有在其他指定字段全部不出现时，验证的字段才必须存在且不为空 
+`required_if`  | `required_if:anotherfield,value,...` 如果其它字段 _anotherfield_ 为任一值 _value_ ，则此验证字段必须存在且不为空。
+`required_unless`  | `required_unless:anotherfield,value,...` 如果其它字段 _anotherfield_ 不等于任一值 _value_ ，则此验证字段必须存在且不为空。 
+`required_with`  | `required_with:foo,bar,...` 在其他任一指定字段出现时，验证的字段才必须存在且不为空 
+`required_with_all`  | `required_with_all:foo,bar,...` 只有在其他指定字段全部出现时，验证的字段才必须存在且不为空 
+`required_without`  | `required_without:foo,bar,...` 在其他指定任一字段不出现时，验证的字段才必须存在且不为空
+`required_without_all`  | `required_without_all:foo,bar,...`只有在其他指定字段全部不出现时，验证的字段才必须存在且不为空 
 `-/safe`  | 标记当前字段是安全的，无需验证
 `int/integer/isInt`  | 检查值是 `intX` `uintX` 类型
 `uint/isUint`  |  检查值是 `uintX` 类型（`value >= 0`）
@@ -394,6 +394,7 @@ type GlobalOption struct {
 `lon/longitude/isLongitude` | 检查值是经度坐标
 `mac/isMAC` | 检查值是MAC字符串
 `num/number/isNumber` | 检查值是数字字符串. `>= 0`
+`cnMobile/isCnMobile` | 检查值是中国11位手机号码字符串
 `printableASCII/isPrintableASCII` | Check value is PrintableASCII string.
 `rgbColor/RGBColor/isRGBColor` | 检查值是RGB颜色字符串
 `fullUrl/isFullURL` | 检查值是完整的URL字符串(_必须以http,https开始的URL_).
