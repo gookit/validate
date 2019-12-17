@@ -59,7 +59,6 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 
 		// get field value.
 		val, exist := v.Get(field)
-		// 	if sd, ok := v.data.(*StructData); ok {}
 
 		// field not exist
 		if !exist {
@@ -230,6 +229,18 @@ func callValidator(v *Validation, fm *funcMeta, field string, val interface{}, a
 	switch fm.name {
 	case "required":
 		ok = v.Required(field, val)
+	case "required_if":
+		ok = v.RequiredIf(field, val, args2strings(args)...)
+	case "required_unless":
+		ok = v.RequiredUnless(field, val, args2strings(args)...)
+	case "required_with":
+		ok = v.RequiredWith(field, val, args2strings(args)...)
+	case "required_with_all":
+		ok = v.RequiredWithAll(field, val, args2strings(args)...)
+	case "required_without":
+		ok = v.RequiredWithout(field, val, args2strings(args)...)
+	case "required_without_all":
+		ok = v.RequiredWithoutAll(field, val, args2strings(args)...)
 	case "lt":
 		ok = Lt(val, args[0].(int64))
 	case "gt":

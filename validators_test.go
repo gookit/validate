@@ -250,7 +250,7 @@ func TestMax(t *testing.T) {
 	is.True(Max(3, 4))
 	is.True(Max(3, 3))
 	is.True(Max(int64(3), 3))
-	// up: since 1.2 nil can convert to int64
+	// up: since 1.2 nil can convert to int64 0
 	is.True(Max(nil, 3))
 
 	// fail
@@ -371,7 +371,6 @@ func TestStringCheck(t *testing.T) {
 	// IsCnMobile
 	is.True(IsCnMobile("13677778888"))
 	is.False(IsCnMobile("136777888"))
-	is.False(IsISBN10(""))
 
 	// IsISBN10
 	is.True(IsISBN10("0596528310"))

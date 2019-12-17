@@ -102,6 +102,7 @@ var validatorAliases = map[string]string{
 	"UUID5":     "isUUID5",
 	"unixPath":  "isUnixPath",
 	"winPath":   "isWinPath",
+	"cnMobile":  "isCnMobile",
 	// date
 	"date":    "isDate",
 	"gtDate":  "afterDate",
@@ -116,6 +117,13 @@ var validatorAliases = map[string]string{
 	"mimes":     "inMimeTypes",
 	"mimeType":  "inMimeTypes",
 	"mimeTypes": "inMimeTypes",
+	// requiredXXX
+	"requiredIf":         "required_if",
+	"requiredUnless":     "required_unless",
+	"requiredWith":       "required_with",
+	"requiredWithAll":    "required_with_all",
+	"requiredWithout":    "required_without",
+	"requiredWithoutAll": "required_without_all",
 }
 
 // ValidatorName get real validator name.
