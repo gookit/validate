@@ -44,7 +44,7 @@ func TestMap(t *testing.T) {
 
 	ok := v.Validate()
 	is.False(ok)
-	is.Equal("name min length is 7", v.Errors.Get("name"))
+	is.Equal("name min length is 7", v.Errors.FieldOne("name"))
 	is.Empty(v.SafeData())
 
 	v = New(nil)
@@ -120,8 +120,8 @@ func TestErrorMessages(t *testing.T) {
 	})
 
 	is.False(v.Validate())
-	is.Equal("oldSt's err msg", v.Errors.Get("oldSt"))
-	is.Equal("newSt's err msg", v.Errors.Get("newSt"))
+	is.Equal("oldSt's err msg", v.Errors.FieldOne("oldSt"))
+	is.Equal("newSt's err msg", v.Errors.FieldOne("newSt"))
 	// test binding
 	u := struct {
 		Age  int
@@ -142,14 +142,14 @@ func TestErrorMessages(t *testing.T) {
 		"name.int": "HH, value must be INTEGER",
 	})
 	is.False(v.Validate())
-	is.Equal("HH, value must be INTEGER", v.Errors.Get("name"))
+	is.Equal("HH, value must be INTEGER", v.Errors.FieldOne("name"))
 
 	// AddMessages
 	v = Map(mpSample)
 	v.AddMessages(MS{"isInt": "value must be INTEGER!"})
 	v.AddRule("name", "isInt")
 	is.False(v.Validate())
-	is.Equal("value must be INTEGER!", v.Errors.Get("name"))
+	is.Equal("value must be INTEGER!", v.Errors.FieldOne("name"))
 }
 
 // UserForm struct
@@ -219,9 +219,9 @@ func TestStruct(t *testing.T) {
 	ok := v.Validate()
 	is.True(v.IsFail())
 	is.False(ok)
-	is.Equal("User Name min length is 7", v.Errors.Get("Name"))
-	is.Equal("oh! the UpdateAt is required", v.Errors.Get("UpdateAt"))
-	is.Equal("oh! the Extra is required", v.Errors.Get("Extra"))
+	is.Equal("User Name min length is 7", v.Errors.FieldOne("Name"))
+	is.Equal("oh! the UpdateAt is required", v.Errors.FieldOne("UpdateAt"))
+	is.Equal("oh! the Extra is required", v.Errors.FieldOne("Extra"))
 	is.Empty(v.SafeData())
 	is.Empty(v.FilteredData())
 
@@ -312,7 +312,7 @@ func TestFromQuery(t *testing.T) {
 	is.True(ok)
 	is.Equal("inhere", val)
 	is.False(v.Validate())
-	is.Equal("name min length is 7", v.Errors.Field("name")[0])
+	is.Equal("name min length is 7", v.Errors.FieldOne("name"))
 	is.Empty(v.SafeData())
 
 	v = FromQuery(data).Validation(fmt.Errorf("an error"))
@@ -546,7 +546,7 @@ func TestValidationScene(t *testing.T) {
 	is.False(ok)
 	is.Contains(v.Errors, "name")
 	is.NotContains(v.Errors, "age")
-	is.Equal("", v.Errors.Get("age"))
+	is.Equal("", v.Errors.FieldOne("age"))
 	is.Equal("name min length is 7", v.Errors.One())
 }
 

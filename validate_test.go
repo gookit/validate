@@ -64,7 +64,6 @@ func TestStructUseDefault(t *testing.T) {
 	is.Equal("TOM", u.Name)
 }
 
-
 func TestValidation_RequiredIf(t *testing.T) {
 	v := New(M{
 		"name": "lee",

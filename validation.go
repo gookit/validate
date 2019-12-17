@@ -382,7 +382,7 @@ func (v *Validation) Filtering() bool {
 	// apply rule to validate data.
 	for _, rule := range v.filterRules {
 		if err := rule.Apply(v); err != nil { // has error
-			v.AddError(filterError, err.Error())
+			v.AddError(filterError, filterError, err.Error())
 			break
 		}
 	}
@@ -418,36 +418,36 @@ func (v *Validation) AddTranslates(m map[string]string) {
 // 		"range": "oh! {field} must be in the range %d - %d",
 //  })
 func (v *Validation) WithMessages(m map[string]string) *Validation {
-	v.trans.LoadMessages(m)
+	v.trans.AddMessages(m)
 	return v
 }
 
 // AddMessages settings data. like WithMessages()
 func (v *Validation) AddMessages(m map[string]string) {
-	v.trans.LoadMessages(m)
+	v.trans.AddMessages(m)
 }
 
 // WithError add error of the validation
 func (v *Validation) WithError(err error) *Validation {
 	if err != nil {
-		v.AddError(validateError, err.Error())
+		v.AddError(validateError, validateError, err.Error())
 	}
 
 	return v
 }
 
 // AddError message for a field
-func (v *Validation) AddError(field string, msg string) {
+func (v *Validation) AddError(field, validator, msg string) {
 	if !v.hasError {
 		v.hasError = true
 	}
 
-	v.Errors.Add(field, msg)
+	v.Errors.Add(field, validator, msg)
 }
 
 // AddErrorf add a formatted error message
 func (v *Validation) AddErrorf(field, msgFormat string, args ...interface{}) {
-	v.AddError(field, fmt.Sprintf(msgFormat, args...))
+	v.AddError(field, validateError, fmt.Sprintf(msgFormat, args...))
 }
 
 func (v *Validation) convertArgTypeError(name string, argKind, wantKind reflect.Kind) {

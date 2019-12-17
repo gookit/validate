@@ -626,6 +626,5 @@ func (d FormData) FileMimeType(field string) (mime string) {
 		n, _ := io.ReadFull(file, buf[:])
 		mime = http.DetectContentType(buf[:n])
 	}
-
 	return
 }

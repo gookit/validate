@@ -17,16 +17,34 @@ var (
 )
 
 /*************************************************************
- * errors messages
+ * Validate Errors
  *************************************************************/
 
-// Errors definition.
+// example {validator0: message0, validator1: message1}
+type fieldErrors map[string]string
+
+func (fe fieldErrors) one() string {
+	for _, msg := range fe {
+		return msg
+	}
+	return "" // should never exec.
+}
+
+func (fe fieldErrors) string() string {
+	var ss []string
+	for name, msg := range fe {
+		ss = append(ss, " "+name+": "+msg)
+	}
+
+	return strings.Join(ss, "\n")
+}
+
+// Errors validate errors definition
 // Example:
 // 	{
-// 		"field": ["error msg 0", "error msg 1"]
+// 		"field": {validator: message, validator1: message1}
 // 	}
-// TODO change error format [field: {validator: message}]
-type Errors map[string][]string
+type Errors map[string]fieldErrors
 
 // Empty no error
 func (es Errors) Empty() bool {
@@ -34,41 +52,32 @@ func (es Errors) Empty() bool {
 }
 
 // Add a error for the field
-func (es Errors) Add(field, message string) {
-	if ss, ok := es[field]; ok {
-		es[field] = append(ss, message)
+func (es Errors) Add(field, validator, message string) {
+	if _, ok := es[field]; ok {
+		es[field][validator] = message
 	} else {
-		es[field] = []string{message}
+		es[field] = fieldErrors{validator: message}
 	}
 }
 
-// One returns a random error message text
+// One returns an random error message text
 func (es Errors) One() string {
 	if len(es) > 0 {
-		for _, ss := range es {
-			return ss[0]
+		for _, fe := range es {
+			return fe.one()
 		}
 	}
 	return ""
 }
 
-// Get returns a error message for the field
-func (es Errors) Get(field string) string {
-	if ms, ok := es[field]; ok {
-		return ms[0]
+// All get all errors data
+func (es Errors) All() map[string]map[string]string {
+	mm := make(map[string]map[string]string, len(es))
+
+	for field, fe := range es {
+		mm[field] = fe
 	}
-
-	return ""
-}
-
-// Field get all errors for the field
-func (es Errors) Field(field string) (fieldErs []string) {
-	return es[field]
-}
-
-// All all error get
-func (es Errors) All() map[string][]string {
-	return es
+	return mm
 }
 
 // Error string get
@@ -79,21 +88,37 @@ func (es Errors) Error() string {
 // String errors to string
 func (es Errors) String() string {
 	buf := new(bytes.Buffer)
-	for field, ms := range es {
-		buf.WriteString(fmt.Sprintf("%s:\n %s\n", field, strings.Join(ms, "\n ")))
+	for field, fe := range es {
+		buf.WriteString(fmt.Sprintf("%s:\n%s\n", field, fe.string()))
 	}
 
 	return strings.TrimSpace(buf.String())
 }
 
+// Field get all errors for the field
+func (es Errors) Field(field string) map[string]string {
+	return es[field]
+}
+
+// FieldOne returns an error message for the field
+func (es Errors) FieldOne(field string) string {
+	if fe, ok := es[field]; ok {
+		return fe.one()
+	}
+
+	return ""
+}
+
 /*************************************************************
- * validators messages
+ * Validator error messages
  *************************************************************/
 
-// default internal error message for some rules.
-var defMessages = map[string]string{
-	"_":       "{field} did not pass validate", // default message
-	"_filter": "{field} data is invalid",       // data filter error
+// default internal error messages for all validators.
+var builtinMessages = map[string]string{
+	"_": "{field} did not pass validate", // default message
+	// builtin
+	"_validate": "{field} did not pass validate", // default validate message
+	"_filter":   "{field} data is invalid",       // data filter error
 	// int value
 	"min": "{field} min value is %d",
 	"max": "{field} max value is %d",
@@ -139,6 +164,10 @@ var defMessages = map[string]string{
 	"gteField": "{field} value should be greater or equal to field %s",
 }
 
+/*************************************************************
+ * Error messages translator
+ *************************************************************/
+
 // Translator definition
 type Translator struct {
 	// field map {"field name": "display name"}
@@ -150,7 +179,7 @@ type Translator struct {
 // NewTranslator instance
 func NewTranslator() *Translator {
 	newMessages := make(map[string]string)
-	for k, v := range defMessages {
+	for k, v := range builtinMessages {
 		newMessages[k] = v
 	}
 
@@ -163,7 +192,7 @@ func NewTranslator() *Translator {
 // Reset translator to default
 func (t *Translator) Reset() {
 	newMessages := make(map[string]string)
-	for k, v := range defMessages {
+	for k, v := range builtinMessages {
 		newMessages[k] = v
 	}
 
@@ -176,8 +205,8 @@ func (t *Translator) FieldMap() map[string]string {
 	return t.fieldMap
 }
 
-// LoadMessages data to translator
-func (t *Translator) LoadMessages(data map[string]string) {
+// AddMessages data to translator
+func (t *Translator) AddMessages(data map[string]string) {
 	for n, m := range data {
 		t.messages[n] = m
 	}

@@ -452,8 +452,9 @@ func (v *Validation) LteField(val interface{}, dstField string) bool {
  *  - file validators
  *************************************************************/
 
+const fileValidators = "|isFile|isImage|inMimeTypes|"
+
 var (
-	fileValidators = "|isFile|isImage|inMimeTypes|"
 	imageMimeTypes = map[string]string{
 		"bmp": "image/bmp",
 		"gif": "image/gif",

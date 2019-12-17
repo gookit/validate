@@ -29,6 +29,7 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 	}
 
 	var err error
+	// get real validator name
 	name := ValidatorName(r.validator)
 	// validator name is not "required"
 	isNotRequired := !strings.HasPrefix(name, "required")
@@ -39,7 +40,7 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 			continue
 		}
 
-		// has beforeFunc. if return FALSE, skip validate
+		// has beforeFunc and it return FALSE, skip validate
 		if r.beforeFunc != nil && !r.beforeFunc(field, v) {
 			continue
 		}
@@ -49,7 +50,7 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 			status := r.fileValidate(field, name, v)
 			if status == statusFail {
 				// build and collect error message
-				v.AddError(field, r.errorMessage(field, r.validator, v))
+				v.AddError(field, r.validator, r.errorMessage(field, r.validator, v))
 				if v.StopOnError {
 					return true
 				}
@@ -91,7 +92,7 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 		// apply filter func.
 		if exist && r.filterFunc != nil {
 			if val, err = r.filterFunc(val); err != nil { // has error
-				v.AddError(filterError, err.Error())
+				v.AddError(filterError, filterError, err.Error())
 				return true
 			}
 
@@ -116,7 +117,7 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 		if r.valueValidate(field, name, isNotRequired, val, v) {
 			v.safeData[field] = val // save validated value.
 		} else { // build and collect error message
-			v.AddError(field, r.errorMessage(field, r.validator, v))
+			v.AddError(field, r.validator, r.errorMessage(field, r.validator, v))
 		}
 
 		// stop on error
@@ -128,7 +129,7 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 	return false
 }
 
-// func (r *Rule) doValidating() {}
+// func (r *Rule) applyOneField() {}
 
 func (r *Rule) fileValidate(field, name string, v *Validation) uint8 {
 	// check data source
