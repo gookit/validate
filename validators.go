@@ -13,8 +13,8 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/gookit/filter"
 	"github.com/gookit/goutil/mathutil"
+	"github.com/gookit/goutil/strutil"
 )
 
 // Basic regular expressions for validating strings.
@@ -489,7 +489,7 @@ func IsBool(val interface{}) bool {
 	}
 
 	if typVal, ok := val.(string); ok {
-		_, err := filter.Bool(typVal)
+		_, err := strutil.ToBool(typVal)
 		return err == nil
 	}
 	return false
@@ -967,7 +967,7 @@ func NotEqual(val, wantVal interface{}) bool {
 // IntEqual check
 func IntEqual(val interface{}, wantVal int64) bool {
 	// intVal, isInt := IntVal(val)
-	intVal, err := filter.Int64(val)
+	intVal, err := mathutil.Int64(val)
 	if err != nil {
 		return false
 	}
@@ -977,7 +977,7 @@ func IntEqual(val interface{}, wantVal int64) bool {
 
 // Gt check value greater dst value. only check for: int(X), uint(X), float(X)
 func Gt(val interface{}, dstVal int64) bool {
-	intVal, err := filter.Int64(val)
+	intVal, err := mathutil.Int64(val)
 	if err != nil {
 		return false
 	}
@@ -988,7 +988,7 @@ func Gt(val interface{}, dstVal int64) bool {
 // Min check value greater or equal dst value, alias `Gte`.
 // only check for: int(X), uint(X), float(X).
 func Min(val interface{}, min int64) bool {
-	intVal, err := filter.Int64(val)
+	intVal, err := mathutil.Int64(val)
 	if err != nil {
 		return false
 	}
@@ -998,7 +998,7 @@ func Min(val interface{}, min int64) bool {
 
 // Lt less than dst value. only check for: int(X), uint(X), float(X).
 func Lt(val interface{}, dstVal int64) bool {
-	intVal, err := filter.Int64(val)
+	intVal, err := mathutil.Int64(val)
 	if err != nil {
 		return false
 	}
@@ -1018,7 +1018,7 @@ func Max(val interface{}, max int64) bool {
 
 // Between int value in the given range.
 func Between(val interface{}, min, max int64) bool {
-	intVal, err := filter.Int64(val)
+	intVal, err := mathutil.Int64(val)
 	if err != nil {
 		return false
 	}
@@ -1050,7 +1050,7 @@ func Enum(val, enum interface{}) bool {
 	}
 
 	// as int value
-	intVal, err := filter.Int64(val)
+	intVal, err := mathutil.Int64(val)
 	if err != nil {
 		return false
 	}
@@ -1147,7 +1147,7 @@ func StringLength(val interface{}, minLen int, maxLen ...int) bool {
 
 // IsDate check value is an date string.
 func IsDate(srcDate string) bool {
-	_, err := filter.StrToTime(srcDate)
+	_, err := strutil.ToTime(srcDate)
 	return err == nil
 }
 
@@ -1166,12 +1166,12 @@ func DateFormat(s string, layout string) bool {
 
 // BeforeDate check
 func BeforeDate(srcDate, dstDate string) bool {
-	st, err := filter.StrToTime(srcDate)
+	st, err := strutil.ToTime(srcDate)
 	if err != nil {
 		return false
 	}
 
-	dt, err := filter.StrToTime(dstDate)
+	dt, err := strutil.ToTime(dstDate)
 	if err != nil {
 		return false
 	}
@@ -1181,12 +1181,12 @@ func BeforeDate(srcDate, dstDate string) bool {
 
 // BeforeOrEqualDate check
 func BeforeOrEqualDate(srcDate, dstDate string) bool {
-	st, err := filter.StrToTime(srcDate)
+	st, err := strutil.ToTime(srcDate)
 	if err != nil {
 		return false
 	}
 
-	dt, err := filter.StrToTime(dstDate)
+	dt, err := strutil.ToTime(dstDate)
 	if err != nil {
 		return false
 	}
@@ -1196,12 +1196,12 @@ func BeforeOrEqualDate(srcDate, dstDate string) bool {
 
 // AfterOrEqualDate check
 func AfterOrEqualDate(srcDate, dstDate string) bool {
-	st, err := filter.StrToTime(srcDate)
+	st, err := strutil.ToTime(srcDate)
 	if err != nil {
 		return false
 	}
 
-	dt, err := filter.StrToTime(dstDate)
+	dt, err := strutil.ToTime(dstDate)
 	if err != nil {
 		return false
 	}
@@ -1211,12 +1211,12 @@ func AfterOrEqualDate(srcDate, dstDate string) bool {
 
 // AfterDate check
 func AfterDate(srcDate, dstDate string) bool {
-	st, err := filter.StrToTime(srcDate)
+	st, err := strutil.ToTime(srcDate)
 	if err != nil {
 		return false
 	}
 
-	dt, err := filter.StrToTime(dstDate)
+	dt, err := strutil.ToTime(dstDate)
 	if err != nil {
 		return false
 	}
