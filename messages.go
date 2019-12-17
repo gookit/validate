@@ -240,7 +240,7 @@ func (t *Translator) Message(validator, field string, args ...interface{}) (msg 
 		msg = strings.Replace(msg, "{args}", args, 1)
 	}
 
-	return strings.Split(msg, "%!(EXTRA")[0] //todo gracefully avoid exceptions when formatting strings
+	return strings.Split(msg, "%!(EXTRA")[0] // todo gracefully avoid exceptions when formatting strings
 }
 
 // format message for the validator
