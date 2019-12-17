@@ -334,6 +334,12 @@ filter/aliases | description
 validator/aliases | description
 -------------------|-------------------------------------------
 `required`  | Check value is not empty. 
+`required_if`  | required_if:anotherfield,value,... The field under validation must be present and not empty if the anotherfield field is equal to any value.
+`required_unless`  | required_unless:anotherfield,value,... The field under validation must be present and not empty unless the anotherfield field is equal to any value. 
+`required_with`  | required_with:foo,bar,... The field under validation must be present and not empty only if any of the other specified fields are present.
+`required_with_all`  | required_with_all:foo,bar,... The field under validation must be present and not empty only if all of the other specified fields are present.
+`required_without`  | required_without:foo,bar,... The field under validation must be present and not empty only when any of the other specified fields are not present.
+`required_without_all`  | required_without_all:foo,bar,... The field under validation must be present and not empty only when all of the other specified fields are not present. 
 `-/safe`  | Tag field values ​​are safe and do not require validation
 `int/integer/isInt`  | Check value is `intX` `uintX` type
 `uint/isUint`  |  Check value is uint(`uintX`) type, `value >= 0`

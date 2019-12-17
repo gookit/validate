@@ -269,6 +269,113 @@ func (v *Validation) Required(field string, val interface{}) bool {
 	return !IsEmpty(val)
 }
 
+// RequiredIf field under validation must be present and not empty if the anotherfield field is equal to any value.
+func (v *Validation) RequiredIf(field string, val interface{}, kvs ...string) bool {
+	// format error
+	if len(kvs) < 2 {
+		return false
+	}
+
+	dstField, args := kvs[0], kvs[1:]
+
+	if dstVal, has := v.Get(dstField); has {
+		if Enum(dstVal, args) {
+			return NotEqual(val, nil) && NotEqual(val, "")
+		}
+	}
+
+	return true
+}
+
+// RequiredUnless field under validation must be present and not empty unless the anotherfield field is equal to any value.
+func (v *Validation) RequiredUnless(field string, val interface{}, kvs ...string) bool {
+	// format error
+	if len(kvs) < 2 {
+		return false
+	}
+
+	dstField, args := kvs[0], kvs[1:]
+
+	if dstVal, has := v.Get(dstField); has {
+		if !Enum(dstVal, args) {
+			return NotEqual(val, nil) && NotEqual(val, "")
+		}
+	}
+
+	// fields in values
+	return true
+}
+
+// RequiredWith field under validation must be present and not empty only if any of the other specified fields are present.
+func (v *Validation) RequiredWith(field string, val interface{}, kvs ...string) bool {
+	// format error
+	if len(kvs) == 0 {
+		return false
+	}
+
+	for idx := range kvs {
+		if _, has := v.Get(kvs[idx]); has {
+			return NotEqual(val, nil) && NotEqual(val, "")
+		}
+	}
+
+	// all fields not exist
+	return true
+}
+
+// RequiredWithAll field under validation must be present and not empty only if all of the other specified fields are present.
+func (v *Validation) RequiredWithAll(field string, val interface{}, kvs ...string) bool {
+	// format error
+	if len(kvs) == 0 {
+		return false
+	}
+
+	for idx := range kvs {
+		if _, has := v.Get(kvs[idx]); !has {
+			// if any field does not exist, not continue.
+			return true
+		}
+	}
+
+	// all fields exist
+	return NotEqual(val, nil) && NotEqual(val, "")
+}
+
+// RequiredWithout field under validation must be present and not empty only when any of the other specified fields are not present.
+func (v *Validation) RequiredWithout(field string, val interface{}, kvs ...string) bool {
+	// format error
+	if len(kvs) == 0 {
+		return false
+	}
+
+	for idx := range kvs {
+		if _, has := v.Get(kvs[idx]); !has {
+			return NotEqual(val, nil) && NotEqual(val, "")
+		}
+	}
+
+	// all fields exist
+	return true
+}
+
+// RequiredWithoutAll field under validation must be present and not empty only when any of the other specified fields are not present.
+func (v *Validation) RequiredWithoutAll(field string, val interface{}, kvs ...string) bool {
+	// format error
+	if len(kvs) == 0 {
+		return false
+	}
+
+	for idx := range kvs {
+		if _, has := v.Get(kvs[idx]); has {
+			// if any field exist, not continue.
+			return true
+		}
+	}
+
+	// all fields exist
+	return NotEqual(val, nil) && NotEqual(val, "")
+}
+
 // EqField value should EQ the dst field value
 func (v *Validation) EqField(val interface{}, dstField string) bool {
 	// get dst field value.
