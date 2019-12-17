@@ -75,7 +75,7 @@ func TestValidation_RequiredIf(t *testing.T) {
 	})
 
 	v.Validate()
-	assert.Equal(t, v.Errors.One(), "nothing is required when age is [12 13 14]")
+	assert.Equal(t, "nothing is required when age is [12 13 14]", v.Errors.One())
 }
 
 func TestValidation_RequiredUnless(t *testing.T) {
@@ -154,5 +154,5 @@ func TestValidation_RequiredWithoutAll(t *testing.T) {
 	})
 
 	v.Validate()
-	assert.Equal(t, v.Errors.One(), "nothing field is required when none of [sex city] are present")
+	assert.Equal(t, "nothing field is required when none of [sex city] are present", v.Errors.One())
 }

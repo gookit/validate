@@ -36,6 +36,7 @@ func TestTranslatorBasic(t *testing.T) {
 	tr.AddMessage("FIELD1.min", "{field} message1")
 	assert.True(t, tr.HasMessage("FIELD1.min"))
 	assert.Equal(t, "FIELD1 message1", tr.Message("min", "FIELD1"))
+
 	tr.AddFieldMap(map[string]string{"FIELD1": "Show Name"})
 	assert.Equal(t, "Show Name message1", tr.Message("min", "FIELD1"))
 

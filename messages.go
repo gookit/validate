@@ -4,8 +4,11 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 )
+
+const defaultErrMsg = " field did not pass validation"
 
 // some internal error definition
 var (
@@ -115,7 +118,7 @@ func (es Errors) FieldOne(field string) string {
 
 // default internal error messages for all validators.
 var builtinMessages = map[string]string{
-	"_": "{field} did not pass validate", // default message
+	"_": "{field}" + defaultErrMsg, // default message
 	// builtin
 	"_validate": "{field} did not pass validate", // default validate message
 	"_filter":   "{field} data is invalid",       // data filter error
@@ -148,9 +151,9 @@ var builtinMessages = map[string]string{
 	"enum":  "{field} value must be in the enum %v",
 	"range": "{field} value must be in the range %d - %d",
 	// required
-	"required":             "{field} is required",
-	"required_if":          "{field} is required when %v is {args}",
-	"required_unless":      "{field} field is required unless %v is in {args}",
+	"required":             "{field} is required and not empty",
+	"required_if":          "{field} is required when {args0} is {args1end}",
+	"required_unless":      "{field} field is required unless {args0} is in {args1end}",
 	"required_with":        "{field} field is required when {values} is present",
 	"required_with_all":    "{field} field is required when {values} is present",
 	"required_without":     "{field} field is required when {values} is not present",
@@ -212,7 +215,8 @@ func (t *Translator) AddMessages(data map[string]string) {
 	}
 }
 
-// AddFieldMap config data
+// AddFieldMap config field data.
+// If you want to display in the field with the original field is not the same
 func (t *Translator) AddFieldMap(fieldMap map[string]string) {
 	for name, showName := range fieldMap {
 		t.fieldMap[name] = showName
@@ -241,57 +245,98 @@ func (t *Translator) Message(validator, field string, args ...interface{}) (msg 
 	var ok bool
 	if rName, has := validatorAliases[validator]; has {
 		msg, ok = t.format(rName, field, args...)
-	}
-
-	if !ok {
-		msg, ok = t.format(validator, field, args...)
-		// fallback, use default message
-		if !ok {
-			msg = t.messages["_"]
-		}
-	}
-
-	if !strings.Contains(msg, "{") {
-		return
-	}
-
-	// get field translate.
-	if trName, ok := t.fieldMap[field]; ok {
-		field = trName
-	}
-
-	values := fmt.Sprintf("%v", args)
-	msg = strings.Replace(msg, "{values}", values, 1)
-	msg = strings.Replace(msg, "{field}", field, 1)
-
-	if len(args) > 0 {
-		args := fmt.Sprintf("%v", args[1:])
-		msg = strings.Replace(msg, "{args}", args, 1)
-	}
-
-	return strings.Split(msg, "%!(EXTRA")[0] // todo gracefully avoid exceptions when formatting strings
-}
-
-// format message for the validator
-func (t *Translator) format(validator, field string, args ...interface{}) (msg string, ok bool) {
-	// validator support variadic params. eg: isInt1 isInt2
-	if ln := len(args); ln > 0 {
-		newKey := fmt.Sprint(validator, ln)
-
-		if msg, ok = t.messages[newKey]; ok {
-			msg = fmt.Sprintf(msg, args...)
+		if ok {
 			return
 		}
 	}
 
-	key := field + "." + validator
+	msg, ok = t.format(validator, field, args...)
 
-	// "field.required"
-	if msg, ok = t.messages[key]; ok {
-		msg = fmt.Sprintf(msg, args...)
-		// only validator name. "required"
-	} else if msg, ok = t.messages[validator]; ok {
-		msg = fmt.Sprintf(msg, args...)
+	// not found, fallback - use default error message
+	if !ok {
+		// get field display name.
+		if trName, ok := t.fieldMap[field]; ok {
+			field = trName
+		}
+		return field + defaultErrMsg
 	}
 	return
+}
+
+// format message for the validator
+func (t *Translator) format(validator, field string, args ...interface{}) (string, bool) {
+	argLen := len(args)
+	errMsg := t.findMessage(validator, field, argLen)
+	if errMsg == "" {
+		return "", false
+	}
+
+	// not contains vars
+	if !strings.ContainsRune(errMsg, '{') {
+		return fmt.Sprintf(errMsg, args...), true
+	}
+
+	// get field display name.
+	if trName, ok := t.fieldMap[field]; ok {
+		field = trName
+	}
+
+	if argLen > 0 {
+		// if need call fmt.Sprintf
+		if strings.ContainsRune(errMsg, '%') {
+			errMsg = fmt.Sprintf(errMsg, args...)
+		}
+
+		msgArgs := []string{
+			"{field}", field,
+			"{values}", fmt.Sprintf("%v", args),
+			"{args0}", fmt.Sprintf("%v", args[0]),
+		}
+
+		// {args1end} -> args[1:]
+		if argLen > 1 {
+			msgArgs = append(msgArgs, "{args1end}", fmt.Sprintf("%v", args[1:]))
+		}
+
+		// replace message vars
+		errMsg = strings.NewReplacer(msgArgs...).Replace(errMsg)
+	} else {
+		errMsg = strings.Replace(errMsg, "{field}", field, 1)
+	}
+
+	return errMsg, true
+}
+
+func (t *Translator) findMessage(validator, field string, argLen int) string {
+	// - format1: "field name" + "." + "validator name".
+	// eg: "age.isInt" "name.required"
+	fullKey := field + "." + validator
+
+	// validator support variadic params. eg: isInt1 isInt2
+	if argLen > 0 {
+		lenStr := strconv.Itoa(argLen)
+
+		// eg: "age.isInt1" "age.isInt2"
+		newFullKey := fullKey + lenStr
+		if msg, ok := t.messages[newFullKey]; ok {
+			return msg
+		}
+
+		// eg: "isInt1" "isInt2"
+		newNameKey := validator + lenStr
+		if msg, ok := t.messages[newNameKey]; ok {
+			return msg
+		}
+	}
+
+	// use fullKey find
+	if msg, ok := t.messages[fullKey]; ok {
+		return msg
+	}
+
+	// only validator name. "required"
+	if msg, ok := t.messages[validator]; ok {
+		return msg
+	}
+	return ""
 }
