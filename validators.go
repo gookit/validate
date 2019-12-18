@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"net"
 	"net/url"
-	"os"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -13,7 +12,9 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/gookit/filter"
+	"github.com/gookit/goutil/fsutil"
+	"github.com/gookit/goutil/mathutil"
+	"github.com/gookit/goutil/strutil"
 )
 
 // Basic regular expressions for validating strings.
@@ -148,7 +149,6 @@ var (
 		"isDNSName":   reflect.ValueOf(IsDNSName),
 		"isDataURI":   reflect.ValueOf(IsDataURI),
 		"isEmpty":     reflect.ValueOf(IsEmpty),
-		"isFilePath":  reflect.ValueOf(IsFilePath),
 		"isHexColor":  reflect.ValueOf(IsHexColor),
 		"isISBN10":    reflect.ValueOf(IsISBN10),
 		"isISBN13":    reflect.ValueOf(IsISBN13),
@@ -158,8 +158,10 @@ var (
 		"isMAC":       reflect.ValueOf(IsMAC),
 		"isMultiByte": reflect.ValueOf(IsMultiByte),
 		"isNumber":    reflect.ValueOf(IsNumber),
+		"isNumeric":    reflect.ValueOf(IsNumeric),
 		"isCnMobile":  reflect.ValueOf(IsCnMobile),
 		//
+		"isStringNumber":   reflect.ValueOf(IsStringNumber),
 		"hasWhitespace":    reflect.ValueOf(HasWhitespace),
 		"isHexadecimal":    reflect.ValueOf(IsHexadecimal),
 		"isPrintableASCII": reflect.ValueOf(IsPrintableASCII),
@@ -171,6 +173,10 @@ var (
 		"isUUID3":    reflect.ValueOf(IsUUID3),
 		"isUUID4":    reflect.ValueOf(IsUUID4),
 		"isUUID5":    reflect.ValueOf(IsUUID5),
+		// file system
+		"isPath": reflect.ValueOf(IsPath),
+		"isDirPath": reflect.ValueOf(IsDirPath),
+		"isFilePath": reflect.ValueOf(IsFilePath),
 		"isUnixPath": reflect.ValueOf(IsUnixPath),
 		"isWinPath":  reflect.ValueOf(IsWinPath),
 		// date check
@@ -271,6 +277,113 @@ func (v *Validation) Required(field string, val interface{}) bool {
 	return !IsEmpty(val)
 }
 
+// RequiredIf field under validation must be present and not empty if the anotherField field is equal to any value.
+func (v *Validation) RequiredIf(field string, val interface{}, kvs ...string) bool {
+	// format error
+	if len(kvs) < 2 {
+		return false
+	}
+
+	dstField, args := kvs[0], kvs[1:]
+
+	if dstVal, has := v.Get(dstField); has {
+		if Enum(dstVal, args) {
+			return NotEqual(val, nil) && NotEqual(val, "")
+		}
+	}
+
+	return true
+}
+
+// RequiredUnless field under validation must be present and not empty unless the anotherField field is equal to any value.
+func (v *Validation) RequiredUnless(_ string, val interface{}, kvs ...string) bool {
+	// format error
+	if len(kvs) < 2 {
+		return false
+	}
+
+	dstField, args := kvs[0], kvs[1:]
+
+	if dstVal, has := v.Get(dstField); has {
+		if !Enum(dstVal, args) {
+			return NotEqual(val, nil) && NotEqual(val, "")
+		}
+	}
+
+	// fields in values
+	return true
+}
+
+// RequiredWith field under validation must be present and not empty only if any of the other specified fields are present.
+func (v *Validation) RequiredWith(_ string, val interface{}, kvs ...string) bool {
+	// format error
+	if len(kvs) == 0 {
+		return false
+	}
+
+	for idx := range kvs {
+		if _, has := v.Get(kvs[idx]); has {
+			return NotEqual(val, nil) && NotEqual(val, "")
+		}
+	}
+
+	// all fields not exist
+	return true
+}
+
+// RequiredWithAll field under validation must be present and not empty only if all of the other specified fields are present.
+func (v *Validation) RequiredWithAll(_ string, val interface{}, kvs ...string) bool {
+	// format error
+	if len(kvs) == 0 {
+		return false
+	}
+
+	for idx := range kvs {
+		if _, has := v.Get(kvs[idx]); !has {
+			// if any field does not exist, not continue.
+			return true
+		}
+	}
+
+	// all fields exist
+	return NotEqual(val, nil) && NotEqual(val, "")
+}
+
+// RequiredWithout field under validation must be present and not empty only when any of the other specified fields are not present.
+func (v *Validation) RequiredWithout(field string, val interface{}, kvs ...string) bool {
+	// format error
+	if len(kvs) == 0 {
+		return false
+	}
+
+	for idx := range kvs {
+		if _, has := v.Get(kvs[idx]); !has {
+			return NotEqual(val, nil) && NotEqual(val, "")
+		}
+	}
+
+	// all fields exist
+	return true
+}
+
+// RequiredWithoutAll field under validation must be present and not empty only when any of the other specified fields are not present.
+func (v *Validation) RequiredWithoutAll(field string, val interface{}, kvs ...string) bool {
+	// format error
+	if len(kvs) == 0 {
+		return false
+	}
+
+	for idx := range kvs {
+		if _, has := v.Get(kvs[idx]); has {
+			// if any field exist, not continue.
+			return true
+		}
+	}
+
+	// all fields exist
+	return NotEqual(val, nil) && NotEqual(val, "")
+}
+
 // EqField value should EQ the dst field value
 func (v *Validation) EqField(val interface{}, dstField string) bool {
 	// get dst field value.
@@ -344,8 +457,9 @@ func (v *Validation) LteField(val interface{}, dstField string) bool {
  *  - file validators
  *************************************************************/
 
+const fileValidators = "|isFile|isImage|inMimeTypes|"
+
 var (
-	fileValidators = "|isFile|isImage|inMimeTypes|"
 	imageMimeTypes = map[string]string{
 		"bmp": "image/bmp",
 		"gif": "image/gif",
@@ -488,7 +602,7 @@ func IsBool(val interface{}) bool {
 	}
 
 	if typVal, ok := val.(string); ok {
-		_, err := filter.Bool(typVal)
+		_, err := strutil.ToBool(typVal)
 		return err == nil
 	}
 	return false
@@ -763,32 +877,24 @@ func IsAlphaDash(s string) bool {
 }
 
 // IsNumber string. should >= 0
-func IsNumber(s string) bool {
+func IsNumber(v interface{}) bool {
+	if s, err := strutil.ToString(v); err == nil {
+		return s != "" && rxNumber.MatchString(s)
+	}
+	return false
+}
+
+// IsNumeric is string/int number. should >= 0
+func IsNumeric(v interface{}) bool {
+	if s, err := strutil.ToString(v); err == nil {
+		return s != "" && rxNumber.MatchString(s)
+	}
+	return false
+}
+
+// IsStringNumber is string number. should >= 0
+func IsStringNumber(s string) bool {
 	return s != "" && rxNumber.MatchString(s)
-}
-
-// IsFilePath string
-func IsFilePath(str string) bool {
-	if str == "" {
-		return false
-	}
-
-	if _, err := os.Stat(str); err != nil {
-		if os.IsNotExist(err) {
-			return false
-		}
-	}
-	return true
-}
-
-// IsWinPath string
-func IsWinPath(s string) bool {
-	return s != "" && rxWinPath.MatchString(s)
-}
-
-// IsUnixPath string
-func IsUnixPath(s string) bool {
-	return s != "" && rxUnixPath.MatchString(s)
 }
 
 // IsEmail check
@@ -911,6 +1017,34 @@ func Regexp(str string, pattern string) bool {
 }
 
 /*************************************************************
+ * global: filesystem validators
+ *************************************************************/
+
+// IsPath reports whether the named file or directory exists.
+func IsPath(path string) bool {
+	return fsutil.PathExists(path)
+}
+
+// IsFilePath string
+func IsFilePath(path string) bool {
+	return fsutil.IsFile(path)
+}
+
+func IsDirPath(path string) bool {
+	return fsutil.IsDir(path)
+}
+
+// IsWinPath string
+func IsWinPath(s string) bool {
+	return s != "" && rxWinPath.MatchString(s)
+}
+
+// IsUnixPath string
+func IsUnixPath(s string) bool {
+	return s != "" && rxUnixPath.MatchString(s)
+}
+
+/*************************************************************
  * global: compare validators
  *************************************************************/
 
@@ -966,7 +1100,7 @@ func NotEqual(val, wantVal interface{}) bool {
 // IntEqual check
 func IntEqual(val interface{}, wantVal int64) bool {
 	// intVal, isInt := IntVal(val)
-	intVal, err := filter.Int64(val)
+	intVal, err := mathutil.Int64(val)
 	if err != nil {
 		return false
 	}
@@ -976,7 +1110,7 @@ func IntEqual(val interface{}, wantVal int64) bool {
 
 // Gt check value greater dst value. only check for: int(X), uint(X), float(X)
 func Gt(val interface{}, dstVal int64) bool {
-	intVal, err := filter.Int64(val)
+	intVal, err := mathutil.Int64(val)
 	if err != nil {
 		return false
 	}
@@ -987,7 +1121,7 @@ func Gt(val interface{}, dstVal int64) bool {
 // Min check value greater or equal dst value, alias `Gte`.
 // only check for: int(X), uint(X), float(X).
 func Min(val interface{}, min int64) bool {
-	intVal, err := filter.Int64(val)
+	intVal, err := mathutil.Int64(val)
 	if err != nil {
 		return false
 	}
@@ -997,7 +1131,7 @@ func Min(val interface{}, min int64) bool {
 
 // Lt less than dst value. only check for: int(X), uint(X), float(X).
 func Lt(val interface{}, dstVal int64) bool {
-	intVal, err := filter.Int64(val)
+	intVal, err := mathutil.Int64(val)
 	if err != nil {
 		return false
 	}
@@ -1007,7 +1141,7 @@ func Lt(val interface{}, dstVal int64) bool {
 
 // Max less than or equal dst value, alias `Lte`. check for: int(X), uint(X), float(X).
 func Max(val interface{}, max int64) bool {
-	intVal, err := filter.Int64(val)
+	intVal, err := mathutil.Int64(val)
 	if err != nil {
 		return false
 	}
@@ -1017,7 +1151,7 @@ func Max(val interface{}, max int64) bool {
 
 // Between int value in the given range.
 func Between(val interface{}, min, max int64) bool {
-	intVal, err := filter.Int64(val)
+	intVal, err := mathutil.Int64(val)
 	if err != nil {
 		return false
 	}
@@ -1049,7 +1183,7 @@ func Enum(val, enum interface{}) bool {
 	}
 
 	// as int value
-	intVal, err := filter.Int64(val)
+	intVal, err := mathutil.Int64(val)
 	if err != nil {
 		return false
 	}
@@ -1146,7 +1280,7 @@ func StringLength(val interface{}, minLen int, maxLen ...int) bool {
 
 // IsDate check value is an date string.
 func IsDate(srcDate string) bool {
-	_, err := filter.StrToTime(srcDate)
+	_, err := strutil.ToTime(srcDate)
 	return err == nil
 }
 
@@ -1165,12 +1299,12 @@ func DateFormat(s string, layout string) bool {
 
 // BeforeDate check
 func BeforeDate(srcDate, dstDate string) bool {
-	st, err := filter.StrToTime(srcDate)
+	st, err := strutil.ToTime(srcDate)
 	if err != nil {
 		return false
 	}
 
-	dt, err := filter.StrToTime(dstDate)
+	dt, err := strutil.ToTime(dstDate)
 	if err != nil {
 		return false
 	}
@@ -1180,12 +1314,12 @@ func BeforeDate(srcDate, dstDate string) bool {
 
 // BeforeOrEqualDate check
 func BeforeOrEqualDate(srcDate, dstDate string) bool {
-	st, err := filter.StrToTime(srcDate)
+	st, err := strutil.ToTime(srcDate)
 	if err != nil {
 		return false
 	}
 
-	dt, err := filter.StrToTime(dstDate)
+	dt, err := strutil.ToTime(dstDate)
 	if err != nil {
 		return false
 	}
@@ -1195,12 +1329,12 @@ func BeforeOrEqualDate(srcDate, dstDate string) bool {
 
 // AfterOrEqualDate check
 func AfterOrEqualDate(srcDate, dstDate string) bool {
-	st, err := filter.StrToTime(srcDate)
+	st, err := strutil.ToTime(srcDate)
 	if err != nil {
 		return false
 	}
 
-	dt, err := filter.StrToTime(dstDate)
+	dt, err := strutil.ToTime(dstDate)
 	if err != nil {
 		return false
 	}
@@ -1210,12 +1344,12 @@ func AfterOrEqualDate(srcDate, dstDate string) bool {
 
 // AfterDate check
 func AfterDate(srcDate, dstDate string) bool {
-	st, err := filter.StrToTime(srcDate)
+	st, err := strutil.ToTime(srcDate)
 	if err != nil {
 		return false
 	}
 
-	dt, err := filter.StrToTime(dstDate)
+	dt, err := strutil.ToTime(dstDate)
 	if err != nil {
 		return false
 	}

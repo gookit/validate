@@ -4,8 +4,11 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 )
+
+const defaultErrMsg = " field did not pass validation"
 
 // some internal error definition
 var (
@@ -17,16 +20,34 @@ var (
 )
 
 /*************************************************************
- * errors messages
+ * Validate Errors
  *************************************************************/
 
-// Errors definition.
+// example {validator0: message0, validator1: message1}
+type fieldErrors map[string]string
+
+func (fe fieldErrors) one() string {
+	for _, msg := range fe {
+		return msg
+	}
+	return "" // should never exec.
+}
+
+func (fe fieldErrors) string() string {
+	var ss []string
+	for name, msg := range fe {
+		ss = append(ss, " "+name+": "+msg)
+	}
+
+	return strings.Join(ss, "\n")
+}
+
+// Errors validate errors definition
 // Example:
 // 	{
-// 		"field": ["error msg 0", "error msg 1"]
+// 		"field": {validator: message, validator1: message1}
 // 	}
-// TODO change error format [field: {validator: message}]
-type Errors map[string][]string
+type Errors map[string]fieldErrors
 
 // Empty no error
 func (es Errors) Empty() bool {
@@ -34,41 +55,32 @@ func (es Errors) Empty() bool {
 }
 
 // Add a error for the field
-func (es Errors) Add(field, message string) {
-	if ss, ok := es[field]; ok {
-		es[field] = append(ss, message)
+func (es Errors) Add(field, validator, message string) {
+	if _, ok := es[field]; ok {
+		es[field][validator] = message
 	} else {
-		es[field] = []string{message}
+		es[field] = fieldErrors{validator: message}
 	}
 }
 
-// One returns a random error message text
+// One returns an random error message text
 func (es Errors) One() string {
 	if len(es) > 0 {
-		for _, ss := range es {
-			return ss[0]
+		for _, fe := range es {
+			return fe.one()
 		}
 	}
 	return ""
 }
 
-// Get returns a error message for the field
-func (es Errors) Get(field string) string {
-	if ms, ok := es[field]; ok {
-		return ms[0]
+// All get all errors data
+func (es Errors) All() map[string]map[string]string {
+	mm := make(map[string]map[string]string, len(es))
+
+	for field, fe := range es {
+		mm[field] = fe
 	}
-
-	return ""
-}
-
-// Field get all errors for the field
-func (es Errors) Field(field string) (fieldErs []string) {
-	return es[field]
-}
-
-// All all error get
-func (es Errors) All() map[string][]string {
-	return es
+	return mm
 }
 
 // Error string get
@@ -79,21 +91,37 @@ func (es Errors) Error() string {
 // String errors to string
 func (es Errors) String() string {
 	buf := new(bytes.Buffer)
-	for field, ms := range es {
-		buf.WriteString(fmt.Sprintf("%s:\n %s\n", field, strings.Join(ms, "\n ")))
+	for field, fe := range es {
+		buf.WriteString(fmt.Sprintf("%s:\n%s\n", field, fe.string()))
 	}
 
 	return strings.TrimSpace(buf.String())
 }
 
+// Field get all errors for the field
+func (es Errors) Field(field string) map[string]string {
+	return es[field]
+}
+
+// FieldOne returns an error message for the field
+func (es Errors) FieldOne(field string) string {
+	if fe, ok := es[field]; ok {
+		return fe.one()
+	}
+
+	return ""
+}
+
 /*************************************************************
- * validators messages
+ * Validator error messages
  *************************************************************/
 
-// default internal error message for some rules.
-var defMessages = map[string]string{
-	"_":       "{field} did not pass validate", // default message
-	"_filter": "{field} data is invalid",       // data filter error
+// default internal error messages for all validators.
+var builtinMessages = map[string]string{
+	"_": "{field}" + defaultErrMsg, // default message
+	// builtin
+	"_validate": "{field} did not pass validate", // default validate message
+	"_filter":   "{field} data is invalid",       // data filter error
 	// int value
 	"min": "{field} min value is %d",
 	"max": "{field} max value is %d",
@@ -123,7 +151,13 @@ var defMessages = map[string]string{
 	"enum":  "{field} value must be in the enum %v",
 	"range": "{field} value must be in the range %d - %d",
 	// required
-	"required": "{field} is required",
+	"required":             "{field} is required and not empty",
+	"required_if":          "{field} is required when {args0} is {args1end}",
+	"required_unless":      "{field} field is required unless {args0} is in {args1end}",
+	"required_with":        "{field} field is required when {values} is present",
+	"required_with_all":    "{field} field is required when {values} is present",
+	"required_without":     "{field} field is required when {values} is not present",
+	"required_without_all": "{field} field is required when none of {values} are present",
 	// field compare
 	"eqField":  "{field} value must be equal the field %s",
 	"neField":  "{field} value cannot be equal the field %s",
@@ -132,6 +166,10 @@ var defMessages = map[string]string{
 	"gtField":  "{field} value must be greater the field %s",
 	"gteField": "{field} value should be greater or equal to field %s",
 }
+
+/*************************************************************
+ * Error messages translator
+ *************************************************************/
 
 // Translator definition
 type Translator struct {
@@ -144,7 +182,7 @@ type Translator struct {
 // NewTranslator instance
 func NewTranslator() *Translator {
 	newMessages := make(map[string]string)
-	for k, v := range defMessages {
+	for k, v := range builtinMessages {
 		newMessages[k] = v
 	}
 
@@ -157,7 +195,7 @@ func NewTranslator() *Translator {
 // Reset translator to default
 func (t *Translator) Reset() {
 	newMessages := make(map[string]string)
-	for k, v := range defMessages {
+	for k, v := range builtinMessages {
 		newMessages[k] = v
 	}
 
@@ -170,14 +208,15 @@ func (t *Translator) FieldMap() map[string]string {
 	return t.fieldMap
 }
 
-// LoadMessages data to translator
-func (t *Translator) LoadMessages(data map[string]string) {
+// AddMessages data to translator
+func (t *Translator) AddMessages(data map[string]string) {
 	for n, m := range data {
 		t.messages[n] = m
 	}
 }
 
-// AddFieldMap config data
+// AddFieldMap config field data.
+// If you want to display in the field with the original field is not the same
 func (t *Translator) AddFieldMap(fieldMap map[string]string) {
 	for name, showName := range fieldMap {
 		t.fieldMap[name] = showName
@@ -206,48 +245,98 @@ func (t *Translator) Message(validator, field string, args ...interface{}) (msg 
 	var ok bool
 	if rName, has := validatorAliases[validator]; has {
 		msg, ok = t.format(rName, field, args...)
-	}
-
-	if !ok {
-		msg, ok = t.format(validator, field, args...)
-		// fallback, use default message
-		if !ok {
-			msg = t.messages["_"]
-		}
-	}
-
-	if !strings.Contains(msg, "{") {
-		return
-	}
-
-	// get field translate.
-	if trName, ok := t.fieldMap[field]; ok {
-		field = trName
-	}
-
-	return strings.Replace(msg, "{field}", field, 1)
-}
-
-// format message for the validator
-func (t *Translator) format(validator, field string, args ...interface{}) (msg string, ok bool) {
-	// validator support variadic params. eg: isInt1 isInt2
-	if ln := len(args); ln > 0 {
-		newKey := fmt.Sprint(validator, ln)
-
-		if msg, ok = t.messages[newKey]; ok {
-			msg = fmt.Sprintf(msg, args...)
+		if ok {
 			return
 		}
 	}
 
-	key := field + "." + validator
+	msg, ok = t.format(validator, field, args...)
 
-	// "field.required"
-	if msg, ok = t.messages[key]; ok {
-		msg = fmt.Sprintf(msg, args...)
-		// only validator name. "required"
-	} else if msg, ok = t.messages[validator]; ok {
-		msg = fmt.Sprintf(msg, args...)
+	// not found, fallback - use default error message
+	if !ok {
+		// get field display name.
+		if trName, ok := t.fieldMap[field]; ok {
+			field = trName
+		}
+		return field + defaultErrMsg
 	}
 	return
+}
+
+// format message for the validator
+func (t *Translator) format(validator, field string, args ...interface{}) (string, bool) {
+	argLen := len(args)
+	errMsg := t.findMessage(validator, field, argLen)
+	if errMsg == "" {
+		return "", false
+	}
+
+	// not contains vars
+	if !strings.ContainsRune(errMsg, '{') {
+		return fmt.Sprintf(errMsg, args...), true
+	}
+
+	// get field display name.
+	if trName, ok := t.fieldMap[field]; ok {
+		field = trName
+	}
+
+	if argLen > 0 {
+		// if need call fmt.Sprintf
+		if strings.ContainsRune(errMsg, '%') {
+			errMsg = fmt.Sprintf(errMsg, args...)
+		}
+
+		msgArgs := []string{
+			"{field}", field,
+			"{values}", fmt.Sprintf("%v", args),
+			"{args0}", fmt.Sprintf("%v", args[0]),
+		}
+
+		// {args1end} -> args[1:]
+		if argLen > 1 {
+			msgArgs = append(msgArgs, "{args1end}", fmt.Sprintf("%v", args[1:]))
+		}
+
+		// replace message vars
+		errMsg = strings.NewReplacer(msgArgs...).Replace(errMsg)
+	} else {
+		errMsg = strings.Replace(errMsg, "{field}", field, 1)
+	}
+
+	return errMsg, true
+}
+
+func (t *Translator) findMessage(validator, field string, argLen int) string {
+	// - format1: "field name" + "." + "validator name".
+	// eg: "age.isInt" "name.required"
+	fullKey := field + "." + validator
+
+	// validator support variadic params. eg: isInt1 isInt2
+	if argLen > 0 {
+		lenStr := strconv.Itoa(argLen)
+
+		// eg: "age.isInt1" "age.isInt2"
+		newFullKey := fullKey + lenStr
+		if msg, ok := t.messages[newFullKey]; ok {
+			return msg
+		}
+
+		// eg: "isInt1" "isInt2"
+		newNameKey := validator + lenStr
+		if msg, ok := t.messages[newNameKey]; ok {
+			return msg
+		}
+	}
+
+	// use fullKey find
+	if msg, ok := t.messages[fullKey]; ok {
+		return msg
+	}
+
+	// only validator name. "required"
+	if msg, ok := t.messages[validator]; ok {
+		return msg
+	}
+	return ""
 }

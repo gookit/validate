@@ -3,12 +3,15 @@ package validate
 import (
 	"errors"
 	"fmt"
+	"math"
 	"reflect"
 	"strconv"
 	"strings"
 	"unicode"
 
 	"github.com/gookit/filter"
+	"github.com/gookit/goutil/mathutil"
+	"github.com/gookit/goutil/strutil"
 )
 
 // NilObject represent nil value for calling functions and should be reflected at custom filters as nil variable.
@@ -53,6 +56,14 @@ func strings2Args(strings []string) []interface{} {
 		args[i] = s
 	}
 	return args
+}
+
+func args2strings(args []interface{}) []string {
+	strSlice := make([]string, len(args))
+	for i, s := range args {
+		strSlice[i] = fmt.Sprintf("%v", s)
+	}
+	return strSlice
 }
 
 func buildArgs(val interface{}, args []interface{}) []interface{} {
@@ -267,9 +278,9 @@ func convertType(srcVal interface{}, srcKind kind, dstType reflect.Kind) (interf
 	case stringKind:
 		switch dstType {
 		case reflect.Int:
-			return filter.Int(srcVal)
+			return mathutil.Int(srcVal)
 		case reflect.Int64:
-			return filter.Int64(srcVal)
+			return mathutil.Int64(srcVal)
 		}
 	case intKind, uintKind:
 		i64 := filter.MustInt64(srcVal)
@@ -277,7 +288,8 @@ func convertType(srcVal interface{}, srcKind kind, dstType reflect.Kind) (interf
 		case reflect.Int64:
 			return i64, nil
 		case reflect.String:
-			return fmt.Sprint(i64), nil
+			// fmt is slow : return fmt.Sprint(i64), nil
+			return strutil.ToString(srcVal)
 		}
 	}
 	return nil, nil
@@ -402,7 +414,7 @@ func indirectInterface(v reflect.Value) reflect.Value {
 // TODO: Perhaps allow comparison between signed and unsigned integers.
 
 var (
-	errBadComparisonType = errors.New("invalid type for comparison")
+	errBadComparisonType = errors.New("invalid type for operation")
 	// errBadComparison     = errors.New("incompatible types for comparison")
 	// errNoComparison      = errors.New("missing argument for comparison")
 )
@@ -521,4 +533,52 @@ func includeElement(list, element interface{}) (ok, found bool) {
 	}
 
 	return true, false
+}
+
+/*************************************************************
+ * Reflection:
+ * From package(go 1.13) "reflect" -> reflect/value.go
+ *************************************************************/
+
+// IsZero reports whether v is the zero value for its type.
+// It panics if the argument is invalid.
+// NOTICE: this's an built-in method in reflect/value.go since go 1.13
+func IsZero(v reflect.Value) bool {
+	switch v.Kind() {
+	case reflect.Bool:
+		return !v.Bool()
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return v.Int() == 0
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		return v.Uint() == 0
+	case reflect.Float32, reflect.Float64:
+		return math.Float64bits(v.Float()) == 0
+	case reflect.Complex64, reflect.Complex128:
+		c := v.Complex()
+		return math.Float64bits(real(c)) == 0 && math.Float64bits(imag(c)) == 0
+	case reflect.Array:
+		for i := 0; i < v.Len(); i++ {
+			// if !v.Index(i).IsZero() {
+			if !IsZero(v.Index(i)) {
+				return false
+			}
+		}
+		return true
+	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Ptr, reflect.Slice, reflect.UnsafePointer:
+		return v.IsNil()
+	case reflect.String:
+		return v.Len() == 0
+	case reflect.Struct:
+		for i := 0; i < v.NumField(); i++ {
+			// if !v.Index(i).IsZero() {
+			if !IsZero(v.Field(i)) {
+				return false
+			}
+		}
+		return true
+	default:
+		// This should never happens, but will act as a safeguard for
+		// later, as a default value doesn't makes sense here.
+		panic(&reflect.ValueError{Method: "cannot check reflect.Value.IsZero", Kind: v.Kind()})
+	}
 }

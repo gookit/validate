@@ -93,7 +93,7 @@ func TestAddFilter(t *testing.T) {
 	v.Trans().AddMessage("new-key", "msg text")
 	is.True(v.Trans().HasMessage("new-key"))
 	is.Equal("msg text", v.Trans().Message("new-key", "some"))
-	is.Equal("some did not pass validate", v.Trans().Message("not-exist", "some"))
+	is.Equal("SOME field did not pass validation", v.Trans().Message("not-exist", "SOME"))
 	v.Trans().Reset()
 	is.False(v.Trans().HasMessage("new-key"))
 
@@ -122,7 +122,7 @@ func TestAddFilter(t *testing.T) {
 	})
 	v.Filtering()
 	is.True(v.IsFail())
-	is.Equal("report a error", v.Errors.Get("_filter"))
+	is.Equal("report a error", v.Errors.FieldOne("_filter"))
 }
 
 // check panic caused nil value with custom filter

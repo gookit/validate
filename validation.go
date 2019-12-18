@@ -137,7 +137,13 @@ func NewValidation(data DataFace, scene ...string) *Validation {
 
 	// init build in context validator
 	v.validatorValues = map[string]reflect.Value{
-		"required": reflect.ValueOf(v.Required),
+		"required":             reflect.ValueOf(v.Required),
+		"required_if":          reflect.ValueOf(v.RequiredIf),
+		"required_unless":      reflect.ValueOf(v.RequiredUnless),
+		"required_with":        reflect.ValueOf(v.RequiredWith),
+		"required_with_all":    reflect.ValueOf(v.RequiredWithAll),
+		"required_without":     reflect.ValueOf(v.RequiredWithout),
+		"required_without_all": reflect.ValueOf(v.RequiredWithoutAll),
 		// field compare
 		"eqField":  reflect.ValueOf(v.EqField),
 		"neField":  reflect.ValueOf(v.NeField),
@@ -376,7 +382,7 @@ func (v *Validation) Filtering() bool {
 	// apply rule to validate data.
 	for _, rule := range v.filterRules {
 		if err := rule.Apply(v); err != nil { // has error
-			v.AddError(filterError, err.Error())
+			v.AddError(filterError, filterError, err.Error())
 			break
 		}
 	}
@@ -412,36 +418,36 @@ func (v *Validation) AddTranslates(m map[string]string) {
 // 		"range": "oh! {field} must be in the range %d - %d",
 //  })
 func (v *Validation) WithMessages(m map[string]string) *Validation {
-	v.trans.LoadMessages(m)
+	v.trans.AddMessages(m)
 	return v
 }
 
 // AddMessages settings data. like WithMessages()
 func (v *Validation) AddMessages(m map[string]string) {
-	v.trans.LoadMessages(m)
+	v.trans.AddMessages(m)
 }
 
 // WithError add error of the validation
 func (v *Validation) WithError(err error) *Validation {
 	if err != nil {
-		v.AddError(validateError, err.Error())
+		v.AddError(validateError, validateError, err.Error())
 	}
 
 	return v
 }
 
 // AddError message for a field
-func (v *Validation) AddError(field string, msg string) {
+func (v *Validation) AddError(field, validator, msg string) {
 	if !v.hasError {
 		v.hasError = true
 	}
 
-	v.Errors.Add(field, msg)
+	v.Errors.Add(field, validator, msg)
 }
 
 // AddErrorf add a formatted error message
 func (v *Validation) AddErrorf(field, msgFormat string, args ...interface{}) {
-	v.AddError(field, fmt.Sprintf(msgFormat, args...))
+	v.AddError(field, validateError, fmt.Sprintf(msgFormat, args...))
 }
 
 func (v *Validation) convertArgTypeError(name string, argKind, wantKind reflect.Kind) {
@@ -526,22 +532,25 @@ func (v *Validation) BindSafeData(ptr interface{}) error {
 
 // Set value by key
 func (v *Validation) Set(field string, val interface{}) error {
-	if v.data == nil { // check input data
+	// check input data
+	if v.data == nil {
 		return ErrEmptyData
 	}
 
-	return v.data.Set(field, val)
+	_, err := v.data.Set(field, val)
+	return err
 }
 
 // only update set value by key for struct
-func (v *Validation) updateValue(field string, val interface{}) error {
-	// data is struct
-	if _, ok := v.data.(*StructData); ok {
+func (v *Validation) updateValue(field string, val interface{}) (interface{}, error) {
+	// data source is struct
+	// if _, ok := v.data.(*StructData); ok {
+	if v.data.Type() == uint8(sourceStruct) {
 		return v.data.Set(field, val)
 	}
 
 	// TODO dont update value for Form and Map data source
-	return nil
+	return val, nil
 }
 
 // SetDefValue set an default value of given field
@@ -622,7 +631,7 @@ func (v *Validation) shouldStop() bool {
 	return v.hasError && v.StopOnError
 }
 
-func (v *Validation) isNoNeedToCheck(field string) bool {
+func (v *Validation) isNotNeedToCheck(field string) bool {
 	if len(v.sceneFields) == 0 {
 		return false
 	}

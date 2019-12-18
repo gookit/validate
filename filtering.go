@@ -148,21 +148,24 @@ func (r *FilterRule) Apply(v *Validation) (err error) {
 				continue
 			}
 
+			// update source data field value
+			newVal, err := v.updateValue(field, defVal)
+			if err != nil {
+				return err
+			}
+
+			// re-set value
+			val = newVal
+
 			// dont need check default value
 			if !v.CheckDefault {
-				// update source data field value
-				if err = v.updateValue(field, defVal); err != nil {
-					return
-				}
-
 				// save validated value.
-				v.safeData[field] = defVal
+				v.safeData[field] = newVal
 				continue
 			}
 
 			// go on check custom default value
 			has = true
-			val = defVal
 		}
 
 		// call filters
@@ -180,14 +183,14 @@ func (r *FilterRule) Apply(v *Validation) (err error) {
 		}
 
 		// update source data field value
-		if err = v.updateValue(field, val); err != nil {
-			return
+		newVal, err := v.updateValue(field, val)
+		if err != nil {
+			return err
 		}
 
 		// save filtered value.
-		v.filteredData[field] = val
+		v.filteredData[field] = newVal
 	}
-
 	return
 }
 

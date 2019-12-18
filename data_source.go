@@ -14,9 +14,11 @@ import (
 	"time"
 
 	"github.com/gookit/filter"
+	"github.com/gookit/goutil/strutil"
 )
 
 type sourceType uint8
+
 const (
 	// from user setting, unmarshal JSON
 	sourceMap sourceType = iota + 1
@@ -44,7 +46,7 @@ type UnmarshalFunc func(data []byte, v interface{}) error
 type DataFace interface {
 	Type() uint8
 	Get(key string) (interface{}, bool)
-	Set(field string, val interface{}) error
+	Set(field string, val interface{}) (interface{}, error)
 	// validation instance create func
 	Create(err ...error) *Validation
 	Validation(err ...error) *Validation
@@ -77,9 +79,9 @@ func (d *MapData) Type() uint8 {
 }
 
 // Set value by key
-func (d *MapData) Set(field string, val interface{}) error {
+func (d *MapData) Set(field string, val interface{}) (interface{}, error) {
 	d.Map[field] = val
-	return nil
+	return val, nil
 }
 
 // Get value by key
@@ -162,8 +164,10 @@ type StructData struct {
 	valueTpy reflect.Type
 	// field names in the src struct
 	fieldNames map[string]int
-	// field values cache
+	// TODO field values cache
 	fieldValues map[string]interface{}
+	// TODO field reflect values cache
+	fieldRftValues map[string]interface{}
 	// FilterTag name in the struct tags.
 	FilterTag string
 	// ValidateTag name in the struct tags.
@@ -275,7 +279,7 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 // Get value by field name
 func (d *StructData) Get(field string) (interface{}, bool) {
 	var fv reflect.Value
-	field = filter.UpperFirst(field)
+	field = strutil.UpperFirst(field)
 
 	// TODO get from caches
 	// if val, ok := d.fieldValues[field]; ok {
@@ -307,30 +311,55 @@ func (d *StructData) Get(field string) (interface{}, bool) {
 		}
 	}
 
-	// up: if is zero value, as not exist.
-	if fv.IsZero() {
-		return nil, false
+	// check can interface
+	if fv.CanInterface() {
+		// up: if is zero value, as not exist.
+		if IsZero(fv) {
+			return nil, false
+		}
+		return fv.Interface(), true
 	}
-
-	return fv.Interface(), true
+	return nil, false
 }
 
 // Set value by field name.
 // Notice: `StructData.src` the incoming struct must be a pointer to set the value
-func (d *StructData) Set(field string, val interface{}) error {
-	field = filter.UpperFirst(field)
+func (d *StructData) Set(field string, val interface{}) (newVal interface{}, err error) {
+	field = strutil.UpperFirst(field)
 	if !d.HasField(field) { // field not found
-		return ErrNoField
+		return nil, ErrNoField
 	}
 
 	fv := d.value.FieldByName(field)
 
 	// check whether the value of v can be changed.
-	if fv.CanSet() {
-		fv.Set(reflect.ValueOf(val))
-		return nil
+	if !fv.CanSet() {
+		return nil, ErrSetValue
 	}
-	return ErrSetValue
+
+	// Notice: need convert value type
+	rftVal := reflect.ValueOf(val)
+
+	// check whether can direct convert type
+	if rftVal.Type().ConvertibleTo(fv.Type()) {
+		fv.Set(rftVal.Convert(fv.Type()))
+		return val, nil
+	}
+
+	// try manual convert type
+	srcKind, err := basicKind(rftVal)
+	if err != nil {
+		return nil, err
+	}
+
+	newVal, err = convertType(val, srcKind, fv.Kind())
+	if err != nil {
+		return nil, err
+	}
+
+	// update field value
+	fv.Set(reflect.ValueOf(newVal))
+	return
 }
 
 // FuncValue get func value in the src struct
@@ -345,8 +374,9 @@ func (d *StructData) HasField(field string) bool {
 		return true
 	}
 
+	// has field, cache it
 	if _, ok := d.valueTpy.FieldByName(field); ok {
-		d.fieldNames[field] = 1 // cache it
+		d.fieldNames[field] = 1
 		return true
 	}
 
@@ -451,12 +481,14 @@ func (d *FormData) Encode() string {
 }
 
 // Set sets the key to value. It replaces any existing values.
-func (d *FormData) Set(field string, val interface{}) (err error) {
+func (d *FormData) Set(field string, val interface{}) (newVal interface{}, err error) {
+	newVal = val
 	switch val.(type) {
 	case string:
 		d.Form.Set(field, val.(string))
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64:
-		d.Form.Set(field, fmt.Sprint(val))
+		newVal = strutil.MustString(val)
+		d.Form.Set(field, newVal.(string))
 	default:
 		err = fmt.Errorf("set value failure for filed: %s", field)
 	}
@@ -594,6 +626,5 @@ func (d FormData) FileMimeType(field string) (mime string) {
 		n, _ := io.ReadFull(file, buf[:])
 		mime = http.DetectContentType(buf[:n])
 	}
-
 	return
 }

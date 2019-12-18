@@ -8,6 +8,7 @@ package validate
 
 import (
 	"reflect"
+	"strings"
 )
 
 // const requiredValidator = "required"
@@ -28,17 +29,18 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 	}
 
 	var err error
+	// get real validator name
 	name := ValidatorName(r.validator)
 	// validator name is not "required"
-	isNotRequired := name != "required"
+	isNotRequired := !strings.HasPrefix(name, "required")
 
 	// validate each field
 	for _, field := range r.fields {
-		if v.isNoNeedToCheck(field) {
+		if v.isNotNeedToCheck(field) {
 			continue
 		}
 
-		// has beforeFunc. if return FALSE, skip validate
+		// has beforeFunc and it return FALSE, skip validate
 		if r.beforeFunc != nil && !r.beforeFunc(field, v) {
 			continue
 		}
@@ -48,7 +50,7 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 			status := r.fileValidate(field, name, v)
 			if status == statusFail {
 				// build and collect error message
-				v.AddError(field, r.errorMessage(field, r.validator, v))
+				v.AddError(field, r.validator, r.errorMessage(field, r.validator, v))
 				if v.StopOnError {
 					return true
 				}
@@ -58,18 +60,20 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 
 		// get field value.
 		val, exist := v.Get(field)
-		// 	if sd, ok := v.data.(*StructData); ok {}
 
 		// field not exist
 		if !exist {
 			defVal, ok := v.GetDefValue(field)
 			// has default value
 			if ok {
-				val = defVal
 				// update source data field value
-				if err = v.updateValue(field, val); err != nil {
+				newVal, err := v.updateValue(field, defVal)
+				if err != nil {
 					panicf(err.Error())
 				}
+
+				// re-set value
+				val = newVal
 
 				// dont need check default value
 				if !v.CheckDefault {
@@ -88,17 +92,18 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 		// apply filter func.
 		if exist && r.filterFunc != nil {
 			if val, err = r.filterFunc(val); err != nil { // has error
-				v.AddError(filterError, err.Error())
+				v.AddError(filterError, filterError, err.Error())
 				return true
 			}
 
-			// TODO update source field value
-			// if v.UpdateSource {}
-			err = v.updateValue(field, val)
+			// update source field value
+			newVal, err := v.updateValue(field, val)
 			if err != nil {
 				panicf(err.Error())
 			}
 
+			// re-set value
+			val = newVal
 			// save filtered value.
 			v.filteredData[field] = val
 		}
@@ -112,7 +117,7 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 		if r.valueValidate(field, name, isNotRequired, val, v) {
 			v.safeData[field] = val // save validated value.
 		} else { // build and collect error message
-			v.AddError(field, r.errorMessage(field, r.validator, v))
+			v.AddError(field, r.validator, r.errorMessage(field, r.validator, v))
 		}
 
 		// stop on error
@@ -124,7 +129,7 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 	return false
 }
 
-// func (r *Rule) doValidating() {}
+// func (r *Rule) applyOneField() {}
 
 func (r *Rule) fileValidate(field, name string, v *Validation) uint8 {
 	// check data source
@@ -192,9 +197,9 @@ func (r *Rule) valueValidate(field, name string, isNotRequired bool, val interfa
 		//noinspection GoNilness
 		fm.checkArgNum(argNum, r.validator)
 
-		// convert field val type, is first argument.
 		//noinspection GoNilness
 		ft := fm.fv.Type()
+		// convert field val type, is first argument.
 		firstTyp := ft.In(0).Kind()
 		if firstTyp != valKind && firstTyp != reflect.Interface {
 			ak, err := basicKind(rftVal)
@@ -225,6 +230,18 @@ func callValidator(v *Validation, fm *funcMeta, field string, val interface{}, a
 	switch fm.name {
 	case "required":
 		ok = v.Required(field, val)
+	case "required_if":
+		ok = v.RequiredIf(field, val, args2strings(args)...)
+	case "required_unless":
+		ok = v.RequiredUnless(field, val, args2strings(args)...)
+	case "required_with":
+		ok = v.RequiredWith(field, val, args2strings(args)...)
+	case "required_with_all":
+		ok = v.RequiredWithAll(field, val, args2strings(args)...)
+	case "required_without":
+		ok = v.RequiredWithout(field, val, args2strings(args)...)
+	case "required_without_all":
+		ok = v.RequiredWithoutAll(field, val, args2strings(args)...)
 	case "lt":
 		ok = Lt(val, args[0].(int64))
 	case "gt":
