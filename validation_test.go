@@ -714,3 +714,29 @@ func TestBuiltInValidators(t *testing.T) {
 		v.Validate()
 	})
 }
+
+type Status int64
+
+func TestEnum(t *testing.T) {
+	var (
+		statusOk Status = 1
+	)
+	v := New(M{
+		"age":     "18",
+		"status":  statusOk,
+		"char":    'a',
+		"str":     "a",
+		"name":    "test",
+		"nothing": "",
+	})
+	v.StringRules(MS{
+		"char":     "required|in:97",
+		"str":      "required|in:a",
+		"age":      "required_without_all:name,city",
+		"status":   "required|in:1,2,3",
+		"anything": "required_without_all:age,name",
+	})
+
+	v.Validate()
+	assert.True(t, v.Validate())
+}
