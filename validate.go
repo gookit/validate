@@ -271,7 +271,9 @@ func callValidator(v *Validation, fm *funcMeta, field string, val interface{}, a
 			ok = IsString(val, args[0].(int), args[1].(int))
 		}
 	case "isNumber":
-		ok = IsNumber(val.(string))
+		ok = IsNumber(val)
+	case "isStringNumber":
+		ok = IsStringNumber(val.(string))
 	case "length":
 		ok = Length(val, args[0].(int))
 	case "minLength":
@@ -299,6 +301,10 @@ func callValidator(v *Validation, fm *funcMeta, field string, val interface{}, a
 
 // convert args data type
 func convertArgsType(v *Validation, fm *funcMeta, args []interface{}) (ok bool) {
+	if len(args) == 0 {
+		return true
+	}
+
 	ft := fm.fv.Type()
 	lastTyp := reflect.Invalid
 	lastArgIndex := fm.numIn - 1

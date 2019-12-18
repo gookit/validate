@@ -291,6 +291,11 @@ func convertType(srcVal interface{}, srcKind kind, dstType reflect.Kind) (interf
 			// fmt is slow : return fmt.Sprint(i64), nil
 			return strutil.ToString(srcVal)
 		}
+	default:
+		switch dstType {
+		case reflect.String:
+			return strutil.ToString(srcVal)
+		}
 	}
 	return nil, nil
 }

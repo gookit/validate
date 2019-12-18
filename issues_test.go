@@ -87,7 +87,8 @@ func TestIssues30(t *testing.T)  {
 	v.StringRule("cost_type", "str_num")
 	v.Validate()
 
-	fmt.Println(v.Errors)
+	assert.True(t, v.Validate())
+	assert.Len(t, v.Errors, 0)
 }
 
 // https://github.com/gookit/validate/issues/34
