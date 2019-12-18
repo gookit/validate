@@ -230,17 +230,17 @@ func callValidator(v *Validation, fm *funcMeta, field string, val interface{}, a
 	switch fm.name {
 	case "required":
 		ok = v.Required(field, val)
-	case "required_if":
+	case "requiredIf":
 		ok = v.RequiredIf(field, val, args2strings(args)...)
-	case "required_unless":
+	case "requiredUnless":
 		ok = v.RequiredUnless(field, val, args2strings(args)...)
-	case "required_with":
+	case "requiredWith":
 		ok = v.RequiredWith(field, val, args2strings(args)...)
-	case "required_with_all":
+	case "requiredWithAll":
 		ok = v.RequiredWithAll(field, val, args2strings(args)...)
-	case "required_without":
+	case "requiredWithout":
 		ok = v.RequiredWithout(field, val, args2strings(args)...)
-	case "required_without_all":
+	case "requiredWithoutAll":
 		ok = v.RequiredWithoutAll(field, val, args2strings(args)...)
 	case "lt":
 		ok = Lt(val, args[0].(int64))

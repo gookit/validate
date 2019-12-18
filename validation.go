@@ -137,13 +137,13 @@ func NewValidation(data DataFace, scene ...string) *Validation {
 
 	// init build in context validator
 	v.validatorValues = map[string]reflect.Value{
-		"required":             reflect.ValueOf(v.Required),
-		"required_if":          reflect.ValueOf(v.RequiredIf),
-		"required_unless":      reflect.ValueOf(v.RequiredUnless),
-		"required_with":        reflect.ValueOf(v.RequiredWith),
-		"required_with_all":    reflect.ValueOf(v.RequiredWithAll),
-		"required_without":     reflect.ValueOf(v.RequiredWithout),
-		"required_without_all": reflect.ValueOf(v.RequiredWithoutAll),
+		"required":           reflect.ValueOf(v.Required),
+		"requiredIf":         reflect.ValueOf(v.RequiredIf),
+		"requiredUnless":     reflect.ValueOf(v.RequiredUnless),
+		"requiredWith":       reflect.ValueOf(v.RequiredWith),
+		"requiredWithAll":    reflect.ValueOf(v.RequiredWithAll),
+		"requiredWithout":    reflect.ValueOf(v.RequiredWithout),
+		"requiredWithoutAll": reflect.ValueOf(v.RequiredWithoutAll),
 		// field compare
 		"eqField":  reflect.ValueOf(v.EqField),
 		"neField":  reflect.ValueOf(v.NeField),

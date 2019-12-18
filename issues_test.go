@@ -1,9 +1,9 @@
 package validate
 
 import (
-	"fmt"
 	"testing"
 
+	"github.com/gookit/goutil/dump"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -105,9 +105,9 @@ func TestIssues34(t *testing.T) {
 		"age": "required|in:1,2,3,4",
 	})
 
-	fmt.Println(Enum(s1, []int{1, 2, 3, 4}), Enum(int32(s1), []int{1, 2, 3, 4}))
+	dump.Println(Enum(s1, []int{1, 2, 3, 4}), Enum(int32(s1), []int{1, 2, 3, 4}))
 
 	v.Validate()
 
-	fmt.Println(v.Errors)
+	dump.Println(v.Errors)
 }

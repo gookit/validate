@@ -949,8 +949,8 @@ func Regexp(str string, pattern string) bool {
  * global: filesystem validators
  *************************************************************/
 
-// IsPath reports whether the named file or directory exists.
-func IsPath(path string) bool {
+// PathExists reports whether the named file or directory exists.
+func PathExists(path string) bool {
 	return fsutil.PathExists(path)
 }
 
