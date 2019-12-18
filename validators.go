@@ -148,6 +148,11 @@ func AddValidators(m map[string]interface{}) {
 }
 
 // AddValidator to the pkg. checkFunc must return a bool
+// Usage:
+// 	v.AddValidator("myFunc", func(val interface{}) bool {
+//		// do validate val ...
+//		return true
+//	})
 func AddValidator(name string, checkFunc interface{}) {
 	fv := checkValidatorFunc(name, checkFunc)
 

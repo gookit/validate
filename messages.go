@@ -23,31 +23,12 @@ var (
  * Validate Errors
  *************************************************************/
 
-// example {validator0: message0, validator1: message1}
-type fieldErrors map[string]string
-
-func (fe fieldErrors) one() string {
-	for _, msg := range fe {
-		return msg
-	}
-	return "" // should never exec.
-}
-
-func (fe fieldErrors) string() string {
-	var ss []string
-	for name, msg := range fe {
-		ss = append(ss, " "+name+": "+msg)
-	}
-
-	return strings.Join(ss, "\n")
-}
-
 // Errors validate errors definition
 // Example:
 // 	{
 // 		"field": {validator: message, validator1: message1}
 // 	}
-type Errors map[string]fieldErrors
+type Errors map[string]MS
 
 // Empty no error
 func (es Errors) Empty() bool {
@@ -59,7 +40,7 @@ func (es Errors) Add(field, validator, message string) {
 	if _, ok := es[field]; ok {
 		es[field][validator] = message
 	} else {
-		es[field] = fieldErrors{validator: message}
+		es[field] = MS{validator: message}
 	}
 }
 
@@ -67,7 +48,7 @@ func (es Errors) Add(field, validator, message string) {
 func (es Errors) One() string {
 	if len(es) > 0 {
 		for _, fe := range es {
-			return fe.one()
+			return fe.One()
 		}
 	}
 	return ""
@@ -92,7 +73,7 @@ func (es Errors) Error() string {
 func (es Errors) String() string {
 	buf := new(bytes.Buffer)
 	for field, fe := range es {
-		buf.WriteString(fmt.Sprintf("%s:\n%s\n", field, fe.string()))
+		buf.WriteString(fmt.Sprintf("%s:\n%s\n", field, fe.String()))
 	}
 
 	return strings.TrimSpace(buf.String())
@@ -106,7 +87,7 @@ func (es Errors) Field(field string) map[string]string {
 // FieldOne returns an error message for the field
 func (es Errors) FieldOne(field string) string {
 	if fe, ok := es[field]; ok {
-		return fe.one()
+		return fe.One()
 	}
 
 	return ""

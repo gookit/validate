@@ -129,7 +129,7 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 	return false
 }
 
-// func (r *Rule) applyOneField() {}
+// func (r *Rule) applyForField() {}
 
 func (r *Rule) fileValidate(field, name string, v *Validation) uint8 {
 	// check data source

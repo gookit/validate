@@ -17,15 +17,6 @@ const (
 	defaultMaxMemory int64 = 32 << 20
 )
 
-// M is short name for map[string]interface{}
-type M map[string]interface{}
-
-// MS is short name for map[string]string
-type MS map[string]string
-
-// SValues simple values
-type SValues map[string][]string
-
 // GlobalOption settings for validate
 type GlobalOption struct {
 	// FilterTag name in the struct tags.
@@ -256,7 +247,12 @@ func (v *Validation) AddValidators(m map[string]interface{}) {
 	}
 }
 
-// AddValidator to the Validation. checkFunc must return a bool
+// AddValidator to the Validation. checkFunc must return a bool.
+// Usage:
+// 	v.AddValidator("myFunc", func(val interface{}) bool {
+//		// do validate val ...
+//		return true
+//	})
 func (v *Validation) AddValidator(name string, checkFunc interface{}) {
 	fv := checkValidatorFunc(name, checkFunc)
 

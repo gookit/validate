@@ -1,6 +1,7 @@
 package validate
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/gookit/goutil/dump"
@@ -81,13 +82,11 @@ func TestIssues20(t *testing.T) {
 
 // https://github.com/gookit/validate/issues/30
 func TestIssues30(t *testing.T) {
-	// 修改为 "10" 则不会panic
 	v := JSON(`{
    "cost_type": 10
 }`)
 
 	v.StringRule("cost_type", "str_num")
-	v.Validate()
 
 	assert.True(t, v.Validate())
 	assert.Len(t, v.Errors, 0)
@@ -98,15 +97,40 @@ func TestIssues34(t *testing.T) {
 	type STATUS int32
 	var s1 STATUS = 1
 
+	// use custom validator
 	v := New(M{
+		"age": s1,
+	})
+	v.AddValidator("checkAge", func(val interface{}, ints ...int) bool {
+		return Enum(int32(val.(STATUS)), ints)
+	})
+	v.StringRule("age", "required|checkAge:1,2,3,4")
+	assert.True(t, v.Validate())
+
+	v = New(M{
 		"age": s1,
 	})
 	v.StringRules(MS{
 		"age": "required|in:1,2,3,4",
 	})
 
+	rv := reflect.ValueOf(s1)
+	dump.Println(rv.Type().Kind())
+
 	dump.Println(Enum(s1, []int{1, 2, 3, 4}), Enum(int32(s1), []int{1, 2, 3, 4}))
 
+	v.Validate()
+
+	dump.Println(v.Errors)
+
+	type someMode string
+	var m1 someMode = "abc"
+	v = New(M{
+		"mode": m1,
+	})
+	v.StringRules(MS{
+		"mode": "required|in:abc,def",
+	})
 	v.Validate()
 
 	dump.Println(v.Errors)

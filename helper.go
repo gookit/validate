@@ -510,6 +510,7 @@ func includeElement(list, element interface{}) (ok, found bool) {
 	elementValue := reflect.ValueOf(element)
 	listKind := listValue.Type().Kind()
 
+	// string contains check
 	if listKind == reflect.String {
 		return true, strings.Contains(listValue.String(), elementValue.String())
 	}

@@ -9,6 +9,37 @@ import (
 	"strings"
 )
 
+// M is short name for map[string]interface{}
+type M map[string]interface{}
+
+// MS is short name for map[string]string
+type MS map[string]string
+
+// SValues simple values
+type SValues map[string][]string
+
+// One get one item's value string
+func (ms MS) One() string {
+	for _, msg := range ms {
+		return msg
+	}
+	return ""
+}
+
+// String convert map[string]string to string
+func (ms MS) String() string {
+	if len(ms) == 0 {
+		return ""
+	}
+
+	var ss []string
+	for name, msg := range ms {
+		ss = append(ss, " "+name+": "+msg)
+	}
+
+	return strings.Join(ss, "\n")
+}
+
 // New a Validation
 func New(data interface{}, scene ...string) *Validation {
 	switch td := data.(type) {

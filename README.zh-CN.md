@@ -37,9 +37,12 @@ Go通用的数据验证与过滤库，使用简单，内置大部分常用验证
 ```go
 package main
 
-import "fmt"
-import "time"
-import "github.com/gookit/validate"
+import (
+	"fmt"
+	"time"
+
+	"github.com/gookit/validate"
+)
 
 // UserForm struct
 type UserForm struct {
@@ -249,6 +252,9 @@ type GlobalOption struct {
 
 - **全局验证器** 全局有效，所有地方都可以使用
 - **临时验证器** 添加到当前验证实例上，仅当次验证可用
+- 在结构体上添加验证方法。使用请看上面结构体验证示例中的 `func (f UserForm) CustomValidator(val string) bool`
+
+> 注意：验证器方法必须返回一个 `bool` 表明验证是否成功。第一个参数是对应的字段值，如果有额外参数则自动追加在后面
 
 #### 添加全局验证器
 
@@ -319,37 +325,40 @@ type GlobalOption struct {
 
 几大类别：
 
+- (为空)必填验证
 - 类型验证
 - 大小、长度验证
 - 字段值比较验证
-- 上传文件验证
+- 文件验证
 - 日期验证
 - 字符串检查验证
 - 其他验证
 
+> 驼峰式的验证器名称现在都添加了下划线式的别名。因此 `endsWith` 也可以写为 `ends_with`
+
 验证器/别名 | 描述信息
 -------------------|-------------------------------------------
 `required`  | 字段为必填项，值不能为空 
-`required_if/requiredIf`  | `required_if:anotherfield,value,...` 如果其它字段 _anotherfield_ 为任一值 _value_ ，则此验证字段必须存在且不为空。
-`required_unless`  | `required_unless:anotherfield,value,...` 如果其它字段 _anotherfield_ 不等于任一值 _value_ ，则此验证字段必须存在且不为空。 
+`required_if/requiredIf`  | `required_if:anotherfield,value,...` 如果其它字段 _anotherField_ 为任一值 _value_ ，则此验证字段必须存在且不为空。
+`required_unless`  | `required_unless:anotherfield,value,...` 如果其它字段 _anotherField_ 不等于任一值 _value_ ，则此验证字段必须存在且不为空。 
 `required_with/requiredWith`  | `required_with:foo,bar,...` 在其他任一指定字段出现时，验证的字段才必须存在且不为空 
 `required_with_all`  | `required_with_all:foo,bar,...` 只有在其他指定字段全部出现时，验证的字段才必须存在且不为空 
 `required_without`  | `required_without:foo,bar,...` 在其他指定任一字段不出现时，验证的字段才必须存在且不为空
 `required_without_all`  | `required_without_all:foo,bar,...` 只有在其他指定字段全部不出现时，验证的字段才必须存在且不为空 
 `-/safe`  | 标记当前字段是安全的，无需验证
-`int/integer/isInt`  | 检查值是 `intX` `uintX` 类型
-`uint/isUint`  |  检查值是 `uintX` 类型（`value >= 0`）
+`int/integer/isInt`  | 检查值是 `intX` `uintX` 类型，同时支持大小检查 `"int"` `"int:2"` `"int:2,12"`
+`uint/isUint`  |  检查值是 `uintX` 类型(`value >= 0`)
 `bool/isBool`  |  检查值是布尔字符串(`true`: "1", "on", "yes", "true", `false`: "0", "off", "no", "false").
-`string/isString`  |  检查值是字符串类型.
+`string/isString`  |  检查值是字符串类型，同时支持长度检查 `"string"` `"string:2"` `"string:2,12"`
 `float/isFloat`  |  检查值是 float(`floatX`) 类型
 `slice/isSlice`  |  检查值是 slice 类型(`[]intX` `[]uintX` `[]byte` `[]string` 等).
-`in/enum`  |  检查值是否在给定的枚举列表中
+`in/enum`  |  检查值()是否在给定的枚举列表(`[]string`, `[]intX`, `[]uintX`)中
 `not_in/notIn`  |  检查值不是在给定的枚举列表中
-`contains`  |  检查输入值是否包含给定的值
-`not_contains/notContains`  |  检查输入值是否不包含给定值
-`string_contains/stringContains`  |  检查输入string值是否不包含给定sub-string值
-`starts_with/startsWith`  |  检查输入string值是否以给定sub-string开始
-`ends_with/endsWith`  |  检查输入string值是否以给定sub-string结束
+`contains`  |  检查输入值(`string` `array/slice` `map`)是否包含给定的值
+`not_contains/notContains`  |  检查输入值(`string` `array/slice` `map`)是否不包含给定值
+`string_contains/stringContains`  |  检查输入的 `string` 值是否不包含给定sub-string值
+`starts_with/startsWith`  |  检查输入的 `string` 值是否以给定sub-string开始
+`ends_with/endsWith`  |  检查输入的 `string` 值是否以给定sub-string结束
 `range/between`  |  检查值是否为数字且在给定范围内
 `max/lte`  |  检查输入值小于或等于给定值
 `min/gte`  |  检查输入值大于或等于给定值(for `intX` `uintX` `floatX`)
@@ -364,9 +373,9 @@ type GlobalOption struct {
 `email/isEmail`  |   检查值是Email地址字符串
 `regex/regexp`  |  检查该值是否可以通过正则验证
 `arr/array/isArray`  |  检查值是数组`array`类型
-`map/isMap`  |  检查值是MAP类型
-`strings/isStrings`  |  检查值是字符串切片类型(`[]string`).
-`ints/isInts`  |  检查值是int slice类型(only allow `[]int`).
+`map/isMap`  |  检查值是 `map` 类型
+`strings/isStrings`  |  检查值是字符串切片类型(`[]string`)
+`ints/isInts`  |  检查值是`int` slice类型(only allow `[]int`)
 `eq_field/eqField`  |  检查字段值是否等于另一个字段的值
 `ne_field/neField`  |  检查字段值是否不等于另一个字段的值
 `gte_field/gtField`  |  检查字段值是否大于另一个字段的值
@@ -386,11 +395,11 @@ type GlobalOption struct {
 `alpha/isAlpha` | 验证值是否仅包含字母字符
 `alphaNum/isAlphaNum` | 验证是否仅包含字母、数字
 `alphaDash/isAlphaDash` | 验证是否仅包含字母、数字、破折号（ - ）以及下划线（ _ ）
-`multiByte/isMultiByte` | Check value is MultiByte string.
+`multiByte/isMultiByte` | 检查值是多字节字符串
 `base64/isBase64` | 检查值是Base64字符串
 `dnsName/DNSName/isDNSName` | 检查值是DNS名称字符串
 `dataURI/isDataURI` | Check value is DataURI string.
-`empty/isEmpty` | Check value is Empty string.
+`empty/isEmpty` | 检查值是否为空
 `hexColor/isHexColor` | 检查值是16进制的颜色字符串
 `hexadecimal/isHexadecimal` | 检查值是十六进制字符串
 `json/JSON/isJSON` | 检查值是JSON字符串。
@@ -402,8 +411,8 @@ type GlobalOption struct {
 `printableASCII/isPrintableASCII` | Check value is PrintableASCII string.
 `rgbColor/RGBColor/isRGBColor` | 检查值是RGB颜色字符串
 `fullUrl/isFullURL` | 检查值是完整的URL字符串(_必须以http,https开始的URL_).
-`url/isURL` | 检查值是URL字符串
-`ip/isIP`  |  检查值是IP（v4或v6）字符串
+`url/URL/isURL` | 检查值是URL字符串
+`ip/IP/isIP`  |  检查值是IP（v4或v6）字符串
 `ipv4/isIPv4`  |  检查值是IPv4字符串
 `ipv6/isIPv6`  |  检查值是IPv6字符串
 `CIDR/isCIDR` | 检查值是 CIDR 字符串

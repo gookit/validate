@@ -264,6 +264,10 @@ validate.Config(func(opt *validate.GlobalOption) {
 
 - **Global Validator** is globally valid and can be used everywhere
 - **Temporary Validator** added to the current validation instance, only the current validation is available
+- Add verification method to the structure. How to use please see the structure verification example above
+
+> Note: The validator method must return a `bool` to indicate whether the validation was successful.
+> The first parameter is the corresponding field value. If there are additional parameters, they will be appended automatically.
 
 #### Add Global Validator
 
@@ -332,17 +336,19 @@ filter/aliases | description
 <a id="built-in-validators"></a>
 ## Built In Validators
 
+> Camel-style validator names now have underlined aliases. `endsWith` can also be written as `ends_with`
+
 validator/aliases | description
 -------------------|-------------------------------------------
 `required`  | Check value is required and cannot be empty. 
-`required_if`  | `required_if:anotherfield,value,...` The field under validation must be present and not empty if the anotherfield field is equal to any value.
-`required_unless`  | `required_unless:anotherfield,value,...` The field under validation must be present and not empty unless the anotherfield field is equal to any value. 
-`required_with`  | `required_with:foo,bar,...` The field under validation must be present and not empty only if any of the other specified fields are present.
-`required_with_all`  | `required_with_all:foo,bar,...` The field under validation must be present and not empty only if all of the other specified fields are present.
-`required_without`  | `required_without:foo,bar,...` The field under validation must be present and not empty only when any of the other specified fields are not present.
-`required_without_all`  | `required_without_all:foo,bar,...` The field under validation must be present and not empty only when all of the other specified fields are not present. 
+`requiredIf`  | `required_if:anotherfield,value,...` The field under validation must be present and not empty if the `anotherField` field is equal to any value.
+`requiredUnless`  | `required_unless:anotherfield,value,...` The field under validation must be present and not empty unless the `anotherField` field is equal to any value. 
+`requiredWith`  | `required_with:foo,bar,...` The field under validation must be present and not empty only if any of the other specified fields are present.
+`requiredWithAll`  | `required_with_all:foo,bar,...` The field under validation must be present and not empty only if all of the other specified fields are present.
+`requiredWithout`  | `required_without:foo,bar,...` The field under validation must be present and not empty only when any of the other specified fields are not present.
+`requiredWithoutAll`  | `required_without_all:foo,bar,...` The field under validation must be present and not empty only when all of the other specified fields are not present. 
 `-/safe`  | The field values ​​are safe and do not require validation
-`int/integer/isInt`  | Check value is `intX` `uintX` type
+`int/integer/isInt`  | Check value is `intX` `uintX` type, And support size checking. eg: `"int"` `"int:2"` `"int:2,12"`
 `uint/isUint`  |  Check value is uint(`uintX`) type, `value >= 0`
 `bool/isBool`  |  Check value is bool string(`true`: "1", "on", "yes", "true", `false`: "0", "off", "no", "false").
 `string/isString`  |  Check value is string type.
