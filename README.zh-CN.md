@@ -330,9 +330,9 @@ type GlobalOption struct {
 验证器/别名 | 描述信息
 -------------------|-------------------------------------------
 `required`  | 字段为必填项，值不能为空 
-`required_if`  | `required_if:anotherfield,value,...` 如果其它字段 _anotherfield_ 为任一值 _value_ ，则此验证字段必须存在且不为空。
+`required_if/requiredIf`  | `required_if:anotherfield,value,...` 如果其它字段 _anotherfield_ 为任一值 _value_ ，则此验证字段必须存在且不为空。
 `required_unless`  | `required_unless:anotherfield,value,...` 如果其它字段 _anotherfield_ 不等于任一值 _value_ ，则此验证字段必须存在且不为空。 
-`required_with`  | `required_with:foo,bar,...` 在其他任一指定字段出现时，验证的字段才必须存在且不为空 
+`required_with/requiredWith`  | `required_with:foo,bar,...` 在其他任一指定字段出现时，验证的字段才必须存在且不为空 
 `required_with_all`  | `required_with_all:foo,bar,...` 只有在其他指定字段全部出现时，验证的字段才必须存在且不为空 
 `required_without`  | `required_without:foo,bar,...` 在其他指定任一字段不出现时，验证的字段才必须存在且不为空
 `required_without_all`  | `required_without_all:foo,bar,...` 只有在其他指定字段全部不出现时，验证的字段才必须存在且不为空 
@@ -344,9 +344,12 @@ type GlobalOption struct {
 `float/isFloat`  |  检查值是 float(`floatX`) 类型
 `slice/isSlice`  |  检查值是 slice 类型(`[]intX` `[]uintX` `[]byte` `[]string` 等).
 `in/enum`  |  检查值是否在给定的枚举列表中
-`notIn`  |  检查值不是在给定的枚举列表中
+`not_in/notIn`  |  检查值不是在给定的枚举列表中
 `contains`  |  检查输入值是否包含给定的值
-`notContains`  |  检查输入值是否不包含给定值
+`not_contains/notContains`  |  检查输入值是否不包含给定值
+`string_contains/stringContains`  |  检查输入string值是否不包含给定sub-string值
+`starts_with/startsWith`  |  检查输入string值是否以给定sub-string开始
+`ends_with/endsWith`  |  检查输入string值是否以给定sub-string结束
 `range/between`  |  检查值是否为数字且在给定范围内
 `max/lte`  |  检查输入值小于或等于给定值
 `min/gte`  |  检查输入值大于或等于给定值(for `intX` `uintX` `floatX`)

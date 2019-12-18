@@ -351,7 +351,10 @@ validator/aliases | description
 `in/enum`  |  Check if the value is in the given enumeration
 `notIn`  |  Check if the value is not in the given enumeration
 `contains`  |  Check if the input value contains the given value
-`notContains`  |  Check if the input value not contains the given value
+`not_contains/notContains`  |  Check if the input value not contains the given value
+`string_contains/stringContains`  |  Check if the input string value is contains the given sub-string
+`starts_with/startsWith`  |  Check if the input string value is starts with the given sub-string
+`ends_with/endsWith`  |  Check if the input string value is ends with the given sub-string
 `range/between`  |  Check that the value is a number and is within the given range
 `max/lte`  |  Check value is less than or equal to the given value
 `min/gte`  |  Check value is greater than or equal to the given value(for `intX` `uintX` `floatX`)

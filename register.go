@@ -118,8 +118,9 @@ var validatorValues = map[string]reflect.Value{
 // define validator alias name mapping
 var validatorAliases = map[string]string{
 	// alias -> real name
-	"in":    "enum",
-	"range": "between",
+	"in":     "enum",
+	"not_in": "notIn",
+	"range":  "between",
 	// type
 	"int":     "isInt",
 	"integer": "isInt",
@@ -309,4 +310,6 @@ var validatorAliases = map[string]string{
 	"required_with_all":    "requiredWithAll",
 	"required_without":     "requiredWithout",
 	"required_without_all": "requiredWithoutAll",
+	// other
+	"not_contains": "notContains",
 }
