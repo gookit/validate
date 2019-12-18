@@ -158,7 +158,7 @@ var (
 		"isMAC":       reflect.ValueOf(IsMAC),
 		"isMultiByte": reflect.ValueOf(IsMultiByte),
 		"isNumber":    reflect.ValueOf(IsNumber),
-		"isNumeric":    reflect.ValueOf(IsNumeric),
+		"isNumeric":   reflect.ValueOf(IsNumeric),
 		"isCnMobile":  reflect.ValueOf(IsCnMobile),
 		//
 		"isStringNumber":   reflect.ValueOf(IsStringNumber),
@@ -174,8 +174,8 @@ var (
 		"isUUID4":    reflect.ValueOf(IsUUID4),
 		"isUUID5":    reflect.ValueOf(IsUUID5),
 		// file system
-		"isPath": reflect.ValueOf(IsPath),
-		"isDirPath": reflect.ValueOf(IsDirPath),
+		"isPath":     reflect.ValueOf(IsPath),
+		"isDirPath":  reflect.ValueOf(IsDirPath),
 		"isFilePath": reflect.ValueOf(IsFilePath),
 		"isUnixPath": reflect.ValueOf(IsUnixPath),
 		"isWinPath":  reflect.ValueOf(IsWinPath),

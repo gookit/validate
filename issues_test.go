@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// https://github.com/gookit/validate/issues/19
 func TestIssues19(t *testing.T) {
 	is := assert.New(t)
 
@@ -54,6 +55,7 @@ func TestIssues19(t *testing.T) {
 	is.Equal("13677778888", req1.Phone)
 }
 
+// https://github.com/gookit/validate/issues/20
 func TestIssues20(t *testing.T) {
 	is := assert.New(t)
 	type setProfileReq struct {
@@ -78,7 +80,7 @@ func TestIssues20(t *testing.T) {
 }
 
 // https://github.com/gookit/validate/issues/30
-func TestIssues30(t *testing.T)  {
+func TestIssues30(t *testing.T) {
 	// 修改为 "10" 则不会panic
 	v := JSON(`{
    "cost_type": 10
@@ -92,7 +94,7 @@ func TestIssues30(t *testing.T)  {
 }
 
 // https://github.com/gookit/validate/issues/34
-func TestIssues34(t *testing.T)  {
+func TestIssues34(t *testing.T) {
 	type STATUS int32
 	var s1 STATUS = 1
 
@@ -103,7 +105,7 @@ func TestIssues34(t *testing.T)  {
 		"age": "required|in:1,2,3,4",
 	})
 
-	fmt.Println(Enum(s1, []int{1,2,3,4}), Enum(int32(s1), []int{1,2,3,4}))
+	fmt.Println(Enum(s1, []int{1, 2, 3, 4}), Enum(int32(s1), []int{1, 2, 3, 4}))
 
 	v.Validate()
 
