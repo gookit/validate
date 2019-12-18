@@ -1114,7 +1114,10 @@ func Enum(val, enum interface{}) bool {
 	// as int value
 	intVal, err := mathutil.Int64(val)
 	if err != nil {
-		return false
+		intVal,err = valueToInt64ByReflect(val)
+		if err != nil {
+			return false
+		}
 	}
 
 	if int64s, ok := toInt64Slice(enum); ok {

@@ -149,7 +149,7 @@ func TestValidation_RequiredWithoutAll(t *testing.T) {
 	})
 	v.StringRules(MS{
 		"age":      "required_without_all:name,city",
-		"anything": "required_without:age,name",
+		"anything": "required_without_all:age,name",
 		"nothing":  "required_without_all:sex,city",
 	})
 

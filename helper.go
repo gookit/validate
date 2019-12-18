@@ -166,6 +166,21 @@ func valueToInt64(v interface{}, strict bool) (i64 int64, err error) {
 	return
 }
 
+func valueToInt64ByReflect(v interface{}) (i64 int64, err error) {
+	refVal := reflect.ValueOf(v)
+	switch refVal.Type().Kind() {
+	case reflect.String,
+		reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
+		reflect.Float32, reflect.Float64:
+		i64, err = strconv.ParseInt(filter.Trim(fmt.Sprintf("%v", v)), 10, 0)
+	default:
+		err = errConvertFail
+	}
+
+	return
+}
+
 // CalcLength for input value
 func CalcLength(val interface{}) int {
 	if val == nil {
