@@ -364,12 +364,12 @@ type GlobalOption struct {
 `map/isMap`  |  检查值是MAP类型
 `strings/isStrings`  |  检查值是字符串切片类型(`[]string`).
 `ints/isInts`  |  检查值是int slice类型(only allow `[]int`).
-`eqField`  |  检查字段值是否等于另一个字段的值
-`neField`  |  检查字段值是否不等于另一个字段的值
-`gtField`  |  检查字段值是否大于另一个字段的值
-`gteField`  | 检查字段值是否大于或等于另一个字段的值
-`ltField`  |  检查字段值是否小于另一个字段的值
-`lteField`  |  检查字段值是否小于或等于另一个字段的值
+`eq_field/eqField`  |  检查字段值是否等于另一个字段的值
+`ne_field/neField`  |  检查字段值是否不等于另一个字段的值
+`gte_field/gtField`  |  检查字段值是否大于另一个字段的值
+`gt_field/gteField`  | 检查字段值是否大于或等于另一个字段的值
+`lt_field/ltField`  |  检查字段值是否小于另一个字段的值
+`lte_field/lteField`  |  检查字段值是否小于或等于另一个字段的值
 `file/isFile`  |  验证是否是上传的文件
 `image/isImage`  |  验证是否是上传的图片文件，支持后缀检查
 `mime/mimeType/inMimeTypes`  |  验证是否是上传的文件，并且在指定的MIME类型中

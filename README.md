@@ -369,12 +369,12 @@ validator/aliases | description
 `ints/isInts`  |  Check value is int slice type(only allow `[]int`).
 `minLen/minLength`  |  Check the minimum length of the value is the given size
 `maxLen/maxLength`  |  Check the maximum length of the value is the given size
-`eqField`  |  Check that the field value is equals to the value of another field
-`neField`  |  Check that the field value is not equals to the value of another field
-`gteField`  |  Check that the field value is greater than or equal to the value of another field
-`gtField`  |  Check that the field value is greater than the value of another field
-`lteField`  |  Check if the field value is less than or equal to the value of another field
-`ltField`  |  Check that the field value is less than the value of another field
+`eq_field/eqField`  |  Check that the field value is equals to the value of another field
+`ne_field/neField`  |  Check that the field value is not equals to the value of another field
+`gte_field/gteField`  |  Check that the field value is greater than or equal to the value of another field
+`gt_field/gtField`  |  Check that the field value is greater than the value of another field
+`lte_field/lteField`  |  Check if the field value is less than or equal to the value of another field
+`lt_field/ltField`  |  Check that the field value is less than the value of another field
 `file/isFile`  |  Verify if it is an uploaded file
 `image/isImage`  |  Check if it is an uploaded image file and support suffix check
 `mime/mimeType/inMimeTypes`  |  Check that it is an uploaded file and is in the specified MIME type
@@ -400,7 +400,7 @@ validator/aliases | description
 `lon/longitude/isLongitude` | Check value is Longitude string.
 `mac/isMAC` | Check value is MAC string.
 `num/number/isNumber` | Check value is number string. `>= 0`
-`cnMobile/isCnMobile` | Check value is china mobile number string.
+`cn_mobile/cnMobile/isCnMobile` | Check value is china mobile number string.
 `printableASCII/isPrintableASCII` | Check value is PrintableASCII string.
 `rgbColor/RGBColor/isRGBColor` | Check value is RGB color string.
 `url/isURL` | Check value is URL string.
