@@ -31,8 +31,12 @@ type Rule struct {
 	// 	"field.validator": "error message",
 	// }
 	messages map[string]string
-	// validator name, allow multi validators. eg "min", "range", "required"
+	// the input validator name
 	validator string
+	// the real validator name
+	realName string
+	// real validator name is requiredXXX validators
+	nameNotRequired bool
 	// arguments for the validator
 	arguments []interface{}
 	// --- some hooks function
@@ -166,23 +170,29 @@ func (v *Validation) StringRule(field, rule string, filterRule ...string) *Valid
 			continue
 		}
 
-		// has args
+		// has args "min:12"
 		if strings.ContainsRune(validator, ':') {
 			list := stringSplit(validator, ":")
-			args := parseArgString(list[1])
-			name := ValidatorName(list[0])
-			switch name {
+			// reassign value
+			validator := list[0]
+			realName := ValidatorName(validator)
+			switch realName {
+			// set error message for the field
+			case "message":
+				// message key like "age.required"
+				v.trans.AddMessage(field + "." + validator, list[1])
 			// add default value for the field
 			case "default":
 				v.SetDefValue(field, list[1])
-			// eg 'regex:\d{4,6}' dont need split
+			// eg 'regex:\d{4,6}' dont need split args. args is "\d{4,6}"
 			case "regexp":
-				v.AddRule(field, list[0], list[1])
+				v.AddRule(field, validator, list[1])
 			// some special validator. need merge args to one.
 			case "enum", "notIn":
-				v.AddRule(field, list[0], args)
+				v.AddRule(field, validator, parseArgString(list[1]))
 			default:
-				v.AddRule(field, list[0], strings2Args(args)...)
+				args := parseArgString(list[1])
+				v.AddRule(field, validator, strings2Args(args)...)
 			}
 		} else {
 			v.AddRule(field, validator)
@@ -192,7 +202,6 @@ func (v *Validation) StringRule(field, rule string, filterRule ...string) *Valid
 	if len(filterRule) > 0 {
 		v.FilterRule(field, filterRule[0])
 	}
-
 	return v
 }
 
@@ -222,10 +231,21 @@ func (v *Validation) ConfigRules(mp MS) *Validation {
 	return v
 }
 
-// AddRule for current validate
+// AddRule for current validation
 func (v *Validation) AddRule(fields, validator string, args ...interface{}) *Rule {
+	return v.addOneRule(fields, validator, ValidatorName(validator), args)
+}
+
+// add one Rule for current validation
+func (v *Validation) addOneRule(fields, validator, realName string, args []interface{}) *Rule {
 	rule := NewRule(fields, validator, args...)
+
+	// init some settings
+	rule.realName = realName
 	rule.skipEmpty = v.SkipOnEmpty
+	// validator name is not "required"
+	rule.nameNotRequired = !strings.HasPrefix(realName, "required")
+
 	// append
 	v.rules = append(v.rules, rule)
 	return rule
@@ -233,7 +253,11 @@ func (v *Validation) AddRule(fields, validator string, args ...interface{}) *Rul
 
 // AppendRule instance
 func (v *Validation) AppendRule(rule *Rule) *Rule {
+	rule.realName = ValidatorName(rule.validator)
 	rule.skipEmpty = v.SkipOnEmpty
+	// validator name is not "required"
+	rule.nameNotRequired = !strings.HasPrefix(rule.realName, "required")
+
 	// append
 	v.rules = append(v.rules, rule)
 	return rule

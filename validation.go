@@ -511,7 +511,7 @@ func (v *Validation) GetSafe(key string) interface{} {
 	return val
 }
 
-// BindSafeData to a struct.
+// BindSafeData binding safe data to an struct.
 func (v *Validation) BindSafeData(ptr interface{}) error {
 	if len(v.safeData) == 0 { // no safe data.
 		return nil

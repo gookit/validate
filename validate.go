@@ -8,7 +8,6 @@ package validate
 
 import (
 	"reflect"
-	"strings"
 )
 
 // const requiredValidator = "required"
@@ -30,9 +29,9 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 
 	var err error
 	// get real validator name
-	name := ValidatorName(r.validator)
+	name := r.realName
 	// validator name is not "required"
-	isNotRequired := !strings.HasPrefix(name, "required")
+	isNotRequired := r.nameNotRequired
 
 	// validate each field
 	for _, field := range r.fields {
@@ -128,8 +127,6 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 
 	return false
 }
-
-// func (r *Rule) applyForField() {}
 
 func (r *Rule) fileValidate(field, name string, v *Validation) uint8 {
 	// check data source

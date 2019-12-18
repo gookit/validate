@@ -257,7 +257,7 @@ func (v *Validation) RequiredWithAll(_ string, val interface{}, kvs ...string) b
 }
 
 // RequiredWithout field under validation must be present and not empty only when any of the other specified fields are not present.
-func (v *Validation) RequiredWithout(field string, val interface{}, kvs ...string) bool {
+func (v *Validation) RequiredWithout(_ string, val interface{}, kvs ...string) bool {
 	// format error
 	if len(kvs) == 0 {
 		return false
@@ -274,7 +274,7 @@ func (v *Validation) RequiredWithout(field string, val interface{}, kvs ...strin
 }
 
 // RequiredWithoutAll field under validation must be present and not empty only when any of the other specified fields are not present.
-func (v *Validation) RequiredWithoutAll(field string, val interface{}, kvs ...string) bool {
+func (v *Validation) RequiredWithoutAll(_ string, val interface{}, kvs ...string) bool {
 	// format error
 	if len(kvs) == 0 {
 		return false
