@@ -92,103 +92,6 @@ var (
  * global validators
  *************************************************************/
 
-// global validators. contains built-in and user custom
-var (
-	validators map[string]int
-	// validator func meta info
-	validatorMetas map[string]*funcMeta
-	// validator func reflect.Value
-	validatorValues = map[string]reflect.Value{
-		// int value
-		"lt":  reflect.ValueOf(Lt),
-		"gt":  reflect.ValueOf(Gt),
-		"min": reflect.ValueOf(Min),
-		"max": reflect.ValueOf(Max),
-		// value check
-		"enum":     reflect.ValueOf(Enum),
-		"notIn":    reflect.ValueOf(NotIn),
-		"between":  reflect.ValueOf(Between),
-		"regexp":   reflect.ValueOf(Regexp),
-		"isEqual":  reflect.ValueOf(IsEqual),
-		"intEqual": reflect.ValueOf(IntEqual),
-		"notEqual": reflect.ValueOf(NotEqual),
-		// contains
-		"contains":    reflect.ValueOf(Contains),
-		"notContains": reflect.ValueOf(NotContains),
-		// data type check
-		"isInt":     reflect.ValueOf(IsInt),
-		"isMap":     reflect.ValueOf(IsMap),
-		"isUint":    reflect.ValueOf(IsUint),
-		"isBool":    reflect.ValueOf(IsBool),
-		"isFloat":   reflect.ValueOf(IsFloat),
-		"isInts":    reflect.ValueOf(IsInts),
-		"isArray":   reflect.ValueOf(IsArray),
-		"isSlice":   reflect.ValueOf(IsSlice),
-		"isString":  reflect.ValueOf(IsString),
-		"isStrings": reflect.ValueOf(IsStrings),
-		// length
-		"length":       reflect.ValueOf(Length),
-		"minLength":    reflect.ValueOf(MinLength),
-		"maxLength":    reflect.ValueOf(MaxLength),
-		"stringLength": reflect.ValueOf(StringLength),
-		// string
-		"isIntString": reflect.ValueOf(IsIntString),
-		// ip
-		"isIP":        reflect.ValueOf(IsIP),
-		"isIPv4":      reflect.ValueOf(IsIPv4),
-		"isIPv6":      reflect.ValueOf(IsIPv6),
-		"isEmail":     reflect.ValueOf(IsEmail),
-		"isASCII":     reflect.ValueOf(IsASCII),
-		"isAlpha":     reflect.ValueOf(IsAlpha),
-		"isAlphaNum":  reflect.ValueOf(IsAlphaNum),
-		"isAlphaDash": reflect.ValueOf(IsAlphaDash),
-		"isBase64":    reflect.ValueOf(IsBase64),
-		"isCIDR":      reflect.ValueOf(IsCIDR),
-		"isCIDRv4":    reflect.ValueOf(IsCIDRv4),
-		"isCIDRv6":    reflect.ValueOf(IsCIDRv6),
-		"isDNSName":   reflect.ValueOf(IsDNSName),
-		"isDataURI":   reflect.ValueOf(IsDataURI),
-		"isEmpty":     reflect.ValueOf(IsEmpty),
-		"isHexColor":  reflect.ValueOf(IsHexColor),
-		"isISBN10":    reflect.ValueOf(IsISBN10),
-		"isISBN13":    reflect.ValueOf(IsISBN13),
-		"isJSON":      reflect.ValueOf(IsJSON),
-		"isLatitude":  reflect.ValueOf(IsLatitude),
-		"isLongitude": reflect.ValueOf(IsLongitude),
-		"isMAC":       reflect.ValueOf(IsMAC),
-		"isMultiByte": reflect.ValueOf(IsMultiByte),
-		"isNumber":    reflect.ValueOf(IsNumber),
-		"isNumeric":   reflect.ValueOf(IsNumeric),
-		"isCnMobile":  reflect.ValueOf(IsCnMobile),
-		//
-		"isStringNumber":   reflect.ValueOf(IsStringNumber),
-		"hasWhitespace":    reflect.ValueOf(HasWhitespace),
-		"isHexadecimal":    reflect.ValueOf(IsHexadecimal),
-		"isPrintableASCII": reflect.ValueOf(IsPrintableASCII),
-		//
-		"isRGBColor": reflect.ValueOf(IsRGBColor),
-		"isURL":      reflect.ValueOf(IsURL),
-		"isFullURL":  reflect.ValueOf(IsFullURL),
-		"isUUID":     reflect.ValueOf(IsUUID),
-		"isUUID3":    reflect.ValueOf(IsUUID3),
-		"isUUID4":    reflect.ValueOf(IsUUID4),
-		"isUUID5":    reflect.ValueOf(IsUUID5),
-		// file system
-		"isPath":     reflect.ValueOf(IsPath),
-		"isDirPath":  reflect.ValueOf(IsDirPath),
-		"isFilePath": reflect.ValueOf(IsFilePath),
-		"isUnixPath": reflect.ValueOf(IsUnixPath),
-		"isWinPath":  reflect.ValueOf(IsWinPath),
-		// date check
-		"isDate":     reflect.ValueOf(IsDate),
-		"afterDate":  reflect.ValueOf(AfterDate),
-		"beforeDate": reflect.ValueOf(BeforeDate),
-		//
-		"afterOrEqualDate":  reflect.ValueOf(AfterOrEqualDate),
-		"beforeOrEqualDate": reflect.ValueOf(BeforeOrEqualDate),
-	}
-)
-
 type funcMeta struct {
 	fv   reflect.Value
 	name string
@@ -228,14 +131,13 @@ func newFuncMeta(name string, isInternal bool, fv reflect.Value) *funcMeta {
 	return fm
 }
 
-func init() {
-	validators = make(map[string]int)
-	validatorMetas = make(map[string]*funcMeta)
-
-	for n, fv := range validatorValues {
-		validators[n] = 1 // built in
-		validatorMetas[n] = newFuncMeta(n, true, fv)
+// ValidatorName get real validator name.
+func ValidatorName(name string) string {
+	if rName, ok := validatorAliases[name]; ok {
+		return rName
 	}
+
+	return name
 }
 
 // AddValidators to the global validators map
@@ -1008,6 +910,33 @@ func HasUpperCase(s string) bool {
 	}
 
 	return rxHasUpperCase.MatchString(s)
+}
+
+// StartsWith check string is starts with sub-string
+func StartsWith(s, sub string) bool {
+	if s == "" {
+		return false
+	}
+
+	return strings.HasPrefix(s, sub)
+}
+
+// EndsWith check string is ends with sub-string
+func EndsWith(s, sub string) bool {
+	if s == "" {
+		return false
+	}
+
+	return strings.HasSuffix(s, sub)
+}
+
+// StringContains check string is contains sub-string
+func StringContains(s, sub string) bool {
+	if s == "" {
+		return false
+	}
+
+	return strings.Contains(s, sub)
 }
 
 // Regexp match value string

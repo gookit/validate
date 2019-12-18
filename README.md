@@ -17,7 +17,7 @@ The package is a generic Go data validate and filter tool library.
 - Support custom error messages, field translates.
 - Customizable i18n aware error messages, built in `en`, `zh-CN`
 - Built-in common data type filter/converter. see [Built In Filters](#built-in-filters)
-- Many commonly used validators have been built in(> 60), see [Built In Validators](#built-in-validators)
+- Many commonly used validators have been built in(**> 70**), see [Built In Validators](#built-in-validators)
 
 > Inspired the projects [albrow/forms](https://github.com/albrow/forms) and [asaskevich/govalidator](https://github.com/asaskevich/govalidator). Thank you very much
 
@@ -199,7 +199,7 @@ func main()  {
 			fmt.Println(v.Errors.One()) // returns a random error message text
 		}
 	})
-	
+
 	http.ListenAndServe(":8090", handler)
 }
 ```

@@ -441,6 +441,23 @@ func TestStringCheck(t *testing.T) {
 	is.True(Regexp("123", "[0-9]+"))
 }
 
+func TestStringContains(t *testing.T) {
+	// StringContains
+	assert.True(t, StringContains("abc123", "123"))
+	assert.False(t, StringContains("", "1234"))
+	assert.False(t, StringContains("abc123", "1234"))
+
+	// StartsWith
+	assert.True(t, StartsWith("abc123", "abc"))
+	assert.False(t, StartsWith("", "123"))
+	assert.False(t, StartsWith("abc123", "123"))
+
+	// EndsWith
+	assert.True(t, EndsWith("abc123", "123"))
+	assert.False(t, EndsWith("", "abc"))
+	assert.False(t, EndsWith("abc123", "abc"))
+}
+
 func TestURLString(t *testing.T) {
 	is := assert.New(t)
 
