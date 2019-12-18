@@ -1,6 +1,7 @@
 package validate
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -74,4 +75,36 @@ func TestIssues20(t *testing.T) {
 	is.False(v.Validate())
 	is.Len(v.Errors, 1)
 	is.Equal("Avatar must be an valid full URL address", v.Errors.One())
+}
+
+// https://github.com/gookit/validate/issues/30
+func TestIssues30(t *testing.T)  {
+	// 修改为 "10" 则不会panic
+	v := JSON(`{
+   "cost_type": 10
+}`)
+
+	v.StringRule("cost_type", "str_num")
+	v.Validate()
+
+	fmt.Println(v.Errors)
+}
+
+// https://github.com/gookit/validate/issues/34
+func TestIssues34(t *testing.T)  {
+	type STATUS int32
+	var s1 STATUS = 1
+
+	v := New(M{
+		"age": s1,
+	})
+	v.StringRules(MS{
+		"age": "required|in:1,2,3,4",
+	})
+
+	fmt.Println(Enum(s1, []int{1,2,3,4}), Enum(int32(s1), []int{1,2,3,4}))
+
+	v.Validate()
+
+	fmt.Println(v.Errors)
 }

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"net"
 	"net/url"
-	"os"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -13,6 +12,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/gookit/goutil/fsutil"
 	"github.com/gookit/goutil/mathutil"
 	"github.com/gookit/goutil/strutil"
 )
@@ -149,7 +149,6 @@ var (
 		"isDNSName":   reflect.ValueOf(IsDNSName),
 		"isDataURI":   reflect.ValueOf(IsDataURI),
 		"isEmpty":     reflect.ValueOf(IsEmpty),
-		"isFilePath":  reflect.ValueOf(IsFilePath),
 		"isHexColor":  reflect.ValueOf(IsHexColor),
 		"isISBN10":    reflect.ValueOf(IsISBN10),
 		"isISBN13":    reflect.ValueOf(IsISBN13),
@@ -159,8 +158,10 @@ var (
 		"isMAC":       reflect.ValueOf(IsMAC),
 		"isMultiByte": reflect.ValueOf(IsMultiByte),
 		"isNumber":    reflect.ValueOf(IsNumber),
+		"isNumeric":    reflect.ValueOf(IsNumeric),
 		"isCnMobile":  reflect.ValueOf(IsCnMobile),
 		//
+		"isStringNumber":   reflect.ValueOf(IsStringNumber),
 		"hasWhitespace":    reflect.ValueOf(HasWhitespace),
 		"isHexadecimal":    reflect.ValueOf(IsHexadecimal),
 		"isPrintableASCII": reflect.ValueOf(IsPrintableASCII),
@@ -172,6 +173,10 @@ var (
 		"isUUID3":    reflect.ValueOf(IsUUID3),
 		"isUUID4":    reflect.ValueOf(IsUUID4),
 		"isUUID5":    reflect.ValueOf(IsUUID5),
+		// file system
+		"isPath": reflect.ValueOf(IsPath),
+		"isDirPath": reflect.ValueOf(IsDirPath),
+		"isFilePath": reflect.ValueOf(IsFilePath),
 		"isUnixPath": reflect.ValueOf(IsUnixPath),
 		"isWinPath":  reflect.ValueOf(IsWinPath),
 		// date check
@@ -872,32 +877,24 @@ func IsAlphaDash(s string) bool {
 }
 
 // IsNumber string. should >= 0
-func IsNumber(s string) bool {
+func IsNumber(v interface{}) bool {
+	if s, err := strutil.ToString(v); err == nil {
+		return s != "" && rxNumber.MatchString(s)
+	}
+	return false
+}
+
+// IsNumeric is string/int number. should >= 0
+func IsNumeric(v interface{}) bool {
+	if s, err := strutil.ToString(v); err == nil {
+		return s != "" && rxNumber.MatchString(s)
+	}
+	return false
+}
+
+// IsStringNumber is string number. should >= 0
+func IsStringNumber(s string) bool {
 	return s != "" && rxNumber.MatchString(s)
-}
-
-// IsFilePath string
-func IsFilePath(str string) bool {
-	if str == "" {
-		return false
-	}
-
-	if _, err := os.Stat(str); err != nil {
-		if os.IsNotExist(err) {
-			return false
-		}
-	}
-	return true
-}
-
-// IsWinPath string
-func IsWinPath(s string) bool {
-	return s != "" && rxWinPath.MatchString(s)
-}
-
-// IsUnixPath string
-func IsUnixPath(s string) bool {
-	return s != "" && rxUnixPath.MatchString(s)
 }
 
 // IsEmail check
@@ -1017,6 +1014,34 @@ func HasUpperCase(s string) bool {
 func Regexp(str string, pattern string) bool {
 	ok, _ := regexp.MatchString(pattern, str)
 	return ok
+}
+
+/*************************************************************
+ * global: filesystem validators
+ *************************************************************/
+
+// IsPath reports whether the named file or directory exists.
+func IsPath(path string) bool {
+	return fsutil.PathExists(path)
+}
+
+// IsFilePath string
+func IsFilePath(path string) bool {
+	return fsutil.IsFile(path)
+}
+
+func IsDirPath(path string) bool {
+	return fsutil.IsDir(path)
+}
+
+// IsWinPath string
+func IsWinPath(s string) bool {
+	return s != "" && rxWinPath.MatchString(s)
+}
+
+// IsUnixPath string
+func IsUnixPath(s string) bool {
+	return s != "" && rxUnixPath.MatchString(s)
 }
 
 /*************************************************************
@@ -1331,5 +1356,3 @@ func AfterDate(srcDate, dstDate string) bool {
 
 	return st.After(dt)
 }
-
-// TODO more: IsDir IsDiskFile
