@@ -20,7 +20,8 @@ func TestErrorsBasic(t *testing.T) {
 	assert.Equal(t, "test:\n v0: err msg0", es.String())
 
 	es.Add("test2", "v1", "err msg2")
-	assert.Equal(t, "map[test:map[v0:err msg0] test2:map[v1:err msg2]]", fmt.Sprintf("%v", es.All()))
+	assert.Contains(t, fmt.Sprintf("%v", es.All()), "test:map[v0:err msg0]")
+	assert.Contains(t, fmt.Sprintf("%v", es.All()), "test2:map[v1:err msg2]")
 
 	es.Add("test", "v1", "err msg1")
 	assert.Len(t, es.Field("test"), 2)
