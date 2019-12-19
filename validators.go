@@ -385,8 +385,8 @@ func isFileValidator(name string) bool {
 	return strings.Contains(fileValidators, "|"+name+"|")
 }
 
-// IsFile check field is uploaded file
-func (v *Validation) IsFile(fd *FormData, field string) (ok bool) {
+// IsFormFile check field is uploaded file
+func (v *Validation) IsFormFile(fd *FormData, field string) (ok bool) {
 	if fh := fd.GetFile(field); fh != nil {
 		_, err := fh.Open()
 		if err == nil {
@@ -396,11 +396,11 @@ func (v *Validation) IsFile(fd *FormData, field string) (ok bool) {
 	return false
 }
 
-// IsImage check field is uploaded image file.
+// IsFormImage check field is uploaded image file.
 // Usage:
 // 	v.AddRule("avatar", "image")
 // 	v.AddRule("avatar", "image", "jpg", "png", "gif") // set ext limit
-func (v *Validation) IsImage(fd *FormData, field string, exts ...string) (ok bool) {
+func (v *Validation) IsFormImage(fd *FormData, field string, exts ...string) (ok bool) {
 	mime := fd.FileMimeType(field)
 	if mime == "" {
 		return

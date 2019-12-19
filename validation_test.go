@@ -437,7 +437,7 @@ func TestFromRequest_FileForm(t *testing.T) {
 	v.Validate()
 	is.True(v.IsOK())
 
-	ok = v.IsImage(fd, "file")
+	ok = v.IsFormImage(fd, "file")
 	is.True(ok)
 
 	ok = v.InMimeTypes(fd, "not-exist", "image/jpg")

@@ -23,7 +23,7 @@ func TestRule(t *testing.T) {
 	r.SetFilterFunc(func(val interface{}) (interface{}, error) {
 		return val.(string) + "-HI", nil
 	})
-	r.SetBeforeFunc(func(field string, v *Validation) bool {
+	r.SetBeforeFunc(func(v *Validation) bool {
 		return true
 	})
 
@@ -65,7 +65,7 @@ func TestRule_SetBeforeFunc(t *testing.T) {
 	v = Map(mp)
 	v.
 		AddRule("avatar", "isFile").
-		SetBeforeFunc(func(field string, v *Validation) bool {
+		SetBeforeFunc(func(v *Validation) bool {
 			// return false for skip validate
 			return false
 		})

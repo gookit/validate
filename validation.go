@@ -143,8 +143,8 @@ func NewValidation(data DataFace, scene ...string) *Validation {
 		"ltField":  reflect.ValueOf(v.LtField),
 		"lteField": reflect.ValueOf(v.LteField),
 		// file upload check
-		"isFile":      reflect.ValueOf(v.IsFile),
-		"isImage":     reflect.ValueOf(v.IsImage),
+		"isFile":      reflect.ValueOf(v.IsFormFile),
+		"isImage":     reflect.ValueOf(v.IsFormImage),
 		"inMimeTypes": reflect.ValueOf(v.InMimeTypes),
 	}
 
@@ -428,7 +428,6 @@ func (v *Validation) WithError(err error) *Validation {
 	if err != nil {
 		v.AddError(validateError, validateError, err.Error())
 	}
-
 	return v
 }
 
@@ -446,8 +445,8 @@ func (v *Validation) AddErrorf(field, msgFormat string, args ...interface{}) {
 	v.AddError(field, validateError, fmt.Sprintf(msgFormat, args...))
 }
 
-func (v *Validation) convertArgTypeError(name string, argKind, wantKind reflect.Kind) {
-	v.AddErrorf("_convert", "cannot convert %s to %s, validator '%s'", argKind, wantKind, name)
+func (v *Validation) convertArgTypeError(field, name string, argKind, wantKind reflect.Kind) {
+	v.AddErrorf(field, "cannot convert %s to %s, validator '%s'", argKind, wantKind, name)
 }
 
 /*************************************************************
@@ -483,6 +482,22 @@ func (v *Validation) Get(key string) (interface{}, bool) {
 	return v.data.Get(key)
 }
 
+// GetWithDefault get field value by key.
+// On not found, if has default value, will return default-value.
+func (v *Validation) GetWithDefault(key string) (val interface{}, exist, isDefault bool) {
+	// get field value.
+	val, exist = v.Get(key)
+	if exist {
+		return
+	}
+
+	// find default value
+	val, exist = v.defValues[key]
+	isDefault = exist
+
+	return
+}
+
 // Filtered get filtered value by key
 func (v *Validation) Filtered(key string) interface{} {
 	val, _ := v.filteredData[key]
@@ -509,6 +524,11 @@ func (v *Validation) SafeVal(key string) interface{} {
 func (v *Validation) GetSafe(key string) interface{} {
 	val, _ := v.Safe(key)
 	return val
+}
+
+// BindStruct binding safe data to an struct.
+func (v *Validation) BindStruct(ptr interface{}) error {
+	return v.BindSafeData(ptr)
 }
 
 // BindSafeData binding safe data to an struct.

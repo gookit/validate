@@ -156,3 +156,25 @@ func TestValidation_RequiredWithoutAll(t *testing.T) {
 	v.Validate()
 	assert.Equal(t, "nothing field is required when none of [sex city] are present", v.Errors.One())
 }
+
+func TestVariadicArgs(t *testing.T) {
+	// use custom validator
+	v := New(M{
+		"age": 2,
+	})
+	v.AddValidator("checkAge", func(val interface{}, ints ...int) bool {
+		return Enum(val, ints)
+	})
+	v.StringRule("age", "required|checkAge:1,2,3,4")
+	assert.True(t, v.Validate())
+
+	v = New(M{
+		"age": 2,
+	})
+	v.AddValidator("checkAge", func(val interface{}, ints ...interface{}) bool {
+		return Enum(val, ints)
+	})
+	v.StringRule("age", "required|checkAge:1,2,3,4")
+	ok := v.Validate()
+	assert.True(t, ok)
+}

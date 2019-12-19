@@ -253,7 +253,7 @@ func toInt64Slice(enum interface{}) (ret []int64, ok bool) {
 	return
 }
 
-func getSliceItemKind(typString string) reflect.Kind {
+func getVariadicKind(typString string) reflect.Kind {
 	switch typString {
 	case "[]int":
 		return reflect.Int
@@ -269,6 +269,8 @@ func getSliceItemKind(typString string) reflect.Kind {
 		return reflect.Uint64
 	case "[]string":
 		return reflect.String
+	case "[]interface {}": // args ...interface{}
+		return reflect.Interface
 	}
 	return reflect.Invalid
 }

@@ -24,7 +24,12 @@ const (
 func (r *Rule) Apply(v *Validation) (stop bool) {
 	// scene name is not match. skip the rule
 	if r.scene != "" && r.scene != v.scene {
-		return false
+		return
+	}
+
+	// has beforeFunc and it return FALSE, skip validate
+	if r.beforeFunc != nil && !r.beforeFunc(v) {
+		return
 	}
 
 	var err error
@@ -36,11 +41,6 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 	// validate each field
 	for _, field := range r.fields {
 		if v.isNotNeedToCheck(field) {
-			continue
-		}
-
-		// has beforeFunc and it return FALSE, skip validate
-		if r.beforeFunc != nil && !r.beforeFunc(field, v) {
 			continue
 		}
 
@@ -57,35 +57,33 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 			continue
 		}
 
-		// get field value.
-		val, exist := v.Get(field)
+		// get field value. val, exist := v.Get(field)
+		val, exist, isDefault := v.GetWithDefault(field)
 
-		// field not exist
-		if !exist {
-			defVal, ok := v.GetDefValue(field)
-			// has default value
-			if ok {
-				// update source data field value
-				newVal, err := v.updateValue(field, defVal)
-				if err != nil {
-					panicf(err.Error())
+		// not exists but has default value
+		if isDefault {
+			// update source data field value and re-set value
+			val, err := v.updateValue(field, val)
+			if err != nil {
+				// panicf(err.Error())
+				v.AddErrorf(field, err.Error())
+				if v.StopOnError {
+					return true
 				}
-
-				// re-set value
-				val = newVal
-
-				// dont need check default value
-				if !v.CheckDefault {
-					// save validated value.
-					v.safeData[field] = val
-					continue
-				}
-
-				// go on check custom default value
-				exist = true
-			} else if r.optional { // r.optional=true. skip check.
 				continue
 			}
+
+			// dont need check default value
+			if !v.CheckDefault {
+				// save validated value.
+				v.safeData[field] = val
+				continue
+			}
+
+			// go on check custom default value
+			exist = true
+		} else if r.optional { // r.optional=true. skip check.
+			continue
 		}
 
 		// apply filter func.
@@ -98,7 +96,12 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 			// update source field value
 			newVal, err := v.updateValue(field, val)
 			if err != nil {
-				panicf(err.Error())
+				// panicf(err.Error())
+				v.AddErrorf(field, err.Error())
+				if v.StopOnError {
+					return true
+				}
+				continue
 			}
 
 			// re-set value
@@ -113,7 +116,7 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 		}
 
 		// validate field value
-		if r.valueValidate(field, name, isNotRequired, val, v) {
+		if r.valueValidate(field, name, val, v) {
 			v.safeData[field] = val // save validated value.
 		} else { // build and collect error message
 			v.AddError(field, r.validator, r.errorMessage(field, r.validator, v))
@@ -147,9 +150,9 @@ func (r *Rule) fileValidate(field, name string, v *Validation) uint8 {
 
 	switch name {
 	case "isFile":
-		ok = v.IsFile(form, field)
+		ok = v.IsFormFile(form, field)
 	case "isImage":
-		ok = v.IsImage(form, field, ss...)
+		ok = v.IsFormImage(form, field, ss...)
 	case "inMimeTypes":
 		if ln := len(ss); ln == 0 {
 			panicf("not enough parameters for validator '%s'!", r.validator)
@@ -169,7 +172,7 @@ func (r *Rule) fileValidate(field, name string, v *Validation) uint8 {
 }
 
 // validate the field value
-func (r *Rule) valueValidate(field, name string, isNotRequired bool, val interface{}, v *Validation) bool {
+func (r *Rule) valueValidate(field, name string, val interface{}, v *Validation) bool {
 	// "-" OR "safe" mark field value always is safe.
 	if name == "-" || name == "safe" {
 		return true
@@ -189,8 +192,8 @@ func (r *Rule) valueValidate(field, name string, isNotRequired bool, val interfa
 	argNum := len(r.arguments) + 1 // "+1" is the "val" position
 	rftVal := reflect.ValueOf(val)
 	valKind := rftVal.Kind()
-	// check arg num is match, need exclude "required"
-	if isNotRequired {
+	// check arg num is match, need exclude "requiredXXX"
+	if r.nameNotRequired {
 		//noinspection GoNilness
 		fm.checkArgNum(argNum, r.validator)
 
@@ -202,7 +205,7 @@ func (r *Rule) valueValidate(field, name string, isNotRequired bool, val interfa
 			ak, err := basicKind(rftVal)
 			if err != nil { // todo check?
 				//noinspection GoNilness
-				v.convertArgTypeError(fm.name, valKind, firstTyp)
+				v.convertArgTypeError(field, fm.name, valKind, firstTyp)
 				return false
 			}
 
@@ -213,17 +216,17 @@ func (r *Rule) valueValidate(field, name string, isNotRequired bool, val interfa
 		}
 	}
 
-	// call built in validators
+	// 1. args data type convert
+	args := r.arguments
+	if ok := convertArgsType(v, fm, field, args); !ok {
+		return false
+	}
+
+	// 2. call built in validators
 	return callValidator(v, fm, field, val, r.arguments)
 }
 
 func callValidator(v *Validation, fm *funcMeta, field string, val interface{}, args []interface{}) (ok bool) {
-	// 1. args data type convert
-	if ok = convertArgsType(v, fm, args); !ok {
-		return
-	}
-
-	// 2. call built in validator
 	switch fm.name {
 	case "required":
 		ok = v.Required(field, val)
@@ -297,7 +300,7 @@ func callValidator(v *Validation, fm *funcMeta, field string, val interface{}, a
 }
 
 // convert args data type
-func convertArgsType(v *Validation, fm *funcMeta, args []interface{}) (ok bool) {
+func convertArgsType(v *Validation, fm *funcMeta, field string, args []interface{}) (ok bool) {
 	if len(args) == 0 {
 		return true
 	}
@@ -306,11 +309,16 @@ func convertArgsType(v *Validation, fm *funcMeta, args []interface{}) (ok bool) 
 	lastTyp := reflect.Invalid
 	lastArgIndex := fm.numIn - 1
 
-	// isVariadic == true. last arg always is slice.
+	// fix: isVariadic == true. last arg always is slice.
 	// eg. "...int64" -> slice "[]int64"
 	if fm.isVariadic {
 		// get variadic kind. "[]int64" -> reflect.Int64
-		lastTyp = getSliceItemKind(ft.In(lastArgIndex).String())
+		lastTyp = getVariadicKind(ft.In(lastArgIndex).String())
+	}
+
+	// only one args and it type is interface{}
+	if lastArgIndex == 1 && lastTyp == reflect.Interface {
+		return true
 	}
 
 	var wantTyp reflect.Kind
@@ -319,7 +327,7 @@ func convertArgsType(v *Validation, fm *funcMeta, args []interface{}) (ok bool) 
 	for i, arg := range args {
 		av := reflect.ValueOf(arg)
 
-		// Notice: "+1" because first arg is val, need exclude it.
+		// Notice: "+1" because first arg is field-value, need exclude it.
 		if fm.isVariadic && i+1 >= lastArgIndex {
 			if lastTyp == av.Kind() { // type is same
 				continue
@@ -327,7 +335,7 @@ func convertArgsType(v *Validation, fm *funcMeta, args []interface{}) (ok bool) 
 
 			ak, err := basicKind(av)
 			if err != nil {
-				v.convertArgTypeError(fm.name, av.Kind(), wantTyp)
+				v.convertArgTypeError(field, fm.name, av.Kind(), wantTyp)
 				return
 			}
 
@@ -338,7 +346,7 @@ func convertArgsType(v *Validation, fm *funcMeta, args []interface{}) (ok bool) 
 			}
 
 			// unable to convert
-			v.convertArgTypeError(fm.name, av.Kind(), wantTyp)
+			v.convertArgTypeError(field, fm.name, av.Kind(), wantTyp)
 			return
 		}
 
@@ -353,7 +361,7 @@ func convertArgsType(v *Validation, fm *funcMeta, args []interface{}) (ok bool) 
 
 		ak, err := basicKind(av)
 		if err != nil {
-			v.convertArgTypeError(fm.name, av.Kind(), wantTyp)
+			v.convertArgTypeError(field, fm.name, av.Kind(), wantTyp)
 			return
 		}
 
@@ -362,7 +370,7 @@ func convertArgsType(v *Validation, fm *funcMeta, args []interface{}) (ok bool) 
 		} else if nVal, _ := convertType(args[i], ak, wantTyp); nVal != nil { // manual converted
 			args[i] = nVal
 		} else { // unable to convert
-			v.convertArgTypeError(fm.name, av.Kind(), wantTyp)
+			v.convertArgTypeError(field, fm.name, av.Kind(), wantTyp)
 			return
 		}
 	}

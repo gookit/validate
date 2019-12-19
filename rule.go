@@ -41,7 +41,7 @@ type Rule struct {
 	arguments []interface{}
 	// --- some hooks function
 	// has beforeFunc. if return false, skip validate current rule
-	beforeFunc func(field string, v *Validation) bool // func (val interface{}) bool
+	beforeFunc func(v *Validation) bool // func (val interface{}) bool
 	// you can custom filter func
 	filterFunc func(val interface{}) (interface{}, error)
 	// custom check func's mate info
@@ -102,7 +102,7 @@ func (r *Rule) SetFilterFunc(fn func(val interface{}) (interface{}, error)) *Rul
 }
 
 // SetBeforeFunc for the rule. will call it before validate.
-func (r *Rule) SetBeforeFunc(fn func(field string, v *Validation) bool) {
+func (r *Rule) SetBeforeFunc(fn func(v *Validation) bool) {
 	r.beforeFunc = fn
 }
 
@@ -180,7 +180,7 @@ func (v *Validation) StringRule(field, rule string, filterRule ...string) *Valid
 			// set error message for the field
 			case "message":
 				// message key like "age.required"
-				v.trans.AddMessage(field + "." + validator, list[1])
+				v.trans.AddMessage(field+"."+validator, list[1])
 			// add default value for the field
 			case "default":
 				v.SetDefValue(field, list[1])
