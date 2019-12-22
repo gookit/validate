@@ -935,11 +935,12 @@ func PathExists(path string) bool {
 	return fsutil.PathExists(path)
 }
 
-// IsFilePath string
+// IsFilePath check input path string is file path
 func IsFilePath(path string) bool {
 	return fsutil.IsFile(path)
 }
 
+// IsDirPath check input path string is dir path
 func IsDirPath(path string) bool {
 	return fsutil.IsDir(path)
 }
@@ -1118,7 +1119,7 @@ func InIntegers(val int64, enum []int64) bool {
 	return Enum(val, enum)
 }
 
-// InIntegers value(string) should be in the given enum([]string)
+// InStrings value(string) should be in the given enum([]string)
 func InStrings(val string, enum []string) bool {
 	return Enum(val, enum)
 }
