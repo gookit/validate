@@ -128,9 +128,10 @@ var builtinMessages = map[string]string{
 
 	"isFile":  "{field} must be an uploaded file",
 	"isImage": "{field} must be an uploaded image file",
+	"regexp": "{field} must be pass the regexp %s",
 
 	"enum":  "{field} value must be in the enum %v",
-	"range": "{field} value must be in the range %d - %d",
+	"between": "{field} value must be in the range %d - %d",
 	// required
 	"required":             "{field} is required and not empty",
 	"required_if":          "{field} is required when {args0} is {args1end}",

@@ -188,3 +188,20 @@ func TestVariadicArgs(t *testing.T) {
 // 	v.StringRule("status", "enum_int:1,2,3,4")
 // 	assert.True(t, v.Validate())
 // }
+
+func TestStructUseRegex(t *testing.T) {
+	type regForm struct {
+		Age int `validate:"regex:^\\d{1,3}$"`
+	}
+
+	f1 := regForm{12}
+	v := Struct(&f1)
+	ok := v.Validate() // True
+	assert.True(t, ok)
+
+	f1 = regForm{1200}
+	v = Struct(&f1)
+	ok = v.Validate() // False
+	assert.False(t, ok)
+	assert.Equal(t, `Age must be pass the regexp ^\d{1,3}$`, v.Errors.One())
+}
