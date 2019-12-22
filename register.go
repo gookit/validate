@@ -1,6 +1,9 @@
 package validate
 
-import "reflect"
+import (
+	"reflect"
+	"strings"
+)
 
 var (
 	// global validators. contains built-in and user custom
@@ -28,13 +31,15 @@ var validatorValues = map[string]reflect.Value{
 	"min": reflect.ValueOf(Min),
 	"max": reflect.ValueOf(Max),
 	// value check
-	"enum":     reflect.ValueOf(Enum),
-	"notIn":    reflect.ValueOf(NotIn),
-	"between":  reflect.ValueOf(Between),
-	"regexp":   reflect.ValueOf(Regexp),
-	"isEqual":  reflect.ValueOf(IsEqual),
-	"intEqual": reflect.ValueOf(IntEqual),
-	"notEqual": reflect.ValueOf(NotEqual),
+	"enum":       reflect.ValueOf(Enum),
+	"notIn":      reflect.ValueOf(NotIn),
+	"inIntegers": reflect.ValueOf(InIntegers),
+	"inStrings":  reflect.ValueOf(InStrings),
+	"between":    reflect.ValueOf(Between),
+	"regexp":     reflect.ValueOf(Regexp),
+	"isEqual":    reflect.ValueOf(IsEqual),
+	"intEqual":   reflect.ValueOf(IntEqual),
+	"notEqual":   reflect.ValueOf(NotEqual),
 	// contains
 	"contains":    reflect.ValueOf(Contains),
 	"notContains": reflect.ValueOf(NotContains),
@@ -118,9 +123,16 @@ var validatorValues = map[string]reflect.Value{
 // define validator alias name mapping
 var validatorAliases = map[string]string{
 	// alias -> real name
-	"in":     "enum",
-	"not_in": "notIn",
-	"range":  "between",
+	"in":          "enum",
+	"not_in":      "notIn",
+	"range":       "between",
+	"in_integers": "inIntegers",
+	"in_ints":     "inIntegers",
+	"enum_int":    "inIntegers",
+	"enum_ints":   "inIntegers",
+	"in_strings":  "inStrings",
+	"enum_str":    "inStrings",
+	"enum_string": "inStrings",
 	// type
 	"int":       "isInt",
 	"integer":   "isInt",
@@ -319,4 +331,115 @@ var validatorAliases = map[string]string{
 	"required_without_all": "requiredWithoutAll",
 	// other
 	"not_contains": "notContains",
+}
+
+/*************************************************************
+ * register validate rules
+ *************************************************************/
+
+// StringRule add field rules by string
+// Usage:
+// 	v.StringRule("name", "required|string|minLen:6")
+// 	// will try convert to int before apply validate.
+// 	v.StringRule("age", "required|int|min:12", "toInt")
+func (v *Validation) StringRule(field, rule string, filterRule ...string) *Validation {
+	rule = strings.TrimSpace(rule)
+	rules := stringSplit(strings.Trim(rule, "|:"), "|")
+	for _, validator := range rules {
+		validator = strings.Trim(validator, ":")
+		if validator == "" { // empty
+			continue
+		}
+
+		// has args "min:12"
+		if strings.ContainsRune(validator, ':') {
+			list := stringSplit(validator, ":")
+			// reassign value
+			validator := list[0]
+			realName := ValidatorName(validator)
+			switch realName {
+			// set error message for the field
+			case "message":
+				// message key like "age.required"
+				v.trans.AddMessage(field+"."+validator, list[1])
+			// add default value for the field
+			case "default":
+				v.SetDefValue(field, list[1])
+			// eg 'regex:\d{4,6}' dont need split args. args is "\d{4,6}"
+			case "regexp":
+				v.AddRule(field, validator, list[1])
+			// some special validator. need merge args to one.
+			case "enum", "notIn", "inIntegers", "inStrings":
+				v.AddRule(field, validator, parseArgString(list[1]))
+			default:
+				args := parseArgString(list[1])
+				v.AddRule(field, validator, strings2Args(args)...)
+			}
+		} else {
+			v.AddRule(field, validator)
+		}
+	}
+
+	if len(filterRule) > 0 {
+		v.FilterRule(field, filterRule[0])
+	}
+	return v
+}
+
+// StringRules add multi rules by string map.
+// Usage:
+// 	v.StringRules(map[string]string{
+// 		"name": "required|string|min:12",
+// 		"age": "required|int|min:12",
+// 	})
+func (v *Validation) StringRules(mp MS) *Validation {
+	for name, rule := range mp {
+		v.StringRule(name, rule)
+	}
+	return v
+}
+
+// ConfigRules add multi rules by string map. alias of StringRules()
+// Usage:
+// 	v.ConfigRules(map[string]string{
+// 		"name": "required|string|min:12",
+// 		"age": "required|int|min:12",
+// 	})
+func (v *Validation) ConfigRules(mp MS) *Validation {
+	for name, rule := range mp {
+		v.StringRule(name, rule)
+	}
+	return v
+}
+
+// AddRule for current validation
+func (v *Validation) AddRule(fields, validator string, args ...interface{}) *Rule {
+	return v.addOneRule(fields, validator, ValidatorName(validator), args)
+}
+
+// add one Rule for current validation
+func (v *Validation) addOneRule(fields, validator, realName string, args []interface{}) *Rule {
+	rule := NewRule(fields, validator, args...)
+
+	// init some settings
+	rule.realName = realName
+	rule.skipEmpty = v.SkipOnEmpty
+	// validator name is not "required"
+	rule.nameNotRequired = !strings.HasPrefix(realName, "required")
+
+	// append
+	v.rules = append(v.rules, rule)
+	return rule
+}
+
+// AppendRule instance
+func (v *Validation) AppendRule(rule *Rule) *Rule {
+	rule.realName = ValidatorName(rule.validator)
+	rule.skipEmpty = v.SkipOnEmpty
+	// validator name is not "required"
+	rule.nameNotRequired = !strings.HasPrefix(rule.realName, "required")
+
+	// append
+	v.rules = append(v.rules, rule)
+	return rule
 }

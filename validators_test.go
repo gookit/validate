@@ -592,6 +592,9 @@ func TestEnumAndNotIn(t *testing.T) {
 		is.True(NotIn(val, list))
 		is.False(Enum(val, list))
 	}
+
+	is.True(InIntegers(2, []int64{2, 3}))
+	is.True(InStrings("a", []string{"a", "b"}))
 }
 
 func TestDateCheck(t *testing.T) {

@@ -8,6 +8,8 @@ package validate
 
 import (
 	"reflect"
+
+	"github.com/gookit/goutil/dump"
 )
 
 // const requiredValidator = "required"
@@ -205,7 +207,7 @@ func (r *Rule) valueValidate(field, name string, val interface{}, v *Validation)
 			ak, err := basicKind(rftVal)
 			if err != nil { // todo check?
 				//noinspection GoNilness
-				v.convertArgTypeError(field, fm.name, valKind, firstTyp)
+				v.convertArgTypeError(field, fm.name, valKind, firstTyp, 0)
 				return false
 			}
 
@@ -214,6 +216,7 @@ func (r *Rule) valueValidate(field, name string, val interface{}, v *Validation)
 				val = nVal
 			}
 		}
+		dump.Println(firstTyp, valKind)
 	}
 
 	// 1. args data type convert
@@ -221,7 +224,7 @@ func (r *Rule) valueValidate(field, name string, val interface{}, v *Validation)
 	if ok := convertArgsType(v, fm, field, args); !ok {
 		return false
 	}
-
+dump.P(name, val, args, r.arguments)
 	// 2. call built in validators
 	return callValidator(v, fm, field, val, r.arguments)
 }
@@ -306,52 +309,55 @@ func convertArgsType(v *Validation, fm *funcMeta, field string, args []interface
 	}
 
 	ft := fm.fv.Type()
-	lastTyp := reflect.Invalid
-	lastArgIndex := fm.numIn - 1
+
+	lastIndex := fm.numIn - 1
+	lastType := ft.In(lastIndex).Kind()
 
 	// fix: isVariadic == true. last arg always is slice.
 	// eg. "...int64" -> slice "[]int64"
 	if fm.isVariadic {
 		// get variadic kind. "[]int64" -> reflect.Int64
-		lastTyp = getVariadicKind(ft.In(lastArgIndex).String())
+		lastType = getVariadicKind(ft.In(lastIndex).String())
 	}
 
 	// only one args and it type is interface{}
-	if lastArgIndex == 1 && lastTyp == reflect.Interface {
+	if lastIndex == 1 && lastType == reflect.Interface {
 		return true
 	}
-
+	dump.Println(lastType)
 	var wantTyp reflect.Kind
 
 	// convert args data type
 	for i, arg := range args {
 		av := reflect.ValueOf(arg)
-
+		// index in the func
+		fcArgIndex := i + 1
+		dump.Println(arg)
 		// Notice: "+1" because first arg is field-value, need exclude it.
-		if fm.isVariadic && i+1 >= lastArgIndex {
-			if lastTyp == av.Kind() { // type is same
+		if fm.isVariadic && fcArgIndex >= lastIndex {
+			if lastType == av.Kind() { // type is same
 				continue
 			}
 
 			ak, err := basicKind(av)
 			if err != nil {
-				v.convertArgTypeError(field, fm.name, av.Kind(), wantTyp)
+				v.convertArgTypeError(field, fm.name, av.Kind(), lastType, fcArgIndex)
 				return
 			}
 
 			// manual converted
-			if nVal, _ := convertType(args[i], ak, lastTyp); nVal != nil {
+			if nVal, _ := convertType(args[i], ak, lastType); nVal != nil {
 				args[i] = nVal
 				continue
 			}
 
 			// unable to convert
-			v.convertArgTypeError(field, fm.name, av.Kind(), wantTyp)
+			v.convertArgTypeError(field, fm.name, av.Kind(), lastType, fcArgIndex)
 			return
 		}
 
 		// "+1" because func first arg is val, need skip it.
-		argITyp := ft.In(i + 1)
+		argITyp := ft.In(fcArgIndex)
 		wantTyp = argITyp.Kind()
 
 		// type is same. or want type is interface
@@ -361,7 +367,7 @@ func convertArgsType(v *Validation, fm *funcMeta, field string, args []interface
 
 		ak, err := basicKind(av)
 		if err != nil {
-			v.convertArgTypeError(field, fm.name, av.Kind(), wantTyp)
+			v.convertArgTypeError(field, fm.name, av.Kind(), wantTyp, fcArgIndex)
 			return
 		}
 
@@ -370,7 +376,7 @@ func convertArgsType(v *Validation, fm *funcMeta, field string, args []interface
 		} else if nVal, _ := convertType(args[i], ak, wantTyp); nVal != nil { // manual converted
 			args[i] = nVal
 		} else { // unable to convert
-			v.convertArgTypeError(field, fm.name, av.Kind(), wantTyp)
+			v.convertArgTypeError(field, fm.name, av.Kind(), wantTyp, fcArgIndex)
 			return
 		}
 	}

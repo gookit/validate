@@ -97,30 +97,38 @@ func TestIssues34(t *testing.T) {
 	type STATUS int32
 	var s1 STATUS = 1
 
+	rv := reflect.ValueOf(s1)
+	dump.Println(rv.Type().Kind())
+
 	// use custom validator
 	v := New(M{
 		"age": s1,
 	})
-	v.AddValidator("checkAge", func(val interface{}, ints ...int) bool {
-		return Enum(int32(val.(STATUS)), ints)
+	v.StringRules(MS{
+		// "age": "required|in:1,2,3,4",
+		"age": "enum_int:1,2,3,4",
 	})
-	v.StringRule("age", "required|checkAge:1,2,3,4")
-	assert.True(t, v.Validate())
+	v.AddValidator("inIntegers", func(val interface{}, ints ...int) bool {
+		return Contains(ints, val)
+	})
+	v.Validate()
+	dump.Println(v.Errors)
+
+	return
+	v = New(M{
+		"age": s1,
+	})
+	v.AddValidator("enum_int", func(val int, ints ...int) bool {
+		return Enum(val, ints)
+	})
+	v.Validate()
+	dump.Println(v.Errors)
 
 	v = New(M{
 		"age": s1,
 	})
-	v.StringRules(MS{
-		"age": "required|in:1,2,3,4",
-	})
-
-	rv := reflect.ValueOf(s1)
-	dump.Println(rv.Type().Kind())
-
-	dump.Println(Enum(s1, []int{1, 2, 3, 4}), Enum(int32(s1), []int{1, 2, 3, 4}))
-
+	v.AddRule("age", "contains", []STATUS{1, 2, 3, 4})
 	v.Validate()
-
 	dump.Println(v.Errors)
 
 	type someMode string
@@ -132,6 +140,5 @@ func TestIssues34(t *testing.T) {
 		"mode": "required|in:abc,def",
 	})
 	v.Validate()
-
 	dump.Println(v.Errors)
 }

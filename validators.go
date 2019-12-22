@@ -452,30 +452,6 @@ func IsEmpty(val interface{}) bool {
 	return ValueIsEmpty(reflect.ValueOf(val))
 }
 
-// Contains check that the specified string, list(array, slice) or map contains the
-// specified substring or element.
-//
-// Notice: list check value exist. map check key exist.
-func Contains(s, sub interface{}) bool {
-	ok, found := includeElement(s, sub)
-
-	// ok == false: 's' could not be applied builtin len()
-	// found == false: 's' does not contain 'sub'
-	return ok && found
-}
-
-// NotContains check that the specified string, list(array, slice) or map does NOT contain the
-// specified substring or element.
-//
-// Notice: list check value exist. map check key exist.
-func NotContains(s, sub interface{}) bool {
-	ok, found := includeElement(s, sub)
-
-	// ok == false: could not be applied builtin len()
-	// found == true: 's' contain 'sub'
-	return ok && !found
-}
-
 /*************************************************************
  * global: type validators
  *************************************************************/
@@ -1132,9 +1108,43 @@ func Enum(val, enum interface{}) bool {
 	return false
 }
 
-// NotIn value should be not in the given enum(strings, ints, uints).
+// NotIn value should be not in the given enum(strings, []int, []uint).
 func NotIn(val, enum interface{}) bool {
 	return false == Enum(val, enum)
+}
+
+// InIntegers value(intX) should be in the given enum([]intX, []uintX)
+func InIntegers(val int64, enum []int64) bool {
+	return Enum(val, enum)
+}
+
+// InIntegers value(string) should be in the given enum([]string)
+func InStrings(val string, enum []string) bool {
+	return Enum(val, enum)
+}
+
+// Contains check that the specified string, list(array, slice) or map contains the
+// specified substring or element.
+//
+// Notice: list check value exist. map check key exist.
+func Contains(s, sub interface{}) bool {
+	ok, found := includeElement(s, sub)
+
+	// ok == false: 's' could not be applied builtin len()
+	// found == false: 's' does not contain 'sub'
+	return ok && found
+}
+
+// NotContains check that the specified string, list(array, slice) or map does NOT contain the
+// specified substring or element.
+//
+// Notice: list check value exist. map check key exist.
+func NotContains(s, sub interface{}) bool {
+	ok, found := includeElement(s, sub)
+
+	// ok == false: could not be applied builtin len()
+	// found == true: 's' contain 'sub'
+	return ok && !found
 }
 
 /*************************************************************

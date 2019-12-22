@@ -178,3 +178,13 @@ func TestVariadicArgs(t *testing.T) {
 	ok := v.Validate()
 	assert.True(t, ok)
 }
+//
+// func TestInIntegers(t *testing.T) {
+// 	type Status int
+//
+// 	v := New(M{
+// 		"status": Status(2),
+// 	})
+// 	v.StringRule("status", "enum_int:1,2,3,4")
+// 	assert.True(t, v.Validate())
+// }
