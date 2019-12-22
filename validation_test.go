@@ -64,7 +64,7 @@ func TestMap(t *testing.T) {
 	v.AddRule("age", "max", nil)
 	// v.AddRule("age", "max", []string{"a"})
 	is.False(v.Validate())
-	is.Contains(v.Errors.String(), "cannot convert invalid to int64")
+	is.Contains(v.Errors.String(), "cannot convert invalid to arg1(int64)")
 
 	v = New(mpSample)
 	v.StringRule("newSt", "") // will ignore

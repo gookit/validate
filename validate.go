@@ -8,8 +8,6 @@ package validate
 
 import (
 	"reflect"
-
-	"github.com/gookit/goutil/dump"
 )
 
 // const requiredValidator = "required"
@@ -216,7 +214,6 @@ func (r *Rule) valueValidate(field, name string, val interface{}, v *Validation)
 				val = nVal
 			}
 		}
-		dump.Println(firstTyp, valKind)
 	}
 
 	// 1. args data type convert
@@ -224,7 +221,7 @@ func (r *Rule) valueValidate(field, name string, val interface{}, v *Validation)
 	if ok := convertArgsType(v, fm, field, args); !ok {
 		return false
 	}
-dump.P(name, val, args, r.arguments)
+
 	// 2. call built in validators
 	return callValidator(v, fm, field, val, r.arguments)
 }
@@ -324,7 +321,7 @@ func convertArgsType(v *Validation, fm *funcMeta, field string, args []interface
 	if lastIndex == 1 && lastType == reflect.Interface {
 		return true
 	}
-	dump.Println(lastType)
+
 	var wantTyp reflect.Kind
 
 	// convert args data type
@@ -332,7 +329,7 @@ func convertArgsType(v *Validation, fm *funcMeta, field string, args []interface
 		av := reflect.ValueOf(arg)
 		// index in the func
 		fcArgIndex := i + 1
-		dump.Println(arg)
+
 		// Notice: "+1" because first arg is field-value, need exclude it.
 		if fm.isVariadic && fcArgIndex >= lastIndex {
 			if lastType == av.Kind() { // type is same
