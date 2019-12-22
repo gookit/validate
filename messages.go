@@ -254,7 +254,12 @@ func (t *Translator) format(validator, field string, args ...interface{}) (strin
 
 	// not contains vars
 	if !strings.ContainsRune(errMsg, '{') {
-		return fmt.Sprintf(errMsg, args...), true
+		// whether need call fmt.Sprintf
+		if strings.ContainsRune(errMsg, '%') {
+			errMsg = fmt.Sprintf(errMsg, args...)
+		}
+
+		return errMsg, true
 	}
 
 	// get field display name.
@@ -263,7 +268,7 @@ func (t *Translator) format(validator, field string, args ...interface{}) (strin
 	}
 
 	if argLen > 0 {
-		// if need call fmt.Sprintf
+		// whether need call fmt.Sprintf
 		if strings.ContainsRune(errMsg, '%') {
 			errMsg = fmt.Sprintf(errMsg, args...)
 		}
