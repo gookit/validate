@@ -7,6 +7,19 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestBuiltinMessages(t *testing.T) {
+	bm := BuiltinMessages()
+	assert.NotContains(t, bm, "not-exists")
+
+	AddBuiltinMessages(map[string]string{
+		"not-exists": "message value",
+	})
+
+	bm = BuiltinMessages()
+
+	assert.Contains(t, bm, "not-exists")
+}
+
 func TestErrorsBasic(t *testing.T) {
 	es := Errors{}
 

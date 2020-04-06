@@ -148,6 +148,18 @@ var builtinMessages = map[string]string{
 	"gteField": "{field} value should be greater or equal to field %s",
 }
 
+// AddBuiltinMessages add builtin messages
+func AddBuiltinMessages(mp map[string]string)  {
+	for name, msg := range mp {
+		builtinMessages[name] = msg
+	}
+}
+
+// BuiltinMessages get builtin messages
+func BuiltinMessages() map[string]string {
+	return builtinMessages
+}
+
 /*************************************************************
  * Error messages translator
  *************************************************************/
