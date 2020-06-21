@@ -5,12 +5,13 @@
 [![Build Status](https://travis-ci.org/gookit/validate.svg?branch=master)](https://travis-ci.org/gookit/validate)
 [![Coverage Status](https://coveralls.io/repos/github/gookit/validate/badge.svg?branch=master)](https://coveralls.io/github/gookit/validate?branch=master)
 [![Go Report Card](https://goreportcard.com/badge/github.com/gookit/validate)](https://goreportcard.com/report/github.com/gookit/validate)
+[![Actions Status](https://github.com/gookit/config/workflows/Unit-Tests/badge.svg)](https://github.com/gookit/validate/actions)
 
 The package is a generic Go data validate and filter tool library.
 
 > **[中文说明](README.zh-CN.md)**
 
-- Support validate Map, Struct, Request(Form, JSON, url.Values, UploadedFile) data
+- Support validate `Map`, `Struct`, `Request`(`Form`, `JSON`, `url.Values`, `UploadedFile`) data
 - Support filter/sanitize data before validate
 - Support add custom filter/validator func
 - Support scene settings, verify different fields in different scenes
@@ -37,6 +38,11 @@ The struct can implement three interface methods, which is convenient to do some
 - `ConfigValidation(v *Validation)` will be called after the validator instance is created
 - `Messages() map[string]string` can customize the validator error message
 - `Translates() map[string]string` can customize field translation
+
+**`v1.2.1` Update**:
+
+- Support configuration field mapping through structure tag, read the value of `json` tag by default
+- Support configuration error message via structure's `message` tag
 
 ```go
 package main

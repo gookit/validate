@@ -1,16 +1,17 @@
 # Validate
 
 [![GitHub tag (latest SemVer)](https://img.shields.io/github/tag/gookit/validate)](https://github.com/gookit/validate)
-[![GoDoc](https://godoc.org/github.com/gookit/validate?status.svg)](https://godoc.org/github.com/gookit/validate)
+[![GoDoc](https://godoc.org/github.com/gookit/validate?status.svg)](https://pkg.go.dev/github.com/gookit/validate)
 [![Build Status](https://travis-ci.org/gookit/validate.svg?branch=master)](https://travis-ci.org/gookit/validate)
 [![Coverage Status](https://coveralls.io/repos/github/gookit/validate/badge.svg?branch=master)](https://coveralls.io/github/gookit/validate?branch=master)
 [![Go Report Card](https://goreportcard.com/badge/github.com/gookit/validate)](https://goreportcard.com/report/github.com/gookit/validate)
+[![Actions Status](https://github.com/gookit/config/workflows/Unit-Tests/badge.svg)](https://github.com/gookit/validate/actions)
 
 Go通用的数据验证与过滤库，使用简单，内置大部分常用验证器、过滤器，支持自定义消息、字段翻译。
 
 > **[EN README](README.md)**
 
-- 支持验证Map，Struct，Request（Form，JSON，url.Values, UploadedFile）数据
+- 支持验证 `Map` `Struct` `Request`（`Form`，`JSON`，`url.Values`, `UploadedFile`）数据
 - 简单方便，支持前置验证检查, 支持添加自定义验证器
 - 支持将规则按场景进行分组设置，不同场景验证不同的字段
 - 支持在进行验证前对值使用过滤器进行净化过滤，查看 [内置过滤器](#built-in-filters)
@@ -23,8 +24,8 @@ Go通用的数据验证与过滤库，使用简单，内置大部分常用验证
 
 ## Go Doc
 
-- [godoc for gopkg](https://godoc.org/gopkg.in/gookit/validate.v1)
-- [godoc for github](https://godoc.org/github.com/gookit/validate)
+- [godoc for gopkg](https://pkg.go.dev/gopkg.in/gookit/validate.v1)
+- [godoc for github](https://pkg.go.dev/github.com/gookit/validate)
 
 ## 验证结构体(Struct)
 
@@ -32,7 +33,12 @@ Go通用的数据验证与过滤库，使用简单，内置大部分常用验证
 
 - `ConfigValidation(v *Validation)` 将在创建验证器实例后调用
 - `Messages() map[string]string` 可以自定义验证器错误消息
-- `Translates() map[string]string` 可以自定义字段翻译
+- `Translates() map[string]string` 可以自定义字段映射/翻译
+
+**`v1.2.1` 更新**:
+
+- 支持通过结构体tag配置字段映射，默认读取 `json` 标签的值
+- 支持通过结构体的 `message` tag 配置错误消息
 
 ```go
 package main
