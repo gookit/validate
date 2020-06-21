@@ -169,7 +169,7 @@ func Validators() map[string]int {
 /*************************************************************
  * context validators:
  *  - field value compare
- * (TODO requiredIf, requiredUnless)
+ *  - requiredXXX
  *************************************************************/
 
 // Required field val check
@@ -959,11 +959,12 @@ func PathExists(path string) bool {
 	return fsutil.PathExists(path)
 }
 
-// IsFilePath string
+// IsFilePath path is an local filepath
 func IsFilePath(path string) bool {
 	return fsutil.IsFile(path)
 }
 
+// IsDirPath path is an local dir path
 func IsDirPath(path string) bool {
 	return fsutil.IsDir(path)
 }

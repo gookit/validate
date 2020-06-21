@@ -503,6 +503,10 @@ func TestPath(t *testing.T) {
 	// IsUnixPath
 	is.True(IsUnixPath("/users/inhere"))
 
+	// IsDirPath
+	is.True(IsDirPath("./"))
+	is.False(IsDirPath("./testdata/test.txt"))
+
 	// IsFilePath
 	is.True(IsFilePath("./testdata/test.txt"))
 	is.False(IsFilePath("./testdata/not-exist.txt"))

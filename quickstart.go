@@ -94,6 +94,11 @@ func ResetOption() {
 	gOpt = newGlobalOption()
 }
 
+// Option get global options
+func Option() GlobalOption {
+	return *gOpt
+}
+
 func newGlobalOption() *GlobalOption {
 	return &GlobalOption{
 		StopOnError: true,

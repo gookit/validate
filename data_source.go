@@ -248,6 +248,7 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 	}
 
 	fMap := make(map[string]string)
+	// mMap := make(map[string]string)
 
 	vt := d.valueTpy
 	for i := 0; i < vt.NumField(); i++ {
@@ -276,18 +277,31 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 			v.FilterRule(name, fRule)
 		}
 
-		// load filed translate name
+		// load filed translate name. eg: `json:"user_name"`
 		if gOpt.FieldTag != "" {
 			fName := vt.Field(i).Tag.Get(gOpt.FieldTag)
 			if fName != "" {
 				fMap[name] = fName
 			}
 		}
+
+		// load custom error messages.
+		// eg: `message:"name is required"`
+		// if gOpt.MessageTag != "" {
+		// 	errMsg := vt.Field(i).Tag.Get(gOpt.MessageTag)
+		// 	if errMsg != "" {
+		// 		mMap[name] = errMsg
+		// 	}
+		// }
 	}
 
 	if len(fMap) > 0 {
 		v.trans.AddFieldMap(fMap)
 	}
+
+	// if len(mMap) > 0 {
+	// 	v.trans.AddMessages(mMap)
+	// }
 }
 
 /*************************************************************

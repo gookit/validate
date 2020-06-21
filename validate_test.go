@@ -1,7 +1,6 @@
 package validate
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -122,7 +121,7 @@ func TestValidation_RequiredWithAll(t *testing.T) {
 	})
 
 	v.Validate()
-	fmt.Println(v.Errors)
+	// fmt.Println(v.Errors)
 	assert.Equal(t, v.Errors.One(), "nothing field is required when [age name sex] is present")
 }
 
