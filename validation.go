@@ -7,9 +7,13 @@ import (
 
 // some default value settings.
 const (
-	filterTag     = "filter"
+	fieldTag  = "json"
+	filterTag = "filter"
+
+	messageTag  = "message"
+	validateTag = "validate"
+
 	filterError   = "_filter"
-	validateTag   = "validate"
 	validateError = "_validate"
 	// sniff Length, use for detect file mime type
 	sniffLen = 512
@@ -23,6 +27,10 @@ type GlobalOption struct {
 	FilterTag string
 	// ValidateTag in the struct tags.
 	ValidateTag string
+	// FieldTag name in the struct tags. for define filed translate. default: json
+	FieldTag string
+	// MessageTag define error message for the field.
+	MessageTag string
 	// StopOnError If true: An error occurs, it will cease to continue to verify
 	StopOnError bool
 	// SkipOnEmpty Skip check on field not exist or value is empty
@@ -35,14 +43,8 @@ type GlobalOption struct {
 	CheckZero bool
 }
 
-var globalOpt = &GlobalOption{
-	StopOnError: true,
-	SkipOnEmpty: true,
-	// tag name in struct tags
-	FilterTag: filterTag,
-	// tag name in struct tags
-	ValidateTag: validateTag,
-}
+// global options
+var gOpt = newGlobalOption()
 
 // Validation definition
 type Validation struct {
@@ -122,8 +124,8 @@ func NewValidation(data DataFace, scene ...string) *Validation {
 		// filtered data
 		filteredData: make(map[string]interface{}),
 		// default config
-		StopOnError: globalOpt.StopOnError,
-		SkipOnEmpty: globalOpt.SkipOnEmpty,
+		StopOnError: gOpt.StopOnError,
+		SkipOnEmpty: gOpt.SkipOnEmpty,
 	}
 
 	// init build in context validator

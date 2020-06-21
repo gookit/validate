@@ -149,7 +149,7 @@ var builtinMessages = map[string]string{
 }
 
 // AddBuiltinMessages add builtin messages
-func AddBuiltinMessages(mp map[string]string)  {
+func AddBuiltinMessages(mp map[string]string) {
 	for name, msg := range mp {
 		builtinMessages[name] = msg
 	}

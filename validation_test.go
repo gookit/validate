@@ -331,8 +331,8 @@ func TestFromQuery(t *testing.T) {
 
 	is.False(v.Validate())
 	// revert
-	globalOpt.StopOnError = true
-	globalOpt.SkipOnEmpty = true
+	gOpt.StopOnError = true
+	gOpt.SkipOnEmpty = true
 	is.Len(v.Errors, 2)
 	is.Contains(v.Errors.All(), "age")
 	is.Contains(v.Errors.All(), "name")

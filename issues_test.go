@@ -74,10 +74,19 @@ func TestIssues20(t *testing.T) {
 	}
 	req1 := &setProfileReq1{"123nickname111", "123"}
 
+	Config(func(opt *GlobalOption) {
+		opt.FieldTag = ""
+	})
 	v = New(req1)
 	is.False(v.Validate())
 	is.Len(v.Errors, 1)
 	is.Equal("Avatar must be an valid full URL address", v.Errors.One())
+
+	ResetOption()
+	v = New(req1)
+	is.False(v.Validate())
+	is.Len(v.Errors, 1)
+	is.Equal("avatar must be an valid full URL address", v.Errors.One())
 }
 
 // https://github.com/gookit/validate/issues/30

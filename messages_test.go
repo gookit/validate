@@ -9,15 +9,15 @@ import (
 
 func TestBuiltinMessages(t *testing.T) {
 	bm := BuiltinMessages()
-	assert.NotContains(t, bm, "not-exists")
+	assert.NotContains(t, bm, "testMsg0")
 
 	AddBuiltinMessages(map[string]string{
-		"not-exists": "message value",
+		"testMsg0": "message value",
 	})
 
 	bm = BuiltinMessages()
 
-	assert.Contains(t, bm, "not-exists")
+	assert.Contains(t, bm, "testMsg0")
 }
 
 func TestErrorsBasic(t *testing.T) {

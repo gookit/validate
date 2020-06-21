@@ -86,7 +86,26 @@ func Request(r *http.Request) *Validation {
 
 // Config global options
 func Config(fn func(opt *GlobalOption)) {
-	fn(globalOpt)
+	fn(gOpt)
+}
+
+// ResetOption reset global option
+func ResetOption() {
+	gOpt = newGlobalOption()
+}
+
+func newGlobalOption() *GlobalOption {
+	return &GlobalOption{
+		StopOnError: true,
+		SkipOnEmpty: true,
+		// tag name in struct tags
+		FieldTag: fieldTag,
+		// tag name in struct tags
+		FilterTag: filterTag,
+		MessageTag: messageTag,
+		// tag name in struct tags
+		ValidateTag: validateTag,
+	}
 }
 
 /*************************************************************
@@ -128,7 +147,7 @@ func FromJSONBytes(bs []byte) (*MapData, error) {
 // FromStruct create a Data from struct
 func FromStruct(s interface{}) (*StructData, error) {
 	data := &StructData{
-		ValidateTag: globalOpt.ValidateTag,
+		ValidateTag: gOpt.ValidateTag,
 		// init map
 		fieldNames:  make(map[string]int),
 		fieldValues: make(map[string]interface{}),

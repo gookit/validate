@@ -168,6 +168,10 @@ type StructData struct {
 	fieldValues map[string]interface{}
 	// TODO field reflect values cache
 	fieldRftValues map[string]interface{}
+	// FieldTag name in the struct tags. for define filed translate
+	FieldTag string
+	// MessageTag define error message for the field.
+	MessageTag string
 	// FilterTag name in the struct tags.
 	FilterTag string
 	// ValidateTag name in the struct tags.
@@ -236,12 +240,14 @@ func (d *StructData) Validation(err ...error) *Validation {
 // parse and collect rules from struct tags.
 func (d *StructData) parseRulesFromTag(v *Validation) {
 	if d.ValidateTag == "" {
-		d.ValidateTag = globalOpt.ValidateTag
+		d.ValidateTag = gOpt.ValidateTag
 	}
 
 	if d.FilterTag == "" {
-		d.FilterTag = globalOpt.FilterTag
+		d.FilterTag = gOpt.FilterTag
 	}
+
+	fMap := make(map[string]string)
 
 	vt := d.valueTpy
 	for i := 0; i < vt.NumField(); i++ {
@@ -269,6 +275,18 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 		if fRule != "" {
 			v.FilterRule(name, fRule)
 		}
+
+		// load filed translate name
+		if gOpt.FieldTag != "" {
+			fName := vt.Field(i).Tag.Get(gOpt.FieldTag)
+			if fName != "" {
+				fMap[name] = fName
+			}
+		}
+	}
+
+	if len(fMap) > 0 {
+		v.trans.AddFieldMap(fMap)
 	}
 }
 
