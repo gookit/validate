@@ -666,9 +666,9 @@ func TestIssue2(t *testing.T) {
 	assert.Nil(t, err)
 
 	// type is error
-	assert.Panics(t, func() {
-		_ = v.Set("A", "abc")
-	})
+	err = v.Set("A", "abc")
+	assert.Error(t, err)
+	assert.Equal(t, errConvertFail.Error(), err.Error())
 }
 
 func TestGetSetOnNilData(t *testing.T) {

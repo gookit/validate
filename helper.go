@@ -299,7 +299,7 @@ func convertType(srcVal interface{}, srcKind kind, dstType reflect.Kind) (interf
 			return strutil.ToString(srcVal)
 		}
 	}
-	return nil, nil
+	return nil, errConvertFail
 }
 
 func panicf(format string, args ...interface{}) {
