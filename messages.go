@@ -264,9 +264,14 @@ func (t *Translator) format(validator, field string, args ...interface{}) (strin
 		return "", false
 	}
 
-	// not contains vars
+	// not contains vars. eg: {field}
 	if !strings.ContainsRune(errMsg, '{') {
-		return fmt.Sprintf(errMsg, args...), true
+		// if need call fmt.Sprintf
+		if strings.ContainsRune(errMsg, '%') {
+			errMsg = fmt.Sprintf(errMsg, args...)
+		}
+
+		return errMsg, true
 	}
 
 	// get field display name.

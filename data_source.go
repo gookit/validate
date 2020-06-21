@@ -247,8 +247,7 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 		d.FilterTag = gOpt.FilterTag
 	}
 
-	fMap := make(map[string]string)
-	// mMap := make(map[string]string)
+	fMap := make(map[string]string, 0)
 
 	vt := d.valueTpy
 	for i := 0; i < vt.NumField(); i++ {
@@ -286,22 +285,66 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 		}
 
 		// load custom error messages.
-		// eg: `message:"name is required"`
-		// if gOpt.MessageTag != "" {
-		// 	errMsg := vt.Field(i).Tag.Get(gOpt.MessageTag)
-		// 	if errMsg != "" {
-		// 		mMap[name] = errMsg
-		// 	}
-		// }
+		// eg: `message:"required:name is required|minLen:name min len is %d"`
+		if gOpt.MessageTag != "" {
+			errMsg := vt.Field(i).Tag.Get(gOpt.MessageTag)
+			if errMsg != "" {
+				d.loadMessagesFromTag(v.trans, name, vRule, errMsg)
+			}
+		}
 	}
 
 	if len(fMap) > 0 {
 		v.trans.AddFieldMap(fMap)
 	}
+}
 
-	// if len(mMap) > 0 {
-	// 	v.trans.AddMessages(mMap)
-	// }
+// eg: `message:"required:name is required|minLen:name min len is %d"`
+func (d *StructData) loadMessagesFromTag(trans *Translator, field, vRule, vMsg string) {
+	var msgKey string
+
+	// only one message. eg: `message:"name is required"`
+	if !strings.ContainsRune(vMsg, '|') {
+		validator := vRule
+		if strings.ContainsRune(vRule, '|') {
+			nodes := strings.SplitN(vRule, "|", 2)
+			// use first validator name
+			validator = nodes[0]
+		}
+
+		// has params for validator: "minLen:5"
+		if strings.ContainsRune(validator, ':') {
+			nodes := strings.SplitN(vRule, ":", 2)
+			// use first validator name
+			validator = nodes[0]
+		}
+
+		if rName, has := validatorAliases[validator]; has {
+			msgKey = field + "." + rName
+		} else {
+			msgKey = field + "." + validator
+		}
+
+		trans.AddMessage(msgKey, vMsg)
+		return
+	}
+
+	// multi message for validators
+	// eg: `message:"required:name is required | minLen:name min len is %d"`
+	msgNodes := strings.Split(vMsg, "|")
+	for _, validatorWithMsg := range msgNodes {
+		// validatorWithMsg eg: "required:name is required"
+		nodes := strings.SplitN(validatorWithMsg, ":", 2)
+
+		validator := nodes[0]
+		if rName, has := validatorAliases[validator]; has {
+			msgKey = field + "." + rName
+		} else {
+			msgKey = field + "." + validator
+		}
+
+		trans.AddMessage(msgKey, nodes[1])
+	}
 }
 
 /*************************************************************

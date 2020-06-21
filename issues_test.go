@@ -89,6 +89,45 @@ func TestIssues20(t *testing.T) {
 	is.Equal("avatar must be an valid full URL address", v.Errors.One())
 }
 
+// https://github.com/gookit/validate/issues/22
+func TestIssues22(t *testing.T) {
+	type userInfo0 struct {
+		Nickname string `validate:"minLen:6" message:"OO! nickname min len is 6"`
+		Avatar   string `validate:"maxLen:6" message:"OO! avatar max len is %d"`
+	}
+
+	is := assert.New(t)
+	u0 := &userInfo0{
+		Nickname: "tom",
+		Avatar:   "https://github.com/gookit/validate/issues/22",
+	}
+	v := Struct(u0)
+	is.False(v.Validate())
+	is.Equal("OO! nickname min len is 6", v.Errors.FieldOne("Nickname"))
+	u0 = &userInfo0{
+		Nickname: "inhere",
+		Avatar:   "some url",
+	}
+	v = Struct(u0)
+	is.False(v.Validate())
+	is.Equal("OO! avatar max len is 6", v.Errors.FieldOne("Avatar"))
+
+	// multi messages
+	type userInfo1 struct {
+		Nickname string `validate:"required|minLen:6" message:"required:OO! nickname cannot be empty!|minLen:OO! nickname min len is %d"`
+	}
+
+	u1 := &userInfo1{Nickname: ""}
+	v = Struct(u1)
+	is.False(v.Validate())
+	is.Equal("OO! nickname cannot be empty!", v.Errors.FieldOne("Nickname"))
+
+	u1 = &userInfo1{Nickname: "tom"}
+	v = Struct(u1)
+	is.False(v.Validate())
+	is.Equal("OO! nickname min len is 6", v.Errors.FieldOne("Nickname"))
+}
+
 // https://github.com/gookit/validate/issues/30
 func TestIssues30(t *testing.T) {
 	v := JSON(`{
