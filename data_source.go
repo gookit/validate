@@ -158,6 +158,8 @@ type CustomMessagesFace interface {
 type StructData struct {
 	// source struct data, from user setting
 	src interface{}
+	// max depth for parse sub-struct. TODO WIP ...
+	depth int
 	// from reflect source Struct
 	value reflect.Value
 	// source struct reflect.Type
@@ -179,11 +181,11 @@ type StructData struct {
 }
 
 // StructOption definition
-type StructOption struct {
-	// ValidateTag in the struct tags.
-	ValidateTag string
-	// MethodName  string
-}
+// type StructOption struct {
+// 	// ValidateTag in the struct tags.
+// 	ValidateTag string
+// 	// MethodName  string
+// }
 
 var (
 	cmFaceType = reflect.TypeOf(new(CustomMessagesFace)).Elem()

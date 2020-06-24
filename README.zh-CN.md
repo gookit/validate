@@ -20,7 +20,7 @@ Go通用的数据验证与过滤库，使用简单，内置大部分常用验证
 - 支持自定义每个验证的错误消息，字段翻译，消息翻译(内置`en` `zh-CN`)
 - 完善的单元测试，测试覆盖率 > 90%
 
-> 受到 [albrow/forms](https://github.com/albrow/forms) 和 [asaskevich/govalidator](https://github.com/asaskevich/govalidator) 这些项目的启发. 非常感谢它们
+> 受到 [albrow/forms](https://github.com/albrow/forms) [asaskevich/govalidator](https://github.com/asaskevich/govalidator) [inhere/php-validate](https://github.com/inhere/php-validate) 这些项目的启发. 非常感谢它们
 
 ## Go Doc
 
@@ -53,7 +53,7 @@ import (
 // UserForm struct
 type UserForm struct {
 	Name     string    `validate:"required|minLen:7"`
-	Email    string    `validate:"email"`
+	Email    string    `validate:"email" message:"email is invalid"`
 	Age      int       `validate:"required|int|min:1|max:99"`
 	CreateAt int       `validate:"min:1"`
 	Safe     int       `validate:"-"`
@@ -297,35 +297,6 @@ type GlobalOption struct {
 	})
 ```
 
-<a id="built-in-filters"></a>
-## 内置过滤器
-
-> Filters powered by: [gookit/filter](https://github.com/gookit/filter)
-
-过滤器/别名 | 描述信息 
--------------------|-------------------------------------------
-`int`  | Convert value(string/intX/floatX) to `int` type `v.FilterRule("id", "int")`
-`uint`  | Convert value(string/intX/floatX) to `uint` type `v.FilterRule("id", "uint")`
-`int64`  | Convert value(string/intX/floatX) to `int64` type `v.FilterRule("id", "int64")`
-`float`  | Convert value(string/intX/floatX) to `float` type
-`bool`  | Convert string value to bool. (`true`: "1", "on", "yes", "true", `false`: "0", "off", "no", "false")
-`trim/trimSpace`  | Clean up whitespace characters on both sides of the string
-`ltrim/trimLeft`  | Clean up whitespace characters on left sides of the string
-`rtrim/trimRight`  | Clean up whitespace characters on right sides of the string
-`int/integer`  | Convert value(string/intX/floatX) to int type `v.FilterRule("id", "int")`
-`lower/lowercase` | Convert string to lowercase
-`upper/uppercase` | Convert string to uppercase
-`lcFirst/lowerFirst` | Convert the first character of a string to lowercase
-`ucFirst/upperFirst` | Convert the first character of a string to uppercase
-`ucWord/upperWord` | Convert the first character of each word to uppercase
-`camel/camelCase` | Convert string to camel naming style
-`snake/snakeCase` | Convert string to snake naming style
-`escapeJs/escapeJS` | Escape JS string.
-`escapeHtml/escapeHTML` | Escape HTML string.
-`str2ints/strToInts` | Convert string to int slice `[]int` 
-`str2time/strToTime` | Convert date string to `time.Time`.
-`str2arr/str2array/strToArray` | Convert string to string slice `[]string`
-
 <a id="built-in-validators"></a>
 ## 内置验证器
 
@@ -440,7 +411,36 @@ type GlobalOption struct {
 - `uintX` 包含: `uint`, `uint8`, `uint16`, `uint32`, `uint64`
 - `floatX` 包含: `float32`, `float64`
 
-## 欢迎star
+<a id="built-in-filters"></a>
+## 内置过滤器
+
+> Filters powered by: [gookit/filter](https://github.com/gookit/filter)
+
+过滤器/别名 | 描述信息 
+-------------------|-------------------------------------------
+`int`  | Convert value(string/intX/floatX) to `int` type `v.FilterRule("id", "int")`
+`uint`  | Convert value(string/intX/floatX) to `uint` type `v.FilterRule("id", "uint")`
+`int64`  | Convert value(string/intX/floatX) to `int64` type `v.FilterRule("id", "int64")`
+`float`  | Convert value(string/intX/floatX) to `float` type
+`bool`  | Convert string value to bool. (`true`: "1", "on", "yes", "true", `false`: "0", "off", "no", "false")
+`trim/trimSpace`  | Clean up whitespace characters on both sides of the string
+`ltrim/trimLeft`  | Clean up whitespace characters on left sides of the string
+`rtrim/trimRight`  | Clean up whitespace characters on right sides of the string
+`int/integer`  | Convert value(string/intX/floatX) to int type `v.FilterRule("id", "int")`
+`lower/lowercase` | Convert string to lowercase
+`upper/uppercase` | Convert string to uppercase
+`lcFirst/lowerFirst` | Convert the first character of a string to lowercase
+`ucFirst/upperFirst` | Convert the first character of a string to uppercase
+`ucWord/upperWord` | Convert the first character of each word to uppercase
+`camel/camelCase` | Convert string to camel naming style
+`snake/snakeCase` | Convert string to snake naming style
+`escapeJs/escapeJS` | Escape JS string.
+`escapeHtml/escapeHTML` | Escape HTML string.
+`str2ints/strToInts` | Convert string to int slice `[]int` 
+`str2time/strToTime` | Convert date string to `time.Time`.
+`str2arr/str2array/strToArray` | Convert string to string slice `[]string`
+
+## 欢迎Star
 
 - **[github](https://github.com/gookit/validate)**
 - [gitee](https://gitee.com/inhere/validate)
