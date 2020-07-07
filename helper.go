@@ -174,8 +174,11 @@ func CalcLength(val interface{}) int {
 
 	// string length
 	if str, ok := val.(string); ok {
-		return len(str)
+		// return len(str)
+		// fix: issues#39
+		return len([]rune(str))
 	}
+
 	return ValueLen(reflect.ValueOf(val))
 }
 

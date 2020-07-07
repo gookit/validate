@@ -526,13 +526,25 @@ func TestIsJSON(t *testing.T) {
 func TestLength(t *testing.T) {
 	is := assert.New(t)
 
+	tests := []struct{sample string; want int}{
+		{"a", 1},
+		{"ab", 2},
+		{"12ab", 4},
+		{"+-ab", 4},
+		{"ab你好", 4},
+	}
+	for _, item := range tests {
+		is.Equal(CalcLength(item.sample), item.want)
+	}
+	is.Equal(CalcLength(nil), -1)
+
 	// Length
 	is.True(Length("a", 1))
 	is.True(Length("ab", 2))
 	is.True(Length([]int{1, 2}, 2))
 	is.True(Length([]string{"a", "b"}, 2))
-	is.True(Length("a中文", 7))
-	is.False(Length("a中文", 3))
+	is.True(Length("a中文", 3))
+	is.False(Length("a中文", 7))
 	is.False(Length(nil, 3))
 
 	// ByteLength
