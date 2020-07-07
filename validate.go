@@ -8,6 +8,8 @@ package validate
 
 import (
 	"reflect"
+
+	"github.com/gookit/goutil/dump"
 )
 
 // const requiredValidator = "required"
@@ -201,6 +203,7 @@ func (r *Rule) valueValidate(field, name string, val interface{}, v *Validation)
 		ft := fm.fv.Type()
 		// convert field val type, is first argument.
 		firstTyp := ft.In(0).Kind()
+		dump.P(val, firstTyp, valKind)
 		if firstTyp != valKind && firstTyp != reflect.Interface {
 			ak, err := basicKind(rftVal)
 			if err != nil { // todo check?
@@ -211,8 +214,10 @@ func (r *Rule) valueValidate(field, name string, val interface{}, v *Validation)
 
 			// manual converted
 			if nVal, _ := convertType(val, ak, firstTyp); nVal != nil {
+				dump.Println(ak)
 				val = nVal
 			}
+			dump.Println(ak, val)
 		}
 	}
 

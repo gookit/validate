@@ -178,16 +178,25 @@ func TestVariadicArgs(t *testing.T) {
 	ok := v.Validate()
 	assert.True(t, ok)
 }
-//
-// func TestInIntegers(t *testing.T) {
-// 	type Status int
-//
-// 	v := New(M{
-// 		"status": Status(2),
-// 	})
-// 	v.StringRule("status", "enum_int:1,2,3,4")
-// 	assert.True(t, v.Validate())
-// }
+
+func TestInIntegers(t *testing.T) {
+	// TODO custom type
+	type Status int
+
+	v := New(M{
+		"status": Status(2),
+	})
+	v.StringRule("status", "enum_int:1,2,3,4")
+	assert.False(t, v.Validate())
+
+	v = New(M{
+		"status": 2,
+	})
+	v.StringRule("status", "enum_int:1,2,3,4")
+	assert.False(t, v.Validate())
+
+
+}
 
 func TestStructUseRegex(t *testing.T) {
 	type regForm struct {

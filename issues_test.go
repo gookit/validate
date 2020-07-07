@@ -98,7 +98,7 @@ func TestIssues34(t *testing.T) {
 	var s1 STATUS = 1
 
 	rv := reflect.ValueOf(s1)
-	dump.Println(rv.Type().Kind())
+	dump.Println(rv.Type().Kind(), rv.Type().String())
 
 	// use custom validator
 	v := New(M{

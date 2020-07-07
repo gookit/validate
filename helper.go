@@ -10,6 +10,7 @@ import (
 	"unicode"
 
 	"github.com/gookit/filter"
+	"github.com/gookit/goutil/dump"
 	"github.com/gookit/goutil/mathutil"
 	"github.com/gookit/goutil/strutil"
 )
@@ -285,7 +286,9 @@ func convertType(srcVal interface{}, srcKind kind, dstType reflect.Kind) (interf
 			return mathutil.Int64(srcVal)
 		}
 	case intKind, uintKind:
-		i64 := filter.MustInt64(srcVal)
+		i64 := mathutil.MustInt64(srcVal)
+		dump.Println(srcVal, reflect.ValueOf(srcVal).Int())
+
 		switch dstType {
 		case reflect.Int64:
 			return i64, nil
