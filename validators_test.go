@@ -284,6 +284,10 @@ func TestStringCheck(t *testing.T) {
 	is.True(IsEmail("some@abc.com"))
 	is.False(IsEmail(""))
 	is.False(IsEmail("some.abc.com"))
+	// Add for issue#21
+	is.False(IsEmail("ab@a1wa.c_m"))
+	is.False(IsEmail("a@sina.c"))
+	is.False(IsEmail("aaaa@qq.com."))
 
 	// IsIP
 	is.True(IsIP("127.0.0.1"))
@@ -526,7 +530,10 @@ func TestIsJSON(t *testing.T) {
 func TestLength(t *testing.T) {
 	is := assert.New(t)
 
-	tests := []struct{sample string; want int}{
+	tests := []struct {
+		sample string
+		want   int
+	}{
 		{"a", 1},
 		{"ab", 2},
 		{"12ab", 4},
