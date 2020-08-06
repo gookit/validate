@@ -1,5 +1,10 @@
 name: Unit-Tests
-on: [push]
+on:
+  push:
+    paths:
+      - 'go.mod'
+      - '**.go'
+
 jobs:
 
   test:
@@ -7,7 +12,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        go_version: [1.11, 1.12, 1.13, 1.14]
+        go_version: [1.12, 1.13, 1.14]
         os: [ubuntu-latest, windows-latest, macOS-latest]
 
     steps:
@@ -20,11 +25,22 @@ jobs:
       with:
         go-version: ${{ matrix.go_version }}
 
-    - name: Get dependencies
-      run: |
-        go get -v -t -d ./...
-        go get github.com/mattn/goveralls
-        go get golang.org/x/tools/cmd/cover
-
     - name: Run unit tests
-      run: go test -v -cover ./...
+#      run: go test -v -cover ./...
+      run: go test -v -coverprofile=profile.cov ./...
+
+    - name: Send coverage
+      uses: shogo82148/actions-goveralls@v1
+      with:
+        path-to-profile: profile.cov
+        flag-name: Go-${{ matrix.go }}
+        parallel: true
+
+  # notifies that all test jobs are finished.
+  finish:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: shogo82148/actions-goveralls@v1
+        with:
+          parallel-finished: true
