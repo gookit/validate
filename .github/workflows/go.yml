@@ -27,7 +27,8 @@ jobs:
 
     - name: Run unit tests
 #      run: go test -v -cover ./...
-      run: go test -v -coverprofile=profile.cov ./...
+#      must add " for profile.cov on windows OS
+      run: go test -v -coverprofile="profile.cov" ./...
 
     - name: Send coverage
       uses: shogo82148/actions-goveralls@v1
