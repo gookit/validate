@@ -58,7 +58,7 @@ import (
 type UserForm struct {
 	Name     string    `validate:"required|minLen:7"`
 	Email    string    `validate:"email" message:"email is invalid"`
-	Age      int       `validate:"required|int|min:1|max:99"`
+	Age      int       `validate:"required|int|min:1|max:99" message:"int:age must int| min: age min value is 1"`
 	CreateAt int       `validate:"min:1"`
 	Safe     int       `validate:"-"`
 	UpdateAt time.Time `validate:"required"`
