@@ -36,13 +36,19 @@ var (
 	Unmarshal UnmarshalFunc = json.Unmarshal
 )
 
-// MarshalFunc define
-type MarshalFunc func(v interface{}) ([]byte, error)
+type (
+	// MarshalFunc define
+	MarshalFunc func(v interface{}) ([]byte, error)
+	// UnmarshalFunc define
+	UnmarshalFunc func(data []byte, v interface{}) error
+)
 
-// UnmarshalFunc define
-type UnmarshalFunc func(data []byte, v interface{}) error
-
-// DataFace interface definition
+// DataFace data source interface definition
+//
+// current has three data source:
+// - map
+// - form
+// - struct
 type DataFace interface {
 	Type() uint8
 	Get(key string) (interface{}, bool)

@@ -21,31 +21,6 @@ const (
 	defaultMaxMemory int64 = 32 << 20
 )
 
-// GlobalOption settings for validate
-type GlobalOption struct {
-	// FilterTag name in the struct tags.
-	FilterTag string
-	// ValidateTag in the struct tags.
-	ValidateTag string
-	// FieldTag name in the struct tags. for define filed translate. default: json
-	FieldTag string
-	// MessageTag define error message for the field.
-	MessageTag string
-	// StopOnError If true: An error occurs, it will cease to continue to verify
-	StopOnError bool
-	// SkipOnEmpty Skip check on field not exist or value is empty
-	SkipOnEmpty bool
-	// UpdateSource Whether to update source field value, useful for struct validate
-	UpdateSource bool
-	// CheckDefault Whether to validate the default value set by the user
-	CheckDefault bool
-	// CheckZero Whether validate the default zero value. (intX,uintX: 0, string: "")
-	CheckZero bool
-}
-
-// global options
-var gOpt = newGlobalOption()
-
 // Validation definition
 type Validation struct {
 	// source input data
@@ -161,17 +136,6 @@ func NewValidation(data DataFace, scene ...string) *Validation {
 	return v.SetScene(scene...)
 }
 
-func newWithError(d DataFace, err error) *Validation {
-	if d == nil {
-		if err != nil {
-			return NewValidation(d).WithError(err)
-		}
-		return NewValidation(d)
-	}
-
-	return d.Validation(err)
-}
-
 /*************************************************************
  * validation settings
  *************************************************************/
@@ -179,6 +143,11 @@ func newWithError(d DataFace, err error) *Validation {
 // Config the Validation instance
 // func (v *Validation) Config(fn func(v *Validation)) {
 // 	fn(v)
+// }
+
+// func (v *Validation) WithOptions(fn func(opt *GlobalOption)) *Validation {
+// 	fn(v.g)
+// 	return v
 // }
 
 // ResetResult reset the validate result.

@@ -46,6 +46,35 @@ func (ms MS) String() string {
 	return strings.Join(ss, "\n")
 }
 
+// GlobalOption settings for validate
+type GlobalOption struct {
+	// FilterTag name in the struct tags.
+	FilterTag string
+	// ValidateTag in the struct tags.
+	ValidateTag string
+	// FieldTag name in the struct tags. for define filed translate. default: json
+	FieldTag string
+	// MessageTag define error message for the field.
+	MessageTag string
+	// StopOnError If true: An error occurs, it will cease to continue to verify
+	StopOnError bool
+	// SkipOnEmpty Skip check on field not exist or value is empty
+	SkipOnEmpty bool
+	// UpdateSource Whether to update source field value, useful for struct validate
+	UpdateSource bool
+	// CheckDefault Whether to validate the default value set by the user
+	CheckDefault bool
+	// CheckZero Whether validate the default zero value. (intX,uintX: 0, string: "")
+	CheckZero bool
+}
+
+// global options
+var gOpt = newGlobalOption()
+
+/*************************************************************
+ * quick create Validation
+ *************************************************************/
+
 // New a Validation
 func New(data interface{}, scene ...string) *Validation {
 	switch td := data.(type) {
@@ -66,9 +95,11 @@ func New(data interface{}, scene ...string) *Validation {
 	return Struct(data, scene...)
 }
 
-// TODO since v1.2 ...
-// func NewWithOptions(data interface{}, func(Options))  {
-// }
+// NewWithOptions new Validation with options
+func NewWithOptions(data interface{}, fn func(opt *GlobalOption)) *Validation {
+	fn(gOpt)
+	return New(data)
+}
 
 // Map validation create
 func Map(m map[string]interface{}, scene ...string) *Validation {
@@ -77,17 +108,17 @@ func Map(m map[string]interface{}, scene ...string) *Validation {
 
 // JSON create validation from JSON string.
 func JSON(s string, scene ...string) *Validation {
-	return newWithError(FromJSON(s)).SetScene(scene...)
+	return mustNewValidation(FromJSON(s)).SetScene(scene...)
 }
 
 // Struct validation create
 func Struct(s interface{}, scene ...string) *Validation {
-	return newWithError(FromStruct(s)).SetScene(scene...)
+	return mustNewValidation(FromStruct(s)).SetScene(scene...)
 }
 
 // Request validation create
 func Request(r *http.Request) *Validation {
-	return newWithError(FromRequest(r))
+	return mustNewValidation(FromRequest(r))
 }
 
 // Config global options
@@ -119,8 +150,19 @@ func newGlobalOption() *GlobalOption {
 	}
 }
 
+func mustNewValidation(d DataFace, err error) *Validation {
+	if d == nil {
+		if err != nil {
+			return NewValidation(d).WithError(err)
+		}
+		return NewValidation(d)
+	}
+
+	return d.Validation(err)
+}
+
 /*************************************************************
- * create data instance
+ * create data-source instance
  *************************************************************/
 
 // FromMap build data instance.
