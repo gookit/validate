@@ -4,7 +4,7 @@ import "github.com/gookit/validate"
 
 // Locales supported language data map
 var Locales = map[string]validate.MS{
-	"zh-CN": zhCN,
+	"zh-CN": ZhCN,
 }
 
 // Register language data to Validation
@@ -17,8 +17,8 @@ func Register(v *validate.Validation, name string) bool {
 	return false
 }
 
-// zh-CN language messages
-var zhCN = map[string]string{
+// ZhCN zh-CN language messages
+var ZhCN = map[string]string{
 	"_": "{field} 没有通过验证",
 	// int
 	"min": "{field} 的最小值是 %d",

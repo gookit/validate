@@ -227,6 +227,7 @@ func BuiltinMessages() map[string]string {
 
 // Translator definition
 type Translator struct {
+	// language string TODO
 	// field map {"field name": "display name"}
 	fieldMap map[string]string
 	// message data map
