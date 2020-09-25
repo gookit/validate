@@ -9,18 +9,20 @@
 
 Go通用的数据验证与过滤库，使用简单，内置大部分常用验证器、过滤器，支持自定义消息、字段翻译。
 
-> **[EN README](README.md)**
-
 - 支持验证 `Map` `Struct` `Request`（`Form`，`JSON`，`url.Values`, `UploadedFile`）数据
 - 简单方便，支持前置验证检查, 支持添加自定义验证器
 - 支持将规则按场景进行分组设置，不同场景验证不同的字段
 - 支持在进行验证前对值使用过滤器进行净化过滤，查看 [内置过滤器](#built-in-filters)
 - 已经内置了超多（**>70** 个）常用的验证器，查看 [内置验证器](#built-in-validators)
-- 方便的获取错误信息，验证后的安全数据获取(只会收集有规则检查过的数据)
-- 支持自定义每个验证的错误消息，字段翻译，消息翻译(内置`en` `zh-CN`)
+- 方便的获取错误信息，验证后的安全数据获取(_只会收集有规则检查过的数据_)
+- 支持自定义每个验证的错误消息，字段翻译，消息翻译(内置`en` `zh-CN` `zh-TW`)
 - 完善的单元测试，测试覆盖率 > 90%
 
 > 受到 [albrow/forms](https://github.com/albrow/forms) [asaskevich/govalidator](https://github.com/asaskevich/govalidator) [inhere/php-validate](https://github.com/inhere/php-validate) 这些项目的启发. 非常感谢它们
+
+## [English](README.md)
+
+Please see the English introduction **[README](README.md)**
 
 ## Go Doc
 
@@ -158,10 +160,12 @@ func main()  {
 ```go
 package main
 
-import "fmt"
-import "time"
-import "net/http"
-import "github.com/gookit/validate"
+import (
+	"fmt"
+	"net/http"
+
+	"github.com/gookit/validate"
+)
 
 func main()  {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -252,6 +256,45 @@ type GlobalOption struct {
 	})
 ```
 
+### 自定义错误消息
+
+- 注册内置的语言消息
+
+```go
+import "github.com/gookit/validate/locales/zhcn"
+
+// for all Validation.
+// NOTICE: must be register before on validate.New()
+zhcn.RegisterGlobal()
+
+v := validate.New()
+
+// only for current Validation
+zhcn.Register(v)
+```
+
+- 手动添加全局消息
+
+```go
+validate.AddGlobalMessages(map[string]string{
+    "minLength": "OO! {field} min length is %d",
+})
+```
+
+- 为当前验证添加消息(仅本次验证有效)
+
+```go
+v := validate.New(map[string]interface{}{
+    "name": "inhere",
+})
+v.StringRule("name", "required|string|minLen:7|maxLen:15")
+
+v.AddMessages(map[string]string{
+    "minLength": "OO! {field} min length is %d",
+    "name.minLeng": "OO! username min length is %d",
+})
+```
+
 ### 自定义验证器
 
 `validate` 支持添加自定义验证器，并且支持添加 `全局验证器` 和 `临时验证器` 两种
@@ -317,11 +360,11 @@ type GlobalOption struct {
 -------------------|-------------------------------------------
 `required`  | 字段为必填项，值不能为空 
 `required_if/requiredIf`  | `required_if:anotherfield,value,...` 如果其它字段 _anotherField_ 为任一值 _value_ ，则此验证字段必须存在且不为空。
-`required_unless`  | `required_unless:anotherfield,value,...` 如果其它字段 _anotherField_ 不等于任一值 _value_ ，则此验证字段必须存在且不为空。 
+`required_unless/requiredUnless`  | `required_unless:anotherfield,value,...` 如果其它字段 _anotherField_ 不等于任一值 _value_ ，则此验证字段必须存在且不为空。 
 `required_with/requiredWith`  | `required_with:foo,bar,...` 在其他任一指定字段出现时，验证的字段才必须存在且不为空 
-`required_with_all`  | `required_with_all:foo,bar,...` 只有在其他指定字段全部出现时，验证的字段才必须存在且不为空 
-`required_without`  | `required_without:foo,bar,...` 在其他指定任一字段不出现时，验证的字段才必须存在且不为空
-`required_without_all`  | `required_without_all:foo,bar,...` 只有在其他指定字段全部不出现时，验证的字段才必须存在且不为空 
+`required_with_all/requiredWithAll`  | `required_with_all:foo,bar,...` 只有在其他指定字段全部出现时，验证的字段才必须存在且不为空 
+`required_without/requiredWithout`  | `required_without:foo,bar,...` 在其他指定任一字段不出现时，验证的字段才必须存在且不为空
+`required_without_all/requiredWithoutAll`  | `required_without_all:foo,bar,...` 只有在其他指定字段全部不出现时，验证的字段才必须存在且不为空 
 `-/safe`  | 标记当前字段是安全的，无需验证
 `int/integer/isInt`  | 检查值是 `intX` `uintX` 类型，同时支持大小检查 `"int"` `"int:2"` `"int:2,12"`
 `uint/isUint`  |  检查值是 `uintX` 类型(`value >= 0`)
@@ -343,10 +386,10 @@ type GlobalOption struct {
 `ne/notEq/notEqual`  |  检查输入值是否不等于给定值
 `lt/lessThan`  |  检查值小于给定大小(use for `intX` `uintX` `floatX`)
 `gt/greaterThan`  |  检查值大于给定大小(use for `intX` `uintX` `floatX`)
-`intEq/intEqual`  |  检查值为int且等于给定值
+`int_eq/intEq/intEqual`  |  检查值为int且等于给定值
 `len/length`  |  检查值长度等于给定大小(use for `string` `array` `slice` `map`).
-`minLen/minLength`  |  检查值的最小长度是给定大小
-`maxLen/maxLength`  |  检查值的最大长度是给定大小
+`min_len/minLen/minLength`  |  检查值的最小长度是给定大小
+`max_len/maxLen/maxLength`  |  检查值的最大长度是给定大小
 `email/isEmail`  |   检查值是Email地址字符串
 `regex/regexp`  |  检查该值是否可以通过正则验证
 `arr/array/isArray`  |  检查值是数组`array`类型
@@ -363,36 +406,36 @@ type GlobalOption struct {
 `image/isImage`  |  验证是否是上传的图片文件，支持后缀检查
 `mime/mimeType/inMimeTypes`  |  验证是否是上传的文件，并且在指定的MIME类型中
 `date/isDate` | 检查字段值是否为日期字符串。（只支持几种常用的格式） eg `2018-10-25`
-`gtDate/afterDate` | 检查输入值是否大于给定的日期字符串
-`ltDate/beforeDate` | 检查输入值是否小于给定的日期字符串
-`gteDate/afterOrEqualDate` | 检查输入值是否大于或等于给定的日期字符串
-`lteDate/beforeOrEqualDate` | 检查输入值是否小于或等于给定的日期字符串
+`gt_date/gtDate/afterDate` | 检查输入值是否大于给定的日期字符串
+`lt_date/ltDate/beforeDate` | 检查输入值是否小于给定的日期字符串
+`gte_date/gteDate/afterOrEqualDate` | 检查输入值是否大于或等于给定的日期字符串
+`lte_date/lteDate/beforeOrEqualDate` | 检查输入值是否小于或等于给定的日期字符串
 `hasWhitespace` | 检查字符串值是否有空格
 `ascii/ASCII/isASCII` | 检查值是ASCII字符串
 `alpha/isAlpha` | 验证值是否仅包含字母字符
-`alphaNum/isAlphaNum` | 验证是否仅包含字母、数字
-`alphaDash/isAlphaDash` | 验证是否仅包含字母、数字、破折号（ - ）以及下划线（ _ ）
-`multiByte/isMultiByte` | 检查值是多字节字符串
+`alpha_num/alphaNum/isAlphaNum` | 验证是否仅包含字母、数字
+`alpha_dash/alphaDash/isAlphaDash` | 验证是否仅包含字母、数字、破折号（ - ）以及下划线（ _ ）
+`multi_byte/multiByte/isMultiByte` | 检查值是多字节字符串
 `base64/isBase64` | 检查值是Base64字符串
-`dnsName/DNSName/isDNSName` | 检查值是DNS名称字符串
-`dataURI/isDataURI` | Check value is DataURI string.
+`dns_name/dnsName/DNSName/isDNSName` | 检查值是DNS名称字符串
+`data_uri/dataURI/isDataURI` | Check value is DataURI string.
 `empty/isEmpty` | 检查值是否为空
-`hexColor/isHexColor` | 检查值是16进制的颜色字符串
+`hex_color/hexColor/isHexColor` | 检查值是16进制的颜色字符串
 `hexadecimal/isHexadecimal` | 检查值是十六进制字符串
 `json/JSON/isJSON` | 检查值是JSON字符串。
 `lat/latitude/isLatitude` | 检查值是纬度坐标
 `lon/longitude/isLongitude` | 检查值是经度坐标
 `mac/isMAC` | 检查值是MAC字符串
 `num/number/isNumber` | 检查值是数字字符串. `>= 0`
-`cnMobile/isCnMobile` | 检查值是中国11位手机号码字符串
+`cn_mobile/cnMobile/isCnMobile` | 检查值是中国11位手机号码字符串
 `printableASCII/isPrintableASCII` | Check value is PrintableASCII string.
 `rgbColor/RGBColor/isRGBColor` | 检查值是RGB颜色字符串
-`fullUrl/isFullURL` | 检查值是完整的URL字符串(_必须以http,https开始的URL_).
+`full_url/fullUrl/isFullURL` | 检查值是完整的URL字符串(_必须以http,https开始的URL_).
 `url/URL/isURL` | 检查值是URL字符串
 `ip/IP/isIP`  |  检查值是IP（v4或v6）字符串
 `ipv4/isIPv4`  |  检查值是IPv4字符串
 `ipv6/isIPv6`  |  检查值是IPv6字符串
-`CIDR/isCIDR` | 检查值是 CIDR 字符串
+`cidr/CIDR/isCIDR` | 检查值是 CIDR 字符串
 `CIDRv4/isCIDRv4` | 检查值是 CIDR v4 字符串
 `CIDRv6/isCIDRv6` | 检查值是 CIDR v6 字符串
 `uuid/isUUID` | 检查值是UUID字符串

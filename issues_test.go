@@ -186,5 +186,17 @@ func TestIssues34(t *testing.T) {
 
 // https://github.com/gookit/validate/issues/60
 func TestIssues60(t *testing.T) {
+	is := assert.New(t)
+	m := map[string]interface{}{
+		"title": "1",
+	}
 
+	v := Map(m)
+	v.StringRule("title", "in:2,3")
+	v.AddMessages(map[string]string{
+		"in": "自定义错误",
+	})
+
+	is.False(v.Validate())
+	is.Equal("自定义错误", v.Errors.One())
 }

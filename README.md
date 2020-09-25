@@ -1,7 +1,7 @@
 # Validate
 
 [![GitHub tag (latest SemVer)](https://img.shields.io/github/tag/gookit/validate)](https://github.com/gookit/validate)
-[![GoDoc](https://godoc.org/github.com/gookit/validate?status.svg)](https://godoc.org/github.com/gookit/validate)
+[![GoDoc](https://godoc.org/github.com/gookit/validate?status.svg)](https://pkg.go.dev/github.com/gookit/validate)
 [![Build Status](https://travis-ci.org/gookit/validate.svg?branch=master)](https://travis-ci.org/gookit/validate)
 [![Coverage Status](https://coveralls.io/repos/github/gookit/validate/badge.svg?branch=master)](https://coveralls.io/github/gookit/validate?branch=master)
 [![Go Report Card](https://goreportcard.com/badge/github.com/gookit/validate)](https://goreportcard.com/report/github.com/gookit/validate)
@@ -9,31 +9,33 @@
 
 The package is a generic Go data validate and filter tool library.
 
-> **[中文说明](README.zh-CN.md)**
-
-- Support validate `Map`, `Struct`, `Request`(`Form`, `JSON`, `url.Values`, `UploadedFile`) data
+- Support quick validate `Map`, `Struct`, `Request`(`Form`, `JSON`, `url.Values`, `UploadedFile`) data
 - Support filter/sanitize data before validate
 - Support add custom filter/validator func
 - Support scene settings, verify different fields in different scenes
 - Support custom error messages, field translates.
-- Customizable i18n aware error messages, built in `en`, `zh-CN`
+- Customizable i18n aware error messages, built in `en`, `zh-CN`, `zh-TW`
 - Built-in common data type filter/converter. see [Built In Filters](#built-in-filters)
 - Many commonly used validators have been built in(**> 70**), see [Built In Validators](#built-in-validators)
 
 > Inspired the projects [albrow/forms](https://github.com/albrow/forms) and [asaskevich/govalidator](https://github.com/asaskevich/govalidator) and [inhere/php-validate](https://github.com/inhere/php-validate). Thank you very much
 
+## [中文说明](README.zh-CN.md)
+
+中文说明请查看 **[README.zh-CN](README.zh-CN.md)**
+
 ## Go Doc
 
-- [godoc for gopkg](https://godoc.org/gopkg.in/gookit/validate.v1)
-- [godoc for github](https://godoc.org/github.com/gookit/validate)
+- [godoc for gopkg](https://pkg.go.dev/gopkg.in/gookit/validate.v1)
+- [godoc for github](https://pkg.go.dev/github.com/gookit/validate)
 
 ## Validate Struct
 
-With the TAG tag of the structure, you can quickly verify a structure data.
+With the `validate` tag of the structure, you can quickly verify a structure data.
 
-And provides extended functionality:
+provides extended functionality:
 
-The struct can implement three interface methods, which is convenient to do some customization:
+The struct can implement three interfaces methods, which is convenient to do some customization:
 
 - `ConfigValidation(v *Validation)` will be called after the validator instance is created
 - `Messages() map[string]string` can customize the validator error message
@@ -111,9 +113,11 @@ You can also validate a MAP data directly.
 ```go
 package main
 
-import "fmt"
-import "time"
-import "github.com/gookit/validate"
+import (
+"fmt"
+
+"github.com/gookit/validate"
+)
 
 func main()  {
 	m := map[string]interface{}{
@@ -264,6 +268,57 @@ validate.Config(func(opt *validate.GlobalOption) {
 })
 ```
 
+### Custom Error Messages
+
+- Register language messages
+
+```go
+import "github.com/gookit/validate/locales/zhcn"
+
+// for all Validation.
+// NOTICE: must be register before on validate.New()
+zhcn.RegisterGlobal()
+
+v := validate.New()
+
+// only for current Validation
+zhcn.Register(v)
+```
+
+- Manual add global messages
+
+```go
+validate.AddGlobalMessages(map[string]string{
+    "minLength": "OO! {field} min length is %d",
+})
+```
+
+- Add messages for current validation
+
+```go
+v := validate.New(map[string]interface{}{
+    "name": "inhere",
+})
+v.StringRule("name", "required|string|minLen:7|maxLen:15")
+
+v.AddMessages(map[string]string{
+    "minLength": "OO! {field} min length is %d",
+    "name.minLeng": "OO! username min length is %d",
+})
+```
+
+- For a struct
+
+```go
+// Messages you can custom validator error messages. 
+func (f UserForm) Messages() map[string]string {
+	return validate.MS{
+		"required": "oh! the {field} is required",
+		"Name.required": "message for special field",
+	}
+}
+```
+
 ### Add Custom Validator
 
 `validate` supports adding custom validators, and supports adding `global validator` and `temporary validator`.
@@ -318,13 +373,13 @@ v.AddValidators(M{
 validator/aliases | description
 -------------------|-------------------------------------------
 `required`  | Check value is required and cannot be empty. 
-`requiredIf`  | `required_if:anotherfield,value,...` The field under validation must be present and not empty if the `anotherField` field is equal to any value.
+`required_if/requiredIf`  | `required_if:anotherfield,value,...` The field under validation must be present and not empty if the `anotherField` field is equal to any value.
 `requiredUnless`  | `required_unless:anotherfield,value,...` The field under validation must be present and not empty unless the `anotherField` field is equal to any value. 
 `requiredWith`  | `required_with:foo,bar,...` The field under validation must be present and not empty only if any of the other specified fields are present.
 `requiredWithAll`  | `required_with_all:foo,bar,...` The field under validation must be present and not empty only if all of the other specified fields are present.
 `requiredWithout`  | `required_without:foo,bar,...` The field under validation must be present and not empty only when any of the other specified fields are not present.
 `requiredWithoutAll`  | `required_without_all:foo,bar,...` The field under validation must be present and not empty only when all of the other specified fields are not present. 
-`-/safe`  | The field values ​​are safe and do not require validation
+`-/safe`  | The field values are safe and do not require validation
 `int/integer/isInt`  | Check value is `intX` `uintX` type, And support size checking. eg: `"int"` `"int:2"` `"int:2,12"`
 `uint/isUint`  |  Check value is uint(`uintX`) type, `value >= 0`
 `bool/isBool`  |  Check value is bool string(`true`: "1", "on", "yes", "true", `false`: "0", "off", "no", "false").
@@ -332,7 +387,7 @@ validator/aliases | description
 `float/isFloat`  |  Check value is float(`floatX`) type
 `slice/isSlice`  |  Check value is slice type(`[]intX` `[]uintX` `[]byte` `[]string` ...).
 `in/enum`  |  Check if the value is in the given enumeration
-`notIn`  |  Check if the value is not in the given enumeration
+`not_in/notIn`  |  Check if the value is not in the given enumeration
 `contains`  |  Check if the input value contains the given value
 `not_contains/notContains`  |  Check if the input value not contains the given value
 `string_contains/stringContains`  |  Check if the input string value is contains the given sub-string
@@ -353,8 +408,8 @@ validator/aliases | description
 `map/isMap`  |  Check value is a MAP type
 `strings/isStrings`  |  Check value is string slice type(only allow `[]string`).
 `ints/isInts`  |  Check value is int slice type(only allow `[]int`).
-`minLen/minLength`  |  Check the minimum length of the value is the given size
-`maxLen/maxLength`  |  Check the maximum length of the value is the given size
+`min_len/minLen/minLength`  |  Check the minimum length of the value is the given size
+`max_len/maxLen/maxLength`  |  Check the maximum length of the value is the given size
 `eq_field/eqField`  |  Check that the field value is equals to the value of another field
 `ne_field/neField`  |  Check that the field value is not equals to the value of another field
 `gte_field/gteField`  |  Check that the field value is greater than or equal to the value of another field
@@ -365,21 +420,21 @@ validator/aliases | description
 `image/isImage`  |  Check if it is an uploaded image file and support suffix check
 `mime/mimeType/inMimeTypes`  |  Check that it is an uploaded file and is in the specified MIME type
 `date/isDate` | Check the field value is date string. eg `2018-10-25`
-`gtDate/afterDate` | Check that the input value is greater than the given date string.
-`ltDate/beforeDate` | Check that the input value is less than the given date string
-`gteDate/afterOrEqualDate` | Check that the input value is greater than or equal to the given date string.
-`lteDate/beforeOrEqualDate` | Check that the input value is less than or equal to the given date string.
-`hasWhitespace` | Check value string has Whitespace.
+`gt_date/gtDate/afterDate` | Check that the input value is greater than the given date string.
+`lt_date/ltDate/beforeDate` | Check that the input value is less than the given date string
+`gte_date/gteDate/afterOrEqualDate` | Check that the input value is greater than or equal to the given date string.
+`lte_date/lteDate/beforeOrEqualDate` | Check that the input value is less than or equal to the given date string.
+`has_whitespace/hasWhitespace` | Check value string has Whitespace.
 `ascii/ASCII/isASCII` | Check value is ASCII string.
 `alpha/isAlpha` | Verify that the value contains only alphabetic characters
 `alphaNum/isAlphaNum` | Check that only letters, numbers are included
 `alphaDash/isAlphaDash` | Check to include only letters, numbers, dashes ( - ), and underscores ( _ )
 `multiByte/isMultiByte` | Check value is MultiByte string.
 `base64/isBase64` | Check value is Base64 string.
-`dnsName/DNSName/isDNSName` | Check value is DNSName string.
-`dataURI/isDataURI` | Check value is DataURI string.
+`dns_name/dnsName/DNSName/isDNSName` | Check value is DNSName string.
+`data_uri/dataURI/isDataURI` | Check value is DataURI string.
 `empty/isEmpty` | Check value is Empty string.
-`hexColor/isHexColor` | Check value is Hex color string.
+`hex_color/hexColor/isHexColor` | Check value is Hex color string.
 `hexadecimal/isHexadecimal` | Check value is Hexadecimal string.
 `json/JSON/isJSON` | Check value is JSON string.
 `lat/latitude/isLatitude` | Check value is Latitude string.
@@ -388,7 +443,7 @@ validator/aliases | description
 `num/number/isNumber` | Check value is number string. `>= 0`
 `cn_mobile/cnMobile/isCnMobile` | Check value is china mobile number string.
 `printableASCII/isPrintableASCII` | Check value is PrintableASCII string.
-`rgbColor/RGBColor/isRGBColor` | Check value is RGB color string.
+`rgb_color/rgbColor/RGBColor/isRGBColor` | Check value is RGB color string.
 `url/isURL` | Check value is URL string.
 `fullUrl/isFullURL` | Check value is full URL string(_must start with http,https_).
 `ip/isIP`  |  Check value is IP(v4 or v6) string.
