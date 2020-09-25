@@ -148,6 +148,14 @@ func newValidation(data DataFace) *Validation {
 		v.validatorMetas[n] = newFuncMeta(n, true, fv)
 	}
 
+	// v.pool = &sync.Pool{
+	// 	New: func() interface{} {
+	// 		return &Validation{
+	// 			v: v,
+	// 		}
+	// 	},
+	// }
+
 	return v
 }
 

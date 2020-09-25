@@ -23,6 +23,10 @@ const (
 
 // Validation definition
 type Validation struct {
+	// for optimize create instance. refer go-playground/validator
+	// v *Validation
+	// pool *sync.Pool
+
 	// source input data
 	data DataFace
 	// all validated fields list
