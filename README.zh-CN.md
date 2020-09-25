@@ -281,7 +281,7 @@ validate.AddGlobalMessages(map[string]string{
 })
 ```
 
-- 为当前验证添加消息(仅本次验证有效)
+- 为当前验证添加消息(_仅本次验证有效_)
 
 ```go
 v := validate.New(map[string]interface{}{
@@ -291,8 +291,20 @@ v.StringRule("name", "required|string|minLen:7|maxLen:15")
 
 v.AddMessages(map[string]string{
     "minLength": "OO! {field} min length is %d",
-    "name.minLeng": "OO! username min length is %d",
+    "name.minLen": "OO! username min length is %d",
 })
+```
+
+- 结构体可以通过 `Messages()` 方法添加
+
+```go
+// Messages you can custom validator error messages. 
+func (f UserForm) Messages() map[string]string {
+	return validate.MS{
+		"required": "oh! the {field} is required",
+		"Name.required": "message for special field",
+	}
+}
 ```
 
 ### 自定义验证器

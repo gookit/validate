@@ -303,7 +303,7 @@ v.StringRule("name", "required|string|minLen:7|maxLen:15")
 
 v.AddMessages(map[string]string{
     "minLength": "OO! {field} min length is %d",
-    "name.minLeng": "OO! username min length is %d",
+    "name.minLen": "OO! username min length is %d",
 })
 ```
 
