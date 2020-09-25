@@ -208,7 +208,7 @@ func (v *Validation) StringRule(field, rule string, filterRule ...string) *Valid
 // StringRules add multi rules by string map.
 // Usage:
 // 	v.StringRules(map[string]string{
-// 		"name": "required|string|min:12",
+// 		"name": "required|string|min_len:12",
 // 		"age": "required|int|min:12",
 // 	})
 func (v *Validation) StringRules(mp MS) *Validation {

@@ -291,47 +291,6 @@ func (v *Validation) Validators(withGlobal bool) map[string]int {
 }
 
 /*************************************************************
- * Do Validate
- *************************************************************/
-
-// Validate processing
-func (v *Validation) Validate(scene ...string) bool {
-	// has been validated OR has error
-	if v.hasValidated || v.shouldStop() {
-		return v.IsSuccess()
-	}
-
-	// init scene info
-	v.SetScene(scene...)
-	v.sceneFields = v.sceneFieldMap()
-
-	// apply filter rules before validate.
-	if false == v.Filtering() && v.StopOnError {
-		return false
-	}
-
-	// apply rule to validate data.
-	for _, rule := range v.rules {
-		if rule.Apply(v) {
-			break
-		}
-	}
-
-	v.hasValidated = true
-	if v.hasError {
-		// clear safe data on error.
-		v.safeData = make(map[string]interface{})
-	}
-	return v.IsSuccess()
-}
-
-// ValidateData validate given data
-func (v *Validation) ValidateData(data DataFace) bool {
-	v.data = data
-	return v.Validate()
-}
-
-/*************************************************************
  * Do filtering/sanitize
  *************************************************************/
 
@@ -380,6 +339,7 @@ func (v *Validation) AddTranslates(m map[string]string) {
 
 // WithMessages settings. you can custom validator error messages.
 // Usage:
+// 	// key is "validator" or "field.validator"
 // 	v.WithMessages(map[string]string{
 // 		"require": "oh! {field} is required",
 // 		"range": "oh! {field} must be in the range %d - %d",

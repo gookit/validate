@@ -18,6 +18,13 @@ func TestBuiltinMessages(t *testing.T) {
 	bm = BuiltinMessages()
 
 	assert.Contains(t, bm, "testMsg0")
+	AddGlobalMessages(map[string]string{
+		"testMsg1": "message value",
+	})
+
+	bm = BuiltinMessages()
+
+	assert.Contains(t, bm, "testMsg1")
 }
 
 func TestErrorsBasic(t *testing.T) {
@@ -55,4 +62,20 @@ func TestTranslatorBasic(t *testing.T) {
 	assert.Equal(t, "Show Name message1", tr.Message("min", "FIELD1"))
 
 	tr.Reset()
+}
+
+func TestUseAliasMessageKey(t *testing.T) {
+	is := assert.New(t)
+	v := New(M{
+		"name": "123",
+	})
+	v.StringRule("name", "required|string|minLen:7|maxLen:15")
+	v.WithMessages(map[string]string{
+		"name.minLen": "USERNAME min length is 7",
+		// "minLen": "USERNAME min length is 7",
+		"name.minLength": "USERNAME min length is 7",
+	})
+
+	is.False(v.Validate())
+	is.Equal("USERNAME min length is 7", v.Errors.One())
 }

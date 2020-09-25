@@ -1,24 +1,22 @@
-package locales
+package zhcn
 
 import "github.com/gookit/validate"
 
-// Locales supported language data map
-var Locales = map[string]validate.MS{
-	"zh-CN": ZhCN,
+// Name language name
+const Name = "zh-CN"
+
+// Register language data to validate.Validation
+func Register(v *validate.Validation) {
+	v.AddMessages(Data)
 }
 
-// Register language data to Validation
-func Register(v *validate.Validation, name string) bool {
-	if data, ok := Locales[name]; ok {
-		v.AddMessages(data)
-		return true
-	}
-
-	return false
+// RegisterGlobal register to the validate global messages
+func RegisterGlobal() {
+	validate.AddGlobalMessages(Data)
 }
 
-// ZhCN zh-CN language messages
-var ZhCN = map[string]string{
+// Data zh-CN language messages
+var Data = map[string]string{
 	"_": "{field} 没有通过验证",
 	// int
 	"min": "{field} 的最小值是 %d",
@@ -31,7 +29,7 @@ var ZhCN = map[string]string{
 	"range": "{field} 值必须在此范围内 %d - %d",
 	// required
 	"required":             "{field} 是必填项",
-	"required_if":          "当  %v 为 {args} 时 {field} 不能为空。",
+	"required_if":          "当 %v 为 {args} 时 {field} 不能为空。",
 	"required_unless":      "当 %v 不为 {args} 时 {field} 不能为空。",
 	"required_with":        "当 {values} 存在时 {field} 不能为空。",
 	"required_with_all":    "当 {values} 存在时 {field} 不能为空。",

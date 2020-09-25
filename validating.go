@@ -14,6 +14,48 @@ const (
 	statusFail
 )
 
+/*************************************************************
+ * Do Validating
+ *************************************************************/
+
+// ValidateData validate given data-source
+func (v *Validation) ValidateData(data DataFace) bool {
+	v.data = data
+	return v.Validate()
+}
+
+// Validate processing
+func (v *Validation) Validate(scene ...string) bool {
+	// has been validated OR has error
+	if v.hasValidated || v.shouldStop() {
+		return v.IsSuccess()
+	}
+
+	// init scene info
+	v.SetScene(scene...)
+	v.sceneFields = v.sceneFieldMap()
+
+	// apply filter rules before validate.
+	if false == v.Filtering() && v.StopOnError {
+		return false
+	}
+
+	// apply rule to validate data.
+	for _, rule := range v.rules {
+		if rule.Apply(v) {
+			break
+		}
+	}
+
+	v.hasValidated = true
+	if v.hasError {
+		// clear safe data on error.
+		v.safeData = make(map[string]interface{})
+	}
+
+	return v.IsSuccess()
+}
+
 // Apply current rule for the rule fields
 func (r *Rule) Apply(v *Validation) (stop bool) {
 	// scene name is not match. skip the rule

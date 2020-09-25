@@ -71,56 +71,6 @@ type GlobalOption struct {
 // global options
 var gOpt = newGlobalOption()
 
-/*************************************************************
- * quick create Validation
- *************************************************************/
-
-// New a Validation
-func New(data interface{}, scene ...string) *Validation {
-	switch td := data.(type) {
-	case DataFace:
-		return NewValidation(td, scene...)
-	case M:
-		return FromMap(td).Create().SetScene(scene...)
-	case map[string]interface{}:
-		return FromMap(td).Create().SetScene(scene...)
-	case SValues:
-		return FromURLValues(url.Values(td)).Create().SetScene(scene...)
-	case url.Values:
-		return FromURLValues(td).Create().SetScene(scene...)
-	case map[string][]string:
-		return FromURLValues(td).Create().SetScene(scene...)
-	}
-
-	return Struct(data, scene...)
-}
-
-// NewWithOptions new Validation with options
-func NewWithOptions(data interface{}, fn func(opt *GlobalOption)) *Validation {
-	fn(gOpt)
-	return New(data)
-}
-
-// Map validation create
-func Map(m map[string]interface{}, scene ...string) *Validation {
-	return FromMap(m).Create().SetScene(scene...)
-}
-
-// JSON create validation from JSON string.
-func JSON(s string, scene ...string) *Validation {
-	return mustNewValidation(FromJSON(s)).SetScene(scene...)
-}
-
-// Struct validation create
-func Struct(s interface{}, scene ...string) *Validation {
-	return mustNewValidation(FromStruct(s)).SetScene(scene...)
-}
-
-// Request validation create
-func Request(r *http.Request) *Validation {
-	return mustNewValidation(FromRequest(r))
-}
-
 // Config global options
 func Config(fn func(opt *GlobalOption)) {
 	fn(gOpt)
@@ -148,6 +98,107 @@ func newGlobalOption() *GlobalOption {
 		// tag name in struct tags
 		ValidateTag: validateTag,
 	}
+}
+
+func newValidation(data DataFace) *Validation {
+	v := &Validation{
+		Errors: make(Errors),
+		// add data source on usage
+		data: data,
+		// create message translator
+		trans: NewTranslator(),
+		// validated data
+		safeData: make(map[string]interface{}),
+		// validator names
+		validators: make(map[string]int),
+		// filtered data
+		filteredData: make(map[string]interface{}),
+		// default config
+		StopOnError: gOpt.StopOnError,
+		SkipOnEmpty: gOpt.SkipOnEmpty,
+	}
+
+	// init build in context validator
+	v.validatorValues = map[string]reflect.Value{
+		"required":           reflect.ValueOf(v.Required),
+		"requiredIf":         reflect.ValueOf(v.RequiredIf),
+		"requiredUnless":     reflect.ValueOf(v.RequiredUnless),
+		"requiredWith":       reflect.ValueOf(v.RequiredWith),
+		"requiredWithAll":    reflect.ValueOf(v.RequiredWithAll),
+		"requiredWithout":    reflect.ValueOf(v.RequiredWithout),
+		"requiredWithoutAll": reflect.ValueOf(v.RequiredWithoutAll),
+		// field compare
+		"eqField":  reflect.ValueOf(v.EqField),
+		"neField":  reflect.ValueOf(v.NeField),
+		"gtField":  reflect.ValueOf(v.GtField),
+		"gteField": reflect.ValueOf(v.GteField),
+		"ltField":  reflect.ValueOf(v.LtField),
+		"lteField": reflect.ValueOf(v.LteField),
+		// file upload check
+		"isFile":      reflect.ValueOf(v.IsFormFile),
+		"isImage":     reflect.ValueOf(v.IsFormImage),
+		"inMimeTypes": reflect.ValueOf(v.InMimeTypes),
+	}
+
+	v.validatorMetas = make(map[string]*funcMeta)
+
+	// collect meta info
+	for n, fv := range v.validatorValues {
+		v.validators[n] = 1 // built in
+		v.validatorMetas[n] = newFuncMeta(n, true, fv)
+	}
+
+	return v
+}
+
+/*************************************************************
+ * quick create Validation
+ *************************************************************/
+
+// New a Validation
+func New(data interface{}, scene ...string) *Validation {
+	switch td := data.(type) {
+	case DataFace:
+		return NewValidation(td, scene...)
+	case M:
+		return FromMap(td).Create().SetScene(scene...)
+	case map[string]interface{}:
+		return FromMap(td).Create().SetScene(scene...)
+	case SValues:
+		return FromURLValues(url.Values(td)).Create().SetScene(scene...)
+	case url.Values:
+		return FromURLValues(td).Create().SetScene(scene...)
+	case map[string][]string:
+		return FromURLValues(td).Create().SetScene(scene...)
+	}
+
+	return Struct(data, scene...)
+}
+
+// NewWithOptions new Validation with options
+// func NewWithOptions(data interface{}, fn func(opt *GlobalOption)) *Validation {
+// 	fn(gOpt)
+// 	return New(data)
+// }
+
+// Map validation create
+func Map(m map[string]interface{}, scene ...string) *Validation {
+	return FromMap(m).Create().SetScene(scene...)
+}
+
+// JSON create validation from JSON string.
+func JSON(s string, scene ...string) *Validation {
+	return mustNewValidation(FromJSON(s)).SetScene(scene...)
+}
+
+// Struct validation create
+func Struct(s interface{}, scene ...string) *Validation {
+	return mustNewValidation(FromStruct(s)).SetScene(scene...)
+}
+
+// Request validation create
+func Request(r *http.Request) *Validation {
+	return mustNewValidation(FromRequest(r))
 }
 
 func mustNewValidation(d DataFace, err error) *Validation {

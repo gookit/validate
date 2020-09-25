@@ -209,7 +209,14 @@ var builtinMessages = map[string]string{
 	"isbn13":         "{field} value should be a isbn13 string",
 }
 
-// AddBuiltinMessages add builtin messages
+// AddGlobalMessages add global builtin messages
+func AddGlobalMessages(mp map[string]string) {
+	for name, msg := range mp {
+		builtinMessages[name] = msg
+	}
+}
+
+// AddBuiltinMessages alias of the AddGlobalMessages()
 func AddBuiltinMessages(mp map[string]string) {
 	for name, msg := range mp {
 		builtinMessages[name] = msg

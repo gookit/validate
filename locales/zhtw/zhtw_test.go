@@ -1,0 +1,38 @@
+package zhtw
+
+import (
+	"testing"
+
+	"github.com/gookit/validate"
+	"github.com/stretchr/testify/assert"
+)
+
+func TestRegister(t *testing.T) {
+	is := assert.New(t)
+	v := validate.Map(map[string]interface{}{
+		"age": 23,
+		"name": "inhere",
+	})
+
+	Register(v)
+
+	v.AddRule("name", "min_len", 7)
+
+	is.False(v.Validate())
+	is.Equal(v.Errors.One(), "name 的最小長度是 7")
+}
+
+func TestRegisterGlobal(t *testing.T) {
+	RegisterGlobal()
+
+	is := assert.New(t)
+	v := validate.Map(map[string]interface{}{
+		"age": 23,
+		"name": "inhere",
+	})
+
+	v.AddRule("name", "min_len", 7)
+
+	is.False(v.Validate())
+	is.Equal(v.Errors.One(), "name 的最小長度是 7")
+}
