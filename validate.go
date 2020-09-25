@@ -93,7 +93,7 @@ func newGlobalOption() *GlobalOption {
 		// tag name in struct tags
 		FieldTag: fieldTag,
 		// tag name in struct tags
-		FilterTag: filterTag,
+		FilterTag:  filterTag,
 		MessageTag: messageTag,
 		// tag name in struct tags
 		ValidateTag: validateTag,
@@ -155,7 +155,12 @@ func newValidation(data DataFace) *Validation {
  * quick create Validation
  *************************************************************/
 
-// New a Validation
+// New create a Validation instance
+// data support:
+// - DataFace
+// - M/map[string]interface{}
+// - SValues/url.Values/map[string][]string
+// - struct ptr
 func New(data interface{}, scene ...string) *Validation {
 	switch td := data.(type) {
 	case DataFace:

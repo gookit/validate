@@ -183,3 +183,8 @@ func TestIssues34(t *testing.T) {
 
 	dump.Println(v.Errors)
 }
+
+// https://github.com/gookit/validate/issues/60
+func TestIssues60(t *testing.T) {
+
+}

@@ -28,13 +28,13 @@ var Data = map[string]string{
 	"enum":  "{field} 值必須在下列枚舉中 %v",
 	"range": "{field} 值必須在此範圍內 %d - %d",
 	// required
-	"required":             "{field} 是必填項",
-	"required_if":          "當 %v 為 {args} 時 {field} 不能為空。",
-	"required_unless":      "當 %v 不為 {args} 時 {field} 不能為空。",
-	"required_with":        "當 {values} 存在時 {field} 不能為空。",
-	"required_with_all":    "當 {values} 存在時 {field} 不能為空。",
-	"required_without":     "當 {values} 不存在時 {field} 不能為空。",
-	"required_without_all": "當 {values} 都不存在時 {field} 不能為空。",
+	"required":           "{field} 是必填項",
+	"requiredIf":         "當 %v 為 {args} 時 {field} 不能為空。",
+	"requiredUnless":     "當 %v 不為 {args} 時 {field} 不能為空。",
+	"requiredWith":       "當 {values} 存在時 {field} 不能為空。",
+	"requiredWithAll":    "當 {values} 存在時 {field} 不能為空。",
+	"requiredWithout":    "當 {values} 不存在時 {field} 不能為空。",
+	"requiredWithoutAll": "當 {values} 都不存在時 {field} 不能為空。",
 	// email
 	"email": "{field}不是合法郵箱",
 	// field compare
@@ -64,7 +64,7 @@ var Data = map[string]string{
 	"notIn":       "{field} 值不能出現在給定枚舉列表中 %d",
 	"contains":    "{field} 值不能出現在枚舉列表中 %s",
 	"notContains": "{field} 值包含輸入指定值 %s",
-	"startsWith":  "{field} 值的前綴必須是： %s ",
+	"startsWith":  "{field} 值的前綴必須是：%s ",
 	"endsWith":    "{field} 值的後綴必須是：%s ",
 	"regex":       "{field} 值沒有通過正則匹配",
 	"file":        "{field} 值必須是壹個文件",
@@ -114,4 +114,3 @@ var Data = map[string]string{
 	"isbn10":         "{field} 值應該是壹個ISBN10字符串",
 	"isbn13":         "{field} 值應該是壹個ISBN13字符串",
 }
-

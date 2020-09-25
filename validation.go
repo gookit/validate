@@ -86,54 +86,7 @@ func NewEmpty(scene ...string) *Validation {
 
 // NewValidation new validation instance
 func NewValidation(data DataFace, scene ...string) *Validation {
-	v := &Validation{
-		Errors: make(Errors),
-		// add data source
-		data: data,
-		// create message translator
-		trans: NewTranslator(),
-		// validated data
-		safeData: make(map[string]interface{}),
-		// validator names
-		validators: make(map[string]int),
-		// filtered data
-		filteredData: make(map[string]interface{}),
-		// default config
-		StopOnError: gOpt.StopOnError,
-		SkipOnEmpty: gOpt.SkipOnEmpty,
-	}
-
-	// init build in context validator
-	v.validatorValues = map[string]reflect.Value{
-		"required":           reflect.ValueOf(v.Required),
-		"requiredIf":         reflect.ValueOf(v.RequiredIf),
-		"requiredUnless":     reflect.ValueOf(v.RequiredUnless),
-		"requiredWith":       reflect.ValueOf(v.RequiredWith),
-		"requiredWithAll":    reflect.ValueOf(v.RequiredWithAll),
-		"requiredWithout":    reflect.ValueOf(v.RequiredWithout),
-		"requiredWithoutAll": reflect.ValueOf(v.RequiredWithoutAll),
-		// field compare
-		"eqField":  reflect.ValueOf(v.EqField),
-		"neField":  reflect.ValueOf(v.NeField),
-		"gtField":  reflect.ValueOf(v.GtField),
-		"gteField": reflect.ValueOf(v.GteField),
-		"ltField":  reflect.ValueOf(v.LtField),
-		"lteField": reflect.ValueOf(v.LteField),
-		// file upload check
-		"isFile":      reflect.ValueOf(v.IsFormFile),
-		"isImage":     reflect.ValueOf(v.IsFormImage),
-		"inMimeTypes": reflect.ValueOf(v.InMimeTypes),
-	}
-
-	v.validatorMetas = make(map[string]*funcMeta)
-
-	// collect meta info
-	for n, fv := range v.validatorValues {
-		v.validators[n] = 1 // built in
-		v.validatorMetas[n] = newFuncMeta(n, true, fv)
-	}
-
-	return v.SetScene(scene...)
+	return newValidation(data).SetScene(scene...)
 }
 
 /*************************************************************

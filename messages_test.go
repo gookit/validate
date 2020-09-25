@@ -67,13 +67,13 @@ func TestTranslatorBasic(t *testing.T) {
 func TestUseAliasMessageKey(t *testing.T) {
 	is := assert.New(t)
 	v := New(M{
-		"name": "123",
+		"name": "inhere",
 	})
 	v.StringRule("name", "required|string|minLen:7|maxLen:15")
 	v.WithMessages(map[string]string{
 		"name.minLen": "USERNAME min length is 7",
 		// "minLen": "USERNAME min length is 7",
-		"name.minLength": "USERNAME min length is 7",
+		// "name.minLength": "USERNAME min length is 7",
 	})
 
 	is.False(v.Validate())

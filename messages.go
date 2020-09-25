@@ -305,14 +305,18 @@ func (t *Translator) HasMessage(key string) bool {
 // Message get by validator name and field name.
 func (t *Translator) Message(validator, field string, args ...interface{}) (msg string) {
 	var ok bool
+	msg, ok = t.format(validator, field, args...)
+	if ok {
+		return
+	}
+
+	// try check "validator" is an alias name
 	if rName, has := validatorAliases[validator]; has {
 		msg, ok = t.format(rName, field, args...)
 		if ok {
 			return
 		}
 	}
-
-	msg, ok = t.format(validator, field, args...)
 
 	// not found, fallback - use default error message
 	if !ok {

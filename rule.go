@@ -177,10 +177,10 @@ func (v *Validation) StringRule(field, rule string, filterRule ...string) *Valid
 			validator := list[0]
 			realName := ValidatorName(validator)
 			switch realName {
-			// set error message for the field
-			case "message":
-				// message key like "age.required"
-				v.trans.AddMessage(field+"."+validator, list[1])
+			// set error message for the field TODO
+			// case "message":
+			// 	// message key like "age.required"
+			// 	v.trans.AddMessage(field+"."+validator, list[1])
 			// add default value for the field
 			case "default":
 				v.SetDefValue(field, list[1])
