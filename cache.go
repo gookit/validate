@@ -1,6 +1,15 @@
 package validate
 
-import "sync"
+/*
+// TODO: idea for optimize ...
+// - use pool for Validation
+// - cache struct reflect value
+
+// Usage:
+// // use a single instance of Validate, it caches struct info
+// vf := validate.NewFactory()
+// v := vf.New(data)
+// v.Validate()
 
 // global factory for create Validation
 var gf = newFactory()
@@ -30,3 +39,4 @@ func (f *factory) get() *Validation {
 func (f *factory) put(v *Validation) {
 	f.pool.Put(v)
 }
+*/
