@@ -256,51 +256,65 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 	}
 
 	fMap := make(map[string]string, 0)
-
 	vt := d.valueTpy
-	for i := 0; i < vt.NumField(); i++ {
-		name := vt.Field(i).Name
+	var recursive func(vt reflect.Type)
+	
+	recursive = func(vt reflect.Type) {
 
-		// skip don't exported field
-		if name[0] >= 'a' && name[0] <= 'z' {
-			continue
-		}
+		for i := 0; i < vt.NumField(); i++ {
 
-		d.fieldNames[name] = 1
-		// TODO cache field values
-		// if vt.Field(i).Type.Kind() != reflect.Struct {
-		// 	d.fieldValues[name] = d.value.Field(i).Interface()
-		// }
-
-		// validate rule
-		vRule := vt.Field(i).Tag.Get(d.ValidateTag)
-		if vRule != "" {
-			v.StringRule(name, vRule)
-		}
-
-		// filter rule
-		fRule := vt.Field(i).Tag.Get(d.FilterTag)
-		if fRule != "" {
-			v.FilterRule(name, fRule)
-		}
-
-		// load filed translate name. eg: `json:"user_name"`
-		if gOpt.FieldTag != "" {
-			fName := vt.Field(i).Tag.Get(gOpt.FieldTag)
-			if fName != "" {
-				fMap[name] = fName
+			f := vt.Field(i).Type
+			if f.Kind() == reflect.Ptr {
+				f = f.Elem()
 			}
-		}
+			if f.Kind() == reflect.Struct {
+				recursive(f)
+			}
 
-		// load custom error messages.
-		// eg: `message:"required:name is required|minLen:name min len is %d"`
-		if gOpt.MessageTag != "" {
-			errMsg := vt.Field(i).Tag.Get(gOpt.MessageTag)
-			if errMsg != "" {
-				d.loadMessagesFromTag(v.trans, name, vRule, errMsg)
+			name := vt.Field(i).Name
+
+			// skip don't exported field
+			if name[0] >= 'a' && name[0] <= 'z' {
+				continue
+			}
+
+			d.fieldNames[name] = 1
+			// TODO cache field values
+			// if vt.Field(i).Type.Kind() != reflect.Struct {
+			// 	d.fieldValues[name] = d.value.Field(i).Interface()
+			// }
+
+			// validate rule
+			vRule := vt.Field(i).Tag.Get(d.ValidateTag)
+			if vRule != "" {
+				v.StringRule(name, vRule)
+			}
+
+			// filter rule
+			fRule := vt.Field(i).Tag.Get(d.FilterTag)
+			if fRule != "" {
+				v.FilterRule(name, fRule)
+			}
+
+			// load filed translate name. eg: `json:"user_name"`
+			if gOpt.FieldTag != "" {
+				fName := vt.Field(i).Tag.Get(gOpt.FieldTag)
+				if fName != "" {
+					fMap[name] = fName
+				}
+			}
+
+			// load custom error messages.
+			// eg: `message:"required:name is required|minLen:name min len is %d"`
+			if gOpt.MessageTag != "" {
+				errMsg := vt.Field(i).Tag.Get(gOpt.MessageTag)
+				if errMsg != "" {
+					d.loadMessagesFromTag(v.trans, name, vRule, errMsg)
+				}
 			}
 		}
 	}
+	recursive(vt)
 
 	if len(fMap) > 0 {
 		v.trans.AddFieldMap(fMap)
