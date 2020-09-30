@@ -1,6 +1,6 @@
 # CHANGE LOG
 
-## V2
+## V2 - TODO
 
 - use sync.Pool for optimize create Validation.
 
