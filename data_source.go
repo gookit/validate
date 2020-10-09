@@ -205,12 +205,12 @@ func (d *StructData) Type() uint8 {
 }
 
 // Create a Validation from the StructData
-func (d *StructData) Create(err ...error) *Validation {
-	return d.Validation(err...)
+func (d *StructData) Validation(err ...error) *Validation {
+	return d.Create(err...)
 }
 
 // Validation create from the StructData
-func (d *StructData) Validation(err ...error) *Validation {
+func (d *StructData) Create(err ...error) *Validation {
 	v := NewValidation(d)
 	if len(err) > 0 && err[0] != nil {
 		return v.WithError(err[0])
