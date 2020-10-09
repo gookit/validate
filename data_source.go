@@ -284,7 +284,7 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 			v.FilterRule(name, fRule)
 		}
 
-		// load filed translate name. eg: `json:"user_name"`
+		// load field translate name. eg: `json:"user_name"`
 		if gOpt.FieldTag != "" {
 			fName := vt.Field(i).Tag.Get(gOpt.FieldTag)
 			if fName != "" {
@@ -373,7 +373,7 @@ func (d *StructData) Get(field string) (interface{}, bool) {
 	if d.HasField(field) {
 		fv = d.value.FieldByName(field)
 	} else {
-		// want get sub struct filed
+		// want get sub struct field
 		if !strings.ContainsRune(field, '.') {
 			return nil, false
 		}
@@ -573,7 +573,7 @@ func (d *FormData) Set(field string, val interface{}) (newVal interface{}, err e
 		newVal = strutil.MustString(val)
 		d.Form.Set(field, newVal.(string))
 	default:
-		err = fmt.Errorf("set value failure for filed: %s", field)
+		err = fmt.Errorf("set value failure for field: %s", field)
 	}
 	return
 }

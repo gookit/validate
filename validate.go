@@ -52,7 +52,7 @@ type GlobalOption struct {
 	FilterTag string
 	// ValidateTag in the struct tags.
 	ValidateTag string
-	// FieldTag name in the struct tags. for define filed translate. default: json
+	// FieldTag name in the struct tags. for define field translate. default: json
 	FieldTag string
 	// MessageTag define error message for the field.
 	MessageTag string

@@ -318,7 +318,7 @@ var validatorAliases = map[string]string{
 	"mime_type":    "inMimeTypes",
 	"mimeTypes":    "inMimeTypes",
 	"mime_types":   "inMimeTypes",
-	// filed compare
+	// field compare
 	"eq_field":  "eqField",
 	"ne_field":  "neField",
 	"gt_field":  "gtField",
