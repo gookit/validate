@@ -222,7 +222,7 @@ func mustNewValidation(d DataFace, err error) *Validation {
 		return NewValidation(d)
 	}
 
-	return d.Validation(err)
+	return d.Create(err)
 }
 
 /*************************************************************

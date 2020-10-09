@@ -79,3 +79,33 @@ func TestUseAliasMessageKey(t *testing.T) {
 	is.False(v.Validate())
 	is.Equal("USERNAME min length is 7", v.Errors.One())
 }
+
+func TestMessageOnStruct(t *testing.T) {
+	is := assert.New(t)
+
+	s := &struct {
+		Name     string `validate:"string"`
+		BirthDay string `validate:"date" message:"出生日期有误"`
+	}{
+		"tom",
+		"invalid",
+	}
+
+	v := Struct(s)
+
+	is.False(v.Validate())
+	is.Equal("出生日期有误", v.Errors.One())
+
+	s1 := &struct {
+		Name     string `validate:"string"`
+		BirthDay string `validate:"date" message:"date: 出生日期有误"`
+	}{
+		"tom",
+		"invalid",
+	}
+
+	v = Struct(s1)
+
+	is.False(v.Validate())
+	is.Equal("出生日期有误", v.Errors.One())
+}
