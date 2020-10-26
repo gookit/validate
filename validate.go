@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/url"
 	"reflect"
+	"regexp"
 	"strings"
 )
 
@@ -291,6 +292,8 @@ func FromStruct(s interface{}) (*StructData, error) {
 	return data, nil
 }
 
+var jsonContent = regexp.MustCompile(`(?i)application/((\w|\.|-)+\+)?json(-seq)?`)
+
 // FromRequest collect data from request instance
 func FromRequest(r *http.Request, maxMemoryLimit ...int64) (DataFace, error) {
 	// no body. like GET DELETE ....
@@ -334,7 +337,7 @@ func FromRequest(r *http.Request, maxMemoryLimit ...int64) (DataFace, error) {
 	}
 
 	// JSON body request
-	if strings.Contains(cType, "application/json") {
+	if jsonContent.MatchString(cType) {
 		bs, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			return nil, err
