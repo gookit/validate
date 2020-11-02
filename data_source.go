@@ -205,12 +205,12 @@ func (d *StructData) Type() uint8 {
 }
 
 // Create a Validation from the StructData
-func (d *StructData) Create(err ...error) *Validation {
-	return d.Validation(err...)
+func (d *StructData) Validation(err ...error) *Validation {
+	return d.Create(err...)
 }
 
 // Validation create from the StructData
-func (d *StructData) Validation(err ...error) *Validation {
+func (d *StructData) Create(err ...error) *Validation {
 	v := NewValidation(d)
 	if len(err) > 0 && err[0] != nil {
 		return v.WithError(err[0])
@@ -325,7 +325,8 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 func (d *StructData) loadMessagesFromTag(trans *Translator, field, vRule, vMsg string) {
 	var msgKey string
 
-	// only one message. eg: `message:"name is required"`
+	// only one message, use for first validator.
+	// eg: `message:"name is required"`
 	if !strings.ContainsRune(vMsg, '|') {
 		validator := vRule
 		if strings.ContainsRune(vRule, '|') {
@@ -341,10 +342,17 @@ func (d *StructData) loadMessagesFromTag(trans *Translator, field, vRule, vMsg s
 			validator = nodes[0]
 		}
 
-		if rName, has := validatorAliases[validator]; has {
-			msgKey = field + "." + rName
-		} else {
-			msgKey = field + "." + validator
+		// if rName, has := validatorAliases[validator]; has {
+		// 	msgKey = field + "." + rName
+		// } else {
+		msgKey = field + "." + validator
+		// }
+
+		// eg: `message:"required:name is required"`
+		if strings.ContainsRune(vMsg, ':') {
+			nodes := strings.SplitN(vMsg, ":", 2)
+			// use first validator name
+			vMsg = strings.TrimSpace(nodes[1])
 		}
 
 		trans.AddMessage(msgKey, vMsg)
@@ -365,7 +373,7 @@ func (d *StructData) loadMessagesFromTag(trans *Translator, field, vRule, vMsg s
 			msgKey = field + "." + validator
 		}
 
-		trans.AddMessage(msgKey, nodes[1])
+		trans.AddMessage(msgKey, strings.TrimSpace(nodes[1]))
 	}
 }
 
@@ -387,7 +395,7 @@ func (d *StructData) Get(field string) (interface{}, bool) {
 	if d.HasField(field) {
 		fv = d.value.FieldByName(field)
 	} else {
-		// want get sub struct filed
+		// want get sub struct field
 		if !strings.ContainsRune(field, '.') {
 			return nil, false
 		}
@@ -587,7 +595,7 @@ func (d *FormData) Set(field string, val interface{}) (newVal interface{}, err e
 		newVal = strutil.MustString(val)
 		d.Form.Set(field, newVal.(string))
 	default:
-		err = fmt.Errorf("set value failure for filed: %s", field)
+		err = fmt.Errorf("set value failure for field: %s", field)
 	}
 	return
 }

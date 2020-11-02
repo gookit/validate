@@ -113,7 +113,7 @@ func TestFormData(t *testing.T) {
 	is.Equal(23, d.Int("newInt"))
 	_, err = d.Set("invalid", []int{2})
 	is.Error(err)
-	is.Equal("set value failure for filed: invalid", err.Error())
+	is.Equal("set value failure for field: invalid", err.Error())
 
 	// form
 	d.Add("newKey1", "new val1")

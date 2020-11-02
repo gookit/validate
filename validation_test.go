@@ -452,43 +452,116 @@ func TestFromRequest_FileForm(t *testing.T) {
 }
 
 func TestFromRequest_JSON(t *testing.T) {
-	is := assert.New(t)
-
 	// =================== POST: JSON body ===================
-	body := strings.NewReader(`{
-	"name": " inhere ",
-	"age": 100
-}`)
-	r, _ := http.NewRequest("POST", "/users", body)
-	r.Header.Set("Content-Type", "application/json")
-	// - create data
-	d, err := FromRequest(r)
-	is.Nil(err)
-	user := &struct {
-		Age  int
-		Name string
-	}{}
-	md, ok := d.(*MapData)
-	is.True(ok)
-	err = md.BindJSON(user)
-	is.Nil(err)
-	is.Equal(100, user.Age)
-	is.Equal(" inhere ", user.Name)
+	body := `{
+		"name": " inhere ",
+		"age": 100
+	}`
 
-	// - create validation
-	v := d.Create()
-	v.StringRule("name", "-", "trim|upper")
-	v.Validate() // validate
-	is.True(v.IsOK())
-	err = v.BindSafeData(user)
-	is.NoError(err)
-	is.Equal("INHERE", user.Name)
+	tests := []struct {
+		name    string
+		header  string
+		body    string
+		failure bool
+	}{
+		{
+			name:   "valid JSON content type #1",
+			header: "application/json",
+			body:   body,
+		},
+		{
+			name:   "valid JSON content type #2",
+			header: "application/activity+json",
+			body:   body,
+		},
+		{
+			name:   "valid JSON content type #3",
+			header: "application/geo+json-seq",
+			body:   body,
+		},
+		{
+			name:   "valid JSON content type #4",
+			header: "application/json-patch+json",
+			body:   body,
+		},
+		{
+			name:   "valid JSON content type #5",
+			header: "application/vnd.api+json",
+			body:   body,
+		},
+		{
+			name:   "valid JSON content type #6",
+			header: "application/vnd.capasystems-pg+json",
+			body:   body,
+		},
+		{
+			name:   "valid JSON content type #7",
+			header: "application/vnd.ims.lti.v2.toolconsumerprofile+json",
+			body:   body,
+		},
+		{
+			name:   "invalid JSON content type #1",
+			header: "foo/bar+json-seq",
+			body:   "",
+		},
+		{
+			name:   "invalid JSON content type #2",
+			header: "application/xml",
+			body:   "",
+		},
+		{
+			name:   "invalid JSON content type #3",
+			header: "application/invalidjson",
+			body:   "",
+		},
+		{
+			name:   "invalid JSON content type #4",
+			header: "application/invalid-json-seq",
+			body:   "",
+		},
+		{
+			name:   "invalid JSON content type #5",
+			header: "application/+json",
+			body:   "",
+		},
+	}
 
-	// error content type
-	r, _ = http.NewRequest("POST", "/users", nil)
-	d, err = FromRequest(r)
-	is.Nil(d)
-	is.Error(err)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			is := assert.New(t)
+
+			r, _ := http.NewRequest("POST", "/users", strings.NewReader(test.body))
+			r.Header.Set("Content-Type", test.header)
+
+			// - create data
+			d, err := FromRequest(r)
+
+			if test.body != "" {
+				user := &struct {
+					Age  int
+					Name string
+				}{}
+				md, ok := d.(*MapData)
+				is.True(ok)
+				err = md.BindJSON(user)
+				is.Nil(err)
+				is.Equal(100, user.Age)
+				is.Equal(" inhere ", user.Name)
+
+				// - create validation
+				v := d.Create()
+				v.StringRule("name", "-", "trim|upper")
+				v.Validate() // validate
+				is.True(v.IsOK())
+				err = v.BindSafeData(user)
+				is.NoError(err)
+				is.Equal("INHERE", user.Name)
+			} else {
+				is.Nil(d)
+				is.Error(err)
+			}
+		})
+	}
 }
 
 func TestFieldCompare(t *testing.T) {

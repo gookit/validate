@@ -155,6 +155,7 @@ func TestIssues34(t *testing.T) {
 	v.StringRule("age", "required|checkAge:1,2,3,4")
 	assert.True(t, v.Validate())
 
+	// TODO refer https://golang.org/src/database/sql/driver/types.go?s=1210:1293#L29
 	v = New(M{
 		"age": s1,
 	})

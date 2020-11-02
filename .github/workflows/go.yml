@@ -1,5 +1,11 @@
 name: Unit-Tests
 on:
+  pull_request:
+    paths:
+      - 'go.mod'
+      - '**.go'
+      - '**.yml'
+
   push:
     paths:
       - 'go.mod'
@@ -33,6 +39,7 @@ jobs:
 
     - name: Send coverage
       uses: shogo82148/actions-goveralls@v1
+      if: ${{ matrix.os == 'ubuntu-latest' }}
       with:
         path-to-profile: profile.cov
         flag-name: Go-${{ matrix.go_version }}
