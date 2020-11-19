@@ -1,6 +1,7 @@
 package validate
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -216,4 +217,64 @@ func TestPtrFieldValidation(t *testing.T) {
 	name = "fish"
 	valid := New(&Foo{Name: &name})
 	assert.False(t, valid.Validate())
+}
+
+// https://github.com/gookit/validate/issues/58
+func TestStructNested(t *testing.T) {
+
+	type Info struct {
+		Email string `validate:"email"  filter:"trim|lower"`
+		Age   *int   `validate:"in:1,2,3,4"`
+	}
+	// anonymous struct nested
+	type User struct {
+		Name string `validate:"required|string" filter:"trim|lower"`
+		*Info
+		Sex string `validate:"string"`
+	}
+	//  non-anonymous struct nested
+	type User2 struct {
+		Name string `validate:"required|string" filter:"trim|lower"`
+		In   Info
+		Sex  string `validate:"string"`
+	}
+
+	//  anonymous field test
+	age := 25
+	u := &User{
+		Name: "fish",
+		Info: &Info{
+			Email: "fish_yww@163.com",
+			Age:   &age,
+		},
+		Sex: "male",
+	}
+	//  anonymous field test
+	v := Struct(u)
+	if v.Validate() {
+		assert.True(t, v.Validate())
+	} else {
+		// Print error msg,verify valid
+		fmt.Printf("%v\n", v.Errors)
+		assert.False(t, v.Validate())
+	}
+	//  non-anonymous field test
+	age = 3
+	user2 := &User2{
+		Name: "fish",
+		In: Info{
+			Email: "fish_yww.com",
+			Age:   &age,
+		},
+		Sex: "male",
+	}
+
+	v2 := Struct(user2)
+	if v2.Validate() {
+		assert.True(t, v2.Validate())
+	} else {
+		// Print error msg,verify valid
+		fmt.Printf("%v\n", v2.Errors)
+		assert.False(t, v2.Validate())
+	}
 }
