@@ -201,3 +201,19 @@ func TestIssues60(t *testing.T) {
 	is.False(v.Validate())
 	is.Equal("自定义错误", v.Errors.One())
 }
+
+// https://github.com/gookit/validate/issues/64
+func TestPtrFieldValidation(t *testing.T) {
+
+	type Foo struct {
+		Name *string `validate:"in:henry,jim"`
+	}
+
+	name := "henry"
+	v := New(&Foo{Name: &name})
+	assert.True(t, v.Validate())
+
+	name = "fish"
+	valid := New(&Foo{Name: &name})
+	assert.False(t, valid.Validate())
+}
