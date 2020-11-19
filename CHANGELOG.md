@@ -2,6 +2,7 @@
 
 ## V2 - TODO
 
+- can register custom type
 - use sync.Pool for optimize create Validation.
 
 ```go

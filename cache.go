@@ -1,5 +1,10 @@
 package validate
 
+import (
+	"database/sql/driver"
+	"fmt"
+)
+
 /*
 // TODO: idea for optimize ...
 // - use pool for Validation
@@ -40,3 +45,9 @@ func (f *factory) put(v *Validation) {
 	f.pool.Put(v)
 }
 */
+
+func test() {
+	i32 := driver.Int32
+
+	fmt.Println(i32)
+}
