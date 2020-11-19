@@ -380,6 +380,9 @@ func (d *StructData) Get(field string) (interface{}, bool) {
 	// found field
 	if d.HasField(field) {
 		fv = d.value.FieldByName(field)
+		for fv.Kind() == reflect.Ptr {
+			fv = fv.Elem()
+		}
 	} else {
 		// want get sub struct field
 		if !strings.ContainsRune(field, '.') {
