@@ -1,6 +1,7 @@
 package validate
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -145,6 +146,8 @@ func TestIssues34(t *testing.T) {
 	type STATUS int32
 	var s1 STATUS = 1
 
+	// v.RegisterType(func() {})
+
 	// use custom validator
 	v := New(M{
 		"age": s1,
@@ -163,8 +166,14 @@ func TestIssues34(t *testing.T) {
 		"age": "required|in:1,2,3,4",
 	})
 
+	assert.Contains(t, []int{1, 2, 3, 4}, s1)
+
 	rv := reflect.ValueOf(s1)
-	dump.Println(rv.Type().Kind())
+	// iv := reflect.New()
+
+	// sc := rv.Interface()
+	// fmt.Println(rv.Type().Kind(), sc.(int32))
+	fmt.Println(rv.Type().Kind())
 
 	dump.Println(Enum(s1, []int{1, 2, 3, 4}), Enum(int32(s1), []int{1, 2, 3, 4}))
 
