@@ -166,7 +166,7 @@ func TestIssues34(t *testing.T) {
 		"age": "required|in:1,2,3,4",
 	})
 
-	assert.Contains(t, []int{1, 2, 3, 4}, s1)
+	assert.NotContains(t, []int{1, 2, 3, 4}, s1)
 
 	rv := reflect.ValueOf(s1)
 	// iv := reflect.New()
