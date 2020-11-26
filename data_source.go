@@ -249,7 +249,7 @@ func (d *StructData) Create(err ...error) *Validation {
 
 // parse and collect rules from struct tags.
 func (d *StructData) parseRulesFromTag(v *Validation) {
-	var recursiveFunc func(vt reflect.Type, parentName string)
+	var recursiveFunc func(vt reflect.Type, preStrName string)
 	if d.ValidateTag == "" {
 		d.ValidateTag = gOpt.ValidateTag
 	}
@@ -261,7 +261,7 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 	fMap := make(map[string]string, 0)
 
 	vt := d.valueTpy
-	recursiveFunc = func(vt reflect.Type, parentName string) {
+	recursiveFunc = func(vt reflect.Type, preStrName string) {
 
 		for i := 0; i < vt.NumField(); i++ {
 
@@ -269,8 +269,8 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 			ft = removeTypePtr(ft)
 
 			if ft.Kind() == reflect.Struct && !strings.Contains(ft.Name(), "Time") {
-				parentName = vt.Field(i).Name
-				recursiveFunc(ft, parentName)
+				name := vt.Field(i).Name
+				recursiveFunc(ft, name)
 				continue
 			}
 
@@ -281,8 +281,8 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 				continue
 			}
 
-			if parentName != "" {
-				name = parentName + "." + name
+			if preStrName != "" {
+				name = preStrName + "." + name
 			} else {
 				// 0:common field,1:anonymous field,2:nonAnonymous field
 				d.fieldNames[name] = 0
