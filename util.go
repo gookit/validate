@@ -593,3 +593,19 @@ func IsZero(v reflect.Value) bool {
 		panic(&reflect.ValueError{Method: "cannot check reflect.Value.IsZero", Kind: v.Kind()})
 	}
 }
+
+// Remove type multiple pointer
+func removeTypePtr(t reflect.Type) reflect.Type  {
+	for t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+	return t
+}
+
+// Remove value multiple pointer
+func removeValuePtr(t reflect.Value) reflect.Value  {
+	for t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+	return t
+}

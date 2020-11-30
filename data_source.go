@@ -32,8 +32,10 @@ var timeType = reflect.TypeOf(time.Time{})
 
 // data (Un)marshal func
 var (
-	Marshal   MarshalFunc   = json.Marshal
-	Unmarshal UnmarshalFunc = json.Unmarshal
+	subField    string
+	parentField string
+	Marshal     MarshalFunc   = json.Marshal
+	Unmarshal   UnmarshalFunc = json.Unmarshal
 )
 
 type (
@@ -247,6 +249,7 @@ func (d *StructData) Create(err ...error) *Validation {
 
 // parse and collect rules from struct tags.
 func (d *StructData) parseRulesFromTag(v *Validation) {
+	var recursiveFunc func(vt reflect.Type, preStrName string)
 	if d.ValidateTag == "" {
 		d.ValidateTag = gOpt.ValidateTag
 	}
@@ -258,49 +261,70 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 	fMap := make(map[string]string, 0)
 
 	vt := d.valueTpy
-	for i := 0; i < vt.NumField(); i++ {
-		name := vt.Field(i).Name
+	recursiveFunc = func(vt reflect.Type, preStrName string) {
 
-		// skip don't exported field
-		if name[0] >= 'a' && name[0] <= 'z' {
-			continue
-		}
+		for i := 0; i < vt.NumField(); i++ {
 
-		d.fieldNames[name] = 1
-		// TODO cache field values
-		// if vt.Field(i).Type.Kind() != reflect.Struct {
-		// 	d.fieldValues[name] = d.value.Field(i).Interface()
-		// }
+			ft := vt.Field(i).Type
+			ft = removeTypePtr(ft)
 
-		// validate rule
-		vRule := vt.Field(i).Tag.Get(d.ValidateTag)
-		if vRule != "" {
-			v.StringRule(name, vRule)
-		}
-
-		// filter rule
-		fRule := vt.Field(i).Tag.Get(d.FilterTag)
-		if fRule != "" {
-			v.FilterRule(name, fRule)
-		}
-
-		// load field translate name. eg: `json:"user_name"`
-		if gOpt.FieldTag != "" {
-			fName := vt.Field(i).Tag.Get(gOpt.FieldTag)
-			if fName != "" {
-				fMap[name] = fName
+			if ft.Kind() == reflect.Struct && !strings.Contains(ft.Name(), "Time") {
+				name := vt.Field(i).Name
+				recursiveFunc(ft, name)
+				continue
 			}
-		}
 
-		// load custom error messages.
-		// eg: `message:"required:name is required|minLen:name min len is %d"`
-		if gOpt.MessageTag != "" {
-			errMsg := vt.Field(i).Tag.Get(gOpt.MessageTag)
-			if errMsg != "" {
-				d.loadMessagesFromTag(v.trans, name, vRule, errMsg)
+			name := vt.Field(i).Name
+
+			// skip don't exported field
+			if name[0] >= 'a' && name[0] <= 'z' {
+				continue
+			}
+
+			if preStrName != "" {
+				name = preStrName + "." + name
+			} else {
+				// 0:common field,1:anonymous field,2:nonAnonymous field
+				d.fieldNames[name] = 0
+			}
+
+			// TODO cache field values
+			// if vt.Field(i).Type.Kind() != reflect.Struct {
+			// 	d.fieldValues[name] = d.value.Field(i).Interface()
+			// }
+
+			// validate rule
+			vRule := vt.Field(i).Tag.Get(d.ValidateTag)
+			if vRule != "" {
+				v.StringRule(name, vRule)
+			}
+
+			// filter rule
+			fRule := vt.Field(i).Tag.Get(d.FilterTag)
+			if fRule != "" {
+				v.FilterRule(name, fRule)
+			}
+
+			// load field translate name. eg: `json:"user_name"`
+			if gOpt.FieldTag != "" {
+				fName := vt.Field(i).Tag.Get(gOpt.FieldTag)
+				if fName != "" {
+					fMap[name] = fName
+				}
+			}
+
+			// load custom error messages.
+			// eg: `message:"required:name is required|minLen:name min len is %d"`
+			if gOpt.MessageTag != "" {
+				errMsg := vt.Field(i).Tag.Get(gOpt.MessageTag)
+				if errMsg != "" {
+					d.loadMessagesFromTag(v.trans, name, vRule, errMsg)
+				}
 			}
 		}
 	}
+
+	recursiveFunc(vt, "")
 
 	if len(fMap) > 0 {
 		v.trans.AddFieldMap(fMap)
@@ -377,34 +401,54 @@ func (d *StructData) Get(field string) (interface{}, bool) {
 	// 	return val, true
 	// }
 
-	// found field
-	if d.HasField(field) {
-		fv = d.value.FieldByName(field)
-		for fv.Kind() == reflect.Ptr {
-			fv = fv.Elem()
-		}
-	} else {
+	if strings.ContainsRune(field, '.') {
 		// want get sub struct field
-		if !strings.ContainsRune(field, '.') {
-			return nil, false
-		}
-
 		ss := strings.SplitN(field, ".", 2)
-		field, subField := ss[0], ss[1]
+		parentField, subField = ss[0], ss[1]
 
 		// check top field is an struct
-		tft, ok := d.valueTpy.FieldByName(field)
-		if !ok || tft.Type.Kind() != reflect.Struct { // not found OR not a struct
+		tft, ok := d.valueTpy.FieldByName(parentField)
+		if !ok {
 			return nil, false
 		}
 
-		// get field in sub-struct
-		fv = d.value.FieldByName(field).FieldByName(subField)
-		if !fv.IsValid() { // not found
+		t := removeTypePtr(tft.Type)
+		if t.Kind() != reflect.Struct { // not found OR not a struct
+			return nil, false
+		}
+		// whether it is an anonymous field
+		fv = d.value.FieldByName(subField)
+		if fv.String() != "<invalid Value>" {
+			d.fieldNames[field] = 1
+
+		} else {
+			// get parent struct
+			fv = d.value.FieldByName(parentField)
+			// is it a pointer？
+			if fv.Type().Kind() == reflect.Ptr {
+				fv = removeValuePtr(fv)
+			}
+			fv = fv.FieldByName(subField)
+			d.fieldNames[field] = 2
+
+		}
+		fv = removeValuePtr(fv)
+
+	} else {
+
+		if d.HasField(field) {
+			fv = d.value.FieldByName(field)
+			fv = removeValuePtr(fv)
+			d.fieldNames[field] = 0
+		} else {
+			// not found field
 			return nil, false
 		}
 	}
 
+	if !fv.IsValid() {
+		return nil, false
+	}
 	// check can interface
 	if fv.CanInterface() {
 		// up: if is zero value, as not exist.
@@ -419,12 +463,26 @@ func (d *StructData) Get(field string) (interface{}, bool) {
 // Set value by field name.
 // Notice: `StructData.src` the incoming struct must be a pointer to set the value
 func (d *StructData) Set(field string, val interface{}) (newVal interface{}, err error) {
+	var fv reflect.Value
 	field = strutil.UpperFirst(field)
 	if !d.HasField(field) { // field not found
 		return nil, ErrNoField
 	}
-
-	fv := d.value.FieldByName(field)
+	f := d.fieldNames[field]
+	switch f {
+	case 0:
+		fv = d.value.FieldByName(field)
+	case 1:
+		fv = d.value.FieldByName(subField)
+	case 2:
+		fv = d.value.FieldByName(parentField)
+		if fv.Type().Kind() == reflect.Ptr {
+			fv = removeValuePtr(fv)
+		}
+		fv = fv.FieldByName(subField)
+	default:
+		return nil, ErrNoField
+	}
 
 	// check whether the value of v can be changed.
 	if !fv.CanSet() {
