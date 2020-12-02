@@ -4,14 +4,14 @@ import "reflect"
 
 var (
 	// global validators. contains built-in and user custom
-	validators map[string]int
+	validators map[string]int8
 	// all validators func meta information
 	validatorMetas map[string]*funcMeta
 )
 
 // init: register all built-in validators
 func init() {
-	validators = make(map[string]int)
+	validators = make(map[string]int8)
 	validatorMetas = make(map[string]*funcMeta)
 
 	for n, fv := range validatorValues {

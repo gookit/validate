@@ -173,9 +173,10 @@ type StructData struct {
 	// source struct reflect.Type
 	valueTpy reflect.Type
 	// field names in the src struct
-	fieldNames map[string]int
-	// TODO field values cache
-	fieldValues map[string]interface{}
+	// 0:common field,1:anonymous field,2:nonAnonymous field
+	fieldNames map[string]int8
+	// cache field value info
+	fieldValues map[string]reflect.Value
 	// TODO field reflect values cache
 	fieldRftValues map[string]interface{}
 	// FieldTag name in the struct tags. for define filed translate
@@ -288,11 +289,6 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 				d.fieldNames[name] = 0
 			}
 
-			// TODO cache field values
-			// if vt.Field(i).Type.Kind() != reflect.Struct {
-			// 	d.fieldValues[name] = d.value.Field(i).Interface()
-			// }
-
 			// validate rule
 			vRule := vt.Field(i).Tag.Get(d.ValidateTag)
 			if vRule != "" {
@@ -393,13 +389,9 @@ func (d *StructData) loadMessagesFromTag(trans *Translator, field, vRule, vMsg s
 
 // Get value by field name
 func (d *StructData) Get(field string) (interface{}, bool) {
+
 	var fv reflect.Value
 	field = strutil.UpperFirst(field)
-
-	// TODO get from caches
-	// if val, ok := d.fieldValues[field]; ok {
-	// 	return val, true
-	// }
 
 	if strings.ContainsRune(field, '.') {
 		// want get sub struct field
@@ -455,6 +447,8 @@ func (d *StructData) Get(field string) (interface{}, bool) {
 		if IsZero(fv) {
 			return nil, false
 		}
+		// cache field value info
+		d.fieldValues[field] = fv
 		return fv.Interface(), true
 	}
 	return nil, false
@@ -463,26 +457,32 @@ func (d *StructData) Get(field string) (interface{}, bool) {
 // Set value by field name.
 // Notice: `StructData.src` the incoming struct must be a pointer to set the value
 func (d *StructData) Set(field string, val interface{}) (newVal interface{}, err error) {
+
 	var fv reflect.Value
 	field = strutil.UpperFirst(field)
+
 	if !d.HasField(field) { // field not found
 		return nil, ErrNoField
 	}
-	f := d.fieldNames[field]
-	switch f {
-	case 0:
-		fv = d.value.FieldByName(field)
-	case 1:
-		fv = d.value.FieldByName(subField)
-	case 2:
-		fv = d.value.FieldByName(parentField)
-		if fv.Type().Kind() == reflect.Ptr {
-			fv = removeValuePtr(fv)
+	fv,ok := d.fieldValues[field]
+	if !ok {
+		f := d.fieldNames[field]
+		switch f {
+		case 0:
+			fv = d.value.FieldByName(field)
+		case 1:
+			fv = d.value.FieldByName(subField)
+		case 2:
+			fv = d.value.FieldByName(parentField)
+			if fv.Type().Kind() == reflect.Ptr {
+				fv = removeValuePtr(fv)
+			}
+			fv = fv.FieldByName(subField)
+		default:
+			return nil, ErrNoField
 		}
-		fv = fv.FieldByName(subField)
-	default:
-		return nil, ErrNoField
 	}
+
 
 	// check whether the value of v can be changed.
 	if !fv.CanSet() {

@@ -60,7 +60,7 @@ type Validation struct {
 	// validate rules for the validation
 	rules []*Rule
 	// validators for the validation
-	validators map[string]int
+	validators map[string]int8
 	// validator func meta info
 	validatorMetas map[string]*funcMeta
 	// validator func reflect.Value map
@@ -125,7 +125,7 @@ func (v *Validation) Reset() {
 	// rules
 	v.rules = v.rules[:0]
 	v.filterRules = v.filterRules[:0]
-	v.validators = make(map[string]int)
+	v.validators = make(map[string]int8)
 }
 
 // WithScenarios is alias of the WithScenes()
@@ -231,9 +231,9 @@ func (v *Validation) HasValidator(name string) bool {
 }
 
 // Validators get all validator names
-func (v *Validation) Validators(withGlobal bool) map[string]int {
+func (v *Validation) Validators(withGlobal bool) map[string]int8 {
 	if withGlobal {
-		mp := make(map[string]int)
+		mp := make(map[string]int8)
 		for name, typ := range validators {
 			mp[name] = typ
 		}
