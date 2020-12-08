@@ -162,7 +162,7 @@ func AddValidator(name string, checkFunc interface{}) {
 }
 
 // Validators get all validator names
-func Validators() map[string]int {
+func Validators() map[string]int8 {
 	return validators
 }
 

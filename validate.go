@@ -111,7 +111,7 @@ func newValidation(data DataFace) *Validation {
 		// validated data
 		safeData: make(map[string]interface{}),
 		// validator names
-		validators: make(map[string]int),
+		validators: make(map[string]int8),
 		// filtered data
 		filteredData: make(map[string]interface{}),
 		// default config
@@ -267,8 +267,8 @@ func FromStruct(s interface{}) (*StructData, error) {
 	data := &StructData{
 		ValidateTag: gOpt.ValidateTag,
 		// init map
-		fieldNames:  make(map[string]int),
-		fieldValues: make(map[string]interface{}),
+		fieldNames:  make(map[string]int8),
+		fieldValues: make(map[string]reflect.Value),
 	}
 
 	if s == nil {
