@@ -262,7 +262,7 @@ func TestStructNested(t *testing.T) {
 			Email: "fish_yww@163.com",
 			Age:   &age,
 		},
-		Org:Org{Company: "E"},
+		Org: Org{Company: "E"},
 		Sex: "male",
 	}
 	//  anonymous field test

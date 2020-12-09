@@ -464,7 +464,7 @@ func (d *StructData) Set(field string, val interface{}) (newVal interface{}, err
 	if !d.HasField(field) { // field not found
 		return nil, ErrNoField
 	}
-	fv,ok := d.fieldValues[field]
+	fv, ok := d.fieldValues[field]
 	if !ok {
 		f := d.fieldNames[field]
 		switch f {
@@ -482,7 +482,6 @@ func (d *StructData) Set(field string, val interface{}) (newVal interface{}, err
 			return nil, ErrNoField
 		}
 	}
-
 
 	// check whether the value of v can be changed.
 	if !fv.CanSet() {
