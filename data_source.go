@@ -408,11 +408,11 @@ func (d *StructData) Get(field string) (interface{}, bool) {
 		if t.Kind() != reflect.Struct { // not found OR not a struct
 			return nil, false
 		}
-		// whether it is an anonymous field
-		fv = d.value.FieldByName(subField)
-		if fv.String() != "<invalid Value>" {
-			d.fieldNames[field] = 1
 
+		// whether it is an anonymous field
+		if tft.Anonymous {
+			fv = d.value.FieldByName(subField)
+			d.fieldNames[field] = 1
 		} else {
 			// get parent struct
 			fv = d.value.FieldByName(parentField)

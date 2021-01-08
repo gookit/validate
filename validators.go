@@ -1098,14 +1098,37 @@ func Between(val interface{}, min, max int64) bool {
  * global: array, slice, map validators
  *************************************************************/
 
+// convert custom type to int or string or unit
+func convert(val interface{})(value interface{},err error)  {
+
+	v := reflect.ValueOf(val)
+
+	switch v.Kind() {
+	case reflect.String:
+		value = v.String()
+	case reflect.Int,reflect.Int8,reflect.Int16,reflect.Int32,reflect.Int64:
+		value = v.Int()
+	case reflect.Uint,reflect.Uint8,reflect.Uint16,reflect.Uint32,reflect.Uint64:
+		value = v.Uint()
+	default:
+		err = errConvertFail
+	}
+
+	return
+}
+
 // Enum value(int(X),string) should be in the given enum(strings, ints, uints).
 func Enum(val, enum interface{}) bool {
 	if val == nil || enum == nil {
 		return false
 	}
 
+	v,err := convert(val)
+	if err != nil {
+		return false
+	}
 	// if is string value
-	if strVal, ok := val.(string); ok {
+	if strVal, ok := v.(string); ok {
 		if ss, ok := enum.([]string); ok {
 			for _, strItem := range ss {
 				if strVal == strItem { // exists
@@ -1118,7 +1141,7 @@ func Enum(val, enum interface{}) bool {
 	}
 
 	// as int value
-	intVal, err := mathutil.Int64(val)
+	intVal, err := mathutil.Int64(v)
 	if err != nil {
 		return false
 	}
