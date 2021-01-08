@@ -1209,6 +1209,11 @@ func StringLength(val interface{}, minLen int, maxLen ...int) bool {
 	return RuneLength(val, minLen, maxLen...)
 }
 
+// check every element's length
+// TODO func SliceItemLen(arr interface{}, minLen int, maxLen ...int)
+// apply validator to each sub-element of the val(slice, map)
+// TODO func Each(val interface{}, validator string, args ...interface{})
+
 /*************************************************************
  * global: date/time validators
  *************************************************************/
