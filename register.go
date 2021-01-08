@@ -209,7 +209,7 @@ var validatorAliases = map[string]string{
 	"strint":     "isIntString",
 	"strInt":     "isIntString",
 	"str_int":    "isIntString",
-	"intstr":  "isIntString",
+	"intstr":     "isIntString",
 	"intString":  "isIntString",
 	"int_string": "isIntString",
 	// ---

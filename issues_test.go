@@ -177,7 +177,7 @@ func TestIssues34(t *testing.T) {
 
 	dump.Println(Enum(s1, []int{1, 2, 3, 4}), Enum(int32(s1), []int{1, 2, 3, 4}))
 
-	assert.True(t,v.Validate())
+	assert.True(t, v.Validate())
 	dump.Println(v.Errors)
 
 	type someMode string
@@ -188,7 +188,7 @@ func TestIssues34(t *testing.T) {
 	v.StringRules(MS{
 		"mode": "required|in:abc,def",
 	})
-	assert.True(t,v.Validate())
+	assert.True(t, v.Validate())
 
 	dump.Println(v.Errors)
 }

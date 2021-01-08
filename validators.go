@@ -1099,16 +1099,16 @@ func Between(val interface{}, min, max int64) bool {
  *************************************************************/
 
 // convert custom type to int or string or unit
-func convert(val interface{})(value interface{},err error)  {
+func convert(val interface{}) (value interface{}, err error) {
 
 	v := reflect.ValueOf(val)
 
 	switch v.Kind() {
 	case reflect.String:
 		value = v.String()
-	case reflect.Int,reflect.Int8,reflect.Int16,reflect.Int32,reflect.Int64:
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		value = v.Int()
-	case reflect.Uint,reflect.Uint8,reflect.Uint16,reflect.Uint32,reflect.Uint64:
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		value = v.Uint()
 	default:
 		err = errConvertFail
@@ -1123,7 +1123,7 @@ func Enum(val, enum interface{}) bool {
 		return false
 	}
 
-	v,err := convert(val)
+	v, err := convert(val)
 	if err != nil {
 		return false
 	}
