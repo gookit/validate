@@ -293,3 +293,26 @@ func TestStructNested(t *testing.T) {
 		assert.False(t, v2.Validate())
 	}
 }
+
+// https://github.com/gookit/validate/issues/78
+func TestIssue78(t *testing.T) {
+
+	type UserDto struct {
+		Name string `validate:"required"`
+		Sex  *bool  `validate:"required"`
+	}
+
+	//sex := true
+	u := UserDto{
+		Name: "abc",
+		Sex:  nil,
+	}
+
+	// 创建 Validation 实例
+	v := Struct(&u)
+	if !v.Validate() {
+		fmt.Println(v.Errors)
+	} else {
+		fmt.Println("Success...")
+	}
+}
