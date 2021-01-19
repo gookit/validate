@@ -41,10 +41,8 @@ var timeType = reflect.TypeOf(time.Time{})
 
 // data (Un)marshal func
 var (
-	subField    string
-	parentField string
-	Marshal     MarshalFunc   = json.Marshal
-	Unmarshal   UnmarshalFunc = json.Unmarshal
+	Marshal   MarshalFunc   = json.Marshal
+	Unmarshal UnmarshalFunc = json.Unmarshal
 )
 
 type (
@@ -396,14 +394,13 @@ func (d *StructData) loadMessagesFromTag(trans *Translator, field, vRule, vMsg s
 
 // Get value by field name
 func (d *StructData) Get(field string) (interface{}, bool) {
-
 	var fv reflect.Value
 	field = strutil.UpperFirst(field)
 
 	if strings.ContainsRune(field, '.') {
 		// want get sub struct field
 		ss := strings.SplitN(field, ".", 2)
-		parentField, subField = ss[0], ss[1]
+		parentField, subField := ss[0], ss[1]
 
 		// check top field is an struct
 		tft, ok := d.valueTpy.FieldByName(parentField)
@@ -463,13 +460,20 @@ func (d *StructData) Get(field string) (interface{}, bool) {
 // Set value by field name.
 // Notice: `StructData.src` the incoming struct must be a pointer to set the value
 func (d *StructData) Set(field string, val interface{}) (newVal interface{}, err error) {
-
 	var fv reflect.Value
 	field = strutil.UpperFirst(field)
 
 	if !d.HasField(field) { // field not found
 		return nil, ErrNoField
 	}
+
+	var topField, subField string
+	// want get sub struct field
+	if strings.ContainsRune(field, '.') {
+		ss := strings.SplitN(field, ".", 2)
+		topField, subField = ss[0], ss[1]
+	}
+
 	fv, ok := d.fieldValues[field]
 	if !ok {
 		f := d.fieldNames[field]
@@ -479,7 +483,7 @@ func (d *StructData) Set(field string, val interface{}) (newVal interface{}, err
 		case fieldAtAnonymous:
 			fv = d.value.FieldByName(subField)
 		case fieldAtSubStruct:
-			fv = d.value.FieldByName(parentField)
+			fv = d.value.FieldByName(topField)
 			if fv.Type().Kind() == reflect.Ptr {
 				fv = removeValuePtr(fv)
 			}

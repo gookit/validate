@@ -2,6 +2,9 @@
 
 ## V2 - TODO
 
+- [ ] inner validators always use reflect.Value as param. 
+  - `Enum(val, enum interface{})` -> `ReflectVEnum(val, enum interface{})`
+
 - can register custom type
 - use sync.Pool for optimize create Validation.
 

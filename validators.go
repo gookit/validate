@@ -1100,7 +1100,6 @@ func Between(val interface{}, min, max int64) bool {
 
 // convert custom type to int or string or unit
 func convert(val interface{}) (value interface{}, err error) {
-
 	v := reflect.ValueOf(val)
 
 	switch v.Kind() {
