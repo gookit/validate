@@ -264,10 +264,18 @@ func getVariadicKind(typString string) reflect.Kind {
 		return reflect.Int8
 	case "[]int16":
 		return reflect.Int16
+	case "[]int32":
+		return reflect.Int32
 	case "[]int64":
 		return reflect.Int64
 	case "[]uint":
 		return reflect.Uint
+	case "[]uint8":
+		return reflect.Uint8
+	case "[]uint16":
+		return reflect.Uint16
+	case "[]uint32":
+		return reflect.Uint32
 	case "[]uint64":
 		return reflect.Uint64
 	case "[]string":
