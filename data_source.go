@@ -28,6 +28,15 @@ const (
 	sourceStruct
 )
 
+// 0: common field
+// 1: anonymous field
+// 2: nonAnonymous field
+const (
+	fieldAtTopStruct int8 = iota
+	fieldAtAnonymous
+	fieldAtSubStruct
+)
+
 var timeType = reflect.TypeOf(time.Time{})
 
 // data (Un)marshal func
@@ -173,7 +182,7 @@ type StructData struct {
 	// source struct reflect.Type
 	valueTpy reflect.Type
 	// field names in the src struct
-	// 0:common field,1:anonymous field,2:nonAnonymous field
+	// 0:common field 1:anonymous field 2:nonAnonymous field
 	fieldNames map[string]int8
 	// cache field value info
 	fieldValues map[string]reflect.Value
@@ -263,9 +272,7 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 
 	vt := d.valueTpy
 	recursiveFunc = func(vt reflect.Type, preStrName string) {
-
 		for i := 0; i < vt.NumField(); i++ {
-
 			ft := vt.Field(i).Type
 			ft = removeTypePtr(ft)
 
@@ -285,8 +292,8 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 			if preStrName != "" {
 				name = preStrName + "." + name
 			} else {
-				// 0:common field,1:anonymous field,2:nonAnonymous field
-				d.fieldNames[name] = 0
+				// 0:common field 1:anonymous field 2:nonAnonymous field
+				d.fieldNames[name] = fieldAtTopStruct
 			}
 
 			// validate rule
@@ -412,7 +419,7 @@ func (d *StructData) Get(field string) (interface{}, bool) {
 		// whether it is an anonymous field
 		if tft.Anonymous {
 			fv = d.value.FieldByName(subField)
-			d.fieldNames[field] = 1
+			d.fieldNames[field] = fieldAtAnonymous
 		} else {
 			// get parent struct
 			fv = d.value.FieldByName(parentField)
@@ -421,17 +428,16 @@ func (d *StructData) Get(field string) (interface{}, bool) {
 				fv = removeValuePtr(fv)
 			}
 			fv = fv.FieldByName(subField)
-			d.fieldNames[field] = 2
-
+			d.fieldNames[field] = fieldAtSubStruct
 		}
+
 		fv = removeValuePtr(fv)
-
 	} else {
-
+		// field at top struct
 		if d.HasField(field) {
 			fv = d.value.FieldByName(field)
 			fv = removeValuePtr(fv)
-			d.fieldNames[field] = 0
+			d.fieldNames[field] = fieldAtTopStruct
 		} else {
 			// not found field
 			return nil, false
@@ -468,11 +474,11 @@ func (d *StructData) Set(field string, val interface{}) (newVal interface{}, err
 	if !ok {
 		f := d.fieldNames[field]
 		switch f {
-		case 0:
+		case fieldAtTopStruct:
 			fv = d.value.FieldByName(field)
-		case 1:
+		case fieldAtAnonymous:
 			fv = d.value.FieldByName(subField)
-		case 2:
+		case fieldAtSubStruct:
 			fv = d.value.FieldByName(parentField)
 			if fv.Type().Kind() == reflect.Ptr {
 				fv = removeValuePtr(fv)
@@ -527,7 +533,7 @@ func (d *StructData) HasField(field string) bool {
 
 	// has field, cache it
 	if _, ok := d.valueTpy.FieldByName(field); ok {
-		d.fieldNames[field] = 1
+		d.fieldNames[field] = fieldAtTopStruct
 		return true
 	}
 
