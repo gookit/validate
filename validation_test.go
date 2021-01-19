@@ -702,47 +702,6 @@ func TestValidation_ValidateData(t *testing.T) {
 	assert.Len(t, v.Validators(false), 0)
 }
 
-func TestIssue2(t *testing.T) {
-	type Fl struct {
-		A float64 `validate:"float"`
-	}
-
-	fl := Fl{123}
-	v := Struct(fl)
-	assert.True(t, v.Validate())
-	assert.Equal(t, float64(123), v.SafeVal("A"))
-
-	val, ok := v.Raw("A")
-	assert.True(t, ok)
-	assert.Equal(t, float64(123), val)
-
-	// Set value
-	err := v.Set("A", float64(234))
-	assert.Error(t, err)
-	// field not exist
-	err = v.Set("B", 234)
-	assert.Error(t, err)
-
-	// NOTICE: Must use ptr for set value
-	v = Struct(&fl)
-	err = v.Set("A", float64(234))
-	assert.Nil(t, err)
-
-	// check new value
-	val, ok = v.Raw("A")
-	assert.True(t, ok)
-	assert.Equal(t, float64(234), val)
-
-	// int will convert to float
-	err = v.Set("A", 23)
-	assert.Nil(t, err)
-
-	// type is error
-	err = v.Set("A", "abc")
-	assert.Error(t, err)
-	assert.Equal(t, errConvertFail.Error(), err.Error())
-}
-
 func TestGetSetOnNilData(t *testing.T) {
 	ris := assert.New(t)
 
