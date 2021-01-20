@@ -170,6 +170,10 @@ func TestStructData_Create(t *testing.T) {
 	is.True(ok)
 	is.Equal("new name", str)
 
+	str, ok = d.Get("Name.NotExist")
+	is.False(ok)
+	is.Nil(str)
+
 	iVal, ok := d.Get("Extra.Status1")
 	is.True(ok)
 	is.Equal(2, iVal)

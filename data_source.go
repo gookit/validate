@@ -338,37 +338,41 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 
 // eg: `message:"required:name is required|minLen:name min len is %d"`
 func (d *StructData) loadMessagesFromTag(trans *Translator, field, vRule, vMsg string) {
-	var msgKey string
+	var msgKey, vName string
 
 	// only one message, use for first validator.
 	// eg: `message:"name is required"`
 	if !strings.ContainsRune(vMsg, '|') {
-		validator := vRule
-		if strings.ContainsRune(vRule, '|') {
-			nodes := strings.SplitN(vRule, "|", 2)
-			// use first validator name
-			validator = nodes[0]
+		// eg: `message:"required:name is required"`
+		if strings.ContainsRune(vMsg, ':') {
+			nodes := strings.SplitN(vMsg, ":", 2)
+			vName = strings.TrimSpace(nodes[0])
+			// first is validator name
+			vMsg = strings.TrimSpace(nodes[1])
 		}
 
-		// has params for validator: "minLen:5"
-		if strings.ContainsRune(validator, ':') {
-			nodes := strings.SplitN(vRule, ":", 2)
-			// use first validator name
-			validator = nodes[0]
+		if vName == "" {
+			// eg `validate:"required|date"`
+			vName = vRule
+			if strings.ContainsRune(vRule, '|') {
+				nodes := strings.SplitN(vRule, "|", 2)
+				// use first validator name
+				vName = nodes[0]
+			}
+
+			// has params for validator: "minLen:5"
+			if strings.ContainsRune(vName, ':') {
+				nodes := strings.SplitN(vRule, ":", 2)
+				// use first validator name
+				vName = nodes[0]
+			}
 		}
 
 		// if rName, has := validatorAliases[validator]; has {
 		// 	msgKey = field + "." + rName
 		// } else {
-		msgKey = field + "." + validator
+		msgKey = field + "." + vName
 		// }
-
-		// eg: `message:"required:name is required"`
-		if strings.ContainsRune(vMsg, ':') {
-			nodes := strings.SplitN(vMsg, ":", 2)
-			// use first validator name
-			vMsg = strings.TrimSpace(nodes[1])
-		}
 
 		trans.AddMessage(msgKey, vMsg)
 		return
@@ -422,7 +426,7 @@ func (d *StructData) Get(field string) (interface{}, bool) {
 		fv = d.value.FieldByName(topField)
 
 		// is it a pointer？
-		if fv.Type().Kind() == reflect.Ptr {
+		if fv.Kind() == reflect.Ptr {
 			if fv.IsNil() { // fix: top-field is nil
 				return nil, false
 			}
@@ -431,22 +435,29 @@ func (d *StructData) Get(field string) (interface{}, bool) {
 		}
 
 		fv = fv.FieldByName(subField)
+		if !fv.IsValid() { // field not exists
+			return nil, false
+		}
+
 		fv = removeValuePtr(fv)
 
 		d.fieldNames[field] = fieldAtSubStruct
 	} else {
 		// field at top struct
-		if d.HasField(field) {
-			fv = d.value.FieldByName(field)
+		fv = d.value.FieldByName(field)
+
+		// is it a pointer
+		if fv.Kind() == reflect.Ptr {
+			if fv.IsNil() { // fix: top-field is nil
+				return nil, false
+			}
+
 			fv = removeValuePtr(fv)
-		} else {
-			// not found field
+		}
+
+		if !fv.IsValid() { // field not exists
 			return nil, false
 		}
-	}
-
-	if !fv.IsValid() {
-		return nil, false
 	}
 
 	// check can interface

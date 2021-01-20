@@ -1,6 +1,7 @@
 package validate
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -67,6 +68,21 @@ func TestUtil_Func_goodName(t *testing.T) {
 	}
 }
 
+func Test_Util_Func_convertType(t *testing.T) {
+	nVal, err := convertType(23, intKind, reflect.String)
+	assert.NoError(t, err)
+	assert.Equal(t, "23", nVal)
+
+	nVal, err = convertType(uint(23), uintKind, reflect.String)
+	assert.NoError(t, err)
+	assert.Equal(t, "23", nVal)
+}
+
+func Test_IsZero(t *testing.T) {
+	assert.True(t, IsZero(reflect.ValueOf([2]int{})))
+	assert.True(t, IsZero(reflect.ValueOf(false)))
+}
+
 func TestMS_String(t *testing.T) {
 	ms := MS{}
 
@@ -92,4 +108,37 @@ func TestOption(t *testing.T) {
 	assert.Equal(t, "valid", opt.ValidateTag)
 
 	ResetOption()
+}
+
+func Test_Struct_nilPtr_field(t *testing.T) {
+	u1 := &User{
+		Name: "fish",
+		Info: nil,
+		Org:  Org{Company: "C"},
+		Sex:  "male",
+	}
+
+	v := Struct(u1)
+	assert.False(t, v.Validate())
+	assert.Contains(t, v.Errors.String(), "Info is required")
+	fmt.Println(v.Errors)
+}
+
+func Test_Struct_nilPtr_field2(t *testing.T) {
+	type UserDto struct {
+		Name string `validate:"required"`
+		Sex  *bool  `validate:"required" json:"sex"`
+	}
+
+	// sex := true
+	u := UserDto{
+		Name: "abc",
+		Sex:  nil,
+	}
+
+	v := Struct(&u)
+	assert.False(t, v.Validate())
+	assert.True(t, v.Errors.HasField("Sex"))
+	assert.Contains(t, v.Errors.FieldOne("Sex"), "sex is required")
+	fmt.Println(v.Errors)
 }

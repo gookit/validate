@@ -79,6 +79,12 @@ func (es Errors) String() string {
 	return strings.TrimSpace(buf.String())
 }
 
+// HasField in the errors
+func (es Errors) HasField(field string) bool {
+	_, ok := es[field]
+	return ok
+}
+
 // Field get all errors for the field
 func (es Errors) Field(field string) map[string]string {
 	return es[field]

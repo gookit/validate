@@ -266,32 +266,34 @@ func TestPtrFieldValidation(t *testing.T) {
 	assert.False(t, valid.Validate())
 }
 
+// ----- test case structs
+
+type Org struct {
+	Company string `validate:"in:A,B,C,D"`
+}
+
+type Info struct {
+	Email string `validate:"email"  filter:"trim|lower"`
+	Age   *int   `validate:"in:1,2,3,4"`
+}
+
+// anonymous struct nested
+type User struct {
+	*Info `validate:"required"`
+	Org
+	Name string `validate:"required|string" filter:"trim|lower"`
+	Sex  string `validate:"string"`
+}
+
+// non-anonymous struct nested
+type User2 struct {
+	Name string `validate:"required|string" filter:"trim|lower"`
+	In   Info
+	Sex  string `validate:"string"`
+}
+
 // https://github.com/gookit/validate/issues/58
 func TestStructNested(t *testing.T) {
-	type Org struct {
-		Company string `validate:"in:A,B,C,D"`
-	}
-
-	type Info struct {
-		Email string `validate:"email"  filter:"trim|lower"`
-		Age   *int   `validate:"in:1,2,3,4"`
-	}
-
-	// anonymous struct nested
-	type User struct {
-		*Info `validate:"required"`
-		Org
-		Name string `validate:"required|string" filter:"trim|lower"`
-		Sex  string `validate:"string"`
-	}
-
-	// non-anonymous struct nested
-	type User2 struct {
-		Name string `validate:"required|string" filter:"trim|lower"`
-		In   Info
-		Sex  string `validate:"string"`
-	}
-
 	// anonymous field test
 	age := 3
 	u := &User{
@@ -313,17 +315,6 @@ func TestStructNested(t *testing.T) {
 		fmt.Println("--- anonymous field test\n", v.Errors)
 		assert.False(t, v.Validate())
 	}
-
-	u1 := &User{
-		Name: "fish",
-		Info: nil,
-		Org: Org{Company: "C"},
-		Sex: "male",
-	}
-	v = Struct(u1)
-	assert.False(t, v.Validate())
-	assert.Contains(t, v.Errors.String(), "Info is required")
-	fmt.Println("--- nil struct field test\n", v.Errors)
 
 	// non-anonymous field test
 	age = 3

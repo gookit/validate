@@ -105,7 +105,30 @@ func TestMessageOnStruct(t *testing.T) {
 	}
 
 	v = Struct(s1)
+	is.False(v.Validate())
+	is.Equal("出生日期有误", v.Errors.One())
 
+	s2 := &struct {
+		Name     string `validate:"string"`
+		BirthDay string `validate:"required|date" message:"date: 出生日期有误"`
+	}{
+		"tom",
+		"invalid",
+	}
+
+	v = Struct(s2)
+	is.False(v.Validate())
+	is.Equal("出生日期有误", v.Errors.One())
+
+	s3 := &struct {
+		Name     string `validate:"string"`
+		BirthDay string `validate:"date|maxlen:20" message:"出生日期有误"`
+	}{
+		"tom",
+		"invalid",
+	}
+
+	v = Struct(s3)
 	is.False(v.Validate())
 	is.Equal("出生日期有误", v.Errors.One())
 }
