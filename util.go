@@ -326,7 +326,7 @@ var (
 
 func checkValidatorFunc(name string, fn interface{}) reflect.Value {
 	if !goodName(name) {
-		panic(fmt.Errorf("validate name %s is not a valid identifier", name))
+		panicf("validate name %s is not a valid identifier", name)
 	}
 
 	fv := reflect.ValueOf(fn)

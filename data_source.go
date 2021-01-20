@@ -28,9 +28,9 @@ const (
 	sourceStruct
 )
 
-// 0: common field
-// 1: anonymous field
-// 2: nonAnonymous field
+// 0: top level field
+// 1: field at anonymous struct
+// 2: field at non-anonymous struct
 const (
 	fieldAtTopStruct int8 = iota
 	fieldAtAnonymous
@@ -257,7 +257,7 @@ func (d *StructData) Create(err ...error) *Validation {
 
 // parse and collect rules from struct tags.
 func (d *StructData) parseRulesFromTag(v *Validation) {
-	var recursiveFunc func(vt reflect.Type, preStrName string)
+	var recursiveFunc func(vt reflect.Type, preStrName string, parentIsAnonymous bool)
 	if d.ValidateTag == "" {
 		d.ValidateTag = gOpt.ValidateTag
 	}
@@ -269,46 +269,44 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 	fMap := make(map[string]string, 0)
 
 	vt := d.valueTpy
-	recursiveFunc = func(vt reflect.Type, preStrName string) {
+	recursiveFunc = func(vt reflect.Type, preStrName string, parentIsAnonymous bool) {
 		for i := 0; i < vt.NumField(); i++ {
+			fv := vt.Field(i)
 			ft := vt.Field(i).Type
 			ft = removeTypePtr(ft)
 
-			if ft.Kind() == reflect.Struct && !strings.Contains(ft.Name(), "Time") {
-				name := vt.Field(i).Name
-				recursiveFunc(ft, name)
-				continue
-			}
-
-			name := vt.Field(i).Name
-
 			// skip don't exported field
+			name := fv.Name
 			if name[0] >= 'a' && name[0] <= 'z' {
 				continue
 			}
 
-			if preStrName != "" {
-				name = preStrName + "." + name
-			} else {
-				// 0:common field 1:anonymous field 2:nonAnonymous field
+			if preStrName == "" {
 				d.fieldNames[name] = fieldAtTopStruct
+			} else {
+				name = preStrName + "." + name
+				if parentIsAnonymous {
+					d.fieldNames[name] = fieldAtAnonymous
+				} else {
+					d.fieldNames[name] = fieldAtSubStruct
+				}
 			}
 
 			// validate rule
-			vRule := vt.Field(i).Tag.Get(d.ValidateTag)
+			vRule := fv.Tag.Get(d.ValidateTag)
 			if vRule != "" {
 				v.StringRule(name, vRule)
 			}
 
 			// filter rule
-			fRule := vt.Field(i).Tag.Get(d.FilterTag)
+			fRule := fv.Tag.Get(d.FilterTag)
 			if fRule != "" {
 				v.FilterRule(name, fRule)
 			}
 
 			// load field translate name. eg: `json:"user_name"`
 			if gOpt.FieldTag != "" {
-				fName := vt.Field(i).Tag.Get(gOpt.FieldTag)
+				fName := fv.Tag.Get(gOpt.FieldTag)
 				if fName != "" {
 					fMap[name] = fName
 				}
@@ -317,15 +315,21 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 			// load custom error messages.
 			// eg: `message:"required:name is required|minLen:name min len is %d"`
 			if gOpt.MessageTag != "" {
-				errMsg := vt.Field(i).Tag.Get(gOpt.MessageTag)
+				errMsg := fv.Tag.Get(gOpt.MessageTag)
 				if errMsg != "" {
 					d.loadMessagesFromTag(v.trans, name, vRule, errMsg)
 				}
 			}
+
+			// NEW: collect rules from sub-struct
+			// TODO should use ft == timeType check time.Time
+			if ft.Kind() == reflect.Struct && !strings.Contains(ft.Name(), "Time") {
+				recursiveFunc(ft, name, fv.Anonymous)
+			}
 		}
 	}
 
-	recursiveFunc(vt, "")
+	recursiveFunc(vt, "", false)
 
 	if len(fMap) > 0 {
 		v.trans.AddFieldMap(fMap)
@@ -398,12 +402,12 @@ func (d *StructData) Get(field string) (interface{}, bool) {
 	field = strutil.UpperFirst(field)
 
 	if strings.ContainsRune(field, '.') {
-		// want get sub struct field
+		// want get sub struct field. NOTICE: current only support two level struct
 		ss := strings.SplitN(field, ".", 2)
-		parentField, subField := ss[0], ss[1]
+		topField, subField := ss[0], ss[1]
 
 		// check top field is an struct
-		tft, ok := d.valueTpy.FieldByName(parentField)
+		tft, ok := d.valueTpy.FieldByName(topField)
 		if !ok {
 			return nil, false
 		}
@@ -419,7 +423,7 @@ func (d *StructData) Get(field string) (interface{}, bool) {
 			d.fieldNames[field] = fieldAtAnonymous
 		} else {
 			// get parent struct
-			fv = d.value.FieldByName(parentField)
+			fv = d.value.FieldByName(topField)
 			// is it a pointer？
 			if fv.Type().Kind() == reflect.Ptr {
 				fv = removeValuePtr(fv)
@@ -434,7 +438,6 @@ func (d *StructData) Get(field string) (interface{}, bool) {
 		if d.HasField(field) {
 			fv = d.value.FieldByName(field)
 			fv = removeValuePtr(fv)
-			d.fieldNames[field] = fieldAtTopStruct
 		} else {
 			// not found field
 			return nil, false

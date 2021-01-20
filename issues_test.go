@@ -279,20 +279,20 @@ func TestStructNested(t *testing.T) {
 
 	// anonymous struct nested
 	type User struct {
-		Name string `validate:"required|string" filter:"trim|lower"`
-		*Info
+		*Info `validate:"required"`
 		Org
-		Sex string `validate:"string"`
+		Name string `validate:"required|string" filter:"trim|lower"`
+		Sex  string `validate:"string"`
 	}
 
-	//  non-anonymous struct nested
+	// non-anonymous struct nested
 	type User2 struct {
 		Name string `validate:"required|string" filter:"trim|lower"`
 		In   Info
 		Sex  string `validate:"string"`
 	}
 
-	//  anonymous field test
+	// anonymous field test
 	age := 3
 	u := &User{
 		Name: "fish",
@@ -303,7 +303,8 @@ func TestStructNested(t *testing.T) {
 		Org: Org{Company: "E"},
 		Sex: "male",
 	}
-	//  anonymous field test
+
+	// anonymous field test
 	v := Struct(u)
 	if v.Validate() {
 		assert.True(t, v.Validate())
@@ -312,7 +313,8 @@ func TestStructNested(t *testing.T) {
 		fmt.Println(v.Errors)
 		assert.False(t, v.Validate())
 	}
-	//  non-anonymous field test
+
+	// non-anonymous field test
 	age = 3
 	user2 := &User2{
 		Name: "fish",
@@ -335,13 +337,12 @@ func TestStructNested(t *testing.T) {
 
 // https://github.com/gookit/validate/issues/78
 func TestIssue78(t *testing.T) {
-
 	type UserDto struct {
 		Name string `validate:"required"`
 		Sex  *bool  `validate:"required"`
 	}
 
-	//sex := true
+	// sex := true
 	u := UserDto{
 		Name: "abc",
 		Sex:  nil,
@@ -352,6 +353,7 @@ func TestIssue78(t *testing.T) {
 	if !v.Validate() {
 		fmt.Println(v.Errors)
 	} else {
+		assert.True(t, v.Validate())
 		fmt.Println("Success...")
 	}
 }

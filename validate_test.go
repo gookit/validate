@@ -7,11 +7,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestUtil_Func_valueToInt64(t *testing.T)  {
+func TestUtil_Func_valueToInt64(t *testing.T) {
 	noErrTests := []struct {
-		val interface{}
+		val    interface{}
 		strict bool
-		want int64
+		want   int64
 	}{
 		{" 12", false, 12},
 		{float32(12.23), false, 12},
@@ -25,28 +25,45 @@ func TestUtil_Func_valueToInt64(t *testing.T)  {
 	}
 }
 
-func TestUtil_Func_getVariadicKind(t *testing.T)  {
+func TestUtil_Func_getVariadicKind(t *testing.T) {
 	noErrTests := []struct {
-		val interface{}
+		val  interface{}
 		want reflect.Kind
 	}{
-		{"invalid",  reflect.Invalid},
-		{[]int{1, 2},  reflect.Int},
-		{[]int8{1, 2},  reflect.Int8},
-		{[]int16{1, 2},  reflect.Int16},
-		{[]int32{1, 2},  reflect.Int32},
-		{[]int64{1, 2},  reflect.Int64},
-		{[]uint{1, 2},  reflect.Uint},
-		{[]uint8{1, 2},  reflect.Uint8},
-		{[]uint16{1, 2},  reflect.Uint16},
-		{[]uint32{1, 2},  reflect.Uint32},
-		{[]uint64{1, 2},  reflect.Uint64},
+		{"invalid", reflect.Invalid},
+		{[]int{1, 2}, reflect.Int},
+		{[]int8{1, 2}, reflect.Int8},
+		{[]int16{1, 2}, reflect.Int16},
+		{[]int32{1, 2}, reflect.Int32},
+		{[]int64{1, 2}, reflect.Int64},
+		{[]uint{1, 2}, reflect.Uint},
+		{[]uint8{1, 2}, reflect.Uint8},
+		{[]uint16{1, 2}, reflect.Uint16},
+		{[]uint32{1, 2}, reflect.Uint32},
+		{[]uint64{1, 2}, reflect.Uint64},
+		{[]string{"a", "b"}, reflect.String},
 	}
 
 	for _, item := range noErrTests {
 		vt := reflect.TypeOf(item.val)
 		eleType := getVariadicKind(vt.String())
 		assert.Equal(t, item.want, eleType)
+	}
+}
+
+func TestUtil_Func_goodName(t *testing.T) {
+	tests := []struct {
+		give string
+		want bool
+	}{
+		{"ab", true},
+		{"1234", false},
+		{"01234", false},
+		{"abc123", true},
+	}
+
+	for _, item := range tests {
+		assert.Equal(t, item.want, goodName(item.give))
 	}
 }
 
