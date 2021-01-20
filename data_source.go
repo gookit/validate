@@ -401,8 +401,9 @@ func (d *StructData) Get(field string) (interface{}, bool) {
 	var fv reflect.Value
 	field = strutil.UpperFirst(field)
 
+	// want get sub struct field.
+	// NOTICE: current only support two level struct. TODO not limit level for get/set value
 	if strings.ContainsRune(field, '.') {
-		// want get sub struct field. NOTICE: current only support two level struct
 		ss := strings.SplitN(field, ".", 2)
 		topField, subField := ss[0], ss[1]
 
@@ -417,22 +418,22 @@ func (d *StructData) Get(field string) (interface{}, bool) {
 			return nil, false
 		}
 
-		// whether it is an anonymous field
-		if tft.Anonymous {
-			fv = d.value.FieldByName(subField)
-			d.fieldNames[field] = fieldAtAnonymous
-		} else {
-			// get parent struct
-			fv = d.value.FieldByName(topField)
-			// is it a pointer？
-			if fv.Type().Kind() == reflect.Ptr {
-				fv = removeValuePtr(fv)
+		// get parent struct
+		fv = d.value.FieldByName(topField)
+
+		// is it a pointer？
+		if fv.Type().Kind() == reflect.Ptr {
+			if fv.IsNil() { // fix: top-field is nil
+				return nil, false
 			}
-			fv = fv.FieldByName(subField)
-			d.fieldNames[field] = fieldAtSubStruct
+
+			fv = removeValuePtr(fv)
 		}
 
+		fv = fv.FieldByName(subField)
 		fv = removeValuePtr(fv)
+
+		d.fieldNames[field] = fieldAtSubStruct
 	} else {
 		// field at top struct
 		if d.HasField(field) {
@@ -447,12 +448,14 @@ func (d *StructData) Get(field string) (interface{}, bool) {
 	if !fv.IsValid() {
 		return nil, false
 	}
+
 	// check can interface
 	if fv.CanInterface() {
 		// up: if is zero value, as not exist.
 		if IsZero(fv) {
 			return nil, false
 		}
+
 		// cache field value info
 		d.fieldValues[field] = fv
 		return fv.Interface(), true
@@ -463,15 +466,13 @@ func (d *StructData) Get(field string) (interface{}, bool) {
 // Set value by field name.
 // Notice: `StructData.src` the incoming struct must be a pointer to set the value
 func (d *StructData) Set(field string, val interface{}) (newVal interface{}, err error) {
-	var fv reflect.Value
 	field = strutil.UpperFirst(field)
-
 	if !d.HasField(field) { // field not found
 		return nil, ErrNoField
 	}
 
 	var topField, subField string
-	// want get sub struct field
+	// want set sub struct field
 	if strings.ContainsRune(field, '.') {
 		ss := strings.SplitN(field, ".", 2)
 		topField, subField = ss[0], ss[1]
@@ -484,7 +485,6 @@ func (d *StructData) Set(field string, val interface{}) (newVal interface{}, err
 		case fieldAtTopStruct:
 			fv = d.value.FieldByName(field)
 		case fieldAtAnonymous:
-			fv = d.value.FieldByName(subField)
 		case fieldAtSubStruct:
 			fv = d.value.FieldByName(topField)
 			if fv.Type().Kind() == reflect.Ptr {

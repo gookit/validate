@@ -310,9 +310,20 @@ func TestStructNested(t *testing.T) {
 		assert.True(t, v.Validate())
 	} else {
 		// Print error msg,verify valid
-		fmt.Println(v.Errors)
+		fmt.Println("--- anonymous field test\n", v.Errors)
 		assert.False(t, v.Validate())
 	}
+
+	u1 := &User{
+		Name: "fish",
+		Info: nil,
+		Org: Org{Company: "C"},
+		Sex: "male",
+	}
+	v = Struct(u1)
+	assert.False(t, v.Validate())
+	assert.Contains(t, v.Errors.String(), "Info is required")
+	fmt.Println("--- nil struct field test\n", v.Errors)
 
 	// non-anonymous field test
 	age = 3
