@@ -137,6 +137,9 @@ var builtinMessages = map[string]string{
 
 	"enum":  "{field} value must be in the enum %v",
 	"range": "{field} value must be in the range %d - %d",
+	// int compare
+	"lt": "{field} value should less than %d",
+	"gt": "{field} value should greater the %d",
 	// required
 	"required":           "{field} is required and not empty",
 	"requiredIf":         "{field} is required when {args0} is {args1end}",

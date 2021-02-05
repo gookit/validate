@@ -359,3 +359,32 @@ func TestIssue78(t *testing.T) {
 		fmt.Println("Success...")
 	}
 }
+
+// https://gitee.com/inhere/validate/issues/I36T2B
+func TestIssues_I36T2B(t *testing.T) {
+	m := map[string]interface{}{
+		"a": 0,
+	}
+
+	// 创建 Validation 实例
+	v := Map(m)
+	v.AddRule("a", "gt", 100)
+
+	ok := v.Validate()
+	assert.True(t, ok)
+
+	v = Map(m)
+	v.AddRule("a", "gt", 100).SetSkipEmpty(false)
+
+	ok = v.Validate()
+	assert.False(t, ok)
+	assert.Equal(t, "a value should greater the 100", v.Errors.One())
+
+	v = Map(m)
+	v.AddRule("a", "required")
+	v.AddRule("a", "gt", 100)
+
+	ok = v.Validate()
+	assert.False(t, ok)
+	assert.Equal(t, "a is required and not empty", v.Errors.One())
+}
