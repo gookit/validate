@@ -1,4 +1,4 @@
-package zhcn
+package ruru
 
 import "github.com/gookit/validate"
 
@@ -17,15 +17,15 @@ func RegisterGlobal() {
 
 // Data ru-RU language messages
 var Data = map[string]string{
-	"_": "Поле {field} не прошло проверку",
+	"_":         "Поле {field} не прошло проверку",
 	"_validate": "Поле {field} не прошло проверку",
-	"_filter": "Значение {field} некорректно",
+	"_filter":   "Значение {field} некорректно",
 	// int
 	"min": "Минимальное значение {field} равно %d",
 	"max": "Максимальное значение {field} равно %d",
 	// type check: int
 	"isInt":  "{field} должно быть числом",
-	"isInt1": "{field} должно быть числом и не менее %d",      // has min check
+	"isInt1": "{field} должно быть числом и не менее %d",         // has min check
 	"isInt2": "{field} должно быть числом и в диапазоне %d - %d", // has min, max check
 	"isInts": "{field} должно быть массивом чисел",
 	"isUint": "{field} должно быть положительным числом",

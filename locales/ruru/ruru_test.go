@@ -1,4 +1,4 @@
-package zhcn
+package ruru
 
 import (
 	"github.com/gookit/validate"
