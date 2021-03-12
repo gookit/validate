@@ -428,7 +428,7 @@ func (d *StructData) Get(field string) (interface{}, bool) {
 		}
 
 		fieldNodes = fieldNodes[1:]
-		lastIndex := len(fieldNodes) -1
+		lastIndex := len(fieldNodes) - 1
 
 		for i, fieldNode := range fieldNodes {
 			fv = removeValuePtr(fv.FieldByName(fieldNode))
@@ -443,41 +443,6 @@ func (d *StructData) Get(field string) (interface{}, bool) {
 		}
 
 		d.fieldNames[field] = fieldAtSubStruct
-
-		//ss := strings.SplitN(field, ".", 2)
-		//topField, subField := ss[0], ss[1]
-		//
-		//// check top field is an struct
-		//tft, ok := d.valueTpy.FieldByName(topField)
-		//if !ok {
-		//	return nil, false
-		//}
-		//
-		//t := removeTypePtr(tft.Type)
-		//if t.Kind() != reflect.Struct { // not found OR not a struct
-		//	return nil, false
-		//}
-		//
-		//// get parent struct
-		//fv = d.value.FieldByName(topField)
-		//
-		//// is it a pointer？
-		//if fv.Kind() == reflect.Ptr {
-		//	if fv.IsNil() { // fix: top-field is nil
-		//		return nil, false
-		//	}
-		//
-		//	fv = removeValuePtr(fv)
-		//}
-		//
-		//fv = fv.FieldByName(subField)
-		//if !fv.IsValid() { // field not exists
-		//	return nil, false
-		//}
-		//
-		//fv = removeValuePtr(fv)
-		//
-		//d.fieldNames[field] = fieldAtSubStruct
 	} else {
 		// field at top struct
 		fv = d.value.FieldByName(field)
