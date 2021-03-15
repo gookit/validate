@@ -2,8 +2,8 @@ package validate
 
 import (
 	"fmt"
-	"reflect"
 	"testing"
+	"time"
 
 	"github.com/gookit/goutil/dump"
 	"github.com/stretchr/testify/assert"
@@ -187,8 +187,6 @@ func TestIssues34(t *testing.T) {
 	type STATUS int32
 	var s1 STATUS = 1
 
-	// v.RegisterType(func() {})
-
 	// use custom validator
 	v := New(M{
 		"age": s1,
@@ -209,13 +207,6 @@ func TestIssues34(t *testing.T) {
 
 	assert.NotContains(t, []int{1, 2, 3, 4}, s1)
 
-	rv := reflect.ValueOf(s1)
-	// iv := reflect.New()
-
-	// sc := rv.Interface()
-	// fmt.Println(rv.Type().Kind(), sc.(int32))
-	fmt.Println(rv.Type().Kind())
-
 	dump.Println(Enum(s1, []int{1, 2, 3, 4}), Enum(int32(s1), []int{1, 2, 3, 4}))
 
 	assert.True(t, v.Validate())
@@ -231,7 +222,6 @@ func TestIssues34(t *testing.T) {
 	})
 	assert.True(t, v.Validate())
 
-	dump.Println(v.Errors)
 }
 
 // https://github.com/gookit/validate/issues/60
@@ -283,6 +273,7 @@ type User struct {
 	Org
 	Name string `validate:"required|string" filter:"trim|lower"`
 	Sex  string `validate:"string"`
+	Time time.Time
 }
 
 // non-anonymous struct nested
@@ -290,6 +281,7 @@ type User2 struct {
 	Name string `validate:"required|string" filter:"trim|lower"`
 	In   Info
 	Sex  string `validate:"string"`
+	Time time.Time
 }
 
 // https://github.com/gookit/validate/issues/58
@@ -302,8 +294,9 @@ func TestStructNested(t *testing.T) {
 			Email: "fish_yww@163.com",
 			Age:   &age,
 		},
-		Org: Org{Company: "E"},
-		Sex: "male",
+		Org:  Org{Company: "E"},
+		Sex:  "male",
+		Time: time.Now(),
 	}
 
 	// anonymous field test
@@ -325,6 +318,7 @@ func TestStructNested(t *testing.T) {
 			Age:   &age,
 		},
 		Sex: "male",
+		Time: time.Now(),
 	}
 
 	v2 := Struct(user2)
