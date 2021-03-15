@@ -406,40 +406,41 @@ func (d *StructData) Get(field string) (interface{}, bool) {
 	field = strutil.UpperFirst(field)
 
 	// want get sub struct field.
-	// NOTICE: current only support two level struct. TODO not limit level for get/set value
 	if strings.ContainsRune(field, '.') {
-		ss := strings.SplitN(field, ".", 2)
-		topField, subField := ss[0], ss[1]
+		fieldNodes := strings.Split(field, ".")
 
-		// check top field is an struct
-		tft, ok := d.valueTpy.FieldByName(topField)
+		if len(fieldNodes) < 2 {
+			return nil, false
+		}
+
+		topLevelField, ok := d.valueTpy.FieldByName(fieldNodes[0])
 		if !ok {
 			return nil, false
 		}
 
-		t := removeTypePtr(tft.Type)
-		if t.Kind() != reflect.Struct { // not found OR not a struct
+		if removeTypePtr(topLevelField.Type).Kind() != reflect.Struct {
 			return nil, false
 		}
 
-		// get parent struct
-		fv = d.value.FieldByName(topField)
+		fv = removeValuePtr(d.value.FieldByName(fieldNodes[0]))
+		if !fv.IsValid() {
+			return nil, false
+		}
 
-		// is it a pointer？
-		if fv.Kind() == reflect.Ptr {
-			if fv.IsNil() { // fix: top-field is nil
+		fieldNodes = fieldNodes[1:]
+		lastIndex := len(fieldNodes) - 1
+
+		for i, fieldNode := range fieldNodes {
+			fv = removeValuePtr(fv.FieldByName(fieldNode))
+
+			if i < lastIndex && removeTypePtr(fv.Type()).Kind() != reflect.Struct {
 				return nil, false
 			}
 
-			fv = removeValuePtr(fv)
+			if !fv.IsValid() {
+				return nil, false
+			}
 		}
-
-		fv = fv.FieldByName(subField)
-		if !fv.IsValid() { // field not exists
-			return nil, false
-		}
-
-		fv = removeValuePtr(fv)
 
 		d.fieldNames[field] = fieldAtSubStruct
 	} else {
@@ -482,13 +483,6 @@ func (d *StructData) Set(field string, val interface{}) (newVal interface{}, err
 		return nil, ErrNoField
 	}
 
-	var topField, subField string
-	// want set sub struct field
-	if strings.ContainsRune(field, '.') {
-		ss := strings.SplitN(field, ".", 2)
-		topField, subField = ss[0], ss[1]
-	}
-
 	fv, ok := d.fieldValues[field]
 	if !ok {
 		f := d.fieldNames[field]
@@ -497,11 +491,17 @@ func (d *StructData) Set(field string, val interface{}) (newVal interface{}, err
 			fv = d.value.FieldByName(field)
 		case fieldAtAnonymous:
 		case fieldAtSubStruct:
-			fv = d.value.FieldByName(topField)
-			if fv.Type().Kind() == reflect.Ptr {
-				fv = removeValuePtr(fv)
+			fieldNodes := strings.Split(field, ".")
+			if len(fieldNodes) < 2 {
+				return nil, ErrInvalidData
 			}
-			fv = fv.FieldByName(subField)
+
+			fv = d.value.FieldByName(fieldNodes[0])
+			fieldNodes = fieldNodes[1:]
+
+			for _, fieldNode := range fieldNodes {
+				fv = removeValuePtr(d.value.FieldByName(fieldNode))
+			}
 		default:
 			return nil, ErrNoField
 		}
