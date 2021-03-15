@@ -328,11 +328,11 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 			if !strings.Contains(ft.Name(), "Time") {
 				switch ft.Kind() {
 				case reflect.Struct:
-					recursiveFunc(fValue, ft, name, fv.Anonymous)
+					recursiveFunc(fValue, ft, name, fv.Anonymous)	
 
 				case reflect.Array, reflect.Slice, reflect.Map:
 					for j := 0; j < fValue.Len(); j++ {
-						elemValue := removeValuePtr(fValue.Index(i))
+						elemValue := removeValuePtr(fValue.Index(j))
 						elemType := removeTypePtr(elemValue.Type())
 
 						arrayName := fmt.Sprintf("%s.%d", name, j)
