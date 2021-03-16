@@ -3,7 +3,25 @@
 ## V2 - TODO
 
 - [ ] inner validators always use reflect.Value as param. 
-  - `Enum(val, enum interface{})` -> `ReflectVEnum(val, enum interface{})`
+
+**old:**
+
+```go
+// Gt check value greater dst value. only check for: int(X), uint(X), float(X)
+func Gt(val interface{}, dstVal int64) bool {
+```
+
+**v2 new:**
+
+```go
+// Gt check value greater dst value. only check for: int(X), uint(X), float(X)
+func Gt(val, dstVal interface{}) bool {
+	return gt(reflect.ValueOf(val), reflect.ValueOf(dstVal))
+}
+
+// internal implements
+func gt(val reflect.Value, dstVal reflect.Value) bool
+```
 
 - can register custom type
 - use sync.Pool for optimize create Validation.

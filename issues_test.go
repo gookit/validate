@@ -419,3 +419,17 @@ func TestIssues_I36T2B(t *testing.T) {
 	assert.False(t, ok)
 	assert.Equal(t, "a is required and not empty", v.Errors.One())
 }
+
+// https://gitee.com/inhere/validate/issues/I3B3AV
+func TestIssues_I3B3AV(t *testing.T) {
+	m := map[string]interface{}{
+		"a": 0.01,
+		"b": float32(0.03),
+	}
+
+	v := Map(m)
+	v.AddRule("a", "gt", 0)
+	v.AddRule("b", "gt", 0)
+
+	assert.True(t, v.Validate())
+}

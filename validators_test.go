@@ -213,11 +213,13 @@ func TestValueCompare(t *testing.T) {
 
 	// Gt
 	is.True(Gt(3, 2))
+	is.True(Gt(2.1, 2))
 	is.False(Gt(2, 3))
 	is.False(Gt("invalid", 3))
 
 	// Lt
 	is.True(Lt(2, 3))
+	is.True(Lt(2.1, 3))
 	is.False(Lt(3, 2))
 	is.False(Lt("invalid", 3))
 
