@@ -224,6 +224,43 @@ func TestIssues34(t *testing.T) {
 
 }
 
+type issues36Form struct{
+	Name string `form:"username" json:"name" validate:"required|minLen:7"`
+	Email string `form:"email" json:"email" validate:"email"`
+	Age int `form:"age" validate:"required|int|min:18|max:150" json:"age"`
+}
+
+func (f issues36Form) Messages() map[string]string {
+	return MS{
+		"required": "{field}不能为空",
+		"Name.minLen":"用户名最少7位",
+		"Name.required": "用户名不能为空",
+		"Email.email":"邮箱格式不正确",
+		"Age.min":"年龄最少18岁",
+		"Age.max":"年龄最大150岁",
+	}
+}
+
+func (f issues36Form) Translates() map[string]string {
+	return MS{
+		"Name": "用户名",
+		"Email": "邮箱",
+		"Age":"年龄",
+	}
+}
+
+// https://github.com/gookit/validate/issues/36
+func TestIssues36(t *testing.T) {
+	f := issues36Form{Age: 10, Name: "i am tom", Email: "adc@xx.com"}
+
+	v := Struct(&f)
+	ok := v.Validate()
+
+	assert.False(t, ok)
+	assert.Equal(t, v.Errors.One(), "年龄最少18岁")
+	assert.Contains(t, v.Errors.String(), "年龄最少18岁")
+}
+
 // https://github.com/gookit/validate/issues/60
 func TestIssues60(t *testing.T) {
 	is := assert.New(t)
