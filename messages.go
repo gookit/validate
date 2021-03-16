@@ -46,6 +46,11 @@ func (es Errors) Add(field, validator, message string) {
 
 // One returns an random error message text
 func (es Errors) One() string {
+	return es.Random()
+}
+
+// Random returns an random error message text
+func (es Errors) Random() string {
 	if len(es) > 0 {
 		for _, fe := range es {
 			return fe.One()
