@@ -322,8 +322,7 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 			}
 
 			// NEW: collect rules from sub-struct
-			// TODO should use ft == timeType check time.Time
-			if ft.Kind() == reflect.Struct && !strings.Contains(ft.Name(), "Time") {
+			if ft.Kind() == reflect.Struct && ft != timeType {
 				recursiveFunc(ft, name, fv.Anonymous)
 			}
 		}
