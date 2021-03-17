@@ -501,7 +501,7 @@ func (d *StructData) Get(field string) (interface{}, bool) {
 				return nil, false
 			}
 
-			if fv.IsZero() || (fv.Kind() == reflect.Ptr && fv.IsNil()){
+			if IsZero(fv) || (fv.Kind() == reflect.Ptr && fv.IsNil()) {
 				return nil, false
 			}
 
