@@ -154,13 +154,13 @@ func TestErrorMessages(t *testing.T) {
 
 // UserForm struct
 type UserForm struct {
-	Name      string    `validate:"required|minLen:7"`
-	Email     string    `validate:"email"`
-	CreateAt  int       `validate:"email"`
-	Safe      int       `validate:"-"`
-	UpdateAt  time.Time `validate:"required"`
-	Code      string    `validate:"customValidator"`
-	Status    int       `validate:"required|gtField:Extra.0.Status1"`
+	Name      string      `validate:"required|minLen:7"`
+	Email     string      `validate:"email"`
+	CreateAt  int         `validate:"email"`
+	Safe      int         `validate:"-"`
+	UpdateAt  time.Time   `validate:"required"`
+	Code      string      `validate:"customValidator"`
+	Status    int         `validate:"required|gtField:Extra.0.Status1"`
 	Extra     []ExtraInfo `validate:"required"`
 	protected string
 }
@@ -871,7 +871,6 @@ func TestStructWithArray(t *testing.T) {
 	is.True(v.IsOK())
 }
 
-
 func TestStructWithMap(t *testing.T) {
 	type WithMap struct {
 		Extras map[string]ExtraInfo `validate:"required|minLen:2"`
@@ -940,7 +939,12 @@ func TestStructWithMap(t *testing.T) {
 	is.False(v.Validate())
 	is.True(v.IsFail())
 	is.Len(v.Errors, 1)
-	is.Equal("Extras.first.Github is required and not empty", v.Errors["Extras.first.Github"]["required"])
+	// Due to the peculiarities of the language, sometimes the first element may NOT be checked first
+	key := "Extras.first.Github"
+	if _, ok := v.Errors[key]["required"]; !ok {
+		key = "Extras.second.Github"
+	}
+	is.Equal(fmt.Sprintf("%s is required and not empty", key), v.Errors[key]["required"])
 
 	v = New(WithPtrOfMap{
 		Extras: &map[string]ExtraInfo{
@@ -975,11 +979,11 @@ func TestStructWithMap(t *testing.T) {
 	is.True(v.IsFail())
 	is.Len(v.Errors, 1)
 	// Due to the peculiarities of the language, sometimes the first element may NOT be checked first
-	val, ok := v.Errors["Extras.first.Github"]["required"]
-	if !ok {
-		val = v.Errors["Extras.second.Github"]["required"]
+	key = "Extras.first.Github"
+	if _, ok := v.Errors[key]["required"]; !ok {
+		key = "Extras.second.Github"
 	}
-	is.Contains(val, "is required and not empty")
+	is.Equal(fmt.Sprintf("%s is required and not empty", key), v.Errors[key]["required"])
 
 	v = New(WithMapPtrs{
 		Extras: map[string]*ExtraInfo{
