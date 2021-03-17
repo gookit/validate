@@ -1045,6 +1045,14 @@ func IntEqual(val interface{}, wantVal int64) bool {
 
 // Gt check value greater dst value. only check for: int(X), uint(X), float(X)
 func Gt(val interface{}, dstVal int64) bool {
+	if flt, ok := val.(float64); ok {
+		return flt > float64(dstVal)
+	}
+
+	if flt, ok := val.(float32); ok {
+		return flt > float32(dstVal)
+	}
+
 	intVal, err := mathutil.Int64(val)
 	if err != nil {
 		return false

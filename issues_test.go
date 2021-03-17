@@ -2,8 +2,8 @@ package validate
 
 import (
 	"fmt"
-	"reflect"
 	"testing"
+	"time"
 
 	"github.com/gookit/goutil/dump"
 	"github.com/stretchr/testify/assert"
@@ -187,8 +187,6 @@ func TestIssues34(t *testing.T) {
 	type STATUS int32
 	var s1 STATUS = 1
 
-	// v.RegisterType(func() {})
-
 	// use custom validator
 	v := New(M{
 		"age": s1,
@@ -209,13 +207,6 @@ func TestIssues34(t *testing.T) {
 
 	assert.NotContains(t, []int{1, 2, 3, 4}, s1)
 
-	rv := reflect.ValueOf(s1)
-	// iv := reflect.New()
-
-	// sc := rv.Interface()
-	// fmt.Println(rv.Type().Kind(), sc.(int32))
-	fmt.Println(rv.Type().Kind())
-
 	dump.Println(Enum(s1, []int{1, 2, 3, 4}), Enum(int32(s1), []int{1, 2, 3, 4}))
 
 	assert.True(t, v.Validate())
@@ -231,7 +222,43 @@ func TestIssues34(t *testing.T) {
 	})
 	assert.True(t, v.Validate())
 
-	dump.Println(v.Errors)
+}
+
+type issues36Form struct {
+	Name  string `form:"username" json:"name" validate:"required|minLen:7"`
+	Email string `form:"email" json:"email" validate:"email"`
+	Age   int    `form:"age" validate:"required|int|min:18|max:150" json:"age"`
+}
+
+func (f issues36Form) Messages() map[string]string {
+	return MS{
+		"required":      "{field}不能为空",
+		"Name.minLen":   "用户名最少7位",
+		"Name.required": "用户名不能为空",
+		"Email.email":   "邮箱格式不正确",
+		"Age.min":       "年龄最少18岁",
+		"Age.max":       "年龄最大150岁",
+	}
+}
+
+func (f issues36Form) Translates() map[string]string {
+	return MS{
+		"Name":  "用户名",
+		"Email": "邮箱",
+		"Age":   "年龄",
+	}
+}
+
+// https://github.com/gookit/validate/issues/36
+func TestIssues36(t *testing.T) {
+	f := issues36Form{Age: 10, Name: "i am tom", Email: "adc@xx.com"}
+
+	v := Struct(&f)
+	ok := v.Validate()
+
+	assert.False(t, ok)
+	assert.Equal(t, v.Errors.One(), "年龄最少18岁")
+	assert.Contains(t, v.Errors.String(), "年龄最少18岁")
 }
 
 // https://github.com/gookit/validate/issues/60
@@ -283,6 +310,7 @@ type User struct {
 	Org
 	Name string `validate:"required|string" filter:"trim|lower"`
 	Sex  string `validate:"string"`
+	Time time.Time
 }
 
 // non-anonymous struct nested
@@ -290,6 +318,17 @@ type User2 struct {
 	Name string `validate:"required|string" filter:"trim|lower"`
 	In   Info
 	Sex  string `validate:"string"`
+	Time time.Time
+}
+
+type Info2 struct {
+	Org
+	Sub *Info
+}
+
+// gt 2 level struct nested
+type User3 struct {
+	In2 *Info2 `validate:"required"`
 }
 
 // https://github.com/gookit/validate/issues/58
@@ -302,8 +341,9 @@ func TestStructNested(t *testing.T) {
 			Email: "fish_yww@163.com",
 			Age:   &age,
 		},
-		Org: Org{Company: "E"},
-		Sex: "male",
+		Org:  Org{Company: "E"},
+		Sex:  "male",
+		Time: time.Now(),
 	}
 
 	// anonymous field test
@@ -324,7 +364,8 @@ func TestStructNested(t *testing.T) {
 			Email: "fish_yww@163.com",
 			Age:   &age,
 		},
-		Sex: "male",
+		Sex:  "male",
+		Time: time.Now(),
 	}
 
 	v2 := Struct(user2)
@@ -335,6 +376,31 @@ func TestStructNested(t *testing.T) {
 		fmt.Printf("%v\n", v2.Errors)
 		assert.False(t, v2.Validate())
 	}
+}
+
+func TestStructNested_gt2level(t *testing.T) {
+	age := 3
+	u := &User3{
+		In2: &Info2{
+			Org: Org{Company: "E"},
+			Sub: &Info{
+				Email: "SOME@163.com ",
+				Age:   &age,
+			},
+		},
+	}
+
+	v := Struct(u)
+	ok := v.Validate()
+	assert.False(t, ok)
+	assert.Equal(t, "In2.Org.Company value must be in the enum [A B C D]", v.Errors.Random())
+	fmt.Println(v.Errors)
+
+	u.In2.Org.Company = "A"
+	v = Struct(u)
+	ok = v.Validate()
+	assert.True(t, ok)
+	assert.Equal(t, "some@163.com", u.In2.Sub.Email)
 }
 
 // https://github.com/gookit/validate/issues/78
@@ -387,4 +453,18 @@ func TestIssues_I36T2B(t *testing.T) {
 	ok = v.Validate()
 	assert.False(t, ok)
 	assert.Equal(t, "a is required and not empty", v.Errors.One())
+}
+
+// https://gitee.com/inhere/validate/issues/I3B3AV
+func TestIssues_I3B3AV(t *testing.T) {
+	m := map[string]interface{}{
+		"a": 0.01,
+		"b": float32(0.03),
+	}
+
+	v := Map(m)
+	v.AddRule("a", "gt", 0)
+	v.AddRule("b", "gt", 0)
+
+	assert.True(t, v.Validate())
 }

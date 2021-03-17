@@ -241,7 +241,7 @@ func (r *Rule) valueValidate(field, name string, val interface{}, v *Validation)
 			ak, err := basicKind(rftVal)
 			if err != nil { // todo check?
 				//noinspection GoNilness
-				v.convertArgTypeError(field, fm.name, valKind, firstTyp)
+				v.convArgTypeError(field, fm.name, valKind, firstTyp, 0)
 				return false
 			}
 
@@ -363,6 +363,9 @@ func convertArgsType(v *Validation, fm *funcMeta, field string, args []interface
 	// convert args data type
 	for i, arg := range args {
 		av := reflect.ValueOf(arg)
+		// index in the func
+		// "+1" because func first arg is `val`, need skip it.
+		fcArgIndex := i + 1
 
 		// Notice: "+1" because first arg is field-value, need exclude it.
 		if fm.isVariadic && i+1 >= lastArgIndex {
@@ -372,7 +375,7 @@ func convertArgsType(v *Validation, fm *funcMeta, field string, args []interface
 
 			ak, err := basicKind(av)
 			if err != nil {
-				v.convertArgTypeError(field, fm.name, av.Kind(), wantTyp)
+				v.convArgTypeError(field, fm.name, av.Kind(), wantTyp, fcArgIndex)
 				return
 			}
 
@@ -383,12 +386,12 @@ func convertArgsType(v *Validation, fm *funcMeta, field string, args []interface
 			}
 
 			// unable to convert
-			v.convertArgTypeError(field, fm.name, av.Kind(), wantTyp)
+			v.convArgTypeError(field, fm.name, av.Kind(), wantTyp, fcArgIndex)
 			return
 		}
 
 		// "+1" because func first arg is val, need skip it.
-		argITyp := ft.In(i + 1)
+		argITyp := ft.In(fcArgIndex)
 		wantTyp = argITyp.Kind()
 
 		// type is same. or want type is interface
@@ -398,7 +401,7 @@ func convertArgsType(v *Validation, fm *funcMeta, field string, args []interface
 
 		ak, err := basicKind(av)
 		if err != nil {
-			v.convertArgTypeError(field, fm.name, av.Kind(), wantTyp)
+			v.convArgTypeError(field, fm.name, av.Kind(), wantTyp, fcArgIndex)
 			return
 		}
 
@@ -407,7 +410,7 @@ func convertArgsType(v *Validation, fm *funcMeta, field string, args []interface
 		} else if nVal, _ := convertType(args[i], ak, wantTyp); nVal != nil { // manual converted
 			args[i] = nVal
 		} else { // unable to convert
-			v.convertArgTypeError(field, fm.name, av.Kind(), wantTyp)
+			v.convArgTypeError(field, fm.name, av.Kind(), wantTyp, fcArgIndex)
 			return
 		}
 	}

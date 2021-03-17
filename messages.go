@@ -46,6 +46,11 @@ func (es Errors) Add(field, validator, message string) {
 
 // One returns an random error message text
 func (es Errors) One() string {
+	return es.Random()
+}
+
+// Random returns an random error message text
+func (es Errors) Random() string {
 	if len(es) > 0 {
 		for _, fe := range es {
 			return fe.One()
@@ -348,7 +353,7 @@ func (t *Translator) format(validator, field string, args ...interface{}) (strin
 
 	// not contains vars. eg: {field}
 	if !strings.ContainsRune(errMsg, '{') {
-		// if need call fmt.Sprintf
+		// whether need call fmt.Sprintf
 		if strings.ContainsRune(errMsg, '%') {
 			errMsg = fmt.Sprintf(errMsg, args...)
 		}
@@ -362,7 +367,7 @@ func (t *Translator) format(validator, field string, args ...interface{}) (strin
 	}
 
 	if argLen > 0 {
-		// if need call fmt.Sprintf
+		// whether need call fmt.Sprintf
 		if strings.ContainsRune(errMsg, '%') {
 			errMsg = fmt.Sprintf(errMsg, args...)
 		}
