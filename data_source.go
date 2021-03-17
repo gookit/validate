@@ -326,20 +326,17 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 			// collect rules from sub-struct and from arrays/slices elements
 			// TODO should use ft == timeType check time.Time
 			if !strings.Contains(ft.Name(), "Time") {
+				if fValue.Type().Kind() == reflect.Ptr && fValue.IsNil() {
+					continue
+				}
+
 				switch ft.Kind() {
 				case reflect.Struct:
-					if fValue.Type().Kind() == reflect.Ptr && fValue.IsNil() {
-						continue
-					}
-
 					recursiveFunc(fValue, ft, name, fv.Anonymous)
 
 				case reflect.Array, reflect.Slice, reflect.Map:
+					fValue = removeValuePtr(fValue)
 					for j := 0; j < fValue.Len(); j++ {
-						if fValue.Type().Kind() == reflect.Ptr && fValue.IsNil() {
-							continue
-						}
-
 						elemValue := removeValuePtr(fValue.Index(j))
 						elemType := removeTypePtr(elemValue.Type())
 
