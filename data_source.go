@@ -272,7 +272,7 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 	vt := d.valueTpy
 	recursiveFunc = func(vv reflect.Value, vt reflect.Type, preStrName string, parentIsAnonymous bool) {
 		for i := 0; i < vt.NumField(); i++ {
-			fValue := vv.Field(i)
+			fValue := removeValuePtr(vv).Field(i)
 			fv := vt.Field(i)
 			ft := vt.Field(i).Type
 			ft = removeTypePtr(ft)
@@ -323,21 +323,28 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 				}
 			}
 
-			// NEW: collect rules from sub-struct
+			// collect rules from sub-struct and from arrays/slices elements
 			// TODO should use ft == timeType check time.Time
 			if !strings.Contains(ft.Name(), "Time") {
 				switch ft.Kind() {
 				case reflect.Struct:
-					recursiveFunc(fValue, ft, name, fv.Anonymous)	
+					if fValue.Type().Kind() == reflect.Ptr && fValue.IsNil() {
+						continue
+					}
+
+					recursiveFunc(fValue, ft, name, fv.Anonymous)
 
 				case reflect.Array, reflect.Slice, reflect.Map:
 					for j := 0; j < fValue.Len(); j++ {
+						if fValue.Type().Kind() == reflect.Ptr && fValue.IsNil() {
+							continue
+						}
+
 						elemValue := removeValuePtr(fValue.Index(j))
 						elemType := removeTypePtr(elemValue.Type())
 
 						arrayName := fmt.Sprintf("%s.%d", name, j)
-
-						if removeTypePtr(elemValue.Type()).Kind() == reflect.Struct {
+						if elemType.Kind() == reflect.Struct {
 							recursiveFunc(elemValue, elemType, arrayName, fv.Anonymous)
 						}
 					}
@@ -347,7 +354,7 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 		}
 	}
 
-	recursiveFunc(vv, vt, "", false)
+	recursiveFunc(removeValuePtr(vv), vt, "", false)
 
 	if len(fMap) > 0 {
 		v.trans.AddFieldMap(fMap)
@@ -457,7 +464,6 @@ func (d *StructData) Get(field string) (interface{}, bool) {
 			} else {
 				fv = removeValuePtr(fv.FieldByName(fieldNode))
 			}
-
 
 			if i < lastIndex && removeTypePtr(fv.Type()).Kind() != reflect.Struct {
 				return nil, false
