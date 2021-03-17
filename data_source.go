@@ -334,13 +334,41 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 				case reflect.Struct:
 					recursiveFunc(fValue, ft, name, fv.Anonymous)
 
-				case reflect.Array, reflect.Slice, reflect.Map:
+				case reflect.Array, reflect.Slice:
 					fValue = removeValuePtr(fValue)
 					for j := 0; j < fValue.Len(); j++ {
 						elemValue := removeValuePtr(fValue.Index(j))
 						elemType := removeTypePtr(elemValue.Type())
 
 						arrayName := fmt.Sprintf("%s.%d", name, j)
+						if elemType.Kind() == reflect.Struct {
+							recursiveFunc(elemValue, elemType, arrayName, fv.Anonymous)
+						}
+					}
+
+				case reflect.Map:
+					fValue = removeValuePtr(fValue)
+					for _, key := range fValue.MapKeys() {
+						key = removeValuePtr(key)
+						elemValue := removeValuePtr(fValue.MapIndex(key))
+						elemType := removeTypePtr(elemValue.Type())
+
+						kind := key.Kind()
+						format := "%s."
+						val := key.Interface()
+						switch {
+						case kind == reflect.String:
+							format += "%s"
+							val = strings.ReplaceAll(val.(string), "\"", "")
+						case kind >= reflect.Int && kind <= reflect.Uint64:
+							format += "%d"
+						case kind >= reflect.Float32 && kind <= reflect.Complex128:
+							format += "%f"
+						default:
+							format += "%#v"
+						}
+
+						arrayName := fmt.Sprintf(format, name, val)
 						if elemType.Kind() == reflect.Struct {
 							recursiveFunc(elemValue, elemType, arrayName, fv.Anonymous)
 						}
@@ -454,19 +482,30 @@ func (d *StructData) Get(field string) (interface{}, bool) {
 		lastIndex := len(fieldNodes) - 1
 
 		for i, fieldNode := range fieldNodes {
-			if fieldNode[0] >= '0' && fieldNode[0] <= '9' {
-				index, _ := strconv.Atoi(fieldNode)
+			fieldNode = strings.ReplaceAll(fieldNode, "\"", "") // for strings as keys
 
-				fv = removeValuePtr(fv.Index(index))
-			} else {
-				fv = removeValuePtr(fv.FieldByName(fieldNode))
+			kind := fv.Type().Kind()
+			switch kind {
+			case reflect.Array, reflect.Slice:
+				index, _ := strconv.Atoi(fieldNode)
+				fv = fv.Index(index)
+			case reflect.Map:
+				fv = fv.MapIndex(reflect.ValueOf(fieldNode))
+			default:
+				fv = fv.FieldByName(fieldNode)
 			}
 
-			if i < lastIndex && removeTypePtr(fv.Type()).Kind() != reflect.Struct {
+			fv = removeValuePtr(fv)
+
+			if !fv.IsValid() {
 				return nil, false
 			}
 
-			if !fv.IsValid() {
+			if fv.IsZero() || (fv.Kind() == reflect.Ptr && fv.IsNil()){
+				return nil, false
+			}
+
+			if i < lastIndex && fv.Type().Kind() != reflect.Struct {
 				return nil, false
 			}
 		}
@@ -529,7 +568,19 @@ func (d *StructData) Set(field string, val interface{}) (newVal interface{}, err
 			fieldNodes = fieldNodes[1:]
 
 			for _, fieldNode := range fieldNodes {
-				fv = removeValuePtr(d.value.FieldByName(fieldNode))
+				switch fv.Type().Kind() {
+				case reflect.Array, reflect.Slice:
+					index, err := strconv.Atoi(fieldNode)
+					if err != nil {
+						return nil, ErrInvalidData
+					}
+
+					fv = fv.Index(index)
+				case reflect.Map:
+					fv = fv.MapIndex(reflect.ValueOf(fieldNode))
+				default:
+					fv = removeValuePtr(fv.FieldByName(fieldNode))
+				}
 			}
 		default:
 			return nil, ErrNoField
