@@ -333,8 +333,8 @@ func (v *Validation) AddErrorf(field, msgFormat string, args ...interface{}) {
 	v.AddError(field, validateError, fmt.Sprintf(msgFormat, args...))
 }
 
-func (v *Validation) convertArgTypeError(field, name string, argKind, wantKind reflect.Kind) {
-	v.AddErrorf(field, "cannot convert %s to %s, validator '%s'", argKind, wantKind, name)
+func (v *Validation) convArgTypeError(field, name string, argKind, wantKind reflect.Kind, argIdx int) {
+	v.AddErrorf(field, "cannot convert %s to arg#%d(%s), validator '%s'", argKind, argIdx, wantKind, name)
 }
 
 /*************************************************************
