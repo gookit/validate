@@ -154,14 +154,14 @@ func TestErrorMessages(t *testing.T) {
 
 // UserForm struct
 type UserForm struct {
-	Name      string    `validate:"required|minLen:7"`
-	Email     string    `validate:"email"`
-	CreateAt  int       `validate:"email"`
-	Safe      int       `validate:"-"`
-	UpdateAt  time.Time `validate:"required"`
-	Code      string    `validate:"customValidator"`
-	Status    int       `validate:"required|gtField:Extra.Status1"`
-	Extra     ExtraInfo `validate:"required"`
+	Name      string      `validate:"required|minLen:7"`
+	Email     string      `validate:"email"`
+	CreateAt  int         `validate:"email"`
+	Safe      int         `validate:"-"`
+	UpdateAt  time.Time   `validate:"required"`
+	Code      string      `validate:"customValidator"`
+	Status    int         `validate:"required|gtField:Extra.0.Status1"`
+	Extra     []ExtraInfo `validate:"required"`
 	protected string
 }
 
@@ -226,14 +226,18 @@ func TestStruct(t *testing.T) {
 
 	u.Name = "new name"
 	u.Status = 3
-	u.Extra = ExtraInfo{"xxx", 4}
+	u.Extra = []ExtraInfo{
+		{"xxx", 4},
+	}
 	u.UpdateAt = time.Now()
 	v = Struct(u)
 	is.False(v.Validate())
-	is.Equal("Status value must be greater the field Extra.Status1", v.Errors.One())
+	is.Equal("Status value must be greater the field Extra.0.Status1", v.Errors.One())
 
 	u.Status = 5
-	u.Extra = ExtraInfo{"xxx", 4}
+	u.Extra = []ExtraInfo{
+		{"xxx", 4},
+	}
 	v = Struct(u)
 	v.Validate()
 
@@ -744,4 +748,256 @@ func TestBuiltInValidators(t *testing.T) {
 		v.StringRule("age", "not-exist")
 		v.Validate()
 	})
+}
+
+func TestStructWithArray(t *testing.T) {
+	type WithArray struct {
+		Extras []ExtraInfo `validate:"required|minLen:2"`
+	}
+	type WithPtrOfArray struct {
+		Extras *[]ExtraInfo `validate:"required|minLen:2"`
+	}
+	type WithArrayPtr struct {
+		Extras []*ExtraInfo `validate:"required|minLen:2"`
+	}
+
+	is := assert.New(t)
+
+	v := New(WithArray{})
+
+	is.False(v.Validate())
+	is.True(v.IsFail())
+	is.Len(v.Errors, 1)
+	is.Len(v.Errors["Extras"], 1)
+	is.Equal("Extras is required and not empty", v.Errors["Extras"]["required"])
+
+	v = New(WithArray{
+		Extras: []ExtraInfo{
+			{
+				"xxx",
+				1,
+			},
+		},
+	})
+
+	is.False(v.Validate())
+	is.True(v.IsFail())
+	is.Len(v.Errors, 1)
+	is.Len(v.Errors["Extras"], 1)
+	is.Equal("Extras min length is 2", v.Errors["Extras"]["minLen"])
+
+	v = New(WithArray{
+		Extras: []ExtraInfo{
+			{
+				Github:  "xxx",
+				Status1: 1,
+			},
+			{
+				Github:  "yyy",
+				Status1: 2,
+			},
+		},
+	})
+
+	is.True(v.Validate())
+	is.True(v.IsOK())
+
+	v = New(WithArray{
+		Extras: []ExtraInfo{
+			{
+				Github:  "",
+				Status1: 0,
+			},
+			{
+				Github:  "",
+				Status1: 0,
+			},
+		},
+	})
+
+	is.False(v.Validate())
+	is.True(v.IsFail())
+	is.Len(v.Errors, 1)
+	is.Equal("Extras.0.Github is required and not empty", v.Errors["Extras.0.Github"]["required"])
+
+	v = New(WithPtrOfArray{
+		Extras: &[]ExtraInfo{
+			{
+				Github:  "xxx",
+				Status1: 1,
+			},
+			{
+				Github:  "yyy",
+				Status1: 2,
+			},
+		},
+	})
+
+	is.True(v.Validate())
+	is.True(v.IsOK())
+
+	v = New(WithArrayPtr{
+		Extras: []*ExtraInfo{
+			{
+				Github:  "",
+				Status1: 0,
+			},
+			{
+				Github:  "",
+				Status1: 0,
+			},
+		},
+	})
+
+	is.False(v.Validate())
+	is.True(v.IsFail())
+	is.Len(v.Errors, 1)
+	is.Equal("Extras.0.Github is required and not empty", v.Errors["Extras.0.Github"]["required"])
+
+	v = New(WithArrayPtr{
+		Extras: []*ExtraInfo{
+			{
+				Github:  "xxx",
+				Status1: 1,
+			},
+			{
+				Github:  "yyy",
+				Status1: 2,
+			},
+		},
+	})
+
+	is.True(v.Validate())
+	is.True(v.IsOK())
+}
+
+func TestStructWithMap(t *testing.T) {
+	type WithMap struct {
+		Extras map[string]ExtraInfo `validate:"required|minLen:2"`
+	}
+	type WithPtrOfMap struct {
+		Extras *map[string]ExtraInfo `validate:"required|minLen:2"`
+	}
+	type WithMapPtrs struct {
+		Extras map[string]*ExtraInfo `validate:"required|minLen:2"`
+	}
+
+	is := assert.New(t)
+
+	v := New(WithMap{})
+
+	is.False(v.Validate())
+	is.True(v.IsFail())
+	is.Len(v.Errors, 1)
+	is.Len(v.Errors["Extras"], 1)
+	is.Equal("Extras is required and not empty", v.Errors["Extras"]["required"])
+
+	v = New(WithMap{
+		Extras: map[string]ExtraInfo{
+			"first": {
+				"xxx",
+				1,
+			},
+		},
+	})
+
+	is.False(v.Validate())
+	is.True(v.IsFail())
+	is.Len(v.Errors, 1)
+	is.Len(v.Errors["Extras"], 1)
+	is.Equal("Extras min length is 2", v.Errors["Extras"]["minLen"])
+
+	v = New(WithMap{
+		Extras: map[string]ExtraInfo{
+			"first": {
+				Github:  "xxx",
+				Status1: 1,
+			},
+			"second": {
+				Github:  "yyy",
+				Status1: 2,
+			},
+		},
+	})
+
+	is.True(v.Validate())
+	is.True(v.IsOK())
+
+	v = New(WithMap{
+		Extras: map[string]ExtraInfo{
+			"first": {
+				Github:  "",
+				Status1: 0,
+			},
+			"second": {
+				Github:  "",
+				Status1: 0,
+			},
+		},
+	})
+
+	is.False(v.Validate())
+	is.True(v.IsFail())
+	is.Len(v.Errors, 1)
+	// Due to the peculiarities of the language, sometimes the first element may NOT be checked first
+	key := "Extras.first.Github"
+	if _, ok := v.Errors[key]["required"]; !ok {
+		key = "Extras.second.Github"
+	}
+	is.Equal(fmt.Sprintf("%s is required and not empty", key), v.Errors[key]["required"])
+
+	v = New(WithPtrOfMap{
+		Extras: &map[string]ExtraInfo{
+			"first": {
+				Github:  "xxx",
+				Status1: 1,
+			},
+			"second": {
+				Github:  "yyy",
+				Status1: 2,
+			},
+		},
+	})
+
+	is.True(v.Validate())
+	is.True(v.IsOK())
+
+	v = New(WithMapPtrs{
+		Extras: map[string]*ExtraInfo{
+			"first": {
+				Github:  "",
+				Status1: 0,
+			},
+			"second": {
+				Github:  "",
+				Status1: 0,
+			},
+		},
+	})
+
+	is.False(v.Validate())
+	is.True(v.IsFail())
+	is.Len(v.Errors, 1)
+	// Due to the peculiarities of the language, sometimes the first element may NOT be checked first
+	key = "Extras.first.Github"
+	if _, ok := v.Errors[key]["required"]; !ok {
+		key = "Extras.second.Github"
+	}
+	is.Equal(fmt.Sprintf("%s is required and not empty", key), v.Errors[key]["required"])
+
+	v = New(WithMapPtrs{
+		Extras: map[string]*ExtraInfo{
+			"first": {
+				Github:  "xxx",
+				Status1: 1,
+			},
+			"second": {
+				Github:  "yyy",
+				Status1: 2,
+			},
+		},
+	})
+
+	is.True(v.Validate())
+	is.True(v.IsOK())
 }

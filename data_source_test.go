@@ -147,7 +147,9 @@ func TestStructData_Create(t *testing.T) {
 		Status:    3,
 		UpdateAt:  time.Now(),
 		protected: "text",
-		Extra:     ExtraInfo{"xxx", 2},
+		Extra: []ExtraInfo{
+			{"xxx", 2},
+		},
 	}
 
 	d, err := FromStruct(u)
@@ -174,7 +176,7 @@ func TestStructData_Create(t *testing.T) {
 	is.False(ok)
 	is.Nil(str)
 
-	iVal, ok := d.Get("Extra.Status1")
+	iVal, ok := d.Get("Extra.0.Status1")
 	is.True(ok)
 	is.Equal(2, iVal)
 
@@ -187,7 +189,7 @@ func TestStructData_Create(t *testing.T) {
 	is.False(ok)
 	is.Nil(ret)
 
-	ret, ok = d.Get("Extra.NotExist")
+	ret, ok = d.Get("Extra.0.NotExist")
 	is.False(ok)
 	is.Nil(ret)
 
