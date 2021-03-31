@@ -365,6 +365,35 @@ v.AddValidators(M{
 })
 ```
 
+## Use on gin framework
+
+```go
+import (
+    "github.com/gookit/validate"
+    "github.com/gin-gonic/gin/binding"
+)
+
+// implements the binding.StructValidator
+type customValidator struct {}
+
+func (v *customValidator) ValidateStruct(ptr interface{}) error {
+    v := validate.Struct(ptr)
+
+    return v.Errors
+}
+
+func (v *defaultValidator) Engine() interface{} {
+    return nil
+}
+
+func main()  {
+	// ...
+
+    // after init gin, set custom validator
+    binding.Validator = &customValidator{}
+}
+```
+
 <a id="built-in-validators"></a>
 ## Built In Validators
 
