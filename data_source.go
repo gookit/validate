@@ -325,7 +325,7 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 
 			// collect rules from sub-struct and from arrays/slices elements
 			// TODO should use ft == timeType check time.Time
-			if !strings.Contains(ft.Name(), "Time") {
+			if ft != timeType {
 				if fValue.Type().Kind() == reflect.Ptr && fValue.IsNil() {
 					continue
 				}
