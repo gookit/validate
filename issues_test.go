@@ -468,3 +468,16 @@ func TestIssues_I3B3AV(t *testing.T) {
 
 	assert.True(t, v.Validate())
 }
+
+// https://github.com/gookit/validate/issues/92
+func TestIssue_92(t *testing.T) {
+	m := map[string]interface{}{
+		"t": 1.1,
+	}
+
+	v := Map(m)
+	v.FilterRule("t", "float")
+	ok := v.Validate()
+
+	assert.True(t, ok)
+}
