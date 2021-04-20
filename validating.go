@@ -220,7 +220,7 @@ func (r *Rule) valueValidate(field, name string, val interface{}, v *Validation)
 		// get validator for global or validation
 		fm = v.validatorMeta(name)
 		if fm == nil {
-			panicf("the validator '%s' is not exists", r.validator)
+			panicf("the validator '%s' does not exist", r.validator)
 		}
 	}
 
