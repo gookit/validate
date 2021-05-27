@@ -8,9 +8,10 @@ github.com/gookit/color v1.4.2/go.mod h1:fqRyamkC1W8uxl+lxCQxOT09l/vYfZ+QeiX3rKQ
 github.com/gookit/filter v1.1.2 h1:mp6zSRaRhGuoGZNUlZR4W0/1OTwKRUI5qCXEtD02BR0=
 github.com/gookit/filter v1.1.2/go.mod h1:pVXLLDD+A8yH9GRztq2Cp7zwZocnuTUpbZs9Q+awAKM=
 github.com/gookit/goutil v0.3.12/go.mod h1:ITj7Lw0muhJNOX+QRa+j+HH0+RNoQVuTmZx5d5LE1vE=
-github.com/gookit/goutil v0.3.13 h1:jdjuMjFwtcDeyYPyzwivs6ksVRGHhNjRIDfXViX8Mrc=
-github.com/gookit/goutil v0.3.13/go.mod h1:DdrxLZc3yakbuElOtTH8F2SWu3XhaJohgvKHSP0JRak=
+github.com/gookit/goutil v0.3.14 h1:ZEdZR+Vkvcjz0SSC0MpjtD+Kwlg/uagpiddh6L2ko+0=
+github.com/gookit/goutil v0.3.14/go.mod h1:YdGV0ObqRUlRq4/RzAQBHcd1Wzl/jKw7cppDBtD3q+U=
 github.com/json-iterator/go v1.1.10/go.mod h1:KdQUCv79m/52Kvf8AW2vK1V8akMuk1QjK/uOdHXbAo4=
+github.com/json-iterator/go v1.1.11/go.mod h1:KdQUCv79m/52Kvf8AW2vK1V8akMuk1QjK/uOdHXbAo4=
 github.com/mattn/go-isatty v0.0.12 h1:wuysRhFDzyxgEmMf5xjvJ2M9dZoWAXNNr5LSBS7uHXY=
 github.com/mattn/go-isatty v0.0.12/go.mod h1:cbi8OIDigv2wuxKPP5vlRcQ1OAZbq2CE4Kysco4FUpU=
 github.com/mitchellh/go-homedir v1.1.0 h1:lukF9ziXFxDFPkA1vsr5zpc1XuPDn/wFntq5mG+4E0Y=
