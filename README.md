@@ -378,6 +378,7 @@ type customValidator struct {}
 
 func (v *customValidator) ValidateStruct(ptr interface{}) error {
     v := validate.Struct(ptr)
+    v.Validate() // do validating
 
     return v.Errors
 }
