@@ -109,7 +109,6 @@ func main() {
 package main
 
 import "fmt"
-import "time"
 import "github.com/gookit/validate"
 
 func main()  {
@@ -232,16 +231,18 @@ v := d.Validation()
 
 ### 全局选项
 
+你可以通过改变全局选项设置，来调整验证器的一些处理逻辑。
+
 ```go
 // GlobalOption settings for validate
 type GlobalOption struct {
-	// FilterTag name in the struct tags.
+	// FilterTag 结构体中的过滤规则标签名称。默认 'filter`
 	FilterTag string
-	// ValidateTag in the struct tags.
+	// ValidateTag 结构体中的验证规则标签名称。默认 'validate`
 	ValidateTag string
-	// StopOnError If true: An error occurs, it will cease to continue to verify
+	// StopOnError 如果为 true，则出现第一个错误时，将停止继续验证。默认 true
 	StopOnError bool
-	// SkipOnEmpty Skip check on field not exist or value is empty
+	// SkipOnEmpty 跳过对字段不存在或值为空的检查。默认 true
 	SkipOnEmpty bool
 }
 ```
@@ -249,7 +250,7 @@ type GlobalOption struct {
 如何配置:
 
 ```go
-	// change global opts
+	// 更改全局选项
 	validate.Config(func(opt *validate.GlobalOption) {
 		opt.StopOnError = false
 		opt.SkipOnEmpty = false
@@ -355,9 +356,10 @@ func (f UserForm) Messages() map[string]string {
 ## 在gin框架中使用
 
 ```go
+package main
 import (
-    "github.com/gookit/validate"
     "github.com/gin-gonic/gin/binding"
+    "github.com/gookit/validate"
 )
 
 // implements the binding.StructValidator
@@ -365,6 +367,7 @@ type customValidator struct {}
 
 func (v *customValidator) ValidateStruct(ptr interface{}) error {
     v := validate.Struct(ptr)
+    v.Validate() // 调用验证
 
     return v.Errors
 }

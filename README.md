@@ -244,16 +244,18 @@ v := d.Validation()
 
 ### Global Option
 
+You can adjust some processing logic of the validator by changing the global option settings.
+
 ```go
 // GlobalOption settings for validate
 type GlobalOption struct {
-	// FilterTag name in the struct tags.
+	// FilterTag name in the struct tags. default: filter
 	FilterTag string
-	// ValidateTag in the struct tags.
+	// ValidateTag in the struct tags. default: validate
 	ValidateTag string
-	// StopOnError If true: An error occurs, it will cease to continue to verify
+	// StopOnError If true: An error occurs, it will cease to continue to verify. default: true
 	StopOnError bool
-	// SkipOnEmpty Skip check on field not exist or value is empty
+	// SkipOnEmpty Skip check on field not exist or value is empty. default: true
 	SkipOnEmpty bool
 }
 ```
@@ -368,9 +370,10 @@ v.AddValidators(M{
 ## Use on gin framework
 
 ```go
+package main
 import (
-    "github.com/gookit/validate"
     "github.com/gin-gonic/gin/binding"
+    "github.com/gookit/validate"
 )
 
 // implements the binding.StructValidator
