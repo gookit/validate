@@ -379,14 +379,18 @@ import (
 // implements the binding.StructValidator
 type customValidator struct {}
 
-func (v *customValidator) ValidateStruct(ptr interface{}) error {
+func (c *customValidator) ValidateStruct(ptr interface{}) error {
     v := validate.Struct(ptr)
     v.Validate() // do validating
+    
+    if v.Errors.Empty() {
+	return nil
+    }
 
     return v.Errors
 }
 
-func (v *defaultValidator) Engine() interface{} {
+func (c *customValidator) Engine() interface{} {
     return nil
 }
 
