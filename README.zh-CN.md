@@ -365,14 +365,14 @@ import (
 // implements the binding.StructValidator
 type customValidator struct {}
 
-func (v *customValidator) ValidateStruct(ptr interface{}) error {
+func (c *customValidator) ValidateStruct(ptr interface{}) error {
     v := validate.Struct(ptr)
     v.Validate() // 调用验证
 
     return v.Errors
 }
 
-func (v *defaultValidator) Engine() interface{} {
+func (c *customValidator) Engine() interface{} {
     return nil
 }
 
@@ -398,7 +398,7 @@ func main()  {
 - 字符串检查验证
 - 其他验证
 
-> 驼峰式的验证器名称现在都添加了下划线式的别名。因此 `endsWith` 也可以写为 `ends_with`
+> TIP: 驼峰式的验证器名称现在都添加了下划线式的别名。因此 `endsWith` 也可以写为 `ends_with`
 
 验证器/别名 | 描述信息
 -------------------|-------------------------------------------
