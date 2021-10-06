@@ -1,10 +1,10 @@
 package validate
 
 import (
-	"fmt"
 	"reflect"
 	"testing"
 
+	"github.com/gookit/goutil/dump"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -110,13 +110,13 @@ func TestOption(t *testing.T) {
 	ResetOption()
 }
 
-func Test_Struct_nilPtr_field2(t *testing.T) {
+func TestStruct_nilPtr_field2(t *testing.T) {
 	type UserDto struct {
 		Name string `validate:"required"`
 		Sex  *bool  `validate:"required" json:"sex"`
 	}
 
-	// sex := true
+	sex := true
 	u := UserDto{
 		Name: "abc",
 		Sex:  nil,
@@ -126,5 +126,37 @@ func Test_Struct_nilPtr_field2(t *testing.T) {
 	assert.False(t, v.Validate())
 	assert.True(t, v.Errors.HasField("Sex"))
 	assert.Contains(t, v.Errors.FieldOne("Sex"), "sex is required")
-	fmt.Println(v.Errors)
+	dump.Println(v.Errors)
+
+	u.Sex = &sex
+	v = Struct(&u)
+	assert.True(t, v.Validate())
+}
+
+func TestStruct_nexted_anonymity_struct(t *testing.T) {
+	type UserDto struct {
+		Name string `validate:"required"`
+		Sex  *bool  `validate:"required" json:"sex"`
+		ExtInfo  struct{
+			Homepage string `validate:"required"`
+			CityName string
+		}
+	}
+
+	sex := true
+	u := &UserDto{
+		Name: "abc",
+		Sex:  &sex,
+	}
+
+	v := Struct(u)
+	assert.False(t, v.Validate())
+	dump.Println(v.Errors)
+	assert.True(t, v.Errors.HasField("ExtInfo.Homepage"))
+	assert.Contains(t, v.Errors, "ExtInfo.Homepage")
+	assert.Equal(t, "ExtInfo.Homepage is required and not empty", v.Errors.FieldOne("ExtInfo.Homepage"))
+
+	u.ExtInfo.Homepage = "https://github.com/inhere"
+	v = Struct(u)
+	assert.True(t, v.Validate())
 }

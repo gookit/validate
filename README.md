@@ -65,11 +65,26 @@ type UserForm struct {
 	Safe     int       `validate:"-"`
 	UpdateAt time.Time `validate:"required"`
 	Code     string    `validate:"customValidator"`
+	// nested struct
+	ExtInfo  struct{
+		Homepage string `validate:"required"`
+		CityName string
+	}
 }
 
 // CustomValidator custom validator in the source struct.
 func (f UserForm) CustomValidator(val string) bool {
 	return len(val) == 4
+}
+
+// ConfigValidation config the Validation
+// eg:
+// - define validate scenes
+func (f UserForm) ConfigValidation(v *validate.Validation) {
+	v.WithScenes(validate.SValues{
+		"add":    []string{"ExtInfo.Homepage", "Name", "Code"},
+		"update": []string{"ExtInfo.CityName", "Name"},
+	})
 }
 
 // Messages you can custom validator error messages. 
@@ -85,6 +100,7 @@ func (f UserForm) Translates() map[string]string {
 	return validate.MS{
 		"Name": "User Name",
 		"Email": "User Email",
+		"ExtInfo.Homepage": "Home Page",
 	}
 }
 

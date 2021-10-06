@@ -61,11 +61,25 @@ type UserForm struct {
 	Safe     int       `validate:"-"`
 	UpdateAt time.Time `validate:"required"`
 	Code     string    `validate:"customValidator"` // 使用自定义验证器
+	// 结构体嵌套
+	ExtInfo  struct{
+		Homepage string `validate:"required"`
+		CityName string
+    }
 }
 
 // CustomValidator 定义在结构体中的自定义验证器
 func (f UserForm) CustomValidator(val string) bool {
 	return len(val) == 4
+}
+
+// ConfigValidation 配置验证
+// - 定义验证场景
+func (f UserForm) ConfigValidation(v *validate.Validation) {
+	v.WithScenes(validate.SValues{
+		"add":    []string{"ExtInfo.Homepage", "Name", "Code"},
+		"update": []string{"ExtInfo.CityName", "Name"},
+	})
 }
 
 // Messages 您可以自定义验证器错误消息
@@ -81,6 +95,7 @@ func (f UserForm) Translates() map[string]string {
 	return validate.MS{
 		"Name": "用户名称",
 		"Email": "用户Email",
+		"ExtInfo.Homepage": "用户主页",
 	}
 }
 
