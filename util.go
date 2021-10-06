@@ -120,14 +120,14 @@ func ValueLen(v reflect.Value) int {
 }
 
 var (
-	errConvertFail = errors.New("convert value is failure")
+	ErrConvertFail = errors.New("convert value is failure")
 )
 
 func valueToInt64(v interface{}, strict bool) (i64 int64, err error) {
 	switch tVal := v.(type) {
 	case string:
 		if strict {
-			return 0, errConvertFail
+			return 0, ErrConvertFail
 		}
 		i64, err = strconv.ParseInt(filter.Trim(tVal), 10, 0)
 	case int:
@@ -152,16 +152,16 @@ func valueToInt64(v interface{}, strict bool) (i64 int64, err error) {
 		i64 = int64(tVal)
 	case float32:
 		if strict {
-			return 0, errConvertFail
+			return 0, ErrConvertFail
 		}
 		i64 = int64(tVal)
 	case float64:
 		if strict {
-			return 0, errConvertFail
+			return 0, ErrConvertFail
 		}
 		i64 = int64(tVal)
 	default:
-		err = errConvertFail
+		err = ErrConvertFail
 	}
 	return
 }
@@ -310,7 +310,7 @@ func convertType(srcVal interface{}, srcKind kind, dstType reflect.Kind) (interf
 			return strutil.ToString(srcVal)
 		}
 	}
-	return nil, errConvertFail
+	return nil, ErrConvertFail
 }
 
 func panicf(format string, args ...interface{}) {

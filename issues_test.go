@@ -1,4 +1,4 @@
-package validate
+package validate_test
 
 import (
 	"fmt"
@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/gookit/goutil/dump"
+	"github.com/gookit/validate"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -15,7 +16,7 @@ func TestIssue2(t *testing.T) {
 	}
 
 	fl := Fl{123}
-	v := Struct(fl)
+	v := validate.Struct(fl)
 	assert.True(t, v.Validate())
 	assert.Equal(t, float64(123), v.SafeVal("A"))
 
@@ -31,7 +32,7 @@ func TestIssue2(t *testing.T) {
 	assert.Error(t, err)
 
 	// NOTICE: Must use ptr for set value
-	v = Struct(&fl)
+	v = validate.Struct(&fl)
 	err = v.Set("A", float64(234))
 	assert.Nil(t, err)
 
@@ -47,7 +48,7 @@ func TestIssue2(t *testing.T) {
 	// type is error
 	err = v.Set("A", "abc")
 	assert.Error(t, err)
-	assert.Equal(t, errConvertFail.Error(), err.Error())
+	assert.Equal(t, validate.ErrConvertFail.Error(), err.Error())
 }
 
 // https://github.com/gookit/validate/issues/19
@@ -65,7 +66,7 @@ func TestIssues19(t *testing.T) {
 		" ABcd   ", "13677778888  ", "register",
 	}
 
-	v := New(req)
+	v := validate.New(req)
 	is.True(v.Validate())
 	sd := v.SafeData()
 	is.Equal("abcd", sd["CountryCode"])
@@ -89,7 +90,7 @@ func TestIssues19(t *testing.T) {
 		" ABcd   ", "13677778888  ", "register",
 	}
 
-	v = New(req1)
+	v = validate.New(req1)
 	is.True(v.Validate())
 	sd = v.SafeData()
 	is.Equal("abcd", sd["CountryCode"])
@@ -107,7 +108,7 @@ func TestIssues20(t *testing.T) {
 	}
 
 	req := &setProfileReq{"123nickname111", "123"}
-	v := New(req)
+	v := validate.New(req)
 	is.True(v.Validate())
 
 	type setProfileReq1 struct {
@@ -116,16 +117,16 @@ func TestIssues20(t *testing.T) {
 	}
 	req1 := &setProfileReq1{"123nickname111", "123"}
 
-	Config(func(opt *GlobalOption) {
+	validate.Config(func(opt *validate.GlobalOption) {
 		opt.FieldTag = ""
 	})
-	v = New(req1)
+	v = validate.New(req1)
 	is.False(v.Validate())
 	is.Len(v.Errors, 1)
 	is.Equal("Avatar must be an valid full URL address", v.Errors.One())
 
-	ResetOption()
-	v = New(req1)
+	validate.ResetOption()
+	v = validate.New(req1)
 	is.False(v.Validate())
 	is.Len(v.Errors, 1)
 	is.Equal("avatar must be an valid full URL address", v.Errors.One())
@@ -143,14 +144,14 @@ func TestIssues22(t *testing.T) {
 		Nickname: "tom",
 		Avatar:   "https://github.com/gookit/validate/issues/22",
 	}
-	v := Struct(u0)
+	v := validate.Struct(u0)
 	is.False(v.Validate())
 	is.Equal("OO! nickname min len is 6", v.Errors.FieldOne("Nickname"))
 	u0 = &userInfo0{
 		Nickname: "inhere",
 		Avatar:   "some url",
 	}
-	v = Struct(u0)
+	v = validate.Struct(u0)
 	is.False(v.Validate())
 	is.Equal("OO! avatar max len is 6", v.Errors.FieldOne("Avatar"))
 
@@ -160,19 +161,19 @@ func TestIssues22(t *testing.T) {
 	}
 
 	u1 := &userInfo1{Nickname: ""}
-	v = Struct(u1)
+	v = validate.Struct(u1)
 	is.False(v.Validate())
 	is.Equal("OO! nickname cannot be empty!", v.Errors.FieldOne("Nickname"))
 
 	u1 = &userInfo1{Nickname: "tom"}
-	v = Struct(u1)
+	v = validate.Struct(u1)
 	is.False(v.Validate())
 	is.Equal("OO! nickname min len is 6", v.Errors.FieldOne("Nickname"))
 }
 
 // https://github.com/gookit/validate/issues/30
 func TestIssues30(t *testing.T) {
-	v := JSON(`{
+	v := validate.JSON(`{
    "cost_type": 10
 }`)
 
@@ -188,36 +189,36 @@ func TestIssues34(t *testing.T) {
 	var s1 STATUS = 1
 
 	// use custom validator
-	v := New(M{
+	v := validate.New(validate.M{
 		"age": s1,
 	})
 	v.AddValidator("checkAge", func(val interface{}, ints ...int) bool {
-		return Enum(int32(val.(STATUS)), ints)
+		return validate.Enum(int32(val.(STATUS)), ints)
 	})
 	v.StringRule("age", "required|checkAge:1,2,3,4")
 	assert.True(t, v.Validate())
 
 	// TODO refer https://golang.org/src/database/sql/driver/types.go?s=1210:1293#L29
-	v = New(M{
+	v = validate.New(validate.M{
 		"age": s1,
 	})
-	v.StringRules(MS{
+	v.StringRules(validate.MS{
 		"age": "required|in:1,2,3,4",
 	})
 
 	assert.NotContains(t, []int{1, 2, 3, 4}, s1)
 
-	dump.Println(Enum(s1, []int{1, 2, 3, 4}), Enum(int32(s1), []int{1, 2, 3, 4}))
+	dump.Println(validate.Enum(s1, []int{1, 2, 3, 4}), validate.Enum(int32(s1), []int{1, 2, 3, 4}))
 
 	assert.True(t, v.Validate())
 	dump.Println(v.Errors)
 
 	type someMode string
 	var m1 someMode = "abc"
-	v = New(M{
+	v = validate.New(validate.M{
 		"mode": m1,
 	})
-	v.StringRules(MS{
+	v.StringRules(validate.MS{
 		"mode": "required|in:abc,def",
 	})
 	assert.True(t, v.Validate())
@@ -231,7 +232,7 @@ type issues36Form struct {
 }
 
 func (f issues36Form) Messages() map[string]string {
-	return MS{
+	return validate.MS{
 		"required":      "{field}不能为空",
 		"Name.minLen":   "用户名最少7位",
 		"Name.required": "用户名不能为空",
@@ -242,7 +243,7 @@ func (f issues36Form) Messages() map[string]string {
 }
 
 func (f issues36Form) Translates() map[string]string {
-	return MS{
+	return validate.MS{
 		"Name":  "用户名",
 		"Email": "邮箱",
 		"Age":   "年龄",
@@ -253,7 +254,7 @@ func (f issues36Form) Translates() map[string]string {
 func TestIssues36(t *testing.T) {
 	f := issues36Form{Age: 10, Name: "i am tom", Email: "adc@xx.com"}
 
-	v := Struct(&f)
+	v := validate.Struct(&f)
 	ok := v.Validate()
 
 	assert.False(t, ok)
@@ -268,7 +269,7 @@ func TestIssues60(t *testing.T) {
 		"title": "1",
 	}
 
-	v := Map(m)
+	v := validate.Map(m)
 	v.StringRule("title", "in:2,3")
 	v.AddMessages(map[string]string{
 		"in": "自定义错误",
@@ -285,11 +286,11 @@ func TestPtrFieldValidation(t *testing.T) {
 	}
 
 	name := "henry"
-	v := New(&Foo{Name: &name})
+	v := validate.New(&Foo{Name: &name})
 	assert.True(t, v.Validate())
 
 	name = "fish"
-	valid := New(&Foo{Name: &name})
+	valid := validate.New(&Foo{Name: &name})
 	assert.False(t, valid.Validate())
 }
 
@@ -347,7 +348,7 @@ func TestStructNested(t *testing.T) {
 	}
 
 	// anonymous field test
-	v := Struct(u)
+	v := validate.Struct(u)
 	if v.Validate() {
 		assert.True(t, v.Validate())
 	} else {
@@ -368,7 +369,7 @@ func TestStructNested(t *testing.T) {
 		Time: time.Now(),
 	}
 
-	v2 := Struct(user2)
+	v2 := validate.Struct(user2)
 	if v2.Validate() {
 		assert.True(t, v2.Validate())
 	} else {
@@ -376,6 +377,20 @@ func TestStructNested(t *testing.T) {
 		fmt.Printf("%v\n", v2.Errors)
 		assert.False(t, v2.Validate())
 	}
+}
+
+func TestStruct_nilPtr_field(t *testing.T) {
+	u1 := &User{
+		Name: "fish",
+		Info: nil,
+		Org:  Org{Company: "C"},
+		Sex:  "male",
+	}
+
+	v := validate.Struct(u1)
+	assert.False(t, v.Validate())
+	assert.Contains(t, v.Errors.String(), "Info is required")
+	fmt.Println(v.Errors)
 }
 
 func TestStructNested_gt2level(t *testing.T) {
@@ -390,14 +405,14 @@ func TestStructNested_gt2level(t *testing.T) {
 		},
 	}
 
-	v := Struct(u)
+	v := validate.Struct(u)
 	ok := v.Validate()
 	assert.False(t, ok)
 	assert.Equal(t, "In2.Org.Company value must be in the enum [A B C D]", v.Errors.Random())
 	fmt.Println(v.Errors)
 
 	u.In2.Org.Company = "A"
-	v = Struct(u)
+	v = validate.Struct(u)
 	ok = v.Validate()
 	assert.True(t, ok)
 	assert.Equal(t, "some@163.com", u.In2.Sub.Email)
@@ -417,7 +432,7 @@ func TestIssue78(t *testing.T) {
 	}
 
 	// 创建 Validation 实例
-	v := Struct(&u)
+	v := validate.Struct(&u)
 	if !v.Validate() {
 		fmt.Println(v.Errors)
 	} else {
@@ -433,20 +448,20 @@ func TestIssues_I36T2B(t *testing.T) {
 	}
 
 	// 创建 Validation 实例
-	v := Map(m)
+	v := validate.Map(m)
 	v.AddRule("a", "gt", 100)
 
 	ok := v.Validate()
 	assert.True(t, ok)
 
-	v = Map(m)
+	v = validate.Map(m)
 	v.AddRule("a", "gt", 100).SetSkipEmpty(false)
 
 	ok = v.Validate()
 	assert.False(t, ok)
 	assert.Equal(t, "a value should greater the 100", v.Errors.One())
 
-	v = Map(m)
+	v = validate.Map(m)
 	v.AddRule("a", "required")
 	v.AddRule("a", "gt", 100)
 
@@ -462,7 +477,7 @@ func TestIssues_I3B3AV(t *testing.T) {
 		"b": float32(0.03),
 	}
 
-	v := Map(m)
+	v := validate.Map(m)
 	v.AddRule("a", "gt", 0)
 	v.AddRule("b", "gt", 0)
 
@@ -475,9 +490,64 @@ func TestIssue_92(t *testing.T) {
 		"t": 1.1,
 	}
 
-	v := Map(m)
+	v := validate.Map(m)
 	v.FilterRule("t", "float")
 	ok := v.Validate()
 
+	assert.True(t, ok)
+}
+
+type Issue104A struct {
+	ID int `json:"id" gorm:"primarykey" form:"id" validate:"int|required"`
+}
+
+type Issue104Demo struct {
+	Issue104A
+	Title string `json:"title" form:"title" validate:"required" example:"123456"` // 任务id
+}
+
+// GetScene 定义验证场景
+// func (d Issue104Demo) GetScene() validate.SValues {
+// 	return validate.SValues{
+// 		"add":    []string{"ID", "Title"},
+// 		"update": []string{"ID", "Title"},
+// 	}
+// }
+
+// ConfigValidation 配置验证
+// - 定义验证场景
+func (d Issue104Demo) ConfigValidation(v *validate.Validation) {
+	v.WithScenes(validate.SValues{
+		"add":    []string{"Issue104A.ID", "Title"},
+		"update": []string{"Issue104A.ID", "Title"},
+	})
+}
+
+// https://github.com/gookit/validate/issues/104
+func TestIssue_104(t *testing.T) {
+	d := &Issue104Demo{
+		Issue104A: Issue104A{
+			ID: 0,
+		},
+		Title: "abc",
+	}
+
+	v := validate.Struct(d)
+	ok := v.Validate()
+	dump.Println(v.Errors)
+	assert.False(t, ok)
+	assert.Equal(t, "id is required and not empty", v.Errors.One())
+
+	v = validate.Struct(d, "add")
+	ok = v.Validate()
+	dump.Println(v.Errors, v.SceneFields())
+	assert.False(t, ok)
+	assert.Equal(t, "add", v.Scene())
+	assert.Equal(t, "id is required and not empty", v.Errors.One())
+
+	// right
+	d.Issue104A.ID = 34
+	v = validate.Struct(d)
+	ok = v.Validate()
 	assert.True(t, ok)
 }

@@ -110,20 +110,6 @@ func TestOption(t *testing.T) {
 	ResetOption()
 }
 
-func Test_Struct_nilPtr_field(t *testing.T) {
-	u1 := &User{
-		Name: "fish",
-		Info: nil,
-		Org:  Org{Company: "C"},
-		Sex:  "male",
-	}
-
-	v := Struct(u1)
-	assert.False(t, v.Validate())
-	assert.Contains(t, v.Errors.String(), "Info is required")
-	fmt.Println(v.Errors)
-}
-
 func Test_Struct_nilPtr_field2(t *testing.T) {
 	type UserDto struct {
 		Name string `validate:"required"`

@@ -214,12 +214,12 @@ func (d *StructData) Type() uint8 {
 	return uint8(sourceStruct)
 }
 
-// Create a Validation from the StructData
+// Validation create a Validation from the StructData
 func (d *StructData) Validation(err ...error) *Validation {
 	return d.Create(err...)
 }
 
-// Validation create from the StructData
+// Create create from the StructData
 func (d *StructData) Create(err ...error) *Validation {
 	v := NewValidation(d)
 	if len(err) > 0 && err[0] != nil {

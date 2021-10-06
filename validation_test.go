@@ -610,6 +610,7 @@ func TestValidationScene(t *testing.T) {
 	is.False(ok)
 	is.False(v.Errors.Empty())
 	is.Equal("create", v.Scene())
+	is.Equal([]string{"name", "age"}, v.SceneFields())
 	is.Contains(v.Errors.Error(), "age")
 	is.Contains(v.Errors.Error(), "name")
 
