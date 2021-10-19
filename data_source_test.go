@@ -203,3 +203,24 @@ func TestStructData_Create(t *testing.T) {
 	is.True(ok)
 	is.Equal("inhere", str)
 }
+
+
+func TestIssue_103(t *testing.T) {
+	type Example struct {
+		SomeID string `json:"some_id" validate:"required" outgofmt:"1"`
+	}
+	o := Example{}
+	v := Struct(o)
+	v.Validate()
+	m:=v.Errors.All() // here we get something like {"SomeID": { /* ... */ }}
+	assert.Contains(t, m, "SomeID")
+
+	type Example2 struct {
+		SomeID string `json:"some_id" validate:"required" `
+	}
+	e2 := Example2{}
+	v2 := Struct(e2)
+	v2.Validate()
+	err2 :=v2.Errors.String() // here we get something like {"SomeID": { /* ... */ }}
+	assert.Contains(t, err2, "some_id")
+}
