@@ -221,6 +221,6 @@ func TestIssue_103(t *testing.T) {
 	e2 := Example2{}
 	v2 := Struct(e2)
 	v2.Validate()
-	err2 :=v2.Errors.String() // here we get something like {"SomeID": { /* ... */ }}
+	err2 :=v2.Errors.String()
 	assert.Contains(t, err2, "some_id")
 }
