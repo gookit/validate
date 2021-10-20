@@ -10,13 +10,15 @@
 Go通用的数据验证与过滤库，使用简单，内置大部分常用验证器、过滤器，支持自定义消息、字段翻译。
 
 - 支持验证 `Map` `Struct` `Request`（`Form`，`JSON`，`url.Values`, `UploadedFile`）数据
+  - 验证 `http.Request` 时会自动根据请求数据类型 `Content-Type` 收集数据
 - 简单方便，支持前置验证检查, 支持添加自定义验证器
 - 支持将规则按场景进行分组设置，不同场景验证不同的字段
-- 支持在进行验证前对值使用过滤器进行净化过滤，查看 [内置过滤器](#built-in-filters)
-- 已经内置了超多（**>70** 个）常用的验证器，查看 [内置验证器](#built-in-validators)
+  - 已经内置了超多（**>70** 个）常用的验证器，查看 [内置验证器](#built-in-validators)
+- 支持在进行验证前对值使用过滤器进行净化过滤，适应更多场景
+  - 已经内置了超多（**>30** 个）常用的过滤器，查看 [内置过滤器](#built-in-filters)
 - 方便的获取错误信息，验证后的安全数据获取(_只会收集有规则检查过的数据_)
 - 支持自定义每个验证的错误消息，字段翻译，消息翻译(内置`en` `zh-CN` `zh-TW`)
-- 完善的单元测试，测试覆盖率 > 90%
+- 完善的单元测试，测试覆盖率 **> 90%**
 
 > 受到 [albrow/forms](https://github.com/albrow/forms) [asaskevich/govalidator](https://github.com/asaskevich/govalidator) [inhere/php-validate](https://github.com/inhere/php-validate) 这些项目的启发. 非常感谢它们
 
@@ -327,7 +329,7 @@ func (f UserForm) Messages() map[string]string {
 
 `validate` 支持添加自定义验证器，并且支持添加 `全局验证器` 和 `临时验证器` 两种
 
-- **全局验证器** 全局有效，所有地方都可以使用
+- **全局验证器** 全局有效，注册后所有地方都可以使用
 - **临时验证器** 添加到当前验证实例上，仅当次验证可用
 - 在结构体上添加验证方法。使用请看上面结构体验证示例中的 `func (f UserForm) CustomValidator(val string) bool`
 
@@ -366,6 +368,63 @@ func (f UserForm) Messages() map[string]string {
 			return true
 		},
 	})
+```
+
+### 添加自定义过滤器
+
+`validate` 也允许添加自定义过滤器, 同样支持 `全局过滤器` 和 `临时过滤器` 两种
+
+- **全局过滤器** 全局有效，注册后所有地方都可以使用
+- **临时过滤器** 添加到当前验证实例上，仅当次验证可用
+
+> TIP: 对于过滤器函数，允许具有 1 个返回值 `inteface{}` 或 2 个返回值 `(inteface{},error)` 的函数，其中第二个可以返回错误
+
+#### 添加全局过滤器
+
+你可以一次添加一个或者多个自定义过滤器
+
+```go
+package main
+
+import "github.com/gookit/validate"
+
+func init() {
+	validate.AddFilter("myToIntFilter0", func(val interface{}) int {
+		// do filtering val ...
+		return 1
+	})
+	validate.AddFilters(validate.M{
+		"myToIntFilter1": func(val interface{}) (int, error) {
+			// do filtering val ...
+			return 1, nil
+		},
+	})
+}
+```
+
+#### 添加临时过滤器
+
+同样，你可以一次添加一个或者多个自定义过滤器
+
+```go
+package main
+
+import "github.com/gookit/validate"
+
+func main() {
+	v := validate.New(&someStrcut{})
+
+	v.AddFilter("myToIntFilter0", func(val interface{}) int {
+		// do filtering val ...
+		return 1
+	})
+	v.AddFilters(validate.M{
+		"myToIntFilter1": func(val interface{}) (int, error) {
+			// do filtering val ...
+			return 1, nil
+		},
+	})
+}
 ```
 
 ## 在gin框架中使用

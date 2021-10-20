@@ -357,7 +357,7 @@ validate.AddValidator("myCheck0", func(val interface{}) bool {
 	// do validate val ...
 	return true
 })
-validate.AddValidators(M{
+validate.AddValidators(validate.M{
 	"myCheck1": func(val interface{}) bool {
 		// do validate val ...
 		return true
@@ -375,12 +375,69 @@ v.AddValidator("myFunc3", func(val interface{}) bool {
 	// do validate val ...
 	return true
 })
-v.AddValidators(M{
+v.AddValidators(validate.M{
 	"myFunc4": func(val interface{}) bool {
 		// do validate val ...
 		return true
 	},
 })
+```
+
+### Add Custom Filter
+
+`validate` can also support adding custom filters, and supports adding `global filter` and `temporary filter`.
+
+- **Global Filter** is globally valid and can be used everywhere
+- **Temporary Filter** added to the current validation instance, only the current validation is available
+
+> TIP: for filter func, we allow functions with 1 result or 2 results where the second is an error.
+
+#### Add Global Filter
+
+You can add one or more custom validators at once.
+
+```go
+package main
+
+import "github.com/gookit/validate"
+
+func init() {
+	validate.AddFilter("myToIntFilter0", func(val interface{}) int {
+		// do filtering val ...
+		return 1
+	})
+	validate.AddFilters(validate.M{
+		"myToIntFilter1": func(val interface{}) (int, error) {
+			// do filtering val ...
+			return 1, nil
+		},
+	})
+}
+```
+
+#### Add Temporary Filter
+
+Again, you can add one or more custom filters at once.
+
+```go
+package main
+
+import "github.com/gookit/validate"
+
+func main() {
+	v := validate.New(&someStrcut{})
+
+	v.AddFilter("myToIntFilter0", func(val interface{}) int {
+		// do filtering val ...
+		return 1
+	})
+	v.AddFilters(validate.M{
+		"myToIntFilter1": func(val interface{}) (int, error) {
+			// do filtering val ...
+			return 1, nil
+		},
+	})
+}
 ```
 
 ## Use on gin framework
@@ -439,8 +496,8 @@ validator/aliases | description
 `string/isString`  |  Check value is string type.
 `float/isFloat`  |  Check value is float(`floatX`) type
 `slice/isSlice`  |  Check value is slice type(`[]intX` `[]uintX` `[]byte` `[]string` ...).
-`in/enum`  |  Check if the value is in the given enumeration
-`not_in/notIn`  |  Check if the value is not in the given enumeration
+`in/enum`  |  Check if the value is in the given enumeration `"in:a,b"`
+`not_in/notIn`  |  Check if the value is not in the given enumeration `"contains:b"`
 `contains`  |  Check if the input value contains the given value
 `not_contains/notContains`  |  Check if the input value not contains the given value
 `string_contains/stringContains`  |  Check if the input string value is contains the given sub-string
