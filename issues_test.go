@@ -551,3 +551,35 @@ func TestIssue_104(t *testing.T) {
 	ok = v.Validate()
 	assert.True(t, ok)
 }
+
+// https://github.com/gookit/validate/issues/107
+func TestIssue_107(t *testing.T) {
+	taFilter := func(val interface{}) int64 {
+		if val != nil {
+			// log.WithFields(log.Fields{"value": val}).Info("value should be other than nil")
+			return int64(val.(float64))
+		} else {
+			// log.WithFields(log.Fields{"value": val}).Info("value should be nil")
+			return -1
+		}
+	}
+
+	v := validate.Map(map[string]interface{}{
+		"tip_amount": float64(12),
+	})
+	v.AddFilter("tip_amount_filter", taFilter)
+	// method 1:
+	// v.FilterRule("tip_amount", "tip_amount_filter")
+	// v.AddRule("tip_amount", "int")
+
+	// method 2:
+	v.StringRule("tip_amount", "int", "tip_amount_filter")
+
+	assert.Equal(t, float64(12), v.RawVal("tip_amount"))
+
+	// call validate
+	assert.True(t, v.Validate())
+	// dump.Println(v.FilteredData())
+	dump.Println(v.SafeData())
+	assert.Equal(t, int64(12), v.SafeVal("tip_amount"))
+}

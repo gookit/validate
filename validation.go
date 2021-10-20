@@ -350,6 +350,16 @@ func (v *Validation) Raw(key string) (interface{}, bool) {
 	return v.data.Get(key)
 }
 
+// RawVal value get by key
+func (v *Validation) RawVal(key string) interface{} {
+	if v.data == nil { // check input data
+		return nil
+	}
+
+	val,_ := v.data.Get(key)
+	return val
+}
+
 // Get value by key
 func (v *Validation) Get(key string) (interface{}, bool) {
 	if v.data == nil { // check input data
