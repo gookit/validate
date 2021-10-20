@@ -1,0 +1,8 @@
+POST http://localhost:8090/post-json
+Content-Type: application/json
+
+{
+  "categoryId": 1
+}
+
+###

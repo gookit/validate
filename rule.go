@@ -157,6 +157,7 @@ func (r *Rule) errorMessage(field, validator string, v *Validation) (msg string)
  *************************************************************/
 
 // StringRule add field rules by string
+//
 // Usage:
 // 	v.StringRule("name", "required|string|minLen:6")
 // 	// will try convert to int before apply validate.

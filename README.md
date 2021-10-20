@@ -211,7 +211,7 @@ func main()  {
 		v.AddRule("name", "required")
 		v.AddRule("name", "minLen", 7)
 		v.AddRule("age", "max", 99)
-		v.FieldRule("code", `required|regex:\d{4,6}`)
+		v.StringRule("code", `required|regex:\d{4,6}`)
 
 		if v.Validate() { // validate ok
 			// safeData := v.SafeData()
@@ -528,11 +528,11 @@ validator/aliases | description
 
 filter/aliases | description 
 -------------------|-------------------------------------------
-`int`  | Convert value(string/intX/floatX) to `int` type `v.FilterRule("id", "int")`
-`uint`  | Convert value(string/intX/floatX) to `uint` type `v.FilterRule("id", "uint")`
-`int64`  | Convert value(string/intX/floatX) to `int64` type `v.FilterRule("id", "int64")`
-`float`  | Convert value(string/intX/floatX) to `float` type
-`bool`  | Convert string value to bool. (`true`: "1", "on", "yes", "true", `false`: "0", "off", "no", "false")
+`int/toInt`  | Convert value(string/intX/floatX) to `int` type `v.FilterRule("id", "int")`
+`uint/toUint`  | Convert value(string/intX/floatX) to `uint` type `v.FilterRule("id", "uint")`
+`int64/toInt64`  | Convert value(string/intX/floatX) to `int64` type `v.FilterRule("id", "int64")`
+`float/toFloat`  | Convert value(string/intX/floatX) to `float` type
+`bool/toBool`   | Convert string value to bool. (`true`: "1", "on", "yes", "true", `false`: "0", "off", "no", "false")
 `trim/trimSpace`  | Clean up whitespace characters on both sides of the string
 `ltrim/trimLeft`  | Clean up whitespace characters on left sides of the string
 `rtrim/trimRight`  | Clean up whitespace characters on right sides of the string
