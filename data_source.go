@@ -314,6 +314,12 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 				}
 			}
 
+			// Load the outgofmt info to output the error message whether to use the native field of GO
+			tagInfo := fv.Tag.Get(gOpt.OutGoFmt)
+			if  tagInfo != "" {
+				fMap[gOpt.OutGoFmt] = tagInfo
+			}
+
 			// load custom error messages.
 			// eg: `message:"required:name is required|minLen:name min len is %d"`
 			if gOpt.MessageTag != "" {
