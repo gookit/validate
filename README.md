@@ -41,7 +41,7 @@ The struct can implement three interfaces methods, which is convenient to do som
 - `Messages() map[string]string` can customize the validator error message
 - `Translates() map[string]string` can customize field translation
 
-**`v1.2.1` Update**:
+**`v1.2.1+` Update**:
 
 - Support configuration field mapping through structure tag, read the value of `json` tag by default
 - Support configuration error message via structure's `message` tag
