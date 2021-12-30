@@ -362,8 +362,10 @@ func (t *Translator) format(validator, field string, args ...interface{}) (strin
 	}
 
 	// get field display name.
-	if trName, ok := t.fieldMap[field]; ok {
-		field = trName
+	if _, ok := t.fieldMap[outgofmt]; !ok {
+		if trName, ok := t.fieldMap[field]; ok {
+			field = trName
+		}
 	}
 
 	if argLen > 0 {

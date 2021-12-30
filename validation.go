@@ -16,6 +16,8 @@ const (
 
 	filterError   = "_filter"
 	validateError = "_validate"
+
+	outgofmt = "outgofmt"
 	// sniff Length, use for detect file mime type
 	sniffLen = 512
 	// 32 MB

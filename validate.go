@@ -69,6 +69,8 @@ type GlobalOption struct {
 	CheckDefault bool
 	// CheckZero Whether validate the default zero value. (intX,uintX: 0, string: "")
 	CheckZero bool
+	// OutGoFmt Whether to output the native fields of go.
+	OutGoFmt string
 }
 
 // global options
@@ -102,6 +104,7 @@ func newGlobalOption() *GlobalOption {
 		MessageTag: messageTag,
 		// tag name in struct tags
 		ValidateTag: validateTag,
+		OutGoFmt: outgofmt,
 	}
 }
 
