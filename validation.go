@@ -7,8 +7,9 @@ import (
 
 // some default value settings.
 const (
-	fieldTag  = "json"
-	filterTag = "filter"
+	fieldTag     = "json"
+	fieldNameTag = "label"
+	filterTag    = "filter"
 
 	messageTag  = "message"
 	validateTag = "validate"
@@ -356,7 +357,7 @@ func (v *Validation) RawVal(key string) interface{} {
 		return nil
 	}
 
-	val,_ := v.data.Get(key)
+	val, _ := v.data.Get(key)
 	return val
 }
 

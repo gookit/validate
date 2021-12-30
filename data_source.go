@@ -306,12 +306,24 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 				v.FilterRule(name, fRule)
 			}
 
-			// load field translate name. eg: `json:"user_name"`
-			if gOpt.FieldTag != "" {
-				fName := fv.Tag.Get(gOpt.FieldTag)
-				if fName != "" {
-					fMap[name] = fName
+			// load field translate name
+			// preferred to use FieldNameTag. eg: `label:"diaplay name"`
+			// and then use FieldTag. eg: `json:"user_name"`
+			fName := ""
+			if gOpt.FieldNameTag != "" {
+				fName = fv.Tag.Get(gOpt.FieldNameTag)
+			}
+			if fName == "" && gOpt.FieldTag != "" {
+				fName = fv.Tag.Get(gOpt.FieldTag)
+			}
+			// add pre field display name to fName
+			if fName != "" {
+				if preStrName != "" {
+					if preFName, ok := fMap[preStrName]; ok {
+						fName = preFName + "." + fName
+					}
 				}
+				fMap[name] = fName
 			}
 
 			// load custom error messages.
