@@ -2,6 +2,7 @@ package validate
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/gookit/goutil/dump"
@@ -135,9 +136,9 @@ func TestStruct_nilPtr_field2(t *testing.T) {
 
 func TestStruct_nexted_anonymity_struct(t *testing.T) {
 	type UserDto struct {
-		Name string `validate:"required"`
-		Sex  *bool  `validate:"required" json:"sex"`
-		ExtInfo  struct{
+		Name    string `validate:"required"`
+		Sex     *bool  `validate:"required" json:"sex"`
+		ExtInfo struct {
 			Homepage string `validate:"required"`
 			CityName string
 		}
@@ -159,4 +160,33 @@ func TestStruct_nexted_anonymity_struct(t *testing.T) {
 	u.ExtInfo.Homepage = "https://github.com/inhere"
 	v = Struct(u)
 	assert.True(t, v.Validate())
+}
+
+func TestStruct_nexted_field_name_tag(t *testing.T) {
+	type UserDto struct {
+		Name    string `validate:"required" label:"displayName"`
+		Sex     *bool  `validate:"required" json:"sex"`
+		ExtInfo struct {
+			Homepage string `validate:"required" json:"home_page"`
+			CityName string
+		} `json:"ext_info" label:"info"`
+	}
+
+	sex := true
+	u := &UserDto{
+		Name: "",
+		Sex:  &sex,
+	}
+	v := Struct(u)
+	v.StopOnError = false
+
+	assert.False(t, v.Validate())
+	dump.Println(v.Errors)
+	assert.Contains(t, v.Errors, "Name")
+	assert.Contains(t, v.Errors, "ExtInfo.Homepage")
+
+	nameErrStr := v.Errors["Name"]["required"]
+	extHomeErrStr := v.Errors["ExtInfo.Homepage"]["required"]
+	assert.True(t, strings.HasPrefix(nameErrStr, "displayName"))
+	assert.True(t, strings.HasPrefix(extHomeErrStr, "info.home_page"))
 }

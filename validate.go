@@ -55,6 +55,8 @@ type GlobalOption struct {
 	ValidateTag string
 	// FieldTag name in the struct tags. for define field translate. default: json
 	FieldTag string
+	// FieldNameTag display name in the struct tags . for define field translate. default: label
+	FieldNameTag string
 	// MessageTag define error message for the field.
 	MessageTag string
 	// StopOnError If true: An error occurs, it will cease to continue to verify
@@ -95,6 +97,8 @@ func newGlobalOption() *GlobalOption {
 		SkipOnEmpty: true,
 		// tag name in struct tags
 		FieldTag: fieldTag,
+		// tag display name in struct tags
+		FieldNameTag: fieldNameTag,
 		// tag name in struct tags
 		FilterTag:  filterTag,
 		MessageTag: messageTag,
