@@ -7,10 +7,9 @@ import (
 
 // some default value settings.
 const (
-	fieldNameTag = "label"
-	fieldTag     = "json"
-	filterTag    = "filter"
-	labelTag     = "label"
+	fieldTag  = "json"
+	filterTag = "filter"
+	labelTag  = "label"
 
 	messageTag  = "message"
 	validateTag = "validate"

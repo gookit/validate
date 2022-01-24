@@ -60,8 +60,8 @@ func strings2Args(strings []string) []interface{} {
 
 func args2strings(args []interface{}) []string {
 	strSlice := make([]string, len(args))
-	for i, s := range args {
-		strSlice[i] = fmt.Sprintf("%v", s)
+	for i, a := range args {
+		strSlice[i] = strutil.MustString(a)
 	}
 	return strSlice
 }

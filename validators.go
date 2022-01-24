@@ -192,7 +192,6 @@ func (v *Validation) RequiredIf(field string, val interface{}, kvs ...string) bo
 	}
 
 	dstField, args := kvs[0], kvs[1:]
-
 	if dstVal, has := v.Get(dstField); has {
 		if Enum(dstVal, args) {
 			return NotEqual(val, nil) && NotEqual(val, "")

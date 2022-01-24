@@ -116,7 +116,7 @@ func newValidation(data DataFace) *Validation {
 		// add data source on usage
 		data: data,
 		// create message translator
-		trans: NewTranslator(),
+		trans: StdTranslator,
 		// validated data
 		safeData: make(map[string]interface{}),
 		// validator names

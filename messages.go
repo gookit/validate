@@ -13,8 +13,8 @@ const defaultErrMsg = " field did not pass validation"
 // some internal error definition
 var (
 	ErrSetValue = errors.New("set value failure")
-	// ErrNoData = errors.New("validate: no any data can be collected")
-	ErrNoField     = errors.New("field not exist in the source data")
+	ErrNoField  = errors.New("field not exist in the source data")
+
 	ErrEmptyData   = errors.New("please input data use for validate")
 	ErrInvalidData = errors.New("invalid input data")
 )
@@ -245,6 +245,9 @@ func BuiltinMessages() map[string]string {
 /*************************************************************
  * Error messages translator
  *************************************************************/
+
+// StdTranslator for default.
+var StdTranslator = NewTranslator()
 
 // Translator definition
 type Translator struct {
