@@ -309,6 +309,14 @@ func (t *Translator) HasField(field string) bool {
 	return ok
 }
 
+// FieldName get in the t.fieldMap
+func (t *Translator) FieldName(field string) string {
+	if trName, ok := t.fieldMap[field]; ok {
+		field = trName
+	}
+	return field
+}
+
 // HasMessage key in the t.messages
 func (t *Translator) HasMessage(key string) bool {
 	_, ok := t.messages[key]
@@ -327,26 +335,32 @@ func (t *Translator) Message(validator, field string, args ...interface{}) (msg 
 
 		// not found, fallback - use default error message
 		if errMsg == "" {
-			if trName, ok := t.fieldMap[field]; ok {
-				field = trName
-			}
-			return field + defaultErrMsg
+			return t.FieldName(field) + defaultErrMsg
 		}
 	}
 
-	return t.format(errMsg, validator, field, args)
+	return t.format(errMsg, field, args)
 }
 
 // format message for the validator
-func (t *Translator) format(errMsg, validator, field string, args []interface{}) string {
+func (t *Translator) format(errMsg, field string, args []interface{}) string {
+	argLen := len(args)
+
+	// fix: #111 argN maybe is a field name
+	for i, arg := range args {
+		if name, ok := arg.(string); ok {
+			if trName, ok := t.fieldMap[name]; ok {
+				args[i] = trName
+			}
+		}
+	}
+
 	// not contains vars. eg: {field}
 	if !strings.ContainsRune(errMsg, '{') {
 		// whether you need call fmt.Sprintf
-		if strings.ContainsRune(errMsg, '%') {
-			// TODO argN maybe is an field name, should use t.fieldMap[argN] translate.
+		if argLen > 0 && strings.ContainsRune(errMsg, '%') {
 			errMsg = fmt.Sprintf(errMsg, args...)
 		}
-
 		return errMsg
 	}
 
@@ -357,7 +371,7 @@ func (t *Translator) format(errMsg, validator, field string, args []interface{})
 		}
 	}
 
-	if argLen := len(args); argLen > 0 {
+	if argLen > 0 {
 		// whether you need call fmt.Sprintf
 		if strings.ContainsRune(errMsg, '%') {
 			errMsg = fmt.Sprintf(errMsg, args...)
