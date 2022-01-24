@@ -51,14 +51,12 @@ func (ms MS) String() string {
 type GlobalOption struct {
 	// FilterTag name in the struct tags.
 	FilterTag string
-	// LabelTag name in the struct tags.
-	LabelTag string
 	// ValidateTag in the struct tags.
 	ValidateTag string
 	// FieldTag name in the struct tags. for define field translate. default: json
 	FieldTag string
-	// FieldNameTag display name in the struct tags . for define field translate. default: label
-	FieldNameTag string
+	// LabelTag display name in the struct tags. for define field translate. default: label
+	LabelTag string
 	// MessageTag define error message for the field.
 	MessageTag string
 	// StopOnError If true: An error occurs, it will cease to continue to verify
