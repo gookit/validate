@@ -78,7 +78,7 @@ type Validation struct {
 	// 	"update": {"field0", "field2"}
 	// }
 	scenes SValues
-	// should checked fields in current scene.
+	// should check fields in current scene.
 	sceneFields map[string]uint8
 	// filtering rules for the validation
 	filterRules []*FilterRule
@@ -99,16 +99,6 @@ func NewValidation(data DataFace, scene ...string) *Validation {
 /*************************************************************
  * validation settings
  *************************************************************/
-
-// Config the Validation instance
-// func (v *Validation) Config(fn func(v *Validation)) {
-// 	fn(v)
-// }
-
-// func (v *Validation) WithOptions(fn func(opt *GlobalOption)) *Validation {
-// 	fn(v.g)
-// 	return v
-// }
 
 // ResetResult reset the validate result.
 func (v *Validation) ResetResult() {
@@ -131,12 +121,25 @@ func (v *Validation) Reset() {
 	v.validators = make(map[string]int8)
 }
 
+// WithSelf config the Validation instance
+func (v *Validation) WithSelf(fn func(v *Validation)) *Validation {
+	fn(v)
+	return v
+}
+
+// WithTrans with an custom translator
+func (v *Validation) WithTrans(trans *Translator) *Validation {
+	v.trans = trans
+	return v
+}
+
 // WithScenarios is alias of the WithScenes()
 func (v *Validation) WithScenarios(scenes SValues) *Validation {
 	return v.WithScenes(scenes)
 }
 
 // WithScenes set scene config.
+//
 // Usage:
 // 	v.WithScenes(SValues{
 // 		"create": []string{"name", "email"},
@@ -281,10 +284,11 @@ func (v *Validation) Filtering() bool {
  * errors messages
  *************************************************************/
 
-// WithTranslates settings.you can custom field translates.
+// WithTranslates settings.you can be custom field translates.
+//
 // Usage:
 // 	v.WithTranslates(map[string]string{
-// 		"name": "User Name",
+// 		"name": "Username",
 // 		"pwd": "Password",
 //  })
 func (v *Validation) WithTranslates(m map[string]string) *Validation {
@@ -336,6 +340,14 @@ func (v *Validation) AddErrorf(field, msgFormat string, args ...interface{}) {
 	v.AddError(field, validateError, fmt.Sprintf(msgFormat, args...))
 }
 
+// Trans get translator
+func (v *Validation) Trans() *Translator {
+	// if v.trans == nil {
+	// 	v.trans = StdTranslator
+	// }
+	return v.trans
+}
+
 func (v *Validation) convArgTypeError(field, name string, argKind, wantKind reflect.Kind, argIdx int) {
 	v.AddErrorf(field, "cannot convert %s to arg#%d(%s), validator '%s'", argKind, argIdx, wantKind, name)
 }
@@ -384,7 +396,7 @@ func (v *Validation) Get(key string) (interface{}, bool) {
 }
 
 // GetWithDefault get field value by key.
-// On not found, if has default value, will return default-value.
+// On not found, if it has default value, will return default-value.
 func (v *Validation) GetWithDefault(key string) (val interface{}, exist, isDefault bool) {
 	// get field value.
 	val, exist = v.Get(key)
@@ -470,7 +482,7 @@ func (v *Validation) updateValue(field string, val interface{}) (interface{}, er
 	return val, nil
 }
 
-// SetDefValue set an default value of given field
+// SetDefValue set a default value of given field
 func (v *Validation) SetDefValue(field string, val interface{}) {
 	if v.defValues == nil {
 		v.defValues = make(map[string]interface{})
@@ -483,11 +495,6 @@ func (v *Validation) SetDefValue(field string, val interface{}) {
 func (v *Validation) GetDefValue(field string) (interface{}, bool) {
 	defVal, ok := v.defValues[field]
 	return defVal, ok
-}
-
-// Trans get message Translator
-func (v *Validation) Trans() *Translator {
-	return v.trans
 }
 
 // SceneFields field names get
@@ -515,17 +522,17 @@ func (v *Validation) Scene() string {
 	return v.scene
 }
 
-// IsOK for the validate
+// IsOK for the validating
 func (v *Validation) IsOK() bool {
 	return !v.hasError
 }
 
-// IsFail for the validate
+// IsFail for the validating
 func (v *Validation) IsFail() bool {
 	return v.hasError
 }
 
-// IsSuccess for the validate
+// IsSuccess for the validating
 func (v *Validation) IsSuccess() bool {
 	return !v.hasError
 }

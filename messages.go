@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+
+	"github.com/gookit/goutil/strutil"
 )
 
 const defaultErrMsg = " field did not pass validation"
@@ -246,8 +248,8 @@ func BuiltinMessages() map[string]string {
  * Error messages translator
  *************************************************************/
 
-// StdTranslator for default.
-var StdTranslator = NewTranslator()
+// StdTranslator for default. TODO
+// var StdTranslator = NewTranslator()
 
 // Translator definition
 type Translator struct {
@@ -260,15 +262,9 @@ type Translator struct {
 
 // NewTranslator instance
 func NewTranslator() *Translator {
-	newMessages := make(map[string]string)
-	for k, v := range builtinMessages {
-		newMessages[k] = v
-	}
-
-	return &Translator{
-		fieldMap: make(map[string]string),
-		messages: newMessages,
-	}
+	tr := &Translator{}
+	tr.Reset()
+	return tr
 }
 
 // Reset translator to default
@@ -321,39 +317,28 @@ func (t *Translator) HasMessage(key string) bool {
 
 // Message get by validator name and field name.
 func (t *Translator) Message(validator, field string, args ...interface{}) (msg string) {
-	var ok bool
-	msg, ok = t.format(validator, field, args...)
-	if ok {
-		return
-	}
-
-	// try check "validator" is an alias name
-	if rName, has := validatorAliases[validator]; has {
-		msg, ok = t.format(rName, field, args...)
-		if ok {
-			return
-		}
-	}
-
-	// not found, fallback - use default error message
-	if !ok {
-		// get field display name.
-		if trName, ok := t.fieldMap[field]; ok {
-			field = trName
-		}
-		return field + defaultErrMsg
-	}
-	return
-}
-
-// format message for the validator
-func (t *Translator) format(validator, field string, args ...interface{}) (string, bool) {
 	argLen := len(args)
 	errMsg := t.findMessage(validator, field, argLen)
 	if errMsg == "" {
-		return "", false
+		// try check "validator" is an alias name
+		if rName, has := validatorAliases[validator]; has {
+			errMsg = t.findMessage(rName, field, argLen)
+		}
+
+		// not found, fallback - use default error message
+		if errMsg == "" {
+			if trName, ok := t.fieldMap[field]; ok {
+				field = trName
+			}
+			return field + defaultErrMsg
+		}
 	}
 
+	return t.format(errMsg, validator, field, args)
+}
+
+// format message for the validator
+func (t *Translator) format(errMsg, validator, field string, args []interface{}) string {
 	// not contains vars. eg: {field}
 	if !strings.ContainsRune(errMsg, '{') {
 		// whether you need call fmt.Sprintf
@@ -362,7 +347,7 @@ func (t *Translator) format(validator, field string, args ...interface{}) (strin
 			errMsg = fmt.Sprintf(errMsg, args...)
 		}
 
-		return errMsg, true
+		return errMsg
 	}
 
 	// get field display name.
@@ -372,7 +357,7 @@ func (t *Translator) format(validator, field string, args ...interface{}) (strin
 		}
 	}
 
-	if argLen > 0 {
+	if argLen := len(args); argLen > 0 {
 		// whether you need call fmt.Sprintf
 		if strings.ContainsRune(errMsg, '%') {
 			errMsg = fmt.Sprintf(errMsg, args...)
@@ -380,13 +365,13 @@ func (t *Translator) format(validator, field string, args ...interface{}) (strin
 
 		msgArgs := []string{
 			"{field}", field,
-			"{values}", fmt.Sprintf("%v", args),
-			"{args0}", fmt.Sprintf("%v", args[0]),
+			"{values}", sliceToString(args),
+			"{args0}", strutil.MustString(args[0]),
 		}
 
 		// {args1end} -> args[1:]
 		if argLen > 1 {
-			msgArgs = append(msgArgs, "{args1end}", fmt.Sprintf("%v", args[1:]))
+			msgArgs = append(msgArgs, "{args1end}", sliceToString(args[1:]))
 		}
 
 		// replace message vars
@@ -395,9 +380,10 @@ func (t *Translator) format(validator, field string, args ...interface{}) (strin
 		errMsg = strings.Replace(errMsg, "{field}", field, 1)
 	}
 
-	return errMsg, true
+	return errMsg
 }
 
+// find message template.
 func (t *Translator) findMessage(validator, field string, argLen int) string {
 	// - format1: "field name" + "." + "validator name".
 	// eg: "age.isInt" "name.required"

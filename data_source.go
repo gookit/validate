@@ -399,7 +399,7 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 	recursiveFunc(removeValuePtr(vv), vt, "", false)
 
 	if len(fMap) > 0 {
-		v.trans.AddFieldMap(fMap)
+		v.Trans().AddFieldMap(fMap)
 	}
 }
 

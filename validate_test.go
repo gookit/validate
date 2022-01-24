@@ -9,6 +9,18 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// func TestMain(m *testing.M) {
+// 	setup()
+// 	code := m.Run()
+// 	// shutdown()
+// 	os.Exit(code)
+// }
+//
+// func setup() {
+// 	dump.Println("--------- setup ---------")
+// 	StdTranslator.Reset()
+// }
+
 func TestUtil_Func_valueToInt64(t *testing.T) {
 	noErrTests := []struct {
 		val    interface{}

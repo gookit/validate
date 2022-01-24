@@ -50,6 +50,22 @@ func stringSplit(str, sep string) (ss []string) {
 	return
 }
 
+// convert []interface{} to string TODO use arrutil.ToString()
+func sliceToString(arr []interface{}) string {
+	var b strings.Builder
+	b.WriteByte('[')
+
+	for i, v := range arr {
+		if i > 0 {
+			b.WriteByte(',')
+		}
+		b.WriteString(strutil.MustString(v))
+	}
+
+	b.WriteByte(']')
+	return b.String()
+}
+
 func strings2Args(strings []string) []interface{} {
 	args := make([]interface{}, len(strings))
 	for i, s := range strings {

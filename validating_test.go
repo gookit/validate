@@ -74,7 +74,7 @@ func TestValidation_RequiredIf(t *testing.T) {
 	})
 
 	v.Validate()
-	assert.Equal(t, "nothing is required when age is [12 13 14]", v.Errors.One())
+	assert.Equal(t, "nothing is required when age is [12,13,14]", v.Errors.One())
 }
 
 func TestValidation_RequiredUnless(t *testing.T) {
@@ -89,7 +89,7 @@ func TestValidation_RequiredUnless(t *testing.T) {
 	})
 
 	v.Validate()
-	assert.Equal(t, v.Errors.One(), "nothing field is required unless age is in [12 13 14]")
+	assert.Equal(t, "nothing field is required unless age is in [12,13,14]", v.Errors.One())
 }
 
 func TestValidation_RequiredWith(t *testing.T) {
@@ -104,7 +104,7 @@ func TestValidation_RequiredWith(t *testing.T) {
 	})
 
 	v.Validate()
-	assert.Equal(t, v.Errors.One(), "nothing field is required when [age name] is present")
+	assert.Equal(t, "nothing field is required when [age,name] is present", v.Errors.One())
 }
 
 func TestValidation_RequiredWithAll(t *testing.T) {
@@ -122,7 +122,7 @@ func TestValidation_RequiredWithAll(t *testing.T) {
 
 	v.Validate()
 	// fmt.Println(v.Errors)
-	assert.Equal(t, v.Errors.One(), "nothing field is required when [age name sex] is present")
+	assert.Equal(t, "nothing field is required when [age,name,sex] is present", v.Errors.One())
 }
 
 func TestValidation_RequiredWithout(t *testing.T) {
@@ -137,7 +137,7 @@ func TestValidation_RequiredWithout(t *testing.T) {
 	})
 
 	v.Validate()
-	assert.Equal(t, v.Errors.One(), "nothing field is required when [sex name] is not present")
+	assert.Equal(t, "nothing field is required when [sex,name] is not present", v.Errors.One())
 }
 
 func TestValidation_RequiredWithoutAll(t *testing.T) {
@@ -153,7 +153,7 @@ func TestValidation_RequiredWithoutAll(t *testing.T) {
 	})
 
 	v.Validate()
-	assert.Equal(t, "nothing field is required when none of [sex city] are present", v.Errors.One())
+	assert.Equal(t, "nothing field is required when none of [sex,city] are present", v.Errors.One())
 }
 
 func TestVariadicArgs(t *testing.T) {
