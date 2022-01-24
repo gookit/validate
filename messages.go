@@ -90,7 +90,7 @@ func (es Errors) HasField(field string) bool {
 	return ok
 }
 
-// Field get all errors for the field
+// Field gets all errors for the field
 func (es Errors) Field(field string) map[string]string {
 	return es[field]
 }
@@ -353,8 +353,9 @@ func (t *Translator) format(validator, field string, args ...interface{}) (strin
 
 	// not contains vars. eg: {field}
 	if !strings.ContainsRune(errMsg, '{') {
-		// whether need call fmt.Sprintf
+		// whether you need call fmt.Sprintf
 		if strings.ContainsRune(errMsg, '%') {
+			// TODO argN maybe is an field name, should use t.fieldMap[argN] translate.
 			errMsg = fmt.Sprintf(errMsg, args...)
 		}
 
@@ -369,7 +370,7 @@ func (t *Translator) format(validator, field string, args ...interface{}) (strin
 	}
 
 	if argLen > 0 {
-		// whether need call fmt.Sprintf
+		// whether you need call fmt.Sprintf
 		if strings.ContainsRune(errMsg, '%') {
 			errMsg = fmt.Sprintf(errMsg, args...)
 		}

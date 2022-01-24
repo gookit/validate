@@ -62,7 +62,7 @@ type DataFace interface {
 	Type() uint8
 	Get(key string) (interface{}, bool)
 	Set(field string, val interface{}) (interface{}, error)
-	// validation instance create func
+	// Create validation instance create func
 	Create(err ...error) *Validation
 	Validation(err ...error) *Validation
 }
@@ -219,7 +219,7 @@ func (d *StructData) Validation(err ...error) *Validation {
 	return d.Create(err...)
 }
 
-// Create create from the StructData
+// Create from the StructData
 func (d *StructData) Create(err ...error) *Validation {
 	v := NewValidation(d)
 	if len(err) > 0 && err[0] != nil {
@@ -307,11 +307,11 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 			}
 
 			// load field translate name
-			// preferred to use FieldNameTag. eg: `label:"diaplay name"`
+			// preferred to use LabelTag. eg: `label:"display name"`
 			// and then use FieldTag. eg: `json:"user_name"`
 			fName := ""
-			if gOpt.FieldNameTag != "" {
-				fName = fv.Tag.Get(gOpt.FieldNameTag)
+			if gOpt.LabelTag != "" {
+				fName = fv.Tag.Get(gOpt.LabelTag)
 			}
 			if fName == "" && gOpt.FieldTag != "" {
 				fName = fv.Tag.Get(gOpt.FieldTag)
@@ -328,7 +328,7 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 
 			// Load the outgofmt info to output the error message whether to use the native field of GO
 			tagInfo := fv.Tag.Get(gOpt.OutGoFmt)
-			if  tagInfo != "" {
+			if tagInfo != "" {
 				fMap[gOpt.OutGoFmt] = tagInfo
 			}
 
@@ -342,7 +342,6 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 			}
 
 			// collect rules from sub-struct and from arrays/slices elements
-			// TODO should use ft == timeType check time.Time
 			if ft != timeType {
 				if fValue.Type().Kind() == reflect.Ptr && fValue.IsNil() {
 					continue

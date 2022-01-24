@@ -7,9 +7,10 @@ import (
 
 // some default value settings.
 const (
-	fieldTag     = "json"
 	fieldNameTag = "label"
+	fieldTag     = "json"
 	filterTag    = "filter"
+	labelTag     = "label"
 
 	messageTag  = "message"
 	validateTag = "validate"
@@ -38,7 +39,7 @@ type Validation struct {
 	safeData M
 	// filtered clean data
 	filteredData M
-	// Errors for the validate
+	// Errors for validate
 	Errors Errors
 	// CacheKey for cache rules
 	// CacheKey string

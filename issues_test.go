@@ -583,3 +583,23 @@ func TestIssue_107(t *testing.T) {
 	dump.Println(v.SafeData())
 	assert.Equal(t, int64(12), v.SafeVal("tip_amount"))
 }
+
+// https://github.com/gookit/validate/issues/111
+func TestIssue_111(t *testing.T) {
+	v := validate.New(map[string]interface{}{
+		"username":  "inhere",
+		"password":  "h9i8tssx9153",
+		"password2": "h9i8XYZ9153",
+	})
+	v.AddTranslates(map[string]string{
+		"username":  "账号",
+		"password":  "密码",
+		"password2": "重复密码",
+	})
+	v.StringRule("username", "required")
+	v.StringRule("password", "required|eq_field:password2|minLen:6|max_len:32")
+
+	assert.False(t, v.Validate())
+
+	dump.Println(v.Errors)
+}

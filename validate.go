@@ -51,6 +51,8 @@ func (ms MS) String() string {
 type GlobalOption struct {
 	// FilterTag name in the struct tags.
 	FilterTag string
+	// LabelTag name in the struct tags.
+	LabelTag string
 	// ValidateTag in the struct tags.
 	ValidateTag string
 	// FieldTag name in the struct tags. for define field translate. default: json
@@ -97,14 +99,14 @@ func newGlobalOption() *GlobalOption {
 		SkipOnEmpty: true,
 		// tag name in struct tags
 		FieldTag: fieldTag,
-		// tag display name in struct tags
-		FieldNameTag: fieldNameTag,
+		// label tag - display name in struct tags
+		LabelTag: labelTag,
 		// tag name in struct tags
 		FilterTag:  filterTag,
 		MessageTag: messageTag,
 		// tag name in struct tags
 		ValidateTag: validateTag,
-		OutGoFmt: outgofmt,
+		OutGoFmt:    outgofmt,
 	}
 }
 
