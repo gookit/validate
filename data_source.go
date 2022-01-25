@@ -147,7 +147,7 @@ type ConfigValidationFace interface {
 //
 // 	func (u *User) Translates() map[string]string {
 // 		return MS{
-// 			"Name": "User name",
+// 			"Name": "Username",
 // 		}
 // 	}
 type FieldTranslatorFace interface {
@@ -316,6 +316,7 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 			if fName == "" && gOpt.FieldTag != "" {
 				fName = fv.Tag.Get(gOpt.FieldTag)
 			}
+
 			// add pre field display name to fName
 			if fName != "" {
 				if preStrName != "" {
@@ -323,13 +324,8 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 						fName = preFName + "." + fName
 					}
 				}
-				fMap[name] = fName
-			}
 
-			// Load the outgofmt info to output the error message whether to use the native field of GO
-			tagInfo := fv.Tag.Get(gOpt.OutGoFmt)
-			if tagInfo != "" {
-				fMap[gOpt.OutGoFmt] = tagInfo
+				fMap[name] = fName
 			}
 
 			// load custom error messages.

@@ -53,9 +53,11 @@ type GlobalOption struct {
 	FilterTag string
 	// ValidateTag in the struct tags.
 	ValidateTag string
-	// FieldTag name in the struct tags. for define field translate. default: json
+	// FieldTag name in the struct tags.
+	// use for define output field name/translate fallback. default: json
 	FieldTag string
-	// LabelTag display name in the struct tags. for define field translate. default: label
+	// LabelTag display name in the struct tags.
+	// use for define field translate. default: label
 	LabelTag string
 	// MessageTag define error message for the field.
 	MessageTag string
@@ -69,8 +71,12 @@ type GlobalOption struct {
 	CheckDefault bool
 	// CheckZero Whether validate the default zero value. (intX,uintX: 0, string: "")
 	CheckZero bool
-	// OutGoFmt Whether to output the native fields of go.
-	OutGoFmt string
+	// ErrKeyFmt
+	//
+	// allow:
+	// - 0 use struct field name as key. (for compatible)
+	// - 1 use FieldTag defined name as key.
+	ErrKeyFmt int8
 }
 
 // global options
@@ -104,7 +110,6 @@ func newGlobalOption() *GlobalOption {
 		MessageTag: messageTag,
 		// tag name in struct tags
 		ValidateTag: validateTag,
-		OutGoFmt:    outgofmt,
 	}
 }
 

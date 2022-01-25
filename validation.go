@@ -17,7 +17,6 @@ const (
 	filterError   = "_filter"
 	validateError = "_validate"
 
-	outgofmt = "outgofmt"
 	// sniff Length, use for detect file mime type
 	sniffLen = 512
 	// 32 MB
@@ -332,6 +331,7 @@ func (v *Validation) AddError(field, validator, msg string) {
 		v.hasError = true
 	}
 
+	field = v.trans.FieldName(field)
 	v.Errors.Add(field, validator, msg)
 }
 

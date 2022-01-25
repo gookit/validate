@@ -190,7 +190,7 @@ func (f UserForm) Messages() map[string]string {
 	}
 }
 
-// Translates you can custom field translates.
+// Translates you can be custom field translates.
 func (f UserForm) Translates() map[string]string {
 	return MS{
 		"Name":  "User Name",
@@ -207,12 +207,15 @@ func TestStruct(t *testing.T) {
 
 	// check trans data
 	is.True(v.Trans().HasField("Name"))
-	is.True(v.Trans().HasField("Safe"))
+	is.True(v.Trans().HasLabel("Safe"))
 	is.True(v.Trans().HasMessage("Name.required"))
+
 	// test trans
 	v.Trans().AddMessage("custom", "message0")
 	is.True(v.Trans().HasMessage("custom"))
 	is.Contains(v.Trans().FieldMap(), "Name")
+	is.Contains(v.Trans().LabelMap(), "Name")
+	is.Equal("Name", v.Trans().LabelName("Name"))
 
 	// validate
 	v.StopOnError = false

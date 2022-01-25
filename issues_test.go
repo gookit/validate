@@ -497,6 +497,32 @@ func TestIssue_92(t *testing.T) {
 	assert.True(t, ok)
 }
 
+// https://github.com/gookit/validate/issues/103
+func TestIssue_103(t *testing.T) {
+	type Example struct {
+		SomeID string `validate:"required"`
+	}
+
+	o := Example{}
+	v := validate.Struct(o)
+	v.Validate()
+	// here we get something like {"SomeID": { /* ... */ }}
+	m := v.Errors.All()
+	// dump.Println(m)
+	assert.Contains(t, m, "SomeID")
+
+	type Example2 struct {
+		SomeID string `json:"some_id" validate:"required" `
+	}
+
+	e2 := Example2{}
+	v2 := validate.Struct(e2)
+	v2.Validate()
+	err2 := v2.Errors.String() // here we get something like {"some_id": { /* ... */ }}
+	dump.Println(v2.Errors)
+	assert.Contains(t, err2, "some_id")
+}
+
 type Issue104A struct {
 	ID int `json:"id" gorm:"primarykey" form:"id" validate:"int|required"`
 }

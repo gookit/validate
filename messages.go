@@ -253,10 +253,15 @@ func BuiltinMessages() map[string]string {
 
 // Translator definition
 type Translator struct {
-	// language string TODO
-	// field map {"field name": "display name"}
+	// field name for output as Errors key.
+	// format: {"field": "output name"}
 	fieldMap map[string]string
-	// message data map
+	// the field translate name in message.
+	// format: {"field": "translate name"}
+	labelMap map[string]string
+	// the error message data map.
+	// key allow:
+	// TODO
 	messages map[string]string
 }
 
@@ -275,12 +280,18 @@ func (t *Translator) Reset() {
 	}
 
 	t.messages = newMessages
+	t.labelMap = make(map[string]string)
 	t.fieldMap = make(map[string]string)
 }
 
 // FieldMap data get
 func (t *Translator) FieldMap() map[string]string {
 	return t.fieldMap
+}
+
+// LabelMap data get
+func (t *Translator) LabelMap() map[string]string {
+	return t.labelMap
 }
 
 // AddMessages data to translator
@@ -292,9 +303,15 @@ func (t *Translator) AddMessages(data map[string]string) {
 
 // AddFieldMap config field data.
 // If you want to display in the field with the original field is not the same
-func (t *Translator) AddFieldMap(fieldMap map[string]string) {
+func (t *Translator) AddFieldMap(labels map[string]string) {
+	t.AddLabelMap(labels)
+}
+
+// AddLabelMap config field translate data map.
+// If you want to display in the field with the original field is not the same
+func (t *Translator) AddLabelMap(fieldMap map[string]string) {
 	for name, showName := range fieldMap {
-		t.fieldMap[name] = showName
+		t.labelMap[name] = showName
 	}
 }
 
@@ -303,10 +320,24 @@ func (t *Translator) AddMessage(key, msg string) {
 	t.messages[key] = msg
 }
 
-// HasField name in the t.fieldMap
+// HasField name in the t.labelMap.
+// Deprecated
 func (t *Translator) HasField(field string) bool {
-	_, ok := t.fieldMap[field]
+	return t.HasLabel(field)
+}
+
+// HasLabel name in the t.labelMap
+func (t *Translator) HasLabel(field string) bool {
+	_, ok := t.labelMap[field]
 	return ok
+}
+
+// LabelName get in the t.labelMap
+func (t *Translator) LabelName(field string) string {
+	if label, ok := t.labelMap[field]; ok {
+		field = label
+	}
+	return field
 }
 
 // FieldName get in the t.fieldMap
@@ -335,7 +366,7 @@ func (t *Translator) Message(validator, field string, args ...interface{}) (msg 
 
 		// not found, fallback - use default error message
 		if errMsg == "" {
-			return t.FieldName(field) + defaultErrMsg
+			return t.LabelName(field) + defaultErrMsg
 		}
 	}
 
@@ -349,7 +380,7 @@ func (t *Translator) format(errMsg, field string, args []interface{}) string {
 	// fix: #111 argN maybe is a field name
 	for i, arg := range args {
 		if name, ok := arg.(string); ok {
-			if trName, ok := t.fieldMap[name]; ok {
+			if trName, ok := t.labelMap[name]; ok {
 				args[i] = trName
 			}
 		}
@@ -365,10 +396,8 @@ func (t *Translator) format(errMsg, field string, args []interface{}) string {
 	}
 
 	// get field display name.
-	if _, ok := t.fieldMap[outgofmt]; !ok {
-		if trName, ok := t.fieldMap[field]; ok {
-			field = trName
-		}
+	if trName, ok := t.labelMap[field]; ok {
+		field = trName
 	}
 
 	if argLen > 0 {

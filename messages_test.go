@@ -52,6 +52,7 @@ func TestTranslatorBasic(t *testing.T) {
 
 	assert.True(t, tr.HasMessage("min"))
 	assert.False(t, tr.HasMessage("not-exists"))
+	assert.False(t, tr.HasLabel("FIELD1"))
 	assert.False(t, tr.HasField("FIELD1"))
 
 	tr.AddMessage("FIELD1.min", "{field} message1")
