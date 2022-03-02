@@ -78,6 +78,8 @@ type GlobalOption struct {
 	// - 0 use struct field name as key. (for compatible)
 	// - 1 use FieldTag defined name as key.
 	ErrKeyFmt int8
+	// CheckSubOnParentMarked True: only collect sub-struct rule on current field has rule.
+	CheckSubOnParentMarked bool
 }
 
 // global options
