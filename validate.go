@@ -49,15 +49,16 @@ func (ms MS) String() string {
 
 // GlobalOption settings for validate
 type GlobalOption struct {
-	// FilterTag name in the struct tags.
+	// FilterTag name in the struct tags. default: filter
 	FilterTag string
-	// ValidateTag in the struct tags.
+	// ValidateTag in the struct tags. default: validate
 	ValidateTag string
-	// FieldTag name in the struct tags.
-	// use for define output field name/translate fallback. default: json
+	// FieldTag the output field name in the struct tags.
+	// it as placeholder on error message.
+	// default: json
 	FieldTag string
-	// LabelTag display name in the struct tags.
-	// use for define field translate. default: label
+	// LabelTag the display name in the struct tags.
+	// use for define field translate name on error. default: label
 	LabelTag string
 	// MessageTag define error message for the field.
 	MessageTag string
@@ -71,7 +72,7 @@ type GlobalOption struct {
 	CheckDefault bool
 	// CheckZero Whether validate the default zero value. (intX,uintX: 0, string: "")
 	CheckZero bool
-	// ErrKeyFmt
+	// ErrKeyFmt config. TODO
 	//
 	// allow:
 	// - 0 use struct field name as key. (for compatible)

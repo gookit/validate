@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/gookit/goutil/dump"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -132,4 +133,69 @@ func TestMessageOnStruct(t *testing.T) {
 	v = Struct(s3)
 	is.False(v.Validate())
 	is.Equal("出生日期有误", v.Errors.One())
+
+	s4 := &struct {
+		Name     string `validate:"string" json:"name"`
+		BirthDay string `validate:"date|maxlen:20" json:"birth_day" message:"出生日期有误"`
+	}{
+		"tom",
+		"invalid",
+	}
+
+	v = Struct(s4)
+	is.False(v.Validate())
+	is.Equal("出生日期有误", v.Errors.One())
+}
+
+// with field tag: json
+func TestMessageOnStruct_withFieldTag(t *testing.T) {
+	is := assert.New(t)
+	s1 := &struct {
+		Name     string `validate:"string" json:"name"`
+		BirthDay string `validate:"date|maxlen:20" json:"birth_day" message:"出生日期有误"`
+	}{
+		"tom",
+		"invalid",
+	}
+
+	v := Struct(s1)
+	is.False(v.Validate())
+	is.Equal("出生日期有误", v.Errors.One())
+}
+
+func TestMessageOnStruct_withNested(t *testing.T) {
+	is := assert.New(t)
+	type subSt struct {
+		Tags []string `json:"tags"`
+		Key1 string
+	}
+
+	s1 := &struct {
+		Name     string `validate:"string" json:"name"`
+		BirthDay string `validate:"date|maxlen:20" json:"birth_day" label:"birth day" message:"{field} 出生日期有误"`
+		SubSt    subSt
+	}{
+		"tom",
+		"invalid",
+		subSt{
+			Key1: "abc",
+		},
+	}
+
+	v := Struct(s1)
+	tr := v.Trans()
+	dump.V(tr.FieldMap(), tr.LabelMap())
+	is.Contains(tr.FieldMap(), "BirthDay")
+	is.Contains(tr.FieldMap(), "SubSt.Tags")
+	is.Equal("birth_day", tr.FieldName("BirthDay"))
+	is.Equal("tags", tr.FieldName("SubSt.Tags"))
+
+	is.Contains(tr.LabelMap(), "BirthDay")
+	is.Contains(tr.LabelMap(), "SubSt.Tags")
+	is.Equal("birth day", tr.LabelName("BirthDay"))
+	is.Equal("tags", tr.LabelName("SubSt.Tags"))
+
+	is.False(v.Validate())
+	dump.V(v.Errors)
+	is.Equal("birth day 出生日期有误", v.Errors.One())
 }

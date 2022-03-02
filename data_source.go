@@ -266,11 +266,12 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 		d.FilterTag = gOpt.FilterTag
 	}
 
-	fMap := make(map[string]string, 0)
+	fOutMap := make(map[string]string, 0)
 
 	vv := d.value
 	vt := d.valueTpy
-	recursiveFunc = func(vv reflect.Value, vt reflect.Type, preStrName string, parentIsAnonymous bool) {
+	// preStrName - the parent field name.
+	recursiveFunc = func(vv reflect.Value, vt reflect.Type, parentFName string, parentIsAnonymous bool) {
 		for i := 0; i < vt.NumField(); i++ {
 			fValue := removeValuePtr(vv).Field(i)
 			fv := vt.Field(i)
@@ -283,10 +284,10 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 				continue
 			}
 
-			if preStrName == "" {
+			if parentFName == "" {
 				d.fieldNames[name] = fieldAtTopStruct
 			} else {
-				name = preStrName + "." + name
+				name = parentFName + "." + name
 				if parentIsAnonymous {
 					d.fieldNames[name] = fieldAtAnonymous
 				} else {
@@ -306,26 +307,33 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 				v.FilterRule(name, fRule)
 			}
 
-			// load field translate name
-			// preferred to use LabelTag. eg: `label:"display name"`
-			// and then use FieldTag. eg: `json:"user_name"`
-			fName := ""
-			if gOpt.LabelTag != "" {
-				fName = fv.Tag.Get(gOpt.LabelTag)
-			}
-			if fName == "" && gOpt.FieldTag != "" {
-				fName = fv.Tag.Get(gOpt.FieldTag)
+			// load field output name by FieldTag. eg: `json:"user_name"`
+			outName := ""
+			if gOpt.FieldTag != "" {
+				outName = fv.Tag.Get(gOpt.FieldTag)
 			}
 
 			// add pre field display name to fName
-			if fName != "" {
-				if preStrName != "" {
-					if preFName, ok := fMap[preStrName]; ok {
-						fName = preFName + "." + fName
+			if outName != "" {
+				if parentFName != "" {
+					if pOutName, ok := fOutMap[parentFName]; ok {
+						outName = pOutName + "." + outName
 					}
 				}
 
-				fMap[name] = fName
+				fOutMap[name] = outName
+			}
+
+			// load field translate name
+			// preferred to use label tag name. eg: `label:"display name"`
+			// and then use field output name. eg: `json:"user_name"`
+			if gOpt.LabelTag != "" {
+				lName := fv.Tag.Get(gOpt.LabelTag)
+				if lName == "" {
+					lName = outName
+				}
+
+				v.trans.addLabelName(name, lName)
 			}
 
 			// load custom error messages.
@@ -340,6 +348,11 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 			// collect rules from sub-struct and from arrays/slices elements
 			if ft != timeType {
 				if fValue.Type().Kind() == reflect.Ptr && fValue.IsNil() {
+					continue
+				}
+
+				// feat: only collect sub-struct rule on current field has rule.
+				if vRule == "" && gOpt.CheckSubOnParentMarked {
 					continue
 				}
 
@@ -394,8 +407,8 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 
 	recursiveFunc(removeValuePtr(vv), vt, "", false)
 
-	if len(fMap) > 0 {
-		v.Trans().AddFieldMap(fMap)
+	if len(fOutMap) > 0 {
+		v.Trans().AddFieldMap(fOutMap)
 	}
 }
 

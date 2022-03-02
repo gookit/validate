@@ -164,6 +164,10 @@ func (r *Rule) errorMessage(field, validator string, v *Validation) (msg string)
 // 	v.StringRule("age", "required|int|min:12", "toInt")
 func (v *Validation) StringRule(field, rule string, filterRule ...string) *Validation {
 	rule = strings.TrimSpace(rule)
+	if rule == "" {
+		return v
+	}
+
 	rules := stringSplit(strings.Trim(rule, "|:"), "|")
 	for _, validator := range rules {
 		validator = strings.Trim(validator, ":")

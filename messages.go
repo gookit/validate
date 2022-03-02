@@ -253,7 +253,7 @@ func BuiltinMessages() map[string]string {
 
 // Translator definition
 type Translator struct {
-	// field name for output as Errors key.
+	// the field output name, use for Errors key.
 	// format: {"field": "output name"}
 	fieldMap map[string]string
 	// the field translate name in message.
@@ -294,36 +294,40 @@ func (t *Translator) LabelMap() map[string]string {
 	return t.labelMap
 }
 
-// AddMessages data to translator
-func (t *Translator) AddMessages(data map[string]string) {
-	for n, m := range data {
-		t.messages[n] = m
+// AddFieldMap config field output name data.
+// If you want to display in the field with the original field is not the same
+func (t *Translator) AddFieldMap(fieldMap map[string]string) {
+	for name, outName := range fieldMap {
+		t.fieldMap[name] = outName
 	}
 }
 
-// AddFieldMap config field data.
-// If you want to display in the field with the original field is not the same
-func (t *Translator) AddFieldMap(labels map[string]string) {
-	t.AddLabelMap(labels)
+func (t *Translator) addLabelName(field, labelName string) {
+	if labelName != "" {
+		t.labelMap[field] = labelName
+	}
 }
 
 // AddLabelMap config field translate data map.
 // If you want to display in the field with the original field is not the same
 func (t *Translator) AddLabelMap(fieldMap map[string]string) {
-	for name, showName := range fieldMap {
-		t.labelMap[name] = showName
+	for name, labelName := range fieldMap {
+		t.addLabelName(name, labelName)
 	}
 }
 
-// AddMessage to translator
-func (t *Translator) AddMessage(key, msg string) {
-	t.messages[key] = msg
+// HasField name in the t.fieldMap.
+func (t *Translator) HasField(field string) bool {
+	_, ok := t.labelMap[field]
+	return ok
 }
 
-// HasField name in the t.labelMap.
-// Deprecated
-func (t *Translator) HasField(field string) bool {
-	return t.HasLabel(field)
+// FieldName get in the t.fieldMap
+func (t *Translator) FieldName(field string) string {
+	if trName, ok := t.fieldMap[field]; ok {
+		field = trName
+	}
+	return field
 }
 
 // HasLabel name in the t.labelMap
@@ -340,12 +344,16 @@ func (t *Translator) LabelName(field string) string {
 	return field
 }
 
-// FieldName get in the t.fieldMap
-func (t *Translator) FieldName(field string) string {
-	if trName, ok := t.fieldMap[field]; ok {
-		field = trName
+// AddMessages data to translator
+func (t *Translator) AddMessages(data map[string]string) {
+	for n, m := range data {
+		t.messages[n] = m
 	}
-	return field
+}
+
+// AddMessage to translator
+func (t *Translator) AddMessage(key, msg string) {
+	t.messages[key] = msg
 }
 
 // HasMessage key in the t.messages

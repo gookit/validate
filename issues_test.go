@@ -497,6 +497,60 @@ func TestIssue_92(t *testing.T) {
 	assert.True(t, ok)
 }
 
+// https://github.com/gookit/validate/issues/98
+func TestIssue_98(t *testing.T) {
+	// MenuActionResource 菜单动作关联资源对象
+	type MenuActionResource struct {
+		ID       uint64 `json:"id"`                         // 唯一标识
+		ActionID uint64 `json:"action_id"`                  // 菜单动作ID
+		Method   string `json:"method" validate:"required"` // 资源请求方式(支持正则)
+		Path     string `json:"path" validate:"required"`   // 资源请求路径（支持/:id匹配）
+	}
+
+	// MenuActionResources 菜单动作关联资源管理列表
+	type MenuActionResources []*MenuActionResource
+
+	// MenuAction 菜单动作对象
+	type MenuAction struct {
+		Code      string              `json:"code" validate:"required"` // 动作编号
+		Name      string              `json:"name" validate:"required"` // 动作名称
+		Resources MenuActionResources `json:"resources,omitempty"`      // 资源列表
+	}
+
+	// MenuActions 菜单动作管理列表
+	type MenuActions []*MenuAction
+	type MenuCreateRequest struct {
+		Name        string      `json:"name" validate:"required"`
+		Sequence    int         `json:"sequence"`                  // 排序值
+		Icon        string      `json:"icon"`                      // 菜单图标
+		Router      string      `json:"router"`                    // 访问路由
+		ParentID    uint64      `json:"parent_id"`                 // 父级ID
+		IsShow      int         `json:"is_show" validate:"in:0,1"` // 是否显示(1:显示 0:隐藏)
+		Status      int         `json:"status" validate:"in:0,1"`  // 状态(1:启用 0:禁用)
+		Memo        string      `json:"memo"`                      // 备注
+		MenuActions MenuActions `json:"actions,omitempty"`
+	}
+
+	req := &MenuCreateRequest{
+		Name: "users",
+		MenuActions: []*MenuAction{
+			{
+				Code: "code01",
+				Name: "name01",
+				Resources: []*MenuActionResource{
+					{},
+				},
+			},
+		},
+	}
+	v := validate.Struct(req)
+
+	ok := v.Validate()
+
+	dump.Println(v.Errors)
+	assert.True(t, ok)
+}
+
 // https://github.com/gookit/validate/issues/103
 func TestIssue_103(t *testing.T) {
 	type Example struct {
