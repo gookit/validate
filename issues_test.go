@@ -567,6 +567,7 @@ func TestIssue_103(t *testing.T) {
 	m := v.Errors.All()
 	// dump.Println(m)
 	assert.Contains(t, m, "SomeID")
+	assert.Contains(t, v.Errors.String(), "SomeID is required and not empty")
 
 	type Example2 struct {
 		SomeID string `json:"some_id" validate:"required" `
@@ -575,9 +576,10 @@ func TestIssue_103(t *testing.T) {
 	e2 := Example2{}
 	v2 := validate.Struct(e2)
 	v2.Validate()
-	err2 := v2.Errors.String() // here we get something like {"some_id": { /* ... */ }}
 	dump.Println(v2.Errors)
+	err2 := v2.Errors.String() // here we get something like {"some_id": { /* ... */ }}
 	assert.Contains(t, err2, "some_id")
+	assert.Contains(t, err2, "some_id is required and not empty")
 }
 
 type Issue104A struct {
