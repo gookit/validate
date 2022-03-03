@@ -407,7 +407,6 @@ func (v *Validation) GetWithDefault(key string) (val interface{}, exist, isDefau
 	// find default value
 	val, exist = v.defValues[key]
 	isDefault = exist
-
 	return
 }
 

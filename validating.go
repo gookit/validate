@@ -63,7 +63,7 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 		return
 	}
 
-	// has beforeFunc and it return FALSE, skip validate
+	// has beforeFunc and it returns FALSE, skip validate
 	if r.beforeFunc != nil && !r.beforeFunc(v) {
 		return
 	}
@@ -329,6 +329,8 @@ func callValidator(v *Validation, fm *funcMeta, field string, val interface{}, a
 		ok = Between(val, args[0].(int64), args[1].(int64))
 	case "isJSON":
 		ok = IsJSON(val.(string))
+	case "isSlice":
+		ok = IsSlice(val)
 	default:
 		// 3. call user custom validators, will call by reflect
 		ok = callValidatorValue(fm.fv, val, args)

@@ -336,12 +336,12 @@ func (t *Translator) HasLabel(field string) bool {
 	return ok
 }
 
-// LabelName get in the t.labelMap
+// LabelName get label name from the t.labelMap, fallback get output name from t.fieldMap
 func (t *Translator) LabelName(field string) string {
 	if label, ok := t.labelMap[field]; ok {
 		field = label
 	}
-	return field
+	return t.FieldName(field)
 }
 
 // AddMessages data to translator

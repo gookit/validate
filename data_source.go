@@ -328,12 +328,7 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 			// preferred to use label tag name. eg: `label:"display name"`
 			// and then use field output name. eg: `json:"user_name"`
 			if gOpt.LabelTag != "" {
-				lName := fv.Tag.Get(gOpt.LabelTag)
-				if lName == "" {
-					lName = outName
-				}
-
-				v.trans.addLabelName(name, lName)
+				v.trans.addLabelName(name, fv.Tag.Get(gOpt.LabelTag))
 			}
 
 			// load custom error messages.
@@ -481,10 +476,9 @@ func (d *StructData) Get(field string) (interface{}, bool) {
 	var fv reflect.Value
 	field = strutil.UpperFirst(field)
 
-	// want get sub struct field.
+	// want to get sub struct field.
 	if strings.ContainsRune(field, '.') {
 		fieldNodes := strings.Split(field, ".")
-
 		if len(fieldNodes) < 2 {
 			return nil, false
 		}
@@ -505,35 +499,38 @@ func (d *StructData) Get(field string) (interface{}, bool) {
 		}
 
 		fieldNodes = fieldNodes[1:]
-		lastIndex := len(fieldNodes) - 1
+		// lastIndex := len(fieldNodes) - 1
 
-		for i, fieldNode := range fieldNodes {
-			fieldNode = strings.ReplaceAll(fieldNode, "\"", "") // for strings as keys
+		kind = fv.Type().Kind()
+		for _, fieldNode := range fieldNodes {
+			// fieldNode = strings.ReplaceAll(fieldNode, "\"", "") // for strings as keys
 
-			kind := fv.Type().Kind()
 			switch kind {
 			case reflect.Array, reflect.Slice:
 				index, _ := strconv.Atoi(fieldNode)
 				fv = fv.Index(index)
 			case reflect.Map:
 				fv = fv.MapIndex(reflect.ValueOf(fieldNode))
-			default:
+			case reflect.Struct:
 				fv = fv.FieldByName(fieldNode)
+			default: // no sub-value
+				return nil, false
 			}
 
 			fv = removeValuePtr(fv)
-
 			if !fv.IsValid() {
 				return nil, false
 			}
 
-			if IsZero(fv) || (fv.Kind() == reflect.Ptr && fv.IsNil()) {
+			kind = fv.Type().Kind()
+			// if IsZero(fv) || (fv.Kind() == reflect.Ptr && fv.IsNil()) {
+			if fv.Kind() == reflect.Ptr && fv.IsNil() {
 				return nil, false
 			}
 
-			if i < lastIndex && fv.Type().Kind() != reflect.Struct {
-				return nil, false
-			}
+			// if i < lastIndex && fv.Type().Kind() != reflect.Struct {
+			// 	return nil, false
+			// }
 		}
 
 		d.fieldNames[field] = fieldAtSubStruct

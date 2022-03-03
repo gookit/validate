@@ -684,3 +684,32 @@ func TestIssue_111(t *testing.T) {
 	assert.Contains(t, v.Errors.String(), "密码 ")
 	assert.Contains(t, v.Errors.String(), " 重复密码")
 }
+
+// https://github.com/gookit/validate/issues/120
+func TestIssue_120(t *testing.T) {
+	type ThirdStruct struct {
+		Val string `json:"val" validate:"required"`
+	}
+	type SecondStruct struct {
+		Third []ThirdStruct `json:"third" validate:"slice"`
+	}
+	type MainStruct struct {
+		Second []SecondStruct `json:"second" validate:"slice"`
+	}
+
+	v := validate.Struct(&MainStruct{
+		Second: []SecondStruct{
+			{
+				Third: []ThirdStruct{
+					{
+						Val: "hello",
+					},
+				},
+			},
+		},
+	})
+
+	ok := v.Validate()
+	dump.Println(v.Errors)
+	assert.True(t, ok)
+}
