@@ -479,24 +479,41 @@ func TestURLString(t *testing.T) {
 	is.True(IsURL("123"))
 	is.False(IsURL(""))
 
-	// IsFullURL
-	is.True(IsFullURL("http://a.com?p=1"))
-	is.True(IsFullURL("http://www.a.com"))
-	is.True(IsFullURL("https://www.a.com"))
-	is.True(IsFullURL("http://a.com?p=1&c=b"))
-	is.True(IsFullURL("http://a.com/ab/index"))
-	is.True(IsFullURL("http://a.com/ab/index?p=1&c=b"))
-	is.True(IsFullURL("http://www.a.com/ab/index?p=1&c=b"))
-	is.False(IsFullURL(""))
-	is.False(IsFullURL("a.com"))
-	is.False(IsFullURL("a.com/ab/c"))
-	is.False(IsFullURL("www.a.com"))
-	is.False(IsFullURL("www.a.com?a=1"))
-	is.False(IsFullURL("/users/profile/1"))
-
 	// IsDataURI
 	is.True(IsDataURI("data:image/gif;base64,AB...CD..."))
 	is.False(IsDataURI(""))
+}
+
+func TestIsFullURL(t *testing.T) {
+	is := assert.New(t)
+
+	okTests := []string{
+		"http://a.com?p=1",
+		"http://a.com?p=1&c=b",
+		"http://a.com/ab/index",
+		"http://a.com/ab/index?p=1&c=b",
+		"http://www.a.com",
+		"https://www.a.com",
+		"http://www.a.com/ab/index?p=1&c=b",
+		"https://www.google.com/testme",
+		"https://www.google.com/test-me",
+		"https://www.google.com/test_me",
+	}
+	for _, str := range okTests {
+		is.True(IsFullURL(str), str)
+	}
+
+	failTests := []string{
+		"",
+		"a.com",
+		"a.com/ab/c",
+		"www.a.com",
+		"www.a.com?a=1",
+		"/users/profile/1",
+	}
+	for _, str := range failTests {
+		is.False(IsFullURL(str))
+	}
 }
 
 func TestPath(t *testing.T) {

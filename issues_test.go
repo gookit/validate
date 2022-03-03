@@ -554,6 +554,11 @@ func TestIssue_98(t *testing.T) {
 	assert.True(t, ok)
 }
 
+// https://github.com/gookit/validate/issues/100
+func TestIssue_100(t *testing.T) {
+
+}
+
 // https://github.com/gookit/validate/issues/103
 func TestIssue_103(t *testing.T) {
 	type Example struct {
