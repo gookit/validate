@@ -538,13 +538,16 @@ func TestIssue_98(t *testing.T) {
 				Code: "code01",
 				Name: "name01",
 				Resources: []*MenuActionResource{
-					{},
+					{
+						Method: "get",
+						Path:   "/home",
+					},
 				},
 			},
 		},
 	}
-	v := validate.Struct(req)
 
+	v := validate.Struct(req)
 	ok := v.Validate()
 
 	dump.Println(v.Errors)
@@ -680,7 +683,7 @@ func TestIssue_111(t *testing.T) {
 	v.StringRule("password", "required|eq_field:password2|minLen:6|max_len:32")
 
 	assert.False(t, v.Validate())
-	// dump.Println(v.Errors)
+	dump.Println(v.Errors)
 	assert.Contains(t, v.Errors.String(), "密码 ")
 	assert.Contains(t, v.Errors.String(), " 重复密码")
 }

@@ -283,7 +283,7 @@ func (v *Validation) Filtering() bool {
  * errors messages
  *************************************************************/
 
-// WithTranslates settings.you can be custom field translates.
+// WithTranslates settings. you can be custom field translates.
 //
 // Usage:
 // 	v.WithTranslates(map[string]string{
@@ -291,13 +291,13 @@ func (v *Validation) Filtering() bool {
 // 		"pwd": "Password",
 //  })
 func (v *Validation) WithTranslates(m map[string]string) *Validation {
-	v.trans.AddFieldMap(m)
+	v.trans.AddLabelMap(m)
 	return v
 }
 
 // AddTranslates settings data. like WithTranslates()
 func (v *Validation) AddTranslates(m map[string]string) {
-	v.trans.AddFieldMap(m)
+	v.trans.AddLabelMap(m)
 }
 
 // WithMessages settings. you can custom validator error messages.

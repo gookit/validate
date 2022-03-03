@@ -137,8 +137,8 @@ func TestStruct_nilPtr_field2(t *testing.T) {
 
 	v := Struct(&u)
 	assert.False(t, v.Validate())
-	assert.True(t, v.Errors.HasField("Sex"))
-	assert.Contains(t, v.Errors.FieldOne("Sex"), "sex is required")
+	assert.True(t, v.Errors.HasField("sex"))
+	assert.Contains(t, v.Errors.FieldOne("sex"), "sex is required")
 	dump.Println(v.Errors)
 
 	u.Sex = &sex
@@ -176,7 +176,7 @@ func TestStruct_nexted_anonymity_struct(t *testing.T) {
 
 func TestStruct_nexted_field_name_tag(t *testing.T) {
 	type UserDto struct {
-		Name    string `validate:"required" label:"displayName"`
+		Name    string `validate:"required" label:"Display-Name"`
 		Sex     *bool  `validate:"required" json:"sex"`
 		ExtInfo struct {
 			Homepage string `validate:"required" json:"home_page"`
@@ -191,14 +191,16 @@ func TestStruct_nexted_field_name_tag(t *testing.T) {
 	}
 	v := Struct(u)
 	v.StopOnError = false
-
 	assert.False(t, v.Validate())
+
 	dump.Println(v.Errors)
+	assert.True(t, v.Errors.HasField("Name"))
+	assert.True(t, v.Errors.HasField("ext_info.home_page"))
 	assert.Contains(t, v.Errors, "Name")
-	assert.Contains(t, v.Errors, "ExtInfo.Homepage")
+	assert.Contains(t, v.Errors, "ext_info.home_page")
 
 	nameErrStr := v.Errors["Name"]["required"]
-	extHomeErrStr := v.Errors["ExtInfo.Homepage"]["required"]
-	assert.True(t, strings.HasPrefix(nameErrStr, "displayName"))
-	assert.True(t, strings.HasPrefix(extHomeErrStr, "info.home_page"))
+	extHomeErrStr := v.Errors["ext_info.home_page"]["required"]
+	assert.True(t, strings.HasPrefix(nameErrStr, "Display-Name"))
+	assert.True(t, strings.HasPrefix(extHomeErrStr, "ext_info.home_page"))
 }

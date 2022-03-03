@@ -102,7 +102,6 @@ func (es Errors) FieldOne(field string) string {
 	if fe, ok := es[field]; ok {
 		return fe.One()
 	}
-
 	return ""
 }
 
@@ -289,17 +288,31 @@ func (t *Translator) FieldMap() map[string]string {
 	return t.fieldMap
 }
 
-// LabelMap data get
-func (t *Translator) LabelMap() map[string]string {
-	return t.labelMap
-}
-
 // AddFieldMap config field output name data.
 // If you want to display in the field with the original field is not the same
 func (t *Translator) AddFieldMap(fieldMap map[string]string) {
 	for name, outName := range fieldMap {
 		t.fieldMap[name] = outName
 	}
+}
+
+// HasField name in the t.fieldMap.
+func (t *Translator) HasField(field string) bool {
+	_, ok := t.fieldMap[field]
+	return ok
+}
+
+// FieldName get in the t.fieldMap
+func (t *Translator) FieldName(field string) string {
+	if trName, ok := t.fieldMap[field]; ok {
+		field = trName
+	}
+	return field
+}
+
+// LabelMap data get
+func (t *Translator) LabelMap() map[string]string {
+	return t.labelMap
 }
 
 func (t *Translator) addLabelName(field, labelName string) {
@@ -316,20 +329,6 @@ func (t *Translator) AddLabelMap(fieldMap map[string]string) {
 	}
 }
 
-// HasField name in the t.fieldMap.
-func (t *Translator) HasField(field string) bool {
-	_, ok := t.labelMap[field]
-	return ok
-}
-
-// FieldName get in the t.fieldMap
-func (t *Translator) FieldName(field string) string {
-	if trName, ok := t.fieldMap[field]; ok {
-		field = trName
-	}
-	return field
-}
-
 // HasLabel name in the t.labelMap
 func (t *Translator) HasLabel(field string) bool {
 	_, ok := t.labelMap[field]
@@ -339,9 +338,21 @@ func (t *Translator) HasLabel(field string) bool {
 // LabelName get label name from the t.labelMap, fallback get output name from t.fieldMap
 func (t *Translator) LabelName(field string) string {
 	if label, ok := t.labelMap[field]; ok {
-		field = label
+		return label
 	}
 	return t.FieldName(field)
+}
+
+// LookupLabel get label name from the t.labelMap,
+// fallback get output name from t.fieldMap. if not
+// found, return "", false
+func (t *Translator) LookupLabel(field string) (string, bool) {
+	if label, ok := t.labelMap[field]; ok {
+		return label, true
+	}
+
+	fName, ok := t.fieldMap[field]
+	return fName, ok
 }
 
 // AddMessages data to translator
@@ -388,8 +399,8 @@ func (t *Translator) format(errMsg, field string, args []interface{}) string {
 	// fix: #111 argN maybe is a field name
 	for i, arg := range args {
 		if name, ok := arg.(string); ok {
-			if trName, ok := t.labelMap[name]; ok {
-				args[i] = trName
+			if lName, ok := t.LookupLabel(name); ok {
+				args[i] = lName
 			}
 		}
 	}
@@ -403,11 +414,8 @@ func (t *Translator) format(errMsg, field string, args []interface{}) string {
 		return errMsg
 	}
 
-	// get field display name.
-	if trName, ok := t.labelMap[field]; ok {
-		field = trName
-	}
-
+	// get field display label name.
+	field = t.LabelName(field)
 	if argLen > 0 {
 		// whether you need call fmt.Sprintf
 		if strings.ContainsRune(errMsg, '%') {

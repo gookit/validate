@@ -60,7 +60,10 @@ func TestTranslatorBasic(t *testing.T) {
 	assert.True(t, tr.HasMessage("FIELD1.min"))
 	assert.Equal(t, "FIELD1 message1", tr.Message("min", "FIELD1"))
 
-	tr.AddFieldMap(map[string]string{"FIELD1": "Show Name"})
+	tr.AddFieldMap(map[string]string{"FIELD1": "output_name"})
+	assert.Equal(t, "output_name message1", tr.Message("min", "FIELD1"))
+
+	tr.AddLabelMap(map[string]string{"FIELD1": "Show Name"})
 	assert.Equal(t, "Show Name message1", tr.Message("min", "FIELD1"))
 
 	tr.Reset()
@@ -191,7 +194,6 @@ func TestMessageOnStruct_withNested(t *testing.T) {
 	is.Equal("tags", tr.FieldName("SubSt.Tags"))
 
 	is.Contains(tr.LabelMap(), "BirthDay")
-	is.Contains(tr.LabelMap(), "SubSt.Tags")
 	is.Equal("birth day", tr.LabelName("BirthDay"))
 	is.Equal("tags", tr.LabelName("SubSt.Tags"))
 

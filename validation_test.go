@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gookit/goutil/dump"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -204,9 +205,10 @@ func TestStruct(t *testing.T) {
 		Name: "inhere",
 	}
 	v := Struct(u)
+	dump.V(v.Trans().FieldMap(), v.Trans().LabelMap())
 
 	// check trans data
-	is.True(v.Trans().HasField("Name"))
+	is.False(v.Trans().HasField("Name"))
 	is.True(v.Trans().HasLabel("Safe"))
 	is.True(v.Trans().HasMessage("Name.required"))
 
