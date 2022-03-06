@@ -555,7 +555,8 @@ func (d *StructData) Get(field string) (interface{}, bool) {
 	// check can interface
 	if fv.CanInterface() {
 		// up: if is zero value, as not exist.
-		if IsZero(fv) {
+		// - bool as exists.
+		if fv.Kind() != reflect.Bool && IsZero(fv) {
 			return nil, false
 		}
 
@@ -618,7 +619,7 @@ func (d *StructData) Set(field string, val interface{}) (newVal interface{}, err
 	// Notice: need convert value type
 	rftVal := reflect.ValueOf(val)
 
-	// check whether can direct convert type
+	// check whether you can direct convert type
 	if rftVal.Type().ConvertibleTo(fv.Type()) {
 		fv.Set(rftVal.Convert(fv.Type()))
 		return val, nil

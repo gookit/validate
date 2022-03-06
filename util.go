@@ -310,6 +310,8 @@ func convertType(srcVal interface{}, srcKind kind, dstType reflect.Kind) (interf
 			return mathutil.Int(srcVal)
 		case reflect.Int64:
 			return mathutil.Int64(srcVal)
+		case reflect.Bool:
+			return strutil.Bool(srcVal.(string))
 		}
 	case intKind, uintKind:
 		i64 := filter.MustInt64(srcVal)
@@ -577,7 +579,7 @@ func includeElement(list, element interface{}) (ok, found bool) {
 
 // IsZero reports whether v is the zero value for its type.
 // It panics if the argument is invalid.
-// NOTICE: this's an built-in method in reflect/value.go since go 1.13
+// NOTICE: this built-in method in reflect/value.go since go 1.13
 func IsZero(v reflect.Value) bool {
 	switch v.Kind() {
 	case reflect.Bool:
@@ -612,8 +614,8 @@ func IsZero(v reflect.Value) bool {
 		}
 		return true
 	default:
-		// This should never happens, but will act as a safeguard for
-		// later, as a default value doesn't makes sense here.
+		// This should never happen, but will act as a safeguard for
+		// later, as a default value doesn't make sense here.
 		panic(&reflect.ValueError{Method: "cannot check reflect.Value.IsZero", Kind: v.Kind()})
 	}
 }

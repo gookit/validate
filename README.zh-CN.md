@@ -262,6 +262,33 @@ type GlobalOption struct {
 	// SkipOnEmpty 跳过对字段不存在或值为空的检查。默认 true
 	SkipOnEmpty bool
 }
+
+// GlobalOption settings for validate
+type GlobalOption struct {
+	// FilterTag 结构体中的过滤规则标签名称。默认 'filter`
+	FilterTag string
+	// ValidateTag 结构体中的验证规则标签名称。默认 'validate`
+	ValidateTag string
+	// FieldTag 定义结构体字段验证错误时的输出名字。默认使用 json
+	FieldTag string
+	// LabelTag 定义结构体字段验证错误时的输出翻译名称。默认使用 label
+	// - 等同于设置 字段 translate
+	LabelTag string
+	// MessageTag define error message for the field. default: message
+	MessageTag string
+	// StopOnError 如果为 true，则出现第一个错误时，将停止继续验证。默认 true
+	StopOnError bool
+	// SkipOnEmpty 跳过对字段不存在或值为空的检查。默认 true
+	SkipOnEmpty bool
+	// UpdateSource Whether to update source field value, useful for struct validate
+	UpdateSource bool
+	// CheckDefault Whether to validate the default value set by the user
+	CheckDefault bool
+	// CheckZero Whether validate the default zero value. (intX,uintX: 0, string: "")
+	CheckZero bool
+	// CheckSubOnParentMarked True: only collect sub-struct rule on current field has rule.
+	CheckSubOnParentMarked bool
+}
 ```
 
 如何配置:

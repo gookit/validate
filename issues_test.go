@@ -418,8 +418,41 @@ func TestStructNested_gt2level(t *testing.T) {
 	assert.Equal(t, "some@163.com", u.In2.Sub.Email)
 }
 
+// https://github.com/gookit/validate/issues/76
+func TestIssue_76(t *testing.T) {
+	type CategoryReq struct {
+		Name string
+	}
+	type Issue76 struct {
+		IsPrivate  bool           `json:"is_private"`
+		Categories []*CategoryReq `json:"categories" validate:"required_if:IsPrivate,false"`
+	}
+
+	v := validate.Struct(&Issue76{})
+	ok := v.Validate()
+	assert.False(t, ok)
+	dump.Println(v.Errors)
+	assert.Equal(t, "categories is required when is_private is [false]", v.Errors.One())
+
+	v = validate.Struct(&Issue76{Categories: []*CategoryReq{
+		{Name: "book"},
+	}})
+	ok = v.Validate()
+	assert.True(t, ok)
+
+	// test convert to bool error
+	type Issue76A struct {
+		IsPrivate  bool           `json:"is_private"`
+		Categories []*CategoryReq `json:"categories" validate:"required_if:IsPrivate,invalid"`
+	}
+
+	v = validate.Struct(&Issue76A{})
+	ok = v.Validate()
+	assert.True(t, ok)
+}
+
 // https://github.com/gookit/validate/issues/78
-func TestIssue78(t *testing.T) {
+func TestIssue_78(t *testing.T) {
 	type UserDto struct {
 		Name string `validate:"required"`
 		Sex  *bool  `validate:"required"`
@@ -552,11 +585,6 @@ func TestIssue_98(t *testing.T) {
 
 	dump.Println(v.Errors)
 	assert.True(t, ok)
-}
-
-// https://github.com/gookit/validate/issues/100
-func TestIssue_100(t *testing.T) {
-
 }
 
 // https://github.com/gookit/validate/issues/103

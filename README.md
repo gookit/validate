@@ -269,10 +269,27 @@ type GlobalOption struct {
 	FilterTag string
 	// ValidateTag in the struct tags. default: validate
 	ValidateTag string
-	// StopOnError If true: An error occurs, it will cease to continue to verify. default: true
+	// FieldTag the output field name in the struct tags.
+	// it as placeholder on error message.
+	// default: json
+	FieldTag string
+	// LabelTag the display name in the struct tags.
+	// use for define field translate name on error. default: label
+	LabelTag string
+	// MessageTag define error message for the field.
+	MessageTag string
+	// StopOnError If true: An error occurs, it will cease to continue to verify
 	StopOnError bool
-	// SkipOnEmpty Skip check on field not exist or value is empty. default: true
+	// SkipOnEmpty Skip check on field not exist or value is empty
 	SkipOnEmpty bool
+	// UpdateSource Whether to update source field value, useful for struct validate
+	UpdateSource bool
+	// CheckDefault Whether to validate the default value set by the user
+	CheckDefault bool
+	// CheckZero Whether validate the default zero value. (intX,uintX: 0, string: "")
+	CheckZero bool
+	// CheckSubOnParentMarked True: only collect sub-struct rule on current field has rule.
+	CheckSubOnParentMarked bool
 }
 ```
 

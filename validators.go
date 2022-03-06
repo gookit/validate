@@ -184,8 +184,9 @@ func (v *Validation) Required(field string, val interface{}) bool {
 	return !IsEmpty(val)
 }
 
-// RequiredIf field under validation must be present and not empty if the anotherField field is equal to any value.
-func (v *Validation) RequiredIf(field string, val interface{}, kvs ...string) bool {
+// RequiredIf field under validation must be present and not empty,
+// if the anotherField field is equal to any value.
+func (v *Validation) RequiredIf(_ string, val interface{}, kvs ...string) bool {
 	// format error
 	if len(kvs) < 2 {
 		return false
@@ -193,15 +194,24 @@ func (v *Validation) RequiredIf(field string, val interface{}, kvs ...string) bo
 
 	dstField, args := kvs[0], kvs[1:]
 	if dstVal, has := v.Get(dstField); has {
-		if Enum(dstVal, args) {
-			return NotEqual(val, nil) && NotEqual(val, "")
+		// up: only one check value, direct compare value
+		if len(args) == 1 {
+			rftDv := reflect.ValueOf(dstVal)
+			wantVal, err := convertType(args[0], stringKind, rftDv.Kind())
+			if err == nil && dstVal == wantVal {
+				return val != nil && NotEqual(val, "")
+			}
+		} else if Enum(dstVal, args) {
+			return val != nil && NotEqual(val, "")
 		}
 	}
 
+	// default as True, skip check
 	return true
 }
 
-// RequiredUnless field under validation must be present and not empty unless the anotherField field is equal to any value.
+// RequiredUnless field under validation must be present and not empty
+// unless the anotherField field is equal to any value.
 func (v *Validation) RequiredUnless(_ string, val interface{}, kvs ...string) bool {
 	// format error
 	if len(kvs) < 2 {
@@ -209,7 +219,6 @@ func (v *Validation) RequiredUnless(_ string, val interface{}, kvs ...string) bo
 	}
 
 	dstField, args := kvs[0], kvs[1:]
-
 	if dstVal, has := v.Get(dstField); has {
 		if !Enum(dstVal, args) {
 			return NotEqual(val, nil) && NotEqual(val, "")
@@ -1119,7 +1128,6 @@ func convert(val interface{}) (value interface{}, err error) {
 	default:
 		err = ErrConvertFail
 	}
-
 	return
 }
 
@@ -1133,6 +1141,7 @@ func Enum(val, enum interface{}) bool {
 	if err != nil {
 		return false
 	}
+
 	// if is string value
 	if strVal, ok := v.(string); ok {
 		if ss, ok := enum.([]string); ok {
