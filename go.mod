@@ -4,6 +4,6 @@ go 1.14
 
 require (
 	github.com/gookit/filter v1.1.2
-	github.com/gookit/goutil v0.4.4
+	github.com/gookit/goutil v0.4.6
 	github.com/stretchr/testify v1.7.1
 )
