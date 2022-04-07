@@ -169,7 +169,9 @@ type CustomMessagesFace interface {
 	Messages() map[string]string
 }
 
-// StructData definition
+// StructData definition.
+//
+// more struct tags define please see GlobalOption
 type StructData struct {
 	// source struct data, from user setting
 	src interface{}
@@ -186,13 +188,13 @@ type StructData struct {
 	fieldValues map[string]reflect.Value
 	// TODO field reflect values cache
 	fieldRftValues map[string]interface{}
-	// FieldTag name in the struct tags. for define filed translate
-	FieldTag string
-	// MessageTag define error message for the field.
-	MessageTag string
 	// FilterTag name in the struct tags.
+	//
+	// see GlobalOption.FilterTag
 	FilterTag string
 	// ValidateTag name in the struct tags.
+	//
+	// see GlobalOption.ValidateTag
 	ValidateTag string
 }
 

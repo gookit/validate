@@ -18,6 +18,7 @@ Go通用的数据验证与过滤库，使用简单，内置大部分常用验证
   - 已经内置了超多（**>20** 个）常用的过滤器，查看 [内置过滤器](#built-in-filters)
 - 方便的获取错误信息，验证后的安全数据获取(_只会收集有规则检查过的数据_)
 - 支持自定义每个验证的错误消息，字段翻译，消息翻译(内置`en` `zh-CN` `zh-TW`)
+  - 在结构体上可以使用 `message`, `label` 标签定义消息翻译
 - 完善的单元测试，测试覆盖率 **> 90%**
 
 > 受到 [albrow/forms](https://github.com/albrow/forms) [asaskevich/govalidator](https://github.com/asaskevich/govalidator) [inhere/php-validate](https://github.com/inhere/php-validate) 这些项目的启发. 非常感谢它们
@@ -41,8 +42,10 @@ Please see the English introduction **[README](README.md)**
 
 **`v1.2.1+` 更新**:
 
-- 支持通过结构体tag配置字段映射，默认读取 `json` 标签的值
+- 支持通过结构体配置字段输出名称，默认读取 `json` 标签的值
 - 支持通过结构体的 `message` tag 配置错误消息
+- 支持通过结构体的 `label` tag 字段映射/翻译
+
 
 ```go
 package main
@@ -57,7 +60,7 @@ import (
 // UserForm struct
 type UserForm struct {
 	Name     string    `validate:"required|minLen:7"`
-	Email    string    `validate:"email" message:"email is invalid"`
+	Email    string    `validate:"email" message:"email is invalid" label:"用户邮箱"`
 	Age      int       `validate:"required|int|min:1|max:99" message:"int:age must int| min: age min value is 1"`
 	CreateAt int       `validate:"min:1"`
 	Safe     int       `validate:"-"`
@@ -96,7 +99,7 @@ func (f UserForm) Messages() map[string]string {
 func (f UserForm) Translates() map[string]string {
 	return validate.MS{
 		"Name": "用户名称",
-		"Email": "用户Email",
+		"Email": "用户邮箱",
 		"ExtInfo.Homepage": "用户主页",
 	}
 }

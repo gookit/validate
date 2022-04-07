@@ -49,17 +49,27 @@ func (ms MS) String() string {
 
 // GlobalOption settings for validate
 type GlobalOption struct {
-	// FilterTag name in the struct tags. default: filter
+	// FilterTag name in the struct tags.
+	//
+	// default: filter
 	FilterTag string
-	// ValidateTag in the struct tags. default: validate
+	// ValidateTag in the struct tags.
+	//
+	// default: validate
 	ValidateTag string
 	// FieldTag the output field name in the struct tags.
-	// it as placeholder on error message. default: json
+	// it as placeholder on error message.
+	//
+	// default: json
 	FieldTag string
 	// LabelTag the display name in the struct tags.
-	// use for define field translate name on error. default: label
+	// use for define field translate name on error.
+	//
+	// default: label
 	LabelTag string
-	// MessageTag define error message for the field. default: message
+	// MessageTag define error message for the field.
+	//
+	// default: message
 	MessageTag string
 	// StopOnError If true: An error occurs, it will cease to continue to verify
 	StopOnError bool

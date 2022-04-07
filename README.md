@@ -14,6 +14,7 @@ The package is a generic Go data validate and filter tool library.
 - Support add custom filter/validator func
 - Support scene settings, verify different fields in different scenes
 - Support custom error messages, field translates.
+  - Can use `message`, `label` tags in struct
 - Customizable i18n aware error messages, built in `en`, `zh-CN`, `zh-TW`
 - Built-in common data type filter/converter. see [Built In Filters](#built-in-filters)
 - Many commonly used validators have been built in(**> 70**), see [Built In Validators](#built-in-validators)
@@ -45,6 +46,7 @@ The struct can implement three interfaces methods, which is convenient to do som
 
 - Support configuration field mapping through structure tag, read the value of `json` tag by default
 - Support configuration error message via structure's `message` tag
+- Support configuration field translation via structure's `label` tag
 
 ```go
 package main
@@ -59,7 +61,7 @@ import (
 // UserForm struct
 type UserForm struct {
 	Name     string    `validate:"required|minLen:7"`
-	Email    string    `validate:"email" message:"email is invalid"`
+	Email    string    `validate:"email" message:"email is invalid" label:"User Email"`
 	Age      int       `validate:"required|int|min:1|max:99" message:"int:age must int| min: age min value is 1"`
 	CreateAt int       `validate:"min:1"`
 	Safe     int       `validate:"-"`
@@ -265,18 +267,27 @@ You can adjust some processing logic of the validator by changing the global opt
 ```go
 // GlobalOption settings for validate
 type GlobalOption struct {
-	// FilterTag name in the struct tags. default: filter
+	// FilterTag name in the struct tags.
+	//
+	// default: filter
 	FilterTag string
-	// ValidateTag in the struct tags. default: validate
+	// ValidateTag in the struct tags.
+	//
+	// default: validate
 	ValidateTag string
 	// FieldTag the output field name in the struct tags.
 	// it as placeholder on error message.
+	//
 	// default: json
 	FieldTag string
 	// LabelTag the display name in the struct tags.
-	// use for define field translate name on error. default: label
+	// use for define field translate name on error.
+	//
+	// default: label
 	LabelTag string
 	// MessageTag define error message for the field.
+	//
+	// default: message
 	MessageTag string
 	// StopOnError If true: An error occurs, it will cease to continue to verify
 	StopOnError bool
