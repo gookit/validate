@@ -498,6 +498,8 @@ func TestIsFullURL(t *testing.T) {
 		"https://www.google.com/testme",
 		"https://www.google.com/test-me",
 		"https://www.google.com/test_me",
+		"https://www.google.com/test%",
+		"http://www.google.com/test?a=2%25a&b=c",
 	}
 	for _, str := range okTests {
 		is.True(IsFullURL(str), str)
@@ -510,6 +512,7 @@ func TestIsFullURL(t *testing.T) {
 		"www.a.com",
 		"www.a.com?a=1",
 		"/users/profile/1",
+		"www.google.com/test%",
 	}
 	for _, str := range failTests {
 		is.False(IsFullURL(str))
