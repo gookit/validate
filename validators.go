@@ -34,7 +34,7 @@ const (
 	Latitude     = "^[-+]?([1-8]?\\d(\\.\\d+)?|90(\\.0+)?)$"
 	Longitude    = "^[-+]?(180(\\.0+)?|((1[0-7]\\d)|([1-9]?\\d))(\\.\\d+)?)$"
 	DNSName      = `^([a-zA-Z0-9_]{1}[a-zA-Z0-9_-]{0,62}){1}(\.[a-zA-Z0-9_]{1}[a-zA-Z0-9_-]{0,62})*[\._]?$`
-	FullURL      = `^(?:ftp|tcp|udp|wss?|https?):\/\/[\w\.\/#=?&-_]+$`
+	FullURL      = `^(?:ftp|tcp|udp|wss?|https?):\/\/[\w\.\/#=?&-_%]+$`
 	URLSchema    = `((ftp|tcp|udp|wss?|https?):\/\/)`
 	URLUsername  = `(\S+(:\S*)?@)`
 	URLPath      = `((\/|\?|#)[^\s]*)`
