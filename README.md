@@ -7,7 +7,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/gookit/validate)](https://goreportcard.com/report/github.com/gookit/validate)
 [![Actions Status](https://github.com/gookit/validate/workflows/Unit-Tests/badge.svg)](https://github.com/gookit/validate/actions)
 
-The package is a generic Go data validate and filter tool library.
+`validate` is a generic Go data validate and filter tool library.
 
 - Support quick validate `Map`, `Struct`, `Request`(`Form`, `JSON`, `url.Values`, `UploadedFile`) data
 - Support filter/sanitize data before validate
@@ -34,11 +34,9 @@ The package is a generic Go data validate and filter tool library.
 
 With the `validate` tag of the structure, you can quickly verify a structure data.
 
-### Config field translates and error messages
-
-#### Use `message` and `label` tags
-
 **`v1.2.1+` Update**:
+
+Can use `message` and `label` tags, config the field translates and error messages on struct.
 
 - Support configuration field mapping through structure tag, read the value of `json` tag by default
 - Support configuration error message via structure's `message` tag
@@ -76,7 +74,7 @@ func (f UserForm) CustomValidator(val string) bool {
 }
 ```
 
-#### Use `Messages()` and `Translates()` methods
+### Use `Messages()` and `Translates()` methods
 
 `validate` provides extended functionality:
 
