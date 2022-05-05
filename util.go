@@ -229,6 +229,10 @@ func valueCompare(srcVal, dstVal interface{}, op string) (ok bool) {
 
 // compare int float value. returns `srcVal op(lt,lte,gt,gte) dstVal`?
 func compareIntFloat(srcVal, dstVal interface{}, op string) (ok bool) {
+	if srcVal == nil || dstVal == nil {
+		return false
+	}
+
 	if srcFlt, ok := srcVal.(float64); ok {
 		dstFlt, err := mathutil.ToFloat(dstVal)
 		if err != nil {

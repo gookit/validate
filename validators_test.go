@@ -261,6 +261,7 @@ func TestMin(t *testing.T) {
 		{val: "3.2", min: 3.2},
 		{nil, 3},
 		{"str", 3},
+		{3, nil},
 		{3, 4},
 		{3, "abc"},
 		{int64(3), 4},
@@ -277,12 +278,13 @@ func TestMax(t *testing.T) {
 	is.True(Max(3, 4))
 	is.True(Max(3, 3))
 	is.True(Max(int64(3), 3))
-	// up: since 1.2 nil can convert to int64 0
-	is.True(Max(nil, 3))
 
 	// fail
 	is.False(Max("str", 3))
 	is.False(Max(3, 2))
+	// since 1.3.2+ Max, Min input nil will always return FALSE.
+	is.False(Max(nil, 3))
+	is.False(Max(3, nil))
 	is.False(Max(int64(3), 2))
 }
 

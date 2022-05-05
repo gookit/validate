@@ -61,13 +61,6 @@ func TestMap(t *testing.T) {
 	})
 
 	v = New(mpSample)
-	// invalid args
-	v.AddRule("age", "max", nil)
-	// v.AddRule("age", "max", []string{"a"})
-	is.False(v.Validate())
-	is.Contains(v.Errors.String(), "cannot convert invalid to arg#1(int64)")
-
-	v = New(mpSample)
 	v.StringRule("newSt", "") // will ignore
 	v.StringRule("newSt", "gtField:oldSt")
 	v.StringRule("newSt", "gteField:oldSt")
@@ -80,6 +73,19 @@ func TestMap(t *testing.T) {
 	v.AddRule("age", "int")
 	is.False(v.Validate())
 	is.Equal("age value must be an integer", v.Errors.One())
+}
+
+func TestValidation_max_invalidArg(t *testing.T) {
+	is := assert.New(t)
+
+	v := New(mpSample)
+	// invalid args
+	v.AddRule("age", "max", nil)
+	// v.AddRule("age", "max", []string{"a"})
+	is.False(v.Validate())
+	// is.Contains(v.Errors.String(), "cannot convert invalid to arg#1(int64)")
+	// since 1.3.2+ max, min input params is update to interface{}
+	is.Contains(v.Errors.String(), "max: age max value is <nil>")
 }
 
 func TestValidation_StringRule(t *testing.T) {

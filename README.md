@@ -34,13 +34,9 @@ The package is a generic Go data validate and filter tool library.
 
 With the `validate` tag of the structure, you can quickly verify a structure data.
 
-provides extended functionality:
+### Config field translates and error messages
 
-The struct can implement three interfaces methods, which is convenient to do some customization:
-
-- `ConfigValidation(v *Validation)` will be called after the validator instance is created
-- `Messages() map[string]string` can customize the validator error message
-- `Translates() map[string]string` can customize field translation
+#### Use `message` and `label` tags
 
 **`v1.2.1+` Update**:
 
@@ -60,15 +56,57 @@ import (
 
 // UserForm struct
 type UserForm struct {
-	Name     string    `validate:"required|minLen:7"`
+	Name     string    `validate:"required|min_len:7" message:"required:{field} is required" label:"User Name"`
 	Email    string    `validate:"email" message:"email is invalid" label:"User Email"`
-	Age      int       `validate:"required|int|min:1|max:99" message:"int:age must int| min: age min value is 1"`
+	Age      int       `validate:"required|int|min:1|max:99" message:"int:age must int|min:age min value is 1"`
 	CreateAt int       `validate:"min:1"`
 	Safe     int       `validate:"-"`
 	UpdateAt time.Time `validate:"required"`
 	Code     string    `validate:"customValidator"`
-	// nested struct
-	ExtInfo  struct{
+	// ExtInfo nested struct
+	ExtInfo struct{
+		Homepage string `validate:"required" label:"Home Page"`
+		CityName string
+	}
+}
+
+// CustomValidator custom validator in the source struct.
+func (f UserForm) CustomValidator(val string) bool {
+	return len(val) == 4
+}
+```
+
+#### Use `Messages()` and `Translates()` methods
+
+`validate` provides extended functionality:
+
+The struct can implement three interfaces methods, which is convenient to do some customization:
+
+- `ConfigValidation(v *Validation)` will be called after the validator instance is created
+- `Messages() map[string]string` can customize the validator error message
+- `Translates() map[string]string` can customize field translation
+
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+
+	"github.com/gookit/validate"
+)
+
+// UserForm struct
+type UserForm struct {
+	Name     string    `validate:"required|min_len:7"`
+	Email    string    `validate:"email"`
+	Age      int       `validate:"required|int|min:1|max:99"`
+	CreateAt int       `validate:"min:1"`
+	Safe     int       `validate:"-"`
+	UpdateAt time.Time `validate:"required"`
+	Code     string    `validate:"customValidator"`
+	// ExtInfo nested struct
+	ExtInfo struct{
 		Homepage string `validate:"required"`
 		CityName string
 	}
@@ -93,7 +131,10 @@ func (f UserForm) ConfigValidation(v *validate.Validation) {
 func (f UserForm) Messages() map[string]string {
 	return validate.MS{
 		"required": "oh! the {field} is required",
+		"email": "email is invalid",
 		"Name.required": "message for special field",
+		"Age.int": "age must int",
+		"Age.min": "age min value is 1",
 	}
 }
 
@@ -105,6 +146,18 @@ func (f UserForm) Translates() map[string]string {
 		"ExtInfo.Homepage": "Home Page",
 	}
 }
+```
+
+### Do validating
+
+```go
+package main
+
+import (
+  "fmt"
+
+  "github.com/gookit/validate"
+)
 
 func main() {
 	u := &UserForm{
@@ -119,6 +172,7 @@ func main() {
 	} else {
 		fmt.Println(v.Errors) // all error messages
 		fmt.Println(v.Errors.One()) // returns a random error message text
+		fmt.Println(v.Errors.OneError()) // returns a random error
 		fmt.Println(v.Errors.Field("Name")) // returns error messages of the field 
 	}
 }
