@@ -19,8 +19,10 @@ func RegisterGlobal() {
 var Data = map[string]string{
 	"_": "{field} 没有通过验证",
 	// int
-	"min": "{field} 的最小值是 %d",
-	"max": "{field} 的最大值是 %d",
+	"min": "{field} 的最小值是 %v",
+	"max": "{field} 的最大值是 %v",
+	"lt":  "{field} value should less than %v",
+	"gt":  "{field} value should greater the %v",
 	// Length
 	"minLength": "{field} 的最小长度是 %d",
 	"maxLength": "{field} 的最大长度是 %d",

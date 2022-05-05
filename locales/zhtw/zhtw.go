@@ -10,7 +10,7 @@ func Register(v *validate.Validation) {
 	v.AddMessages(Data)
 }
 
-// RegisterGlobal register to the validate global messages
+// RegisterGlobal register to the validation global messages
 func RegisterGlobal() {
 	validate.AddGlobalMessages(Data)
 }
@@ -19,8 +19,10 @@ func RegisterGlobal() {
 var Data = map[string]string{
 	"_": "{field} 沒有通過驗證",
 	// int
-	"min": "{field} 的最小值是 %d",
-	"max": "{field} 的最大值是 %d",
+	"min": "{field} 的最小值是 %v",
+	"max": "{field} 的最大值是 %v",
+	"lt":  "{field} value should less than %v",
+	"gt":  "{field} value should greater the %v",
 	// Length
 	"minLength": "{field} 的最小長度是 %d",
 	"maxLength": "{field} 的最大長度是 %d",

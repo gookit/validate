@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/gookit/goutil/errorx"
 	"github.com/gookit/goutil/strutil"
 )
 
@@ -49,6 +50,11 @@ func (es Errors) Add(field, validator, message string) {
 // One returns an random error message text
 func (es Errors) One() string {
 	return es.Random()
+}
+
+// OneError returns an random error
+func (es Errors) OneError() error {
+	return errorx.Raw(es.Random())
 }
 
 // Random returns an random error message text
@@ -116,8 +122,8 @@ var builtinMessages = map[string]string{
 	"_validate": "{field} did not pass validate", // default validate message
 	"_filter":   "{field} data is invalid",       // data filter error
 	// int value
-	"min": "{field} min value is %d",
-	"max": "{field} max value is %d",
+	"min": "{field} min value is %v",
+	"max": "{field} max value is %v",
 	// type check: int
 	"isInt":  "{field} value must be an integer",
 	"isInt1": "{field} value must be an integer and mix value is %d",      // has min check
@@ -144,8 +150,8 @@ var builtinMessages = map[string]string{
 	"enum":  "{field} value must be in the enum %v",
 	"range": "{field} value must be in the range %d - %d",
 	// int compare
-	"lt": "{field} value should less than %d",
-	"gt": "{field} value should greater the %d",
+	"lt": "{field} value should less than %v",
+	"gt": "{field} value should greater the %v",
 	// required
 	"required":           "{field} is required and not empty",
 	"requiredIf":         "{field} is required when {args0} is {args1end}",

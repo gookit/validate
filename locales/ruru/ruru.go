@@ -21,8 +21,8 @@ var Data = map[string]string{
 	"_validate": "Поле {field} не прошло проверку",
 	"_filter":   "Значение {field} некорректно",
 	// int
-	"min": "Минимальное значение {field} равно %d",
-	"max": "Максимальное значение {field} равно %d",
+	"min": "Минимальное значение {field} равно %v",
+	"max": "Максимальное значение {field} равно %v",
 	// type check: int
 	"isInt":  "{field} должно быть числом",
 	"isInt1": "{field} должно быть числом и не менее %d",         // has min check
