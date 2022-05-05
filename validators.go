@@ -992,6 +992,7 @@ func IsUnixPath(s string) bool {
  *************************************************************/
 
 // IsEqual check two value is equals.
+//
 // Support:
 // 	bool, int(X), uint(X), string, float(X) AND slice, array, map
 func IsEqual(val, wantVal interface{}) bool {
@@ -1051,56 +1052,32 @@ func IntEqual(val interface{}, wantVal int64) bool {
 	return intVal == wantVal
 }
 
-// Gt check value greater dst value. only check for: int(X), uint(X), float(X)
-func Gt(val interface{}, dstVal int64) bool {
-	if flt, ok := val.(float64); ok {
-		return flt > float64(dstVal)
-	}
-
-	if flt, ok := val.(float32); ok {
-		return flt > float32(dstVal)
-	}
-
-	intVal, err := mathutil.Int64(val)
-	if err != nil {
-		return false
-	}
-
-	return intVal > dstVal
+// Gt check value greater dst value.
+// only check for: int(X), uint(X), float(X)
+func Gt(val, min interface{}) bool {
+	return compareIntFloat(val, min, "gt")
 }
 
-// Min check value greater or equal dst value, alias `Gte`.
+// Min check value greater or equal dst value, alias Gte()
 // only check for: int(X), uint(X), float(X).
-func Min(val interface{}, min int64) bool {
-	intVal, err := mathutil.Int64(val)
-	if err != nil {
-		return false
-	}
-
-	return intVal >= min
+func Min(val, min interface{}) bool {
+	return compareIntFloat(val, min, "gte")
 }
 
-// Lt less than dst value. only check for: int(X), uint(X), float(X).
-func Lt(val interface{}, dstVal int64) bool {
-	intVal, err := mathutil.Int64(val)
-	if err != nil {
-		return false
-	}
-
-	return intVal < dstVal
+// Lt less than dst value.
+// only check for: int(X), uint(X), float(X).
+func Lt(val, max interface{}) bool {
+	return compareIntFloat(val, max, "lt")
 }
 
-// Max less than or equal dst value, alias `Lte`. check for: int(X), uint(X), float(X).
-func Max(val interface{}, max int64) bool {
-	intVal, err := mathutil.Int64(val)
-	if err != nil {
-		return false
-	}
-
-	return intVal <= max
+// Max less than or equal dst value, alias `Lte`.
+// only check for: int(X), uint(X), float(X).
+func Max(val, max interface{}) bool {
+	return compareIntFloat(val, max, "lte")
 }
 
 // Between int value in the given range.
+// only check for: int(X), uint(X).
 func Between(val interface{}, min, max int64) bool {
 	intVal, err := mathutil.Int64(val)
 	if err != nil {

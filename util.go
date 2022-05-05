@@ -213,26 +213,77 @@ func valueCompare(srcVal, dstVal interface{}, op string) (ok bool) {
 		srcInt = int64(len(str))
 		dstInt = int64(len(dst))
 	} else { // as int: compare size
-		srcInt, err = filter.Int64(srcVal)
+		srcInt, err = mathutil.ToInt64(srcVal)
 		if err != nil {
 			return false
 		}
 
-		dstInt, err = filter.Int64(dstVal)
+		dstInt, err = mathutil.ToInt64(dstVal)
 		if err != nil {
 			return false
 		}
 	}
 
+	return compareInt64(srcInt, dstInt, op)
+}
+
+// compare int float value. returns `srcVal op(lt,lte,gt,gte) dstVal`?
+func compareIntFloat(srcVal, dstVal interface{}, op string) (ok bool) {
+	if srcFlt, ok := srcVal.(float64); ok {
+		dstFlt, err := mathutil.ToFloat(dstVal)
+		if err != nil {
+			return false
+		}
+		return compareFloat64(srcFlt, dstFlt, op)
+	}
+
+	if srcFlt, ok := srcVal.(float32); ok {
+		dstFlt, err := mathutil.ToFloat(dstVal)
+		if err != nil {
+			return false
+		}
+		return compareFloat64(float64(srcFlt), dstFlt, op)
+	}
+
+	// as int64
+	srcInt, err := mathutil.Int64(srcVal)
+	if err != nil {
+		return false
+	}
+
+	dstInt, err := mathutil.Int64(dstVal)
+	if err != nil {
+		return false
+	}
+
+	return compareInt64(srcInt, dstInt, op)
+}
+
+// compare int64, returns the srcI64 op(lt,lte,gt,gte) dstI64?
+func compareInt64(srcI64, dstI64 int64, op string) (ok bool) {
 	switch op {
 	case "lt":
-		ok = srcInt < dstInt
+		ok = srcI64 < dstI64
 	case "lte":
-		ok = srcInt <= dstInt
+		ok = srcI64 <= dstI64
 	case "gt":
-		ok = srcInt > dstInt
+		ok = srcI64 > dstI64
 	case "gte":
-		ok = srcInt >= dstInt
+		ok = srcI64 >= dstI64
+	}
+	return
+}
+
+func compareFloat64(srcI64, dstI64 float64, op string) (ok bool) {
+	switch op {
+	case "lt":
+		ok = srcI64 < dstI64
+	case "lte":
+		ok = srcI64 <= dstI64
+	case "gt":
+		ok = srcI64 > dstI64
+	case "gte":
+		ok = srcI64 >= dstI64
 	}
 	return
 }
@@ -260,7 +311,7 @@ func toInt64Slice(enum interface{}) (ret []int64, ok bool) {
 	}
 
 	for i := 0; i < rv.Len(); i++ {
-		i64, err := filter.Int64(rv.Index(i).Interface())
+		i64, err := mathutil.ToInt64(rv.Index(i).Interface())
 		if err != nil {
 			return []int64{}, false
 		}
@@ -314,7 +365,7 @@ func convertType(srcVal interface{}, srcKind kind, dstType reflect.Kind) (interf
 			return strutil.Bool(srcVal.(string))
 		}
 	case intKind, uintKind:
-		i64 := filter.MustInt64(srcVal)
+		i64 := mathutil.MustInt64(srcVal)
 		switch dstType {
 		case reflect.Int64:
 			return i64, nil

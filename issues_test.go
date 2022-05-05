@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/gookit/goutil/dump"
+	"github.com/gookit/goutil/jsonutil"
 	"github.com/gookit/validate"
 	"github.com/stretchr/testify/assert"
 )
@@ -750,4 +751,40 @@ func TestIssue_120(t *testing.T) {
 	ok := v.Validate()
 	dump.Println(v.Errors)
 	assert.True(t, ok)
+}
+
+// https://github.com/gookit/validate/issues/135
+func TestIssue_135(t *testing.T) {
+	type SubjectCreateReq struct {
+		Title       string `json:"title" validate:"required|minLen:2|maxLen:512"`           // 题目名称
+		SubjectType string `json:"subject_type" validate:"required|in:radio,checkbox,bool"` // 题目类型
+		Answer      []struct {
+			Score float64 `json:"score" validate:"required|min:0.1"`  // 得分
+			Metas string  `json:"metas" validate:"required|minLen:2"` // 元信息
+		} `json:"answer"` // 答案
+	}
+
+	s := `
+{
+    "title":"44",
+    "answer":[
+        {
+            "score":0.09,
+            "metas":"111"
+        }
+    ],
+    "subject_type":"radio"
+}`
+
+	r := &SubjectCreateReq{}
+	err := jsonutil.Decode([]byte(s), r)
+	assert.NoError(t, err)
+	// dump.Println(r)
+
+	v := validate.Struct(r)
+	ok := v.Validate()
+	dump.Println(v.Errors)
+	assert.False(t, ok)
+	assert.Equal(t, "score min value is 0.1", v.Errors.One())
+	assert.Equal(t, "score min value is 0.1", v.Errors.OneError().Error())
 }

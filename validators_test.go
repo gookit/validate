@@ -211,18 +211,6 @@ func TestValueCompare(t *testing.T) {
 	is.False(IntEqual("a", 97))
 	is.False(IntEqual("invalid", 2))
 
-	// Gt
-	is.True(Gt(3, 2))
-	is.True(Gt(2.1, 2))
-	is.False(Gt(2, 3))
-	is.False(Gt("invalid", 3))
-
-	// Lt
-	is.True(Lt(2, 3))
-	is.True(Lt(2.1, 3))
-	is.False(Lt(3, 2))
-	is.False(Lt("invalid", 3))
-
 	// Between
 	is.True(Between(3, 2, 5))
 	is.True(Between("3", 2, 5))
@@ -230,19 +218,56 @@ func TestValueCompare(t *testing.T) {
 	is.False(Between("invalid", 2, 5))
 }
 
+func TestLtGt(t *testing.T) {
+	is := assert.New(t)
+
+	// Lt
+	is.True(Lt(2, 3))
+	is.True(Lt(2.1, 3))
+	is.True(Lt(0.1, 0.3))
+	is.False(Lt(3, 2))
+	is.False(Lt("invalid", 3))
+
+	// Gt
+	is.True(Gt(3, 2))
+	is.True(Gt(0.3, 0.2))
+	is.True(Gt(2.1, 2))
+	is.False(Gt(2, 3))
+	is.False(Gt("invalid", 3))
+}
+
 func TestMin(t *testing.T) {
 	is := assert.New(t)
 
 	// ok
-	is.True(Min(3, 2))
-	is.True(Min(3, 3))
-	is.True(Min(int64(3), 3))
+	tests := []struct{ val, min interface{} }{
+		{val: 3, min: 2},
+		{val: 3, min: 3},
+		{val: int64(3), min: 3},
+		{val: 3.2, min: 3.1},
+		{val: float32(3.2), min: 3.1},
+		{val: 3.2, min: 3.2},
+		{val: 3.2, min: "3.2"},
+		{val: "3", min: 3.2},
+		{val: 0.02, min: 0.01},
+		{val: 0.02, min: 0.02},
+	}
+	for _, e := range tests {
+		is.True(Min(e.val, e.min), "error: %#v should >= %#v", e.val, e.min)
+	}
 
 	// fail
-	is.False(Min(nil, 3))
-	is.False(Min("str", 3))
-	is.False(Min(3, 4))
-	is.False(Min(int64(3), 4))
+	tests = []struct{ val, min interface{} }{
+		{val: "3.2", min: 3.2},
+		{nil, 3},
+		{"str", 3},
+		{3, 4},
+		{3, "abc"},
+		{int64(3), 4},
+	}
+	for _, e := range tests {
+		is.False(Min(e.val, e.min), "error: %#v should not >= %#v", e.val, e.min)
+	}
 }
 
 func TestMax(t *testing.T) {

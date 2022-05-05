@@ -280,13 +280,13 @@ func callValidator(v *Validation, fm *funcMeta, field string, val interface{}, a
 	case "requiredWithoutAll":
 		ok = v.RequiredWithoutAll(field, val, args2strings(args)...)
 	case "lt":
-		ok = Lt(val, args[0].(int64))
+		ok = Lt(val, args[0])
 	case "gt":
-		ok = Gt(val, args[0].(int64))
+		ok = Gt(val, args[0])
 	case "min":
-		ok = Min(val, args[0].(int64))
+		ok = Min(val, args[0])
 	case "max":
-		ok = Max(val, args[0].(int64))
+		ok = Max(val, args[0])
 	case "enum":
 		ok = Enum(val, args[0])
 	case "notIn":
@@ -355,7 +355,7 @@ func convertArgsType(v *Validation, fm *funcMeta, field string, args []interface
 		lastTyp = getVariadicKind(ft.In(lastArgIndex).String())
 	}
 
-	// only one args and it type is interface{}
+	// only one args and type is interface{}
 	if lastArgIndex == 1 && lastTyp == reflect.Interface {
 		return true
 	}
