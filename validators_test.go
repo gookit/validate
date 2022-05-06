@@ -130,23 +130,6 @@ func TestTypeCheck(t *testing.T) {
 	is.False(IsMap(nil))
 	is.False(IsMap([]string{}))
 
-	// IsArray
-	is.True(IsArray([1]int{}))
-	is.True(IsArray([1]string{}))
-	is.False(IsArray(nil))
-	is.False(IsArray([]string{}))
-	is.False(IsArray(new([]string)))
-
-	// IsSlice
-	is.True(IsSlice([]byte{'a'}))
-	is.True(IsSlice([]rune{'a'}))
-	is.True(IsSlice([]string{}))
-	is.True(IsSlice(new([]string)))
-	is.True(IsSlice(make([]string, 1)))
-	is.False(IsSlice(nil))
-	is.False(IsSlice([1]string{}))
-	is.False(IsSlice(new(map[string]int)))
-
 	// IsInts
 	is.True(IsInts([]int{}))
 	is.True(IsInts([]int{1}))
@@ -160,6 +143,32 @@ func TestTypeCheck(t *testing.T) {
 	is.False(IsStrings(nil))
 	is.False(IsStrings([]int{}))
 	is.False(IsStrings(map[string]int{}))
+}
+
+// ------------------ value compare ------------------
+
+func TestIsArray_IsSlice(t *testing.T) {
+	is := assert.New(t)
+
+	// IsArray
+	is.True(IsArray([1]int{}))
+	is.True(IsArray([1]string{}))
+	is.False(IsArray(nil))
+	is.True(IsArray([]string{}))
+	is.True(IsArray(new([]string)))
+	is.False(IsArray([]string{}, true))
+	is.False(IsArray(new([]string), true))
+
+	// IsSlice
+	is.True(IsSlice([]byte{'a'}))
+	is.True(IsSlice([]rune{'a'}))
+	is.True(IsSlice([]string{}))
+	is.True(IsSlice(new([]string)))
+	is.True(IsSlice(make([]string, 1)))
+	is.False(IsSlice(nil))
+	is.False(IsSlice([1]string{}))
+	is.False(IsSlice(new(map[string]int)))
+
 }
 
 // ------------------ value compare ------------------

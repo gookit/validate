@@ -537,8 +537,8 @@ func IsFloat(val interface{}) bool {
 	return false
 }
 
-// IsArray check
-func IsArray(val interface{}) (ok bool) {
+// IsArray check value is array or slice.
+func IsArray(val interface{}, strict ...bool) (ok bool) {
 	if val == nil {
 		return false
 	}
@@ -548,10 +548,16 @@ func IsArray(val interface{}) (ok bool) {
 		rv = rv.Elem()
 	}
 
-	return rv.Kind() == reflect.Array
+	// strict: must go array type.
+	if len(strict) > 0 && strict[0] {
+		return rv.Kind() == reflect.Array
+	}
+
+	// allow array, slice
+	return rv.Kind() == reflect.Array || rv.Kind() == reflect.Slice
 }
 
-// IsSlice check
+// IsSlice check value is slice type
 func IsSlice(val interface{}) (ok bool) {
 	if val == nil {
 		return false
