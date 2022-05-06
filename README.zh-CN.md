@@ -260,18 +260,6 @@ type GlobalOption struct {
 	FilterTag string
 	// ValidateTag 结构体中的验证规则标签名称。默认 'validate`
 	ValidateTag string
-	// StopOnError 如果为 true，则出现第一个错误时，将停止继续验证。默认 true
-	StopOnError bool
-	// SkipOnEmpty 跳过对字段不存在或值为空的检查。默认 true
-	SkipOnEmpty bool
-}
-
-// GlobalOption settings for validate
-type GlobalOption struct {
-	// FilterTag 结构体中的过滤规则标签名称。默认 'filter`
-	FilterTag string
-	// ValidateTag 结构体中的验证规则标签名称。默认 'validate`
-	ValidateTag string
 	// FieldTag 定义结构体字段验证错误时的输出名字。默认使用 json
 	FieldTag string
 	// LabelTag 定义结构体字段验证错误时的输出翻译名称。默认使用 label

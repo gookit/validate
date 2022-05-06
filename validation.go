@@ -174,10 +174,11 @@ func (v *Validation) SetScene(scene ...string) *Validation {
  *************************************************************/
 
 // AddValidators to the Validation
-func (v *Validation) AddValidators(m map[string]interface{}) {
+func (v *Validation) AddValidators(m map[string]interface{}) *Validation {
 	for name, checkFunc := range m {
 		v.AddValidator(name, checkFunc)
 	}
+	return v
 }
 
 // AddValidator to the Validation. checkFunc must return a bool.
@@ -186,12 +187,14 @@ func (v *Validation) AddValidators(m map[string]interface{}) {
 //		// do validate val ...
 //		return true
 //	})
-func (v *Validation) AddValidator(name string, checkFunc interface{}) {
+func (v *Validation) AddValidator(name string, checkFunc interface{}) *Validation {
 	fv := checkValidatorFunc(name, checkFunc)
 
 	v.validators[name] = 2 // custom
 	v.validatorValues[name] = fv
 	v.validatorMetas[name] = newFuncMeta(name, false, fv)
+
+	return v
 }
 
 // ValidatorMeta get by name
@@ -301,6 +304,7 @@ func (v *Validation) AddTranslates(m map[string]string) {
 }
 
 // WithMessages settings. you can custom validator error messages.
+//
 // Usage:
 // 	// key is "validator" or "field.validator"
 // 	v.WithMessages(map[string]string{

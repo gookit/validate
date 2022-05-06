@@ -44,7 +44,7 @@ type Rule struct {
 	beforeFunc func(v *Validation) bool // func (val interface{}) bool
 	// you can custom filter func
 	filterFunc func(val interface{}) (interface{}, error)
-	// custom check func's mate info
+	// custom check function's mate info
 	checkFuncMeta *funcMeta
 	// custom check is empty.
 	emptyChecker func(val interface{}) bool
@@ -107,6 +107,7 @@ func (r *Rule) SetBeforeFunc(fn func(v *Validation) bool) {
 }
 
 // SetMessage set error message.
+//
 // Usage:
 // 	v.AddRule("name", "required").SetMessage("error message")
 func (r *Rule) SetMessage(errMsg string) *Rule {
@@ -115,6 +116,7 @@ func (r *Rule) SetMessage(errMsg string) *Rule {
 }
 
 // SetMessages set error message map.
+//
 // Usage:
 // 	v.AddRule("name,email", "required").SetMessages(MS{
 // 		"name": "error message 1",
@@ -182,10 +184,6 @@ func (v *Validation) StringRule(field, rule string, filterRule ...string) *Valid
 			validator := list[0]
 			realName := ValidatorName(validator)
 			switch realName {
-			// set error message for the field TODO
-			// case "message":
-			// 	// message key like "age.required"
-			// 	v.trans.AddMessage(field+"."+validator, list[1])
 			// add default value for the field
 			case "default":
 				v.SetDefValue(field, list[1])

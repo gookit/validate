@@ -307,7 +307,6 @@ func parseArgString(argStr string) (ss []string) {
 	if len(argStr) == 1 { // one char
 		return []string{argStr}
 	}
-
 	return stringSplit(argStr, ",")
 }
 

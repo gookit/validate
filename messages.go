@@ -39,6 +39,14 @@ func (es Errors) Empty() bool {
 	return len(es) == 0
 }
 
+// ErrOrNil returns nil on no error
+func (es Errors) ErrOrNil() error {
+	if len(es) == 0 {
+		return nil
+	}
+	return es.OneError()
+}
+
 // Add a error for the field
 func (es Errors) Add(field, validator, message string) {
 	if _, ok := es[field]; ok {
@@ -144,6 +152,7 @@ var builtinMessages = map[string]string{
 
 	"isURL":     "{field} must be an valid URL address",
 	"isFullURL": "{field} must be an valid full URL address",
+	"regexp":    "{field} must be match pattern %s",
 
 	"isFile":  "{field} must be an uploaded file",
 	"isImage": "{field} must be an uploaded image file",
