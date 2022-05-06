@@ -753,6 +753,32 @@ func TestIssue_120(t *testing.T) {
 	assert.True(t, ok)
 }
 
+// https://github.com/gookit/validate/issues/125
+func TestIssue_125(t *testing.T) {
+	defer validate.ResetOption()
+
+	validate.Config(func(opt *validate.GlobalOption) {
+		opt.SkipOnEmpty = false
+	})
+	validate.AddValidator("custom", func(value interface{}) bool {
+		// validation...
+		return true
+	})
+
+	v := validate.Map(map[string]interface{}{
+		"field": nil,
+	})
+	v.StringRule("field", "custom")
+	assert.True(t, v.Validate())
+
+	var val *int
+	v2 := validate.Map(map[string]interface{}{
+		"field": val,
+	})
+	v2.StringRule("field", "custom")
+	assert.True(t, v2.Validate())
+}
+
 // https://github.com/gookit/validate/issues/135
 func TestIssue_135(t *testing.T) {
 	type SubjectCreateReq struct {

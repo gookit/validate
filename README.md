@@ -32,7 +32,9 @@
 
 ## Validate Struct
 
-With the `validate` tag of the structure, you can quickly verify a structure data.
+### Config the struct use tags
+
+Use the `validate` tag of the structure, you can quickly verify a structure data.
 
 **`v1.2.1+` Update**:
 

@@ -425,10 +425,22 @@ func callValidatorValue(fv reflect.Value, val interface{}, args []interface{}) b
 
 	// build params for the validator func.
 	argIn := make([]reflect.Value, argNum+1)
-	argIn[0] = reflect.ValueOf(val)
 
+	// if val is interface{}(nil): rftVal.IsValid()==false
+	// if val is typed(nil): rftVal.IsValid()==true
+	rftVal := reflect.ValueOf(val)
+	// fix: #125 fv.Call() will panic on rftVal.Kind() is Invalid
+	if !rftVal.IsValid() {
+		rftVal = ifaceNilVal
+	}
+
+	argIn[0] = rftVal
 	for i := 0; i < argNum; i++ {
-		argIn[i+1] = reflect.ValueOf(args[i])
+		rftValA := reflect.ValueOf(args[i])
+		if !rftValA.IsValid() {
+			rftVal = ifaceNilVal
+		}
+		argIn[i+1] = rftValA
 	}
 
 	// NOTICE: f.CallSlice()与Call() 不一样的是，CallSlice参数的最后一个会被展开
