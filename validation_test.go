@@ -134,7 +134,7 @@ func TestErrorMessages(t *testing.T) {
 		Age  int
 		Name string
 	}{}
-	err := v.BindSafeData(&u)
+	err := v.BindStruct(&u)
 	is.Nil(err)
 	is.Equal(0, u.Age)
 
@@ -718,45 +718,59 @@ func TestValidation_ValidateData(t *testing.T) {
 	assert.Len(t, v.Validators(false), 0)
 }
 
-func TestGetSetOnNilData(t *testing.T) {
-	ris := assert.New(t)
+func TestGetSet_OnNilData(t *testing.T) {
+	is := assert.New(t)
 
 	// custom new
-	v := &Validation{}
+	v := &Validation{
+		Errors: make(Errors),
+	}
 
 	// Get
 	val, ok := v.Get("age")
-	ris.Nil(val)
-	ris.False(ok)
+	is.Nil(val)
+	is.False(ok)
 
 	// Safe
 	val, ok = v.Safe("age")
-	ris.Nil(val)
-	ris.False(ok)
+	is.Nil(val)
+	is.False(ok)
 
 	// Raw
 	val, ok = v.Raw("age")
-	ris.Nil(val)
-	ris.False(ok)
+	is.Nil(val)
+	is.False(ok)
+
+	// RawVal
+	val = v.RawVal("age")
+	is.Nil(val)
 
 	// Set
 	err := v.Set("age", 12)
-	ris.Error(err)
+	is.Error(err)
+
+	// WithTrans
+	v.WithTrans(NewTranslator())
+
+	// AddErrorf
+	v.AddErrorf("age", "check failed")
+	is.Error(v.Errors)
+	is.Equal("check failed", v.Errors.Random())
 }
 
 func TestBuiltInValidators(t *testing.T) {
-	ris := assert.New(t)
+	is := assert.New(t)
 	v := New(M{"age": "12"})
 	v.StringRule("age", "isNumber")
-	ris.True(v.Validate())
+	is.True(v.Validate())
 	v.Reset()
 
 	v.StringRule("age", "isInt", "int")
-	ris.True(v.Validate())
-	ris.Equal(12, v.SafeVal("age"))
+	is.True(v.Validate())
+	is.Equal(12, v.SafeVal("age"))
 	v.Reset()
 
-	ris.Panics(func() {
+	is.Panics(func() {
 		v.StringRule("age", "not-exist")
 		v.Validate()
 	})
@@ -774,7 +788,6 @@ func TestStructWithArray(t *testing.T) {
 	}
 
 	is := assert.New(t)
-
 	v := New(WithArray{})
 
 	is.False(v.Validate())

@@ -27,6 +27,7 @@ var (
  *************************************************************/
 
 // Errors validate errors definition
+//
 // Example:
 // 	{
 // 		"field": {validator: message, validator1: message1}

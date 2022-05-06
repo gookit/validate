@@ -225,6 +225,11 @@ func Map(m map[string]interface{}, scene ...string) *Validation {
 	return FromMap(m).Create().SetScene(scene...)
 }
 
+// MapWithRules validation create and with rules
+// func MapWithRules(m map[string]interface{}, rules MS) *Validation {
+// 	return FromMap(m).Create().StringRules(rules)
+// }
+
 // JSON create validation from JSON string.
 func JSON(s string, scene ...string) *Validation {
 	return mustNewValidation(FromJSON(s)).SetScene(scene...)
@@ -387,6 +392,7 @@ func FromURLValues(values url.Values) *FormData {
 }
 
 // FromQuery build data instance.
+//
 // Usage:
 // 	validate.FromQuery(r.URL.Query()).Create()
 func FromQuery(values url.Values) *FormData {

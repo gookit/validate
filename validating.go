@@ -438,7 +438,7 @@ func callValidatorValue(fv reflect.Value, val interface{}, args []interface{}) b
 	for i := 0; i < argNum; i++ {
 		rftValA := reflect.ValueOf(args[i])
 		if !rftValA.IsValid() {
-			rftVal = ifaceNilVal
+			rftValA = ifaceNilVal
 		}
 		argIn[i+1] = rftValA
 	}

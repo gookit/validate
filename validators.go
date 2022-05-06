@@ -136,7 +136,6 @@ func ValidatorName(name string) string {
 	if rName, ok := validatorAliases[name]; ok {
 		return rName
 	}
-
 	return name
 }
 
@@ -628,13 +627,12 @@ func IsInt(val interface{}, minAndMax ...int64) (ok bool) {
 		return intVal >= minVal
 	}
 
-	maxVal := minAndMax[1]
-
 	// min and max length check
-	return intVal >= minVal && intVal <= maxVal
+	return intVal >= minVal && intVal <= minAndMax[1]
 }
 
 // IsString check and support length check.
+//
 // Usage:
 // 	ok := IsString(val)
 // 	ok := IsString(val, 5) // with min len check
@@ -666,8 +664,7 @@ func IsString(val interface{}, minAndMaxLen ...int) (ok bool) {
 	}
 
 	// min and max length check
-	maxLen := minAndMaxLen[1]
-	return strLen >= minLen && strLen <= maxLen
+	return strLen >= minLen && strLen <= minAndMaxLen[1]
 }
 
 /*************************************************************
@@ -1015,7 +1012,7 @@ func IsEqual(val, wantVal interface{}) bool {
 	// compare basic type: bool, int(X), uint(X), string, float(X)
 	equal, err := eq(sv, wv)
 
-	// is not an basic type, eg: slice, array, map ...
+	// is not a basic type, eg: slice, array, map ...
 	if err != nil {
 		expBt, ok := val.([]byte)
 		if !ok {

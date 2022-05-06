@@ -211,6 +211,7 @@ func (v *Validation) StringRule(field, rule string, filterRule ...string) *Valid
 }
 
 // StringRules add multi rules by string map.
+//
 // Usage:
 // 	v.StringRules(map[string]string{
 // 		"name": "required|string|min_len:12",
@@ -224,6 +225,7 @@ func (v *Validation) StringRules(mp MS) *Validation {
 }
 
 // ConfigRules add multi rules by string map. alias of StringRules()
+//
 // Usage:
 // 	v.ConfigRules(map[string]string{
 // 		"name": "required|string|min:12",
@@ -266,4 +268,18 @@ func (v *Validation) AppendRule(rule *Rule) *Rule {
 	// append
 	v.rules = append(v.rules, rule)
 	return rule
+}
+
+// AppendRules instances at once
+func (v *Validation) AppendRules(rules ...*Rule) *Validation {
+	for _, rule := range rules {
+		rule.realName = ValidatorName(rule.validator)
+		rule.skipEmpty = v.SkipOnEmpty
+		// validator name is not "required"
+		rule.nameNotRequired = !strings.HasPrefix(rule.realName, "required")
+	}
+
+	// appends
+	v.rules = append(v.rules, rules...)
+	return v
 }

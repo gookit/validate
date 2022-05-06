@@ -67,6 +67,7 @@ func (v *Validation) FilterFuncValue(name string) reflect.Value {
 }
 
 // FilterRule add filter rule.
+//
 // Usage:
 // 	v.FilterRule("name", "trim|lower")
 // 	v.FilterRule("age", "int")
@@ -117,6 +118,7 @@ func newFilterRule(fields []string) *FilterRule {
 }
 
 // AddFilters add filter(s).
+//
 // Usage:
 // 	r.AddFilters("int", "str2arr:,")
 func (r *FilterRule) AddFilters(filters ...string) *FilterRule {

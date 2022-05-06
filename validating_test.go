@@ -56,8 +56,9 @@ func TestStructUseDefault(t *testing.T) {
 
 	// check/filter default value
 	u = &user{Age: 90}
-	v = New(u)
-	v.CheckDefault = true
+	v = New(u).WithSelf(func(v *Validation) {
+		v.CheckDefault = true
+	})
 
 	is.True(v.Validate())
 	is.Equal("TOM", u.Name)
@@ -145,8 +146,7 @@ func TestValidation_RequiredWithoutAll(t *testing.T) {
 		"age":     "18",
 		"name":    "test",
 		"nothing": "",
-	})
-	v.StringRules(MS{
+	}).StringRules(MS{
 		"age":      "required_without_all:name,city",
 		"anything": "required_without:age,name",
 		"nothing":  "required_without_all:sex,city",
@@ -176,4 +176,28 @@ func TestVariadicArgs(t *testing.T) {
 	v.StringRule("age", "required|checkAge:1,2,3,4")
 	ok := v.Validate()
 	assert.True(t, ok)
+}
+
+func TestValidation_Validate_filter(t *testing.T) {
+	v := Map(M{
+		"age": "abc",
+	}).FilterRules(MS{
+		"age": "int",
+	})
+
+	assert.False(t, v.Validate())
+	assert.Equal(t, `strconv.Atoi: parsing "abc": invalid syntax`, v.Errors.One())
+}
+
+func TestValidation_Validate_argHasNil(t *testing.T) {
+	// new rule
+	r1 := NewRule("age", "eq", nil)
+
+	d := M{
+		"age": 23,
+	}
+	v := Map(d).AppendRules(r1)
+
+	assert.False(t, v.Validate())
+	assert.Equal(t, `age field did not pass validation`, v.Errors.One())
 }

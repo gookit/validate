@@ -126,7 +126,7 @@ func (v *Validation) WithSelf(fn func(v *Validation)) *Validation {
 	return v
 }
 
-// WithTrans with an custom translator
+// WithTrans with a custom translator
 func (v *Validation) WithTrans(trans *Translator) *Validation {
 	v.trans = trans
 	return v
