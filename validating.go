@@ -2,6 +2,7 @@ package validate
 
 import (
 	"reflect"
+	"strings"
 )
 
 // const requiredValidator = "required"
@@ -96,12 +97,11 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 		// get field value. val, exist := v.Get(field)
 		val, exist, isDefault := v.GetWithDefault(field)
 
-		// not exists but has default value
+		// value not exists but has default value
 		if isDefault {
 			// update source data field value and re-set value
 			val, err := v.updateValue(field, val)
 			if err != nil {
-				// panicf(err.Error())
 				v.AddErrorf(field, err.Error())
 				if v.StopOnError {
 					return true
@@ -208,7 +208,7 @@ func (r *Rule) fileValidate(field, name string, v *Validation) uint8 {
 }
 
 // validate the field value
-func (r *Rule) valueValidate(field, name string, val interface{}, v *Validation) bool {
+func (r *Rule) valueValidate(field, name string, val interface{}, v *Validation) (ok bool) {
 	// "-" OR "safe" mark field value always is safe.
 	if name == "-" || name == "safe" {
 		return true
@@ -224,10 +224,16 @@ func (r *Rule) valueValidate(field, name string, val interface{}, v *Validation)
 		}
 	}
 
-	// some prepare and check.
-	argNum := len(r.arguments) + 1 // "+1" is the "val" position
 	rftVal := reflect.ValueOf(val)
 	valKind := rftVal.Kind()
+
+	// want check sub element in a slice list. eg: field=names.*
+	if valKind == reflect.Slice && strings.HasSuffix(field, ".*") {
+
+	}
+
+	// some prepare and check.
+	argNum := len(r.arguments) + 1 // "+1" is the "val" position
 	// check arg num is match, need exclude "requiredXXX"
 	if r.nameNotRequired {
 		//noinspection GoNilness
@@ -235,31 +241,45 @@ func (r *Rule) valueValidate(field, name string, val interface{}, v *Validation)
 
 		//noinspection GoNilness
 		ft := fm.fv.Type()
-		// convert field val type, is first argument.
-		firstTyp := ft.In(0).Kind()
-		if firstTyp != valKind && firstTyp != reflect.Interface {
-			ak, err := basicKind(rftVal)
-			if err != nil { // todo check?
+		// convert field value type, is first argument.
+		arg0Kind := ft.In(0).Kind()
+		if arg0Kind != valKind && arg0Kind != reflect.Interface {
+			val, ok = convValAsFuncArg0Type(arg0Kind, valKind, val)
+			if !ok {
 				//noinspection GoNilness
-				v.convArgTypeError(field, fm.name, valKind, firstTyp, 0)
+				v.convArgTypeError(field, fm.name, valKind, arg0Kind, 0)
 				return false
-			}
-
-			// manual converted
-			if nVal, _ := convertType(val, ak, firstTyp); nVal != nil {
-				val = nVal
 			}
 		}
 	}
 
 	// 1. args data type convert
 	args := r.arguments
-	if ok := convertArgsType(v, fm, field, args); !ok {
+	if ok = convertArgsType(v, fm, field, args); !ok {
 		return false
 	}
 
 	// 2. call built in validators
 	return callValidator(v, fm, field, val, r.arguments)
+}
+
+// convert input field value type, is validator func first argument.
+func convValAsFuncArg0Type(arg0Kind, valKind reflect.Kind, val interface{}) (interface{}, bool) {
+	// ak, err := basicKind(rftVal)
+	bk, err := basicKindV2(valKind)
+	if err != nil {
+		//noinspection GoNilness
+		// v.convArgTypeError(field, fm.name, valKind, arg0Kind, 0)
+		return nil, false
+	}
+
+	// manual converted
+	if nVal, _ := convertType(val, bk, arg0Kind); nVal != nil {
+		return nVal, true
+	}
+
+	// TODO return nil, false
+	return val, true
 }
 
 func callValidator(v *Validation, fm *funcMeta, field string, val interface{}, args []interface{}) (ok bool) {
@@ -368,16 +388,17 @@ func convertArgsType(v *Validation, fm *funcMeta, field string, args []interface
 		// index in the func
 		// "+1" because func first arg is `val`, need skip it.
 		fcArgIndex := i + 1
+		argVKind := av.Kind()
 
 		// Notice: "+1" because first arg is field-value, need exclude it.
 		if fm.isVariadic && i+1 >= lastArgIndex {
-			if lastTyp == av.Kind() { // type is same
+			if lastTyp == argVKind { // type is same
 				continue
 			}
 
-			ak, err := basicKind(av)
+			ak, err := basicKindV2(argVKind)
 			if err != nil {
-				v.convArgTypeError(field, fm.name, av.Kind(), wantTyp, fcArgIndex)
+				v.convArgTypeError(field, fm.name, argVKind, wantTyp, fcArgIndex)
 				return
 			}
 
@@ -388,7 +409,7 @@ func convertArgsType(v *Validation, fm *funcMeta, field string, args []interface
 			}
 
 			// unable to convert
-			v.convArgTypeError(field, fm.name, av.Kind(), wantTyp, fcArgIndex)
+			v.convArgTypeError(field, fm.name, argVKind, wantTyp, fcArgIndex)
 			return
 		}
 
@@ -397,13 +418,13 @@ func convertArgsType(v *Validation, fm *funcMeta, field string, args []interface
 		wantTyp = argITyp.Kind()
 
 		// type is same. or want type is interface
-		if wantTyp == av.Kind() || wantTyp == reflect.Interface {
+		if wantTyp == argVKind || wantTyp == reflect.Interface {
 			continue
 		}
 
-		ak, err := basicKind(av)
+		ak, err := basicKindV2(argVKind)
 		if err != nil {
-			v.convArgTypeError(field, fm.name, av.Kind(), wantTyp, fcArgIndex)
+			v.convArgTypeError(field, fm.name, argVKind, wantTyp, fcArgIndex)
 			return
 		}
 

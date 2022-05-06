@@ -359,6 +359,7 @@ func getVariadicKind(typString string) reflect.Kind {
 	return reflect.Invalid
 }
 
+// convertType use basic kind
 func convertType(srcVal interface{}, srcKind kind, dstType reflect.Kind) (interface{}, error) {
 	switch srcKind {
 	case stringKind:
@@ -495,7 +496,6 @@ func indirectInterface(v reflect.Value) reflect.Value {
 	if v.IsNil() {
 		return emptyValue
 	}
-
 	return v.Elem()
 }
 
@@ -525,7 +525,11 @@ const (
 )
 
 func basicKind(v reflect.Value) (kind, error) {
-	switch v.Kind() {
+	return basicKindV2(v.Kind())
+}
+
+func basicKindV2(kind reflect.Kind) (kind, error) {
+	switch kind {
 	case reflect.Bool:
 		return boolKind, nil
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
@@ -547,13 +551,13 @@ func basicKind(v reflect.Value) (kind, error) {
 // eq evaluates the comparison a == b
 func eq(arg1 reflect.Value, arg2 reflect.Value) (bool, error) {
 	v1 := indirectInterface(arg1)
-	k1, err := basicKind(v1)
+	k1, err := basicKindV2(v1.Kind())
 	if err != nil {
 		return false, err
 	}
 
 	v2 := indirectInterface(arg2)
-	k2, err := basicKind(v2)
+	k2, err := basicKindV2(v2.Kind())
 	if err != nil {
 		return false, err
 	}

@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/gookit/filter"
+	"github.com/gookit/goutil/maputil"
 	"github.com/gookit/goutil/strutil"
 )
 
@@ -99,13 +100,13 @@ func (d *MapData) Set(field string, val interface{}) (interface{}, error) {
 	return val, nil
 }
 
-// Get value by key
+// Get value by key. support get value by path.
 func (d *MapData) Get(field string) (interface{}, bool) {
 	// if fv, ok := d.fields[field]; ok {
 	// 	return fv, true
 	// }
 
-	return filter.GetByPath(field, d.Map)
+	return maputil.GetByPath(field, d.Map)
 }
 
 // Create a Validation from data
@@ -473,7 +474,7 @@ func (d *StructData) loadMessagesFromTag(trans *Translator, field, vRule, vMsg s
  * Struct data operate
  *************************************************************/
 
-// Get value by field name
+// Get value by field name. support get sub-value by path.
 func (d *StructData) Get(field string) (interface{}, bool) {
 	var fv reflect.Value
 	field = strutil.UpperFirst(field)
@@ -570,6 +571,7 @@ func (d *StructData) Get(field string) (interface{}, bool) {
 }
 
 // Set value by field name.
+//
 // Notice: `StructData.src` the incoming struct must be a pointer to set the value
 func (d *StructData) Set(field string, val interface{}) (newVal interface{}, err error) {
 	field = strutil.UpperFirst(field)
@@ -628,7 +630,7 @@ func (d *StructData) Set(field string, val interface{}) (newVal interface{}, err
 	}
 
 	// try manual convert type
-	srcKind, err := basicKind(rftVal)
+	srcKind, err := basicKindV2(rftVal.Kind())
 	if err != nil {
 		return nil, err
 	}
