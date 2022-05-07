@@ -198,6 +198,7 @@ func main()  {
 		"oldSt": 1,
 		"newSt": 2,
 		"email": "some@email.com",
+		"tags": []string{"go", "php", "java"},
 	}
 
 	v := validate.Map(m)
@@ -211,6 +212,9 @@ func main()  {
 	// can also
 	v.StringRule("age", "required|int|min:1|max:99")
 	v.StringRule("name", "required|minLen:7")
+	v.StringRule("tags", "required|slice|minlen:1")
+	// feat: support check sub-item in slice
+	v.StringRule("tags.*", "required|string|min_len:7")
 
 	// v.WithScenes(map[string]string{
 	//	 "create": []string{"name", "email"},

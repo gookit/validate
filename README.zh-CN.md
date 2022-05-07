@@ -151,8 +151,10 @@ func main()  {
 	// 也可以这样，一次添加多个验证器
 	v.StringRule("age", "required|int|min:1|max:99")
 	v.StringRule("name", "required|minLen:7")
+	// feat: 支持在 slice 中检查子项的值
+	v.StringRule("tags.*", "required|string|min_len:7")
 
-    // 设置不同场景验证不同的字段
+	// 设置不同场景验证不同的字段
 	// v.WithScenes(map[string]string{
 	//	 "create": []string{"name", "email"},
 	//	 "update": []string{"name"},
