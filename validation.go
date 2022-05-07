@@ -3,6 +3,7 @@ package validate
 import (
 	"fmt"
 	"reflect"
+	"strings"
 )
 
 // some default value settings.
@@ -379,10 +380,15 @@ func (v *Validation) RawVal(key string) interface{} {
 	return val
 }
 
-// Get value by key
+// Get value by key.
 func (v *Validation) Get(key string) (interface{}, bool) {
 	if v.data == nil { // check input data
 		return nil, false
+	}
+
+	// if end withs: .*, return the parent value
+	if strings.HasSuffix(key, ".*") {
+		key = key[0 : len(key)-2]
 	}
 
 	// find from filtered data.
@@ -394,6 +400,8 @@ func (v *Validation) Get(key string) (interface{}, bool) {
 	if val, ok := v.safeData[key]; ok {
 		return val, true
 	}
+
+	// TODO add cache data v.caches[key]
 
 	// get from source data
 	return v.data.Get(key)

@@ -92,6 +92,7 @@ func buildRule(fields, validator, realName string, args []interface{}) *Rule {
 	return rule
 }
 
+// create a without context validator's instance.
 // see newValidation()
 func newValValidation() *Validation {
 	v := &Validation{

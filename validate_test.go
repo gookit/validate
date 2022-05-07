@@ -82,11 +82,11 @@ func TestUtil_Func_goodName(t *testing.T) {
 }
 
 func Test_Util_Func_convertType(t *testing.T) {
-	nVal, err := convertType(23, intKind, reflect.String)
+	nVal, err := convTypeByBaseKind(23, intKind, reflect.String)
 	assert.NoError(t, err)
 	assert.Equal(t, "23", nVal)
 
-	nVal, err = convertType(uint(23), uintKind, reflect.String)
+	nVal, err = convTypeByBaseKind(uint(23), uintKind, reflect.String)
 	assert.NoError(t, err)
 	assert.Equal(t, "23", nVal)
 }
@@ -94,6 +94,9 @@ func Test_Util_Func_convertType(t *testing.T) {
 func Test_IsZero(t *testing.T) {
 	assert.True(t, IsZero(reflect.ValueOf([2]int{})))
 	assert.True(t, IsZero(reflect.ValueOf(false)))
+	assert.Panics(t, func() {
+		IsZero(reflect.ValueOf(nil))
+	})
 }
 
 func TestMS_String(t *testing.T) {

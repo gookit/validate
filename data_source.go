@@ -635,7 +635,7 @@ func (d *StructData) Set(field string, val interface{}) (newVal interface{}, err
 		return nil, err
 	}
 
-	newVal, err = convertType(val, srcKind, fv.Kind())
+	newVal, err = convTypeByBaseKind(val, srcKind, fv.Kind())
 	if err != nil {
 		return nil, err
 	}

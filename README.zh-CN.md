@@ -528,7 +528,7 @@ func main()  {
 `max_len/maxLen/maxLength`  |  检查值的最大长度是给定大小
 `email/isEmail`  |   检查值是Email地址字符串
 `regex/regexp`  |  检查该值是否可以通过正则验证
-`arr/array/isArray`  |  检查值是数组`array`类型
+`arr/list/array/isArray`  |  检查值是 `array` 或者 `slice`类型
 `map/isMap`  |  检查值是 `map` 类型
 `strings/isStrings`  |  检查值是字符串切片类型(`[]string`)
 `ints/isInts`  |  检查值是`int` slice类型(only allow `[]int`)

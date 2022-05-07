@@ -1,10 +1,5 @@
 package validate
 
-import (
-	"database/sql/driver"
-	"fmt"
-)
-
 /*
 // TODO: idea for optimize ...
 // - use pool for Validation
@@ -46,8 +41,29 @@ func (f *factory) put(v *Validation) {
 }
 */
 
-func test() {
-	i32 := driver.Int32
+// func test() {
+// 	i32 := driver.Int32
+// 	fmt.Println(i32)
+// }
 
-	fmt.Println(i32)
+/*
+// TODO cache struct reflect value, tags and more
+type structMeta struct {
 }
+
+type cache struct {
+	m sync.Map
+	// m atomic.Value
+	// map[reflect.Type]*cStruct
+}
+
+func (c *cache) get(rt reflect.Type) *structMeta {
+	// key := rt.PkgPath() + rt.Name()
+	return c.m.Load(rt)
+}
+
+func (c *cache) set(rt reflect.Type, meta structMeta)  {
+	// key := rt.PkgPath() + rt.Name()
+	c.m.Store(rt, data)
+}
+*/

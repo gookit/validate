@@ -310,25 +310,6 @@ func parseArgString(argStr string) (ss []string) {
 	return stringSplit(argStr, ",")
 }
 
-func toInt64Slice(enum interface{}) (ret []int64, ok bool) {
-	rv := reflect.ValueOf(enum)
-	if rv.Kind() != reflect.Slice {
-		return
-	}
-
-	for i := 0; i < rv.Len(); i++ {
-		i64, err := mathutil.ToInt64(rv.Index(i).Interface())
-		if err != nil {
-			return []int64{}, false
-		}
-
-		ret = append(ret, i64)
-	}
-
-	ok = true
-	return
-}
-
 func getVariadicKind(typString string) reflect.Kind {
 	switch typString {
 	case "[]int":
@@ -359,8 +340,8 @@ func getVariadicKind(typString string) reflect.Kind {
 	return reflect.Invalid
 }
 
-// convertType use basic kind
-func convertType(srcVal interface{}, srcKind kind, dstType reflect.Kind) (interface{}, error) {
+// convTypeByBaseKind convert value type by base kind
+func convTypeByBaseKind(srcVal interface{}, srcKind kind, dstType reflect.Kind) (interface{}, error) {
 	switch srcKind {
 	case stringKind:
 		switch dstType {
@@ -377,7 +358,6 @@ func convertType(srcVal interface{}, srcKind kind, dstType reflect.Kind) (interf
 		case reflect.Int64:
 			return i64, nil
 		case reflect.String:
-			// fmt is slow : return fmt.Sprint(i64), nil
 			return strutil.ToString(srcVal)
 		}
 	default:
@@ -387,6 +367,24 @@ func convertType(srcVal interface{}, srcKind kind, dstType reflect.Kind) (interf
 		}
 	}
 	return nil, ErrConvertFail
+}
+
+// convert custom type to generic basic int, string, unit.
+// returns string, int64 or error
+func convToBasicType(val interface{}) (value interface{}, err error) {
+	v := reflect.ValueOf(val)
+
+	switch v.Kind() {
+	case reflect.String:
+		value = v.String()
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		value = v.Int()
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		value = v.Int() // always return int64
+	default:
+		err = ErrConvertFail
+	}
+	return
 }
 
 func panicf(format string, args ...interface{}) {
@@ -424,7 +422,7 @@ func checkValidatorFunc(name string, fn interface{}) reflect.Value {
 
 func checkFilterFunc(name string, fn interface{}) reflect.Value {
 	if !goodName(name) {
-		panic(fmt.Errorf("filter name %s is not a valid identifier", name))
+		panicf("filter name %s is not a valid identifier", name)
 	}
 
 	fv := reflect.ValueOf(fn)
@@ -473,32 +471,6 @@ func goodName(name string) bool {
 	return true
 }
 
-// ---- From package "text/template" -> text/template/exec.go
-// indirect returns the item at the end of indirection, and a bool to indicate if it's nil.
-// func indirect(v reflect.Value) (rv reflect.Value, isNil bool) {
-// 	for ; v.Kind() == reflect.Ptr || v.Kind() == reflect.Interface; v = v.Elem() {
-// 		if v.IsNil() {
-// 			return v, true
-// 		}
-// 	}
-// 	return v, false
-// }
-
-// indirectInterface returns the concrete value in an interface value,
-// or else the zero reflect.Value.
-// That is, if v represents the interface value x, the result is the same as reflect.ValueOf(x):
-// the fact that x was an interface value is forgotten.
-func indirectInterface(v reflect.Value) reflect.Value {
-	if v.Kind() != reflect.Interface {
-		return v
-	}
-
-	if v.IsNil() {
-		return emptyValue
-	}
-	return v.Elem()
-}
-
 /*************************************************************
  * Comparison:
  * From package "text/template" -> text/template/funcs.go
@@ -514,6 +486,7 @@ var (
 
 type kind int
 
+// base kinds
 const (
 	invalidKind kind = iota
 	boolKind
@@ -523,10 +496,6 @@ const (
 	stringKind
 	uintKind
 )
-
-func basicKind(v reflect.Value) (kind, error) {
-	return basicKindV2(v.Kind())
-}
 
 func basicKindV2(kind reflect.Kind) (kind, error) {
 	switch kind {
@@ -640,6 +609,7 @@ func includeElement(list, element interface{}) (ok, found bool) {
 
 // IsZero reports whether v is the zero value for its type.
 // It panics if the argument is invalid.
+//
 // NOTICE: this built-in method in reflect/value.go since go 1.13
 func IsZero(v reflect.Value) bool {
 	switch v.Kind() {
@@ -695,4 +665,31 @@ func removeValuePtr(t reflect.Value) reflect.Value {
 		t = t.Elem()
 	}
 	return t
+}
+
+// ---- From package "text/template" -> text/template/exec.go
+
+// indirect returns the item at the end of indirection, and a bool to indicate if it's nil.
+// func indirect(v reflect.Value) (rv reflect.Value, isNil bool) {
+// 	for ; v.Kind() == reflect.Ptr || v.Kind() == reflect.Interface; v = v.Elem() {
+// 		if v.IsNil() {
+// 			return v, true
+// 		}
+// 	}
+// 	return v, false
+// }
+
+// indirectInterface returns the concrete value in an interface value,
+// or else the zero reflect.Value.
+// That is, if v represents the interface value x, the result is the same as reflect.ValueOf(x):
+// the fact that x was an interface value is forgotten.
+func indirectInterface(v reflect.Value) reflect.Value {
+	if v.Kind() != reflect.Interface {
+		return v
+	}
+
+	if v.IsNil() {
+		return emptyValue
+	}
+	return v.Elem()
 }

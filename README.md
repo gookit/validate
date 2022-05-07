@@ -596,7 +596,7 @@ validator/aliases | description
 `intEq/intEqual`  |  Check value is int and equals to the given value.
 `len/length`  |  Check value length is equals to the given size(use for `string` `array` `slice` `map`).
 `regex/regexp`  |  Check if the value can pass the regular verification
-`arr/array/isArray`  |   Check value is array type
+`arr/list/array/isArray`  |   Check value is array, slice type
 `map/isMap`  |  Check value is a MAP type
 `strings/isStrings`  |  Check value is string slice type(only allow `[]string`).
 `ints/isInts`  |  Check value is int slice type(only allow `[]int`).

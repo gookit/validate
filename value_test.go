@@ -21,7 +21,7 @@ func TestVal_basic(t *testing.T) {
 	err = validate.Val(23, "||")
 	assert.NoError(t, err)
 
-	err = validate.Val(23, "required||min:23")
+	err = validate.Val(23, "required|:|min:23")
 	assert.NoError(t, err)
 
 	err = validate.Val(22, "required|min:23")

@@ -98,6 +98,7 @@ func TestTypeCheck(t *testing.T) {
 	is := assert.New(t)
 
 	// IsBool
+	is.True(IsBool(true))
 	is.True(IsBool("1"))
 	is.True(IsBool("true"))
 	is.True(IsBool("false"))
@@ -107,6 +108,7 @@ func TestTypeCheck(t *testing.T) {
 	is.True(IsFloat("3.4"))
 	is.True(IsFloat("2"))
 	is.False(IsFloat(""))
+	is.False(IsFloat(2))
 	is.False(IsFloat("ab"))
 	is.False(IsFloat(nil))
 
@@ -369,8 +371,20 @@ func TestStringCheck(t *testing.T) {
 	// IsNumber
 	is.True(IsNumber("0"))
 	is.True(IsNumber("123"))
+	is.False(IsNumber(nil))
+	is.False(IsNumber([]int{2}))
 	is.False(IsNumber(""))
 	is.False(IsNumber("-123"))
+	is.False(IsNumber("-123"))
+
+	// IsNumeric
+	is.True(IsNumeric("0"))
+	is.True(IsNumeric("123"))
+	is.False(IsNumeric(nil))
+	is.False(IsNumeric([]int{2}))
+	is.False(IsNumeric(""))
+	is.False(IsNumeric("-123"))
+	is.False(IsNumeric("-123"))
 
 	// IsMultiByte
 	is.True(IsMultiByte("你好"))
@@ -386,6 +400,7 @@ func TestStringCheck(t *testing.T) {
 
 	// IsMAC
 	is.True(IsMAC("01:23:45:67:89:ab"))
+	is.False(IsMAC(""))
 	is.False(IsMAC("123 abc"))
 
 	// IsCIDR
@@ -413,14 +428,6 @@ func TestStringCheck(t *testing.T) {
 	// IsCnMobile
 	is.True(IsCnMobile("13677778888"))
 	is.False(IsCnMobile("136777888"))
-
-	// IsISBN10
-	is.True(IsISBN10("0596528310"))
-	is.False(IsISBN10(""))
-
-	// IsISBN13
-	is.True(IsISBN13("9780596528317"))
-	is.False(IsISBN13(""))
 
 	// IsHexColor
 	is.True(IsHexColor("ccc"))
@@ -467,9 +474,17 @@ func TestStringCheck(t *testing.T) {
 	is.False(IsIntString(""))
 	is.False(IsIntString("a123"))
 
+	// Regexp
+	is.True(Regexp("123", "[0-9]+"))
+}
+
+func TestStringCheck_Case(t *testing.T) {
+	is := assert.New(t)
+
 	// HasLowerCase
 	is.True(HasLowerCase("abc"))
 	is.True(HasLowerCase("abC"))
+	is.False(HasLowerCase(""))
 	is.False(HasLowerCase("123"))
 	is.False(HasLowerCase("ABC"))
 
@@ -477,10 +492,21 @@ func TestStringCheck(t *testing.T) {
 	is.True(HasUpperCase("ABC"))
 	is.True(HasUpperCase("Abc"))
 	is.False(HasUpperCase("abc"))
+	is.False(HasUpperCase(""))
 	is.False(HasUpperCase("123"))
 
-	// Regexp
-	is.True(Regexp("123", "[0-9]+"))
+}
+
+func TestStringCheck_ISBN(t *testing.T) {
+	is := assert.New(t)
+
+	// IsISBN10
+	is.True(IsISBN10("0596528310"))
+	is.False(IsISBN10(""))
+
+	// IsISBN13
+	is.True(IsISBN13("9780596528317"))
+	is.False(IsISBN13(""))
 }
 
 func TestStringContains(t *testing.T) {
@@ -568,6 +594,8 @@ func TestPath(t *testing.T) {
 	// IsDirPath
 	is.True(IsDirPath("./"))
 	is.False(IsDirPath("./testdata/test.txt"))
+
+	is.True(PathExists("./testdata/test.txt"))
 
 	// IsFilePath
 	is.True(IsFilePath("./testdata/test.txt"))

@@ -12,6 +12,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/gookit/goutil/arrutil"
 	"github.com/gookit/goutil/fsutil"
 	"github.com/gookit/goutil/mathutil"
 	"github.com/gookit/goutil/strutil"
@@ -51,8 +52,8 @@ var (
 	// rxHostname       = regexp.MustCompile("^[^\\s]+\\.[^\\s]+$")
 	// rxUserDot        = regexp.MustCompile("(^[.]{1})|([.]{1}$)|([.]{2,})")
 	rxEmail     = regexp.MustCompile(Email)
-	rxISBN10    = regexp.MustCompile("^(?:[0-9]{9}X|[0-9]{10})$")
-	rxISBN13    = regexp.MustCompile("^(?:[0-9]{13})$")
+	rxISBN10    = regexp.MustCompile(`^(?:\d{9}X|\d{10})$`)
+	rxISBN13    = regexp.MustCompile(`^\d{13}$`)
 	rxUUID3     = regexp.MustCompile(UUID3)
 	rxUUID4     = regexp.MustCompile(UUID4)
 	rxUUID5     = regexp.MustCompile(UUID5)
@@ -64,11 +65,11 @@ var (
 	rxInt       = regexp.MustCompile(Int)
 	rxFloat     = regexp.MustCompile(Float)
 	rxCnMobile  = regexp.MustCompile(`^1\d{10}$`)
-	rxHexColor  = regexp.MustCompile("^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$")
+	rxHexColor  = regexp.MustCompile(`^#?([\da-fA-F]{3}|[\da-fA-F]{6})$`)
 	rxRGBColor  = regexp.MustCompile(RGBColor)
 	rxASCII     = regexp.MustCompile("^[\x00-\x7F]+$")
 	// --
-	rxHexadecimal    = regexp.MustCompile("^[0-9a-fA-F]+$")
+	rxHexadecimal    = regexp.MustCompile(`^[\da-fA-F]+$`)
 	rxPrintableASCII = regexp.MustCompile("^[\x20-\x7E]+$")
 	rxMultiByte      = regexp.MustCompile("[^\x00-\x7F]")
 	// rxFullWidth      = regexp.MustCompile(FullWidth)
@@ -173,7 +174,7 @@ func Validators() map[string]int8 {
 
 // Required field val check
 func (v *Validation) Required(field string, val interface{}) bool {
-	// check file
+	// check is upload file
 	fd, ok := v.data.(*FormData)
 	if ok && fd.HasFile(field) {
 		return true
@@ -196,7 +197,7 @@ func (v *Validation) RequiredIf(_ string, val interface{}, kvs ...string) bool {
 		// up: only one check value, direct compare value
 		if len(args) == 1 {
 			rftDv := reflect.ValueOf(dstVal)
-			wantVal, err := convertType(args[0], stringKind, rftDv.Kind())
+			wantVal, err := convTypeByBaseKind(args[0], stringKind, rftDv.Kind())
 			if err == nil && dstVal == wantVal {
 				return val != nil && NotEqual(val, "")
 			}
@@ -796,6 +797,10 @@ func IsAlphaDash(s string) bool {
 
 // IsNumber string. should >= 0
 func IsNumber(v interface{}) bool {
+	if v == nil {
+		return false
+	}
+
 	if s, err := strutil.ToString(v); err == nil {
 		return s != "" && rxNumber.MatchString(s)
 	}
@@ -804,6 +809,10 @@ func IsNumber(v interface{}) bool {
 
 // IsNumeric is string/int number. should >= 0
 func IsNumeric(v interface{}) bool {
+	if v == nil {
+		return false
+	}
+
 	if s, err := strutil.ToString(v); err == nil {
 		return s != "" && rxNumber.MatchString(s)
 	}
@@ -915,7 +924,6 @@ func HasLowerCase(s string) bool {
 	if s == "" {
 		return false
 	}
-
 	return rxHasLowerCase.MatchString(s)
 }
 
@@ -924,7 +932,6 @@ func HasUpperCase(s string) bool {
 	if s == "" {
 		return false
 	}
-
 	return rxHasUpperCase.MatchString(s)
 }
 
@@ -1094,30 +1101,13 @@ func Between(val interface{}, min, max int64) bool {
  * global: array, slice, map validators
  *************************************************************/
 
-// convert custom type to int or string or unit
-func convert(val interface{}) (value interface{}, err error) {
-	v := reflect.ValueOf(val)
-
-	switch v.Kind() {
-	case reflect.String:
-		value = v.String()
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		value = v.Int()
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		value = v.Uint()
-	default:
-		err = ErrConvertFail
-	}
-	return
-}
-
 // Enum value(int(X),string) should be in the given enum(strings, ints, uints).
 func Enum(val, enum interface{}) bool {
 	if val == nil || enum == nil {
 		return false
 	}
 
-	v, err := convert(val)
+	v, err := convToBasicType(val)
 	if err != nil {
 		return false
 	}
@@ -1131,19 +1121,18 @@ func Enum(val, enum interface{}) bool {
 				}
 			}
 		}
-
 		return false
 	}
 
-	// as int value
-	intVal, err := mathutil.Int64(v)
-	if err != nil {
+	// as int64 value
+	intVal, ok := v.(int64)
+	if !ok {
 		return false
 	}
 
-	if int64s, ok := toInt64Slice(enum); ok {
+	if int64s, err := arrutil.ToInt64s(enum); err == nil {
 		for _, i64 := range int64s {
-			if intVal == i64 { // exists
+			if intVal == i64 {
 				return true
 			}
 		}
