@@ -237,6 +237,8 @@ func TestLtGt(t *testing.T) {
 	is.True(Lt(2.1, 3))
 	is.True(Lt(0.1, 0.3))
 	is.False(Lt(3, 2))
+	is.False(Lt(0.1, "invalid"))
+	is.False(Lt(float32(0.1), "invalid"))
 	is.False(Lt("invalid", 3))
 
 	// Gt
@@ -288,6 +290,8 @@ func TestMax(t *testing.T) {
 	// ok
 	is.True(Max(3, 4))
 	is.True(Max(3, 3))
+	is.True(Max(3.2, 3.2))
+	is.True(Max(3.1, 3.2))
 	is.True(Max(int64(3), 3))
 
 	// fail
@@ -648,6 +652,7 @@ func TestLength(t *testing.T) {
 	is.True(RuneLength("a", 1))
 	is.True(StringLength("a中文", 3))
 	is.True(StringLength("a中文", 3, 6))
+	is.False(RuneLength(23, 2))
 	// fmt.Println(len([]rune("a中文")))
 
 	// MinLength
@@ -684,9 +689,10 @@ func TestEnumAndNotIn(t *testing.T) {
 		is.False(NotIn(val, list))
 	}
 
+	is.True(Enum(uint(2), []int{2, 3}))
+
 	is.False(Enum(nil, []int{}))
 	is.False(Enum('a', []int{}))
-	//
 	is.False(Enum([]int{2}, []int{2, 3}))
 	is.False(Enum(12, []string{"a", "b"}))
 	is.False(Enum(12, nil))

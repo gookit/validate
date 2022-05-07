@@ -39,6 +39,17 @@ func CallByValue(fv reflect.Value, args ...interface{}) []reflect.Value {
 	return fv.Call(in)
 }
 
+func parseArgString(argStr string) (ss []string) {
+	if argStr == "" { // no arg
+		return
+	}
+
+	if len(argStr) == 1 { // one char
+		return []string{argStr}
+	}
+	return stringSplit(argStr, ",")
+}
+
 func stringSplit(str, sep string) (ss []string) {
 	str = strings.TrimSpace(str)
 	if str == "" {
@@ -53,22 +64,7 @@ func stringSplit(str, sep string) (ss []string) {
 	return
 }
 
-// convert []interface{} to string TODO use arrutil.ToString()
-func sliceToString(arr []interface{}) string {
-	var b strings.Builder
-	b.WriteByte('[')
-
-	for i, v := range arr {
-		if i > 0 {
-			b.WriteByte(',')
-		}
-		b.WriteString(strutil.MustString(v))
-	}
-
-	b.WriteByte(']')
-	return b.String()
-}
-
+// TODO use arrutil.StringsToSlice()
 func strings2Args(strings []string) []interface{} {
 	args := make([]interface{}, len(strings))
 	for i, s := range strings {
@@ -77,6 +73,7 @@ func strings2Args(strings []string) []interface{} {
 	return args
 }
 
+// TODO use arrutil.SliceToStrings()
 func args2strings(args []interface{}) []string {
 	strSlice := make([]string, len(args))
 	for i, a := range args {
@@ -94,7 +91,7 @@ func buildArgs(val interface{}, args []interface{}) []interface{} {
 	return newArgs
 }
 
-// ValueIsEmpty check
+// ValueIsEmpty check. TODO use stdutil.ValueIsEmpty()
 func ValueIsEmpty(v reflect.Value) bool {
 	switch v.Kind() {
 	case reflect.Invalid:
@@ -118,7 +115,7 @@ func ValueIsEmpty(v reflect.Value) bool {
 	return reflect.DeepEqual(v.Interface(), reflect.Zero(v.Type()).Interface())
 }
 
-// ValueLen get value length
+// ValueLen get value length. TODO use stdutil.ValueLen()
 func ValueLen(v reflect.Value) int {
 	k := v.Kind()
 
@@ -127,9 +124,9 @@ func ValueLen(v reflect.Value) int {
 	case reflect.Map, reflect.Array, reflect.Chan, reflect.Slice, reflect.String:
 		return v.Len()
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-		return len(fmt.Sprint(v.Uint()))
+		return len(strconv.FormatInt(int64(v.Uint()), 10))
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return len(fmt.Sprint(v.Int()))
+		return len(strconv.FormatInt(v.Int(), 10))
 	case reflect.Float32, reflect.Float64:
 		return len(fmt.Sprint(v.Interface()))
 	}
@@ -193,15 +190,14 @@ func CalcLength(val interface{}) int {
 
 	// string length
 	if str, ok := val.(string); ok {
-		// return len(str)
-		// fix: issues#39
+		// fix: issues#39 dont use `return len(str)`
 		return len([]rune(str))
 	}
 
 	return ValueLen(reflect.ValueOf(val))
 }
 
-// value compare. use for compare int, string.
+// value compare. use for compare intX, string.
 func valueCompare(srcVal, dstVal interface{}, op string) (ok bool) {
 	var err error
 	var srcInt, dstInt int64
@@ -230,7 +226,7 @@ func valueCompare(srcVal, dstVal interface{}, op string) (ok bool) {
 	return compareInt64(srcInt, dstInt, op)
 }
 
-// compare int float value. returns `srcVal op(lt,lte,gt,gte) dstVal`?
+// compare int,float value. returns `srcVal op(lt,lte,gt,gte) dstVal`?
 func compareIntFloat(srcVal, dstVal interface{}, op string) (ok bool) {
 	if srcVal == nil || dstVal == nil {
 		return false
@@ -295,21 +291,7 @@ func compareFloat64(srcI64, dstI64 float64, op string) (ok bool) {
 	return
 }
 
-// func nameOfFunc(fv reflect.Value) string {
-// 	return runtime.FuncForPC(fv.Pointer()).Name()
-// }
-
-func parseArgString(argStr string) (ss []string) {
-	if argStr == "" { // no arg
-		return
-	}
-
-	if len(argStr) == 1 { // one char
-		return []string{argStr}
-	}
-	return stringSplit(argStr, ",")
-}
-
+// getVariadicKind name. usage: getVariadicKind(reflect.TypeOf(v))
 func getVariadicKind(typString string) reflect.Kind {
 	switch typString {
 	case "[]int":
@@ -380,23 +362,24 @@ func convToBasicType(val interface{}) (value interface{}, err error) {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		value = v.Int()
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		value = v.Int() // always return int64
+		value = int64(v.Uint()) // always return int64
 	default:
 		err = ErrConvertFail
 	}
 	return
 }
 
-func panicf(format string, args ...interface{}) {
-	panic("validate: " + fmt.Sprintf(format, args...))
-}
-
 // From package "text/template" -> text/template/funcs.go
 var (
-	errorType = reflect.TypeOf((*error)(nil)).Elem()
+	emptyValue = reflect.Value{}
+	errorType  = reflect.TypeOf((*error)(nil)).Elem()
 	// fmtStringerType  = reflect.TypeOf((*fmt.Stringer)(nil)).Elem()
 	// reflectValueType = reflect.TypeOf((*reflect.Value)(nil)).Elem()
 )
+
+func panicf(format string, args ...interface{}) {
+	panic("validate: " + fmt.Sprintf(format, args...))
+}
 
 func checkValidatorFunc(name string, fn interface{}) reflect.Value {
 	if !goodName(name) {
@@ -475,8 +458,6 @@ func goodName(name string) bool {
  * Comparison:
  * From package "text/template" -> text/template/funcs.go
  *************************************************************/
-
-// TODO: Perhaps allow comparison between signed and unsigned integers.
 
 var (
 	errBadComparisonType = errors.New("invalid type for operation")
@@ -653,7 +634,7 @@ func IsZero(v reflect.Value) bool {
 
 // Remove type multiple pointer
 func removeTypePtr(t reflect.Type) reflect.Type {
-	for t.Kind() == reflect.Ptr {
+	for t.Kind() == reflect.Pointer {
 		t = t.Elem()
 	}
 	return t
@@ -661,7 +642,7 @@ func removeTypePtr(t reflect.Type) reflect.Type {
 
 // Remove value multiple pointer
 func removeValuePtr(t reflect.Value) reflect.Value {
-	for t.Kind() == reflect.Ptr {
+	for t.Kind() == reflect.Pointer {
 		t = t.Elem()
 	}
 	return t

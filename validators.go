@@ -94,7 +94,8 @@ var (
  *************************************************************/
 
 type funcMeta struct {
-	fv   reflect.Value
+	fv reflect.Value
+	// validator name
 	name string
 	// readonly cache
 	numIn  int
@@ -148,6 +149,7 @@ func AddValidators(m map[string]interface{}) {
 }
 
 // AddValidator to the pkg. checkFunc must return a bool
+//
 // Usage:
 // 	v.AddValidator("myFunc", func(val interface{}) bool {
 //		// do validate val ...
@@ -544,10 +546,7 @@ func IsArray(val interface{}, strict ...bool) (ok bool) {
 		return false
 	}
 
-	rv := reflect.ValueOf(val)
-	if rv.Kind() == reflect.Ptr {
-		rv = rv.Elem()
-	}
+	rv := reflect.Indirect(reflect.ValueOf(val))
 
 	// strict: must go array type.
 	if len(strict) > 0 && strict[0] {
@@ -564,10 +563,7 @@ func IsSlice(val interface{}) (ok bool) {
 		return false
 	}
 
-	rv := reflect.ValueOf(val)
-	if rv.Kind() == reflect.Ptr {
-		rv = rv.Elem()
-	}
+	rv := reflect.Indirect(reflect.ValueOf(val))
 	return rv.Kind() == reflect.Slice
 }
 
@@ -600,15 +596,7 @@ func IsMap(val interface{}) (ok bool) {
 		return false
 	}
 
-	var rv reflect.Value
-	if rv, ok = val.(reflect.Value); !ok {
-		rv = reflect.ValueOf(val)
-	}
-
-	if rv.Kind() == reflect.Ptr {
-		rv = rv.Elem()
-	}
-
+	rv := reflect.Indirect(reflect.ValueOf(val))
 	return rv.Kind() == reflect.Map
 }
 
@@ -739,6 +727,7 @@ func IsURL(s string) bool {
 }
 
 // IsDataURI string.
+//
 // data:[<mime type>] ( [;charset=<charset>] ) [;base64],码内容
 // eg. "data:image/gif;base64,R0lGODlhA..."
 func IsDataURI(s string) bool {
@@ -929,37 +918,22 @@ func HasLowerCase(s string) bool {
 
 // HasUpperCase check string has upper case
 func HasUpperCase(s string) bool {
-	if s == "" {
-		return false
-	}
-	return rxHasUpperCase.MatchString(s)
+	return s != "" && rxHasUpperCase.MatchString(s)
 }
 
 // StartsWith check string is starts with sub-string
 func StartsWith(s, sub string) bool {
-	if s == "" {
-		return false
-	}
-
-	return strings.HasPrefix(s, sub)
+	return s != "" && strings.HasPrefix(s, sub)
 }
 
 // EndsWith check string is ends with sub-string
 func EndsWith(s, sub string) bool {
-	if s == "" {
-		return false
-	}
-
-	return strings.HasSuffix(s, sub)
+	return s != "" && strings.HasSuffix(s, sub)
 }
 
 // StringContains check string is contains sub-string
 func StringContains(s, sub string) bool {
-	if s == "" {
-		return false
-	}
-
-	return strings.Contains(s, sub)
+	return s != "" && strings.Contains(s, sub)
 }
 
 // Regexp match value string
@@ -1125,11 +1099,7 @@ func Enum(val, enum interface{}) bool {
 	}
 
 	// as int64 value
-	intVal, ok := v.(int64)
-	if !ok {
-		return false
-	}
-
+	intVal := v.(int64)
 	if int64s, err := arrutil.ToInt64s(enum); err == nil {
 		for _, i64 := range int64s {
 			if intVal == i64 {
@@ -1152,31 +1122,19 @@ func NotIn(val, enum interface{}) bool {
 // Length equal check for string, array, slice, map
 func Length(val interface{}, wantLen int) bool {
 	ln := CalcLength(val)
-	if ln == -1 {
-		return false
-	}
-
-	return ln == wantLen
+	return ln != -1 && ln == wantLen
 }
 
 // MinLength check for string, array, slice, map
 func MinLength(val interface{}, minLen int) bool {
 	ln := CalcLength(val)
-	if ln == -1 {
-		return false
-	}
-
-	return ln >= minLen
+	return ln != -1 && ln >= minLen
 }
 
 // MaxLength check for string, array, slice, map
 func MaxLength(val interface{}, maxLen int) bool {
 	ln := CalcLength(val)
-	if ln == -1 {
-		return false
-	}
-
-	return ln <= maxLen
+	return ln != -1 && ln <= maxLen
 }
 
 // ByteLength check string's length
@@ -1215,11 +1173,6 @@ func RuneLength(val interface{}, minLen int, maxLen ...int) bool {
 func StringLength(val interface{}, minLen int, maxLen ...int) bool {
 	return RuneLength(val, minLen, maxLen...)
 }
-
-// check every element's length
-// TODO func SliceItemLen(arr interface{}, minLen int, maxLen ...int)
-// apply validator to each sub-element of the val(slice, map)
-// TODO func Each(val interface{}, validator string, args ...interface{})
 
 /*************************************************************
  * global: date/time validators
