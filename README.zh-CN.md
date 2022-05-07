@@ -251,6 +251,57 @@ v := d.Validation()
 
 ## 更多使用
 
+### 验证错误信息
+
+`v.Errors` 是一个Map数据，键是字段名，值是 `map[string]string`。
+
+```go
+// do validating
+if v.Validate() {
+	return nil
+}
+
+// get errors
+es := v.Errors
+
+// check
+es.Empty() // bool
+
+// 返回一个随机的 error错误，如果没有错误返回 nil
+fmt.Println(v.Errors.OneError())
+fmt.Println(v.Errors.ErrOrNil())
+
+fmt.Println(v.Errors) // all error messages
+fmt.Println(v.Errors.One()) // returns a random error message text
+fmt.Println(v.Errors.Field("Name")) // returns error messages of the field 
+```
+
+**错误转为JSON**:
+
+- `StopOnError=true`(默认)，只会有一个错误:
+
+```json
+{
+    "field1": {
+        "required": "error msg0"
+    }
+}
+```
+
+- `StopOnError=false`时，可能会返回多个错误:
+
+```json
+{
+    "field1": {
+        "minLen": "error msg1",
+        "required": "error msg0"
+    },
+    "field2": {
+        "min": "error msg2"
+    }
+}
+```
+
 ### 全局选项
 
 你可以通过改变全局选项设置，来调整验证器的一些处理逻辑。

@@ -61,13 +61,13 @@ type UserForm struct {
 	Age      int       `validate:"required|int|min:1|max:99" message:"int:age must int|min:age min value is 1"`
 	CreateAt int       `validate:"min:1"`
 	Safe     int       `validate:"-"`
-	UpdateAt time.Time `validate:"required"`
+	UpdateAt time.Time `validate:"required" message:"update time is required"`
 	Code     string    `validate:"customValidator"`
 	// ExtInfo nested struct
 	ExtInfo struct{
 		Homepage string `validate:"required" label:"Home Page"`
 		CityName string
-	}
+	} `validate:"required" label:"Home Page"`
 }
 
 // CustomValidator custom validator in the source struct.
@@ -109,7 +109,7 @@ type UserForm struct {
 	ExtInfo struct{
 		Homepage string `validate:"required"`
 		CityName string
-	}
+	} `validate:"required"`
 }
 
 // CustomValidator custom validator in the source struct.
@@ -148,7 +148,9 @@ func (f UserForm) Translates() map[string]string {
 }
 ```
 
-### Do validating
+### Create and validating
+
+Can use `validate.Struct(ptr)` quick create a validation instance. then call `v.Validate()` for validating.
 
 ```go
 package main
@@ -317,6 +319,57 @@ v := d.Validation()
 ```
 
 ## More Usage
+
+### Validate error
+
+`v.Errors` is map data, top key is field name, value is `map[string]string`.
+
+```go
+// do validating
+if v.Validate() {
+	return nil
+}
+
+// get errors
+es := v.Errors
+
+// check
+es.Empty() // bool
+
+// returns an random error, if no error returns nil
+fmt.Println(v.Errors.OneError())
+fmt.Println(v.Errors.ErrOrNil())
+
+fmt.Println(v.Errors) // all error messages
+fmt.Println(v.Errors.One()) // returns a random error message text
+fmt.Println(v.Errors.Field("Name")) // returns error messages of the field 
+```
+
+**Encode to JSON**:
+
+- `StopOnError=true`(default), will only one error
+
+```json
+{
+    "field1": {
+        "required": "error msg0"
+    }
+}
+```
+
+- if `StopOnError=false`, will get multi error
+
+```json
+{
+    "field1": {
+        "minLen": "error msg1",
+        "required": "error msg0"
+    },
+    "field2": {
+        "min": "error msg2"
+    }
+}
+```
 
 ### Global Option
 
