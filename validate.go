@@ -305,12 +305,9 @@ func FromStruct(s interface{}) (*StructData, error) {
 		return data, ErrInvalidData
 	}
 
-	val := reflect.ValueOf(s)
-	if val.Kind() == reflect.Ptr && !val.IsNil() {
-		val = val.Elem()
-	}
-
+	val := reflect.Indirect(reflect.ValueOf(s))
 	typ := val.Type()
+
 	if val.Kind() != reflect.Struct || typ == timeType {
 		return data, ErrInvalidData
 	}

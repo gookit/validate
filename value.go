@@ -12,17 +12,20 @@ var (
 	emptyV = newValValidation()
 )
 
+// apply validator to each sub-element of the val(slice, map)
+// TODO func Each(val interface{}, rule string)
+
 // Var validating the value by given rule.
 // alias of the Val()
 func Var(val interface{}, rule string) error {
 	return Val(val, rule)
 }
 
-// Val validating the value by given rule.
+// Val quick validating the value by given rule.
 // returns error on fail, return nil on check ok.
 //
 // Usage:
-// 	validate.Val("xxx@mail.com", "required,email")
+// 	validate.Val("xxx@mail.com", "required|email")
 //
 // refer the Validation.StringRule() for parse rule string.
 func Val(val interface{}, rule string) error {

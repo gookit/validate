@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/gookit/goutil/arrutil"
 	"github.com/gookit/goutil/errorx"
 	"github.com/gookit/goutil/strutil"
 )
@@ -39,14 +40,6 @@ func (es Errors) Empty() bool {
 	return len(es) == 0
 }
 
-// ErrOrNil returns nil on no error
-func (es Errors) ErrOrNil() error {
-	if len(es) == 0 {
-		return nil
-	}
-	return es.OneError()
-}
-
 // Add a error for the field
 func (es Errors) Add(field, validator, message string) {
 	if _, ok := es[field]; ok {
@@ -61,8 +54,16 @@ func (es Errors) One() string {
 	return es.Random()
 }
 
-// OneError returns an random error
+// ErrOrNil returns an random error, if no error returns nil
+func (es Errors) ErrOrNil() error {
+	return es.OneError()
+}
+
+// OneError returns an random error, if no error returns nil
 func (es Errors) OneError() error {
+	if len(es) == 0 {
+		return nil
+	}
 	return errorx.Raw(es.Random())
 }
 
@@ -440,13 +441,13 @@ func (t *Translator) format(errMsg, field string, args []interface{}) string {
 
 		msgArgs := []string{
 			"{field}", field,
-			"{values}", sliceToString(args),
+			"{values}", arrutil.ToString(args),
 			"{args0}", strutil.MustString(args[0]),
 		}
 
 		// {args1end} -> args[1:]
 		if argLen > 1 {
-			msgArgs = append(msgArgs, "{args1end}", sliceToString(args[1:]))
+			msgArgs = append(msgArgs, "{args1end}", arrutil.ToString(args[1:]))
 		}
 
 		// replace message vars

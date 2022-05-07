@@ -164,7 +164,7 @@ func TestStructData_Create(t *testing.T) {
 	is.Equal("a error", v.Errors.One())
 
 	d.ValidateTag = ""
-	v = d.Create()
+	v = d.Validation()
 	is.True(v.Validate())
 
 	// get field value

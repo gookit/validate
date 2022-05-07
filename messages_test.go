@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/gookit/goutil/dump"
+	"github.com/gookit/goutil/jsonutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -33,19 +34,25 @@ func TestErrorsBasic(t *testing.T) {
 
 	assert.True(t, es.Empty())
 	assert.Equal(t, "", es.One())
+	assert.Nil(t, es.ErrOrNil())
 
-	es.Add("test", "v0", "err msg0")
+	es.Add("field", "required", "error msg0")
 	assert.Len(t, es, 1)
-	assert.Equal(t, "err msg0", es.One())
-	assert.Equal(t, "err msg0", es.FieldOne("test"))
-	assert.Equal(t, "test:\n v0: err msg0", es.String())
+	assert.Equal(t, "error msg0", es.One())
+	assert.Equal(t, "error msg0", es.FieldOne("field"))
+	assert.Equal(t, "field:\n required: error msg0", es.String())
 
-	es.Add("test2", "v1", "err msg2")
-	assert.Contains(t, fmt.Sprintf("%v", es.All()), "test:map[v0:err msg0]")
-	assert.Contains(t, fmt.Sprintf("%v", es.All()), "test2:map[v1:err msg2]")
+	es.Add("field2", "min", "error msg2")
+	assert.Contains(t, fmt.Sprintf("%v", es.All()), "field:map[required:error msg0]")
+	assert.Contains(t, fmt.Sprintf("%v", es.All()), "field2:map[min:error msg2]")
 
-	es.Add("test", "v1", "err msg1")
-	assert.Len(t, es.Field("test"), 2)
+	es.Add("field", "minLen", "error msg1")
+	assert.Len(t, es.Field("field"), 2)
+
+	jsonsStr, err := jsonutil.Pretty(es)
+	assert.NoError(t, err)
+	fmt.Println(jsonsStr)
+	dump.V(es)
 }
 
 func TestTranslatorBasic(t *testing.T) {

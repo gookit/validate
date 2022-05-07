@@ -352,7 +352,7 @@ func TestFromQuery(t *testing.T) {
 	is.Contains(v.Errors.All(), "name")
 }
 
-func TestRequest(t *testing.T) {
+func TestValidate_Request(t *testing.T) {
 	is := assert.New(t)
 
 	// =================== GET query data ===================
@@ -377,6 +377,7 @@ func TestRequest(t *testing.T) {
 	// create data
 	d, err := FromRequest(r)
 	is.Nil(err)
+
 	// create validation
 	v = d.Validation()
 	v.FilterRules(MS{

@@ -38,8 +38,6 @@ const (
 	fieldAtSubStruct
 )
 
-var timeType = reflect.TypeOf(time.Time{})
-
 // data (Un)marshal func
 var (
 	Marshal   MarshalFunc   = json.Marshal
@@ -210,6 +208,7 @@ var (
 	cmFaceType = reflect.TypeOf(new(CustomMessagesFace)).Elem()
 	ftFaceType = reflect.TypeOf(new(FieldTranslatorFace)).Elem()
 	cvFaceType = reflect.TypeOf(new(ConfigValidationFace)).Elem()
+	timeType   = reflect.TypeOf(time.Time{})
 )
 
 // Type get
@@ -480,12 +479,8 @@ func (d *StructData) Get(field string) (interface{}, bool) {
 	field = strutil.UpperFirst(field)
 
 	// want to get sub struct field.
-	if strings.ContainsRune(field, '.') {
+	if strings.IndexRune(field, '.') > 0 {
 		fieldNodes := strings.Split(field, ".")
-		if len(fieldNodes) < 2 {
-			return nil, false
-		}
-
 		topLevelField, ok := d.valueTpy.FieldByName(fieldNodes[0])
 		if !ok {
 			return nil, false
@@ -546,7 +541,6 @@ func (d *StructData) Get(field string) (interface{}, bool) {
 			if fv.IsNil() { // fix: top-field is nil
 				return nil, false
 			}
-
 			fv = removeValuePtr(fv)
 		}
 

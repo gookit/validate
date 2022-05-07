@@ -13,7 +13,6 @@ import (
 
 var (
 	filterValues map[string]reflect.Value
-	emptyValue   = reflect.Value{}
 )
 
 // AddFilters add global filters

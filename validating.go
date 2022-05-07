@@ -7,7 +7,7 @@ import (
 
 // const requiredValidator = "required"
 
-// the validate result status:
+// the validating result status:
 // 0 ok 1 skip 2 fail
 const (
 	statusOk uint8 = iota
@@ -132,7 +132,6 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 			// update source field value
 			newVal, err := v.updateValue(field, val)
 			if err != nil {
-				// panicf(err.Error())
 				v.AddErrorf(field, err.Error())
 				if v.StopOnError {
 					return true
@@ -397,7 +396,7 @@ func convertArgsType(v *Validation, fm *funcMeta, field string, args []interface
 		return true
 	}
 
-	var wantTyp reflect.Kind
+	var wantKind reflect.Kind
 
 	// convert args data type
 	for i, arg := range args {
@@ -415,7 +414,7 @@ func convertArgsType(v *Validation, fm *funcMeta, field string, args []interface
 
 			ak, err := basicKindV2(argVKind)
 			if err != nil {
-				v.convArgTypeError(field, fm.name, argVKind, wantTyp, fcArgIndex)
+				v.convArgTypeError(field, fm.name, argVKind, wantKind, fcArgIndex)
 				return
 			}
 
@@ -426,32 +425,32 @@ func convertArgsType(v *Validation, fm *funcMeta, field string, args []interface
 			}
 
 			// unable to convert
-			v.convArgTypeError(field, fm.name, argVKind, wantTyp, fcArgIndex)
+			v.convArgTypeError(field, fm.name, argVKind, wantKind, fcArgIndex)
 			return
 		}
 
 		// "+1" because func first arg is val, need skip it.
-		argITyp := ft.In(fcArgIndex)
-		wantTyp = argITyp.Kind()
+		argIType := ft.In(fcArgIndex)
+		wantKind = argIType.Kind()
 
 		// type is same. or want type is interface
-		if wantTyp == argVKind || wantTyp == reflect.Interface {
+		if wantKind == argVKind || wantKind == reflect.Interface {
 			continue
 		}
 
 		ak, err := basicKindV2(argVKind)
 		if err != nil {
-			v.convArgTypeError(field, fm.name, argVKind, wantTyp, fcArgIndex)
+			v.convArgTypeError(field, fm.name, argVKind, wantKind, fcArgIndex)
 			return
 		}
 
 		// can auto convert type.
-		if av.Type().ConvertibleTo(argITyp) {
-			args[i] = av.Convert(argITyp).Interface()
-		} else if nVal, _ := convTypeByBaseKind(args[i], ak, wantTyp); nVal != nil { // manual converted
+		if av.Type().ConvertibleTo(argIType) {
+			args[i] = av.Convert(argIType).Interface()
+		} else if nVal, _ := convTypeByBaseKind(args[i], ak, wantKind); nVal != nil { // manual converted
 			args[i] = nVal
 		} else { // unable to convert
-			v.convArgTypeError(field, fm.name, av.Kind(), wantTyp, fcArgIndex)
+			v.convArgTypeError(field, fm.name, argVKind, wantKind, fcArgIndex)
 			return
 		}
 	}
