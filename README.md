@@ -10,6 +10,8 @@
 `validate` is a generic Go data validate and filter tool library.
 
 - Support quick validate `Map`, `Struct`, `Request`(`Form`, `JSON`, `url.Values`, `UploadedFile`) data
+  - Supports checking each child value in a slice. eg: `v.StringRule("tags.*", "required|string|minlen:1")`
+  - Validating `http.Request` automatically collects data based on the request `Content-Type` value
 - Support filter/sanitize data before validate
 - Support add custom filter/validator func
 - Support scene settings, verify different fields in different scenes
@@ -32,13 +34,11 @@
 
 ## Validate Struct
 
+Use the `validate` tag of the structure, you can quickly config a structure.
+
 ### Config the struct use tags
 
-Use the `validate` tag of the structure, you can quickly verify a structure data.
-
-**`v1.2.1+` Update**:
-
-Can use `message` and `label` tags, config the field translates and error messages on struct.
+Field translations and error messages for structs can be quickly configured using the `message` and `label` tags.
 
 - Support configuration field mapping through structure tag, read the value of `json` tag by default
 - Support configuration error message via structure's `message` tag
@@ -235,7 +235,8 @@ func main()  {
 
 ## Validate Request
 
-If it is an HTTP request, you can quickly validate the data and pass the verification. Then bind the secure data to the structure.
+If it is an HTTP request, you can quickly validate the data and pass the verification.
+Then bind the secure data to the structure.
 
 ```go
 package main
@@ -320,7 +321,7 @@ v := d.Validation()
 
 ## More Usage
 
-### Validate error
+### Validate Error
 
 `v.Errors` is map data, top key is field name, value is `map[string]string`.
 
@@ -415,7 +416,7 @@ type GlobalOption struct {
 }
 ```
 
-Usage:
+**Usage**:
 
 ```go
 // change global opts
@@ -433,8 +434,10 @@ validate.Config(func(opt *validate.GlobalOption) {
 import "github.com/gookit/validate/locales/zhcn"
 
 // for all Validation.
-// NOTICE: must be register before on validate.New()
+// NOTICE: must be registered before on validate.New(), it only need call at once.
 zhcn.RegisterGlobal()
+
+// ... ...
 
 v := validate.New()
 
@@ -464,7 +467,16 @@ v.AddMessages(map[string]string{
 })
 ```
 
-- For a struct
+- Use struct tags: `message, label`
+
+```go
+type UserForm struct {
+    Name  string `validate:"required|minLen:7" label:"User Name"`
+    Email string `validate:"email" message:"email is invalid" label:"User Email"`
+}
+```
+
+- Use struct method `Messages()`
 
 ```go
 // Messages you can custom validator error messages. 

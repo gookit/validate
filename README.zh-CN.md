@@ -9,9 +9,10 @@
 
 Go通用的数据验证与过滤库，使用简单，内置大部分常用验证器、过滤器，支持自定义消息、字段翻译。
 
-- 支持验证 `Map` `Struct` `Request`（`Form`，`JSON`，`url.Values`, `UploadedFile`）数据
-  - 验证 `http.Request` 时会自动根据请求数据类型 `Content-Type` 收集数据
 - 简单方便，支持前置验证检查, 支持添加自定义验证器
+- 支持验证 `Map` `Struct` `Request`（`Form`，`JSON`，`url.Values`, `UploadedFile`）数据
+  - 支持检查 slice 中的每个子项值. eg: `v.StringRule("tags.*", "required|string|minlen:1")`
+  - 验证 `http.Request` 时会自动根据请求数据类型 `Content-Type` 收集数据
 - 支持将规则按场景进行分组设置，不同场景验证不同的字段
   - 已经内置了超多（**>70** 个）常用的验证器，查看 [内置验证器](#built-in-validators)
 - 支持在进行验证前对值使用过滤器进行净化过滤，适应更多场景
@@ -34,18 +35,59 @@ Please see the English introduction **[README](README.md)**
 
 ## 验证结构体(Struct)
 
+在结构体上添加 `validate`标签，可以快速对一个结构体进行验证设置。
+
+### 使用标签快速配置验证
+
+可以搭配使用 `message` 和 `label` 标签，快速配置结构体的字段翻译和错误消息。
+
+- 支持通过结构体配置字段输出名称，默认读取 `json` 标签的值
+- 支持通过结构体的 `message` tag 配置错误消息
+- 支持通过结构体的 `label` tag 字段映射/翻译
+
+**代码示例**:
+
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+
+	"github.com/gookit/validate"
+)
+
+// UserForm struct
+type UserForm struct {
+	Name     string    `validate:"required|min_len:7" message:"required:{field} is required" label:"用户名称"`
+	Email    string    `validate:"email" message:"email is invalid" label:"用户邮箱"`
+	Age      int       `validate:"required|int|min:1|max:99" message:"int:age must int|min:age min value is 1"`
+	CreateAt int       `validate:"min:1"`
+	Safe     int       `validate:"-"` // 标记字段安全无需验证
+	UpdateAt time.Time `validate:"required" message:"update time is required"`
+	Code     string    `validate:"customValidator"`
+	// 结构体嵌套
+	ExtInfo struct{
+		Homepage string `validate:"required" label:"用户主页"`
+		CityName string
+	} `validate:"required" label:"扩展信息"`
+}
+
+// CustomValidator custom validator in the source struct.
+func (f UserForm) CustomValidator(val string) bool {
+	return len(val) == 4
+}
+```
+
+### 使用结构体方法配置验证
+
 结构体可以实现3个接口方法，方便做一些自定义：
 
 - `ConfigValidation(v *Validation)` 将在创建验证器实例后调用
 - `Messages() map[string]string` 可以自定义验证器错误消息
 - `Translates() map[string]string` 可以自定义字段映射/翻译
 
-**`v1.2.1+` 更新**:
-
-- 支持通过结构体配置字段输出名称，默认读取 `json` 标签的值
-- 支持通过结构体的 `message` tag 配置错误消息
-- 支持通过结构体的 `label` tag 字段映射/翻译
-
+**代码示例**:
 
 ```go
 package main
@@ -60,17 +102,17 @@ import (
 // UserForm struct
 type UserForm struct {
 	Name     string    `validate:"required|minLen:7"`
-	Email    string    `validate:"email" message:"email is invalid" label:"用户邮箱"`
-	Age      int       `validate:"required|int|min:1|max:99" message:"int:age must int| min: age min value is 1"`
-	CreateAt int       `validate:"min:1"`
+	Email    string    `validate:"email"`
+	Age      int       `validate:"required|int|min:1|max:99"`
 	Safe     int       `validate:"-"`
+	CreateAt int       `validate:"min:1"`
 	UpdateAt time.Time `validate:"required"`
 	Code     string    `validate:"customValidator"` // 使用自定义验证器
 	// 结构体嵌套
 	ExtInfo  struct{
 		Homepage string `validate:"required"`
 		CityName string
-    }
+    } `validate:"required"`
 }
 
 // CustomValidator 定义在结构体中的自定义验证器
@@ -80,7 +122,10 @@ func (f UserForm) CustomValidator(val string) bool {
 
 // ConfigValidation 配置验证
 // - 定义验证场景
+// - 也可以添加验证设置
 func (f UserForm) ConfigValidation(v *validate.Validation) {
+	// v.StringRule()
+	
 	v.WithScenes(validate.SValues{
 		"add":    []string{"ExtInfo.Homepage", "Name", "Code"},
 		"update": []string{"ExtInfo.CityName", "Name"},
@@ -103,7 +148,11 @@ func (f UserForm) Translates() map[string]string {
 		"ExtInfo.Homepage": "用户主页",
 	}
 }
+```
 
+### 创建和调用验证
+
+```go
 func main() {
 	u := &UserForm{
 		Name: "inhere",
@@ -111,6 +160,7 @@ func main() {
 	
 	// 创建 Validation 实例
 	v := validate.Struct(u)
+	// 或者使用
 	// v := validate.New(u)
 
 	if v.Validate() { // 验证成功
@@ -335,7 +385,7 @@ type GlobalOption struct {
 }
 ```
 
-如何配置:
+**如何配置**:
 
 ```go
 	// 更改全局选项
@@ -353,8 +403,10 @@ type GlobalOption struct {
 import "github.com/gookit/validate/locales/zhcn"
 
 // for all Validation.
-// NOTICE: must be register before on validate.New()
+// NOTICE: 必须在调用 validate.New() 前注册, 它只需要一次调用。
 zhcn.RegisterGlobal()
+
+// ... ...
 
 v := validate.New()
 
@@ -382,6 +434,15 @@ v.AddMessages(map[string]string{
     "minLength": "OO! {field} min length is %d",
     "name.minLen": "OO! username min length is %d",
 })
+```
+
+- 使用结构体标签: `message, label`
+
+```go
+type UserForm struct {
+    Name     string    `validate:"required|minLen:7" label:"用户名称"`
+    Email    string    `validate:"email" message:"email is invalid" label:"用户邮箱"`
+}
 ```
 
 - 结构体可以通过 `Messages()` 方法添加
