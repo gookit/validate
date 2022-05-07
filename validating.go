@@ -224,33 +224,12 @@ func (r *Rule) valueValidate(field, name string, val interface{}, v *Validation)
 		}
 	}
 
-	rftVal := reflect.ValueOf(val)
-	valKind := rftVal.Kind()
-
-	// want check sub element in a slice list. eg: field=names.*
-	if valKind == reflect.Slice && strings.HasSuffix(field, ".*") {
-
-	}
-
 	// some prepare and check.
 	argNum := len(r.arguments) + 1 // "+1" is the "val" position
 	// check arg num is match, need exclude "requiredXXX"
 	if r.nameNotRequired {
 		//noinspection GoNilness
 		fm.checkArgNum(argNum, r.validator)
-
-		//noinspection GoNilness
-		ft := fm.fv.Type()
-		// convert field value type, is first argument.
-		arg0Kind := ft.In(0).Kind()
-		if arg0Kind != valKind && arg0Kind != reflect.Interface {
-			val, ok = convValAsFuncArg0Type(arg0Kind, valKind, val)
-			if !ok {
-				//noinspection GoNilness
-				v.convArgTypeError(field, fm.name, valKind, arg0Kind, 0)
-				return false
-			}
-		}
 	}
 
 	// 1. args data type convert
@@ -259,7 +238,47 @@ func (r *Rule) valueValidate(field, name string, val interface{}, v *Validation)
 		return false
 	}
 
-	// 2. call built in validators
+	ft := fm.fv.Type()
+	arg0Kind := ft.In(0).Kind()
+
+	rftVal := reflect.ValueOf(val)
+	valKind := rftVal.Kind()
+
+	// feat: support check sub element in a slice list. eg: field=names.*
+	if valKind == reflect.Slice && strings.HasSuffix(field, ".*") {
+		var subVal interface{}
+		for i := 0; i < rftVal.Len(); i++ {
+			subRv := rftVal.Index(i)
+			subKind := subRv.Kind()
+			// 1.1 convert field value type, is func first argument.
+			if r.nameNotRequired && arg0Kind != reflect.Interface && arg0Kind != subKind {
+				subVal, ok = convValAsFuncArg0Type(arg0Kind, subKind, subRv.Interface())
+				if !ok {
+					v.convArgTypeError(field, fm.name, subKind, arg0Kind, 0)
+					return false
+				}
+			} else {
+				subVal = subRv.Interface()
+			}
+
+			// 2. call built in validator
+			if !callValidator(v, fm, field, subVal, r.arguments) {
+				return false
+			}
+		}
+		return true
+	}
+
+	// 1.1 convert field value type, is func first argument.
+	if r.nameNotRequired && arg0Kind != reflect.Interface && arg0Kind != valKind {
+		val, ok = convValAsFuncArg0Type(arg0Kind, valKind, val)
+		if !ok {
+			v.convArgTypeError(field, fm.name, valKind, arg0Kind, 0)
+			return false
+		}
+	}
+
+	// 2. call built in validator
 	return callValidator(v, fm, field, val, r.arguments)
 }
 
@@ -268,13 +287,11 @@ func convValAsFuncArg0Type(arg0Kind, valKind reflect.Kind, val interface{}) (int
 	// ak, err := basicKind(rftVal)
 	bk, err := basicKindV2(valKind)
 	if err != nil {
-		//noinspection GoNilness
-		// v.convArgTypeError(field, fm.name, valKind, arg0Kind, 0)
 		return nil, false
 	}
 
 	// manual converted
-	if nVal, _ := convertType(val, bk, arg0Kind); nVal != nil {
+	if nVal, _ := convTypeByBaseKind(val, bk, arg0Kind); nVal != nil {
 		return nVal, true
 	}
 
@@ -403,7 +420,7 @@ func convertArgsType(v *Validation, fm *funcMeta, field string, args []interface
 			}
 
 			// manual converted
-			if nVal, _ := convertType(args[i], ak, lastTyp); nVal != nil {
+			if nVal, _ := convTypeByBaseKind(args[i], ak, lastTyp); nVal != nil {
 				args[i] = nVal
 				continue
 			}
@@ -428,9 +445,10 @@ func convertArgsType(v *Validation, fm *funcMeta, field string, args []interface
 			return
 		}
 
-		if av.Type().ConvertibleTo(argITyp) { // can auto convert type.
+		// can auto convert type.
+		if av.Type().ConvertibleTo(argITyp) {
 			args[i] = av.Convert(argITyp).Interface()
-		} else if nVal, _ := convertType(args[i], ak, wantTyp); nVal != nil { // manual converted
+		} else if nVal, _ := convTypeByBaseKind(args[i], ak, wantTyp); nVal != nil { // manual converted
 			args[i] = nVal
 		} else { // unable to convert
 			v.convArgTypeError(field, fm.name, av.Kind(), wantTyp, fcArgIndex)

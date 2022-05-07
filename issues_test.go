@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestIssue2(t *testing.T) {
+func TestIssue_2(t *testing.T) {
 	type Fl struct {
 		A float64 `validate:"float"`
 	}
@@ -53,7 +53,7 @@ func TestIssue2(t *testing.T) {
 }
 
 // https://github.com/gookit/validate/issues/19
-func TestIssues19(t *testing.T) {
+func TestIssues_19(t *testing.T) {
 	is := assert.New(t)
 
 	// use tag name: country_code
@@ -101,7 +101,7 @@ func TestIssues19(t *testing.T) {
 }
 
 // https://github.com/gookit/validate/issues/20
-func TestIssues20(t *testing.T) {
+func TestIssues_20(t *testing.T) {
 	is := assert.New(t)
 	type setProfileReq struct {
 		Nickname string `json:"nickname" validate:"string" filter:"trim"`
@@ -134,7 +134,7 @@ func TestIssues20(t *testing.T) {
 }
 
 // https://github.com/gookit/validate/issues/22
-func TestIssues22(t *testing.T) {
+func TestIssues_22(t *testing.T) {
 	type userInfo0 struct {
 		Nickname string `validate:"minLen:6" message:"OO! nickname min len is 6"`
 		Avatar   string `validate:"maxLen:6" message:"OO! avatar max len is %d"`
@@ -173,7 +173,7 @@ func TestIssues22(t *testing.T) {
 }
 
 // https://github.com/gookit/validate/issues/30
-func TestIssues30(t *testing.T) {
+func TestIssues_30(t *testing.T) {
 	v := validate.JSON(`{
    "cost_type": 10
 }`)
@@ -185,7 +185,7 @@ func TestIssues30(t *testing.T) {
 }
 
 // https://github.com/gookit/validate/issues/34
-func TestIssues34(t *testing.T) {
+func TestIssues_34(t *testing.T) {
 	type STATUS int32
 	var s1 STATUS = 1
 
@@ -199,7 +199,6 @@ func TestIssues34(t *testing.T) {
 	v.StringRule("age", "required|checkAge:1,2,3,4")
 	assert.True(t, v.Validate())
 
-	// TODO refer https://golang.org/src/database/sql/driver/types.go?s=1210:1293#L29
 	v = validate.New(validate.M{
 		"age": s1,
 	})
@@ -208,11 +207,10 @@ func TestIssues34(t *testing.T) {
 	})
 
 	assert.NotContains(t, []int{1, 2, 3, 4}, s1)
-
-	dump.Println(validate.Enum(s1, []int{1, 2, 3, 4}), validate.Enum(int32(s1), []int{1, 2, 3, 4}))
-
 	assert.True(t, v.Validate())
-	dump.Println(v.Errors)
+
+	// dump.Println(validate.Enum(s1, []int{1, 2, 3, 4}), validate.Enum(int32(s1), []int{1, 2, 3, 4}))
+	// dump.Println(v.Errors)
 
 	type someMode string
 	var m1 someMode = "abc"
@@ -223,7 +221,6 @@ func TestIssues34(t *testing.T) {
 		"mode": "required|in:abc,def",
 	})
 	assert.True(t, v.Validate())
-
 }
 
 type issues36Form struct {
@@ -264,7 +261,7 @@ func TestIssues36(t *testing.T) {
 }
 
 // https://github.com/gookit/validate/issues/60
-func TestIssues60(t *testing.T) {
+func TestIssues_60(t *testing.T) {
 	is := assert.New(t)
 	m := map[string]interface{}{
 		"title": "1",
@@ -420,7 +417,7 @@ func TestStructNested_gt2level(t *testing.T) {
 }
 
 // https://github.com/gookit/validate/issues/76
-func TestIssue_76(t *testing.T) {
+func TestIssues_76(t *testing.T) {
 	type CategoryReq struct {
 		Name string
 	}
@@ -519,7 +516,7 @@ func TestIssues_I3B3AV(t *testing.T) {
 }
 
 // https://github.com/gookit/validate/issues/92
-func TestIssue_92(t *testing.T) {
+func TestIssues_92(t *testing.T) {
 	m := map[string]interface{}{
 		"t": 1.1,
 	}
@@ -532,7 +529,7 @@ func TestIssue_92(t *testing.T) {
 }
 
 // https://github.com/gookit/validate/issues/98
-func TestIssue_98(t *testing.T) {
+func TestIssues_98(t *testing.T) {
 	// MenuActionResource 菜单动作关联资源对象
 	type MenuActionResource struct {
 		ID       uint64 `json:"id"`                         // 唯一标识
@@ -589,7 +586,7 @@ func TestIssue_98(t *testing.T) {
 }
 
 // https://github.com/gookit/validate/issues/103
-func TestIssue_103(t *testing.T) {
+func TestIssues_103(t *testing.T) {
 	type Example struct {
 		SomeID string `validate:"required"`
 	}
@@ -643,7 +640,7 @@ func (d Issue104Demo) ConfigValidation(v *validate.Validation) {
 }
 
 // https://github.com/gookit/validate/issues/104
-func TestIssue_104(t *testing.T) {
+func TestIssues_104(t *testing.T) {
 	d := &Issue104Demo{
 		Issue104A: Issue104A{
 			ID: 0,
@@ -672,7 +669,7 @@ func TestIssue_104(t *testing.T) {
 }
 
 // https://github.com/gookit/validate/issues/107
-func TestIssue_107(t *testing.T) {
+func TestIssues_107(t *testing.T) {
 	taFilter := func(val interface{}) int64 {
 		if val != nil {
 			// log.WithFields(log.Fields{"value": val}).Info("value should be other than nil")
@@ -704,7 +701,7 @@ func TestIssue_107(t *testing.T) {
 }
 
 // https://github.com/gookit/validate/issues/111
-func TestIssue_111(t *testing.T) {
+func TestIssues_111(t *testing.T) {
 	v := validate.New(map[string]interface{}{
 		"username":  "inhere",
 		"password":  "h9i8tssx9153",
@@ -725,7 +722,7 @@ func TestIssue_111(t *testing.T) {
 }
 
 // https://github.com/gookit/validate/issues/120
-func TestIssue_120(t *testing.T) {
+func TestIssues_120(t *testing.T) {
 	type ThirdStruct struct {
 		Val string `json:"val" validate:"required"`
 	}
@@ -749,8 +746,29 @@ func TestIssue_120(t *testing.T) {
 	})
 
 	ok := v.Validate()
-	dump.Println(v.Errors)
 	assert.True(t, ok)
+	// dump.Println(v.Errors)
+}
+
+// https://github.com/gookit/validate/issues/124
+func TestIssue_124(t *testing.T) {
+	m := map[string]interface{}{
+		"names": []string{"John", "Jane", "abc"},
+	}
+
+	v := validate.Map(m)
+	v.StringRule("names", "required|array|minLen:1")
+	v.StringRule("names.*", "required|string|min_len:4")
+
+	assert.False(t, v.Validate())
+	assert.Error(t, v.Errors.ErrOrNil())
+	assert.Equal(t, "names.* min length is 4", v.Errors.One())
+	// dump.Println(v.Errors)
+
+	// TODO how to use on struct.
+	// type user struct {
+	// 	Tags []string `json:"tags" validate:"required|slice"`
+	// }
 }
 
 // https://github.com/gookit/validate/issues/125
