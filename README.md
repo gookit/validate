@@ -76,7 +76,7 @@ func (f UserForm) CustomValidator(val string) bool {
 }
 ```
 
-### Use `Messages()` and `Translates()` methods
+### Config validate use struct methods
 
 `validate` provides extended functionality:
 
