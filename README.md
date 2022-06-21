@@ -12,7 +12,7 @@
 - Support quick validate `Map`, `Struct`, `Request`(`Form`, `JSON`, `url.Values`, `UploadedFile`) data
   - Supports checking each child value in a slice. eg: `v.StringRule("tags.*", "required|string|minlen:1")`
   - Validating `http.Request` automatically collects data based on the request `Content-Type` value
-- Support filter/sanitize data before validate
+- Support filter/sanitize/convert data before validate
 - Support add custom filter/validator func
 - Support scene settings, verify different fields in different scenes
 - Support custom error messages, field translates.
@@ -20,6 +20,8 @@
 - Customizable i18n aware error messages, built in `en`, `zh-CN`, `zh-TW`
 - Built-in common data type filter/converter. see [Built In Filters](#built-in-filters)
 - Many commonly used validators have been built in(**> 70**), see [Built In Validators](#built-in-validators)
+- Can use `validate` in any frameworks, such as Gin, Echo, Chi and more
+- Supports direct use of rules to validate value. eg: `validate.Val("xyz@mail.com", "required|email")`
 
 > Inspired the projects [albrow/forms](https://github.com/albrow/forms) and [asaskevich/govalidator](https://github.com/asaskevich/govalidator) and [inhere/php-validate](https://github.com/inhere/php-validate). Thank you very much
 

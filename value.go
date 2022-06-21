@@ -25,7 +25,7 @@ func Var(val interface{}, rule string) error {
 // returns error on fail, return nil on check ok.
 //
 // Usage:
-// 	validate.Val("xxx@mail.com", "required|email")
+// 	validate.Val("xyz@mail.com", "required|email")
 //
 // refer the Validation.StringRule() for parse rule string.
 func Val(val interface{}, rule string) error {
