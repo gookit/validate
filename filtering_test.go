@@ -136,6 +136,7 @@ func TestFilterRuleNilValue(t *testing.T) {
 	})
 	v.FilterRule("bad", "X")
 
+	assert.NotEmpty(t, v.data.Src())
 	assert.NotPanics(t, func() {
 		v.Validate()
 	})

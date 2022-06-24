@@ -18,7 +18,7 @@ import (
 type NilObject struct{}
 
 // init a reflect nil value
-var ifaceNilVal = reflect.ValueOf(NilObject{})
+var nilRVal = reflect.ValueOf(NilObject{})
 
 // CallByValue call func by reflect.Value
 func CallByValue(fv reflect.Value, args ...interface{}) []reflect.Value {
@@ -30,7 +30,7 @@ func CallByValue(fv reflect.Value, args ...interface{}) []reflect.Value {
 	for k, v := range args {
 		// NOTICE: reflect.Call emit panic if kind is Invalid
 		if in[k] = reflect.ValueOf(v); in[k].Kind() == reflect.Invalid {
-			in[k] = ifaceNilVal
+			in[k] = nilRVal
 		}
 	}
 

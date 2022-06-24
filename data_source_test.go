@@ -4,41 +4,11 @@ import (
 	"fmt"
 	"mime/multipart"
 	"net/url"
-	"reflect"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 )
-
-func TestValueLen(t *testing.T) {
-	is := assert.New(t)
-	tests := []interface{}{
-		"abc",
-		123,
-		int8(123), int16(123), int32(123), int64(123),
-		uint8(123), uint16(123), uint32(123), uint64(123),
-		float32(123), float64(123),
-		[]int{1, 2, 3}, []string{"a", "b", "c"},
-		map[string]string{"k0": "v0", "k1": "v1", "k2": "v2"},
-	}
-
-	for _, sample := range tests {
-		is.Equal(3, ValueLen(reflect.ValueOf(sample)))
-	}
-
-	is.Equal(-1, ValueLen(reflect.ValueOf(nil)))
-}
-
-func TestCallByValue(t *testing.T) {
-	is := assert.New(t)
-	is.Panics(func() {
-		CallByValue(reflect.ValueOf("invalid"))
-	})
-	is.Panics(func() {
-		CallByValue(reflect.ValueOf(IsJSON), "age0", "age1")
-	})
-}
 
 func TestData(t *testing.T) {
 	is := assert.New(t)

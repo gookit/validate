@@ -48,7 +48,7 @@ type (
 	// MarshalFunc define
 	MarshalFunc func(v interface{}) ([]byte, error)
 	// UnmarshalFunc define
-	UnmarshalFunc func(data []byte, v interface{}) error
+	UnmarshalFunc func(data []byte, ptr interface{}) error
 )
 
 // DataFace data source interface definition
@@ -59,7 +59,8 @@ type (
 // - struct
 type DataFace interface {
 	Type() uint8
-	Get(key string) (interface{}, bool)
+	Src() interface{}
+	Get(key string) (val interface{}, exist bool)
 	Set(field string, val interface{}) (interface{}, error)
 	// Create validation instance create func
 	Create(err ...error) *Validation
@@ -86,6 +87,11 @@ type MapData struct {
 /*************************************************************
  * Map data operate
  *************************************************************/
+
+// Src get
+func (d *MapData) Src() interface{} {
+	return d.Map
+}
 
 // Type get
 func (d *MapData) Type() uint8 {
@@ -210,6 +216,11 @@ var (
 	cvFaceType = reflect.TypeOf(new(ConfigValidationFace)).Elem()
 	timeType   = reflect.TypeOf(time.Time{})
 )
+
+// Src get
+func (d *StructData) Src() interface{} {
+	return d.src
+}
 
 // Type get
 func (d *StructData) Type() uint8 {
@@ -692,6 +703,11 @@ func newFormData() *FormData {
 /*************************************************************
  * Form data operate
  *************************************************************/
+
+// Src data get
+func (d *FormData) Src() interface{} {
+	return d.Form
+}
 
 // Type get
 func (d *FormData) Type() uint8 {
