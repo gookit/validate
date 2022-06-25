@@ -3,7 +3,6 @@ package validate
 import (
 	"errors"
 	"fmt"
-	"math"
 	"reflect"
 	"strconv"
 	"strings"
@@ -117,11 +116,14 @@ func ValueIsEmpty(v reflect.Value) bool {
 
 // ValueLen get value length. TODO use stdutil.ValueLen()
 func ValueLen(v reflect.Value) int {
+	v = reflect.Indirect(v)
 	k := v.Kind()
 
 	// (u)int use width.
 	switch k {
-	case reflect.Map, reflect.Array, reflect.Chan, reflect.Slice, reflect.String:
+	case reflect.String:
+		return len([]rune(v.String()))
+	case reflect.Map, reflect.Array, reflect.Chan, reflect.Slice:
 		return v.Len()
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
 		return len(strconv.FormatInt(int64(v.Uint()), 10))
@@ -188,9 +190,8 @@ func CalcLength(val interface{}) int {
 		return -1
 	}
 
-	// string length
+	// fix: issues#39 dont use `return len(str)` for string.
 	if str, ok := val.(string); ok {
-		// fix: issues#39 dont use `return len(str)`
 		return len([]rune(str))
 	}
 
@@ -354,7 +355,7 @@ func convTypeByBaseKind(srcVal interface{}, srcKind kind, dstType reflect.Kind) 
 // convert custom type to generic basic int, string, unit.
 // returns string, int64 or error
 func convToBasicType(val interface{}) (value interface{}, err error) {
-	v := reflect.ValueOf(val)
+	v := reflect.Indirect(reflect.ValueOf(val))
 
 	switch v.Kind() {
 	case reflect.String:
@@ -593,43 +594,7 @@ func includeElement(list, element interface{}) (ok, found bool) {
 //
 // NOTICE: this built-in method in reflect/value.go since go 1.13
 func IsZero(v reflect.Value) bool {
-	switch v.Kind() {
-	case reflect.Bool:
-		return !v.Bool()
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return v.Int() == 0
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-		return v.Uint() == 0
-	case reflect.Float32, reflect.Float64:
-		return math.Float64bits(v.Float()) == 0
-	case reflect.Complex64, reflect.Complex128:
-		c := v.Complex()
-		return math.Float64bits(real(c)) == 0 && math.Float64bits(imag(c)) == 0
-	case reflect.Array:
-		for i := 0; i < v.Len(); i++ {
-			// if !v.Index(i).IsZero() {
-			if !IsZero(v.Index(i)) {
-				return false
-			}
-		}
-		return true
-	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Ptr, reflect.Slice, reflect.UnsafePointer:
-		return v.IsNil()
-	case reflect.String:
-		return v.Len() == 0
-	case reflect.Struct:
-		for i := 0; i < v.NumField(); i++ {
-			// if !v.Index(i).IsZero() {
-			if !IsZero(v.Field(i)) {
-				return false
-			}
-		}
-		return true
-	default:
-		// This should never happen, but will act as a safeguard for
-		// later, as a default value doesn't make sense here.
-		panic(&reflect.ValueError{Method: "cannot check reflect.Value.IsZero", Kind: v.Kind()})
-	}
+	return v.IsZero()
 }
 
 // Remove type multiple pointer

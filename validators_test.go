@@ -617,7 +617,7 @@ func TestIsJSON(t *testing.T) {
 	is.False(IsJSON(""))
 }
 
-func TestLength(t *testing.T) {
+func TestCalcLength(t *testing.T) {
 	is := assert.New(t)
 
 	tests := []struct {
@@ -634,6 +634,15 @@ func TestLength(t *testing.T) {
 		is.Equal(CalcLength(item.sample), item.want)
 	}
 	is.Equal(CalcLength(nil), -1)
+
+	ptrStr := "abc"
+	is.Equal(CalcLength(&ptrStr), 3)
+	ptrStr = "ab你好"
+	is.Equal(CalcLength(&ptrStr), 4)
+}
+
+func TestLength(t *testing.T) {
+	is := assert.New(t)
 
 	// Length
 	is.True(Length("a", 1))
@@ -690,6 +699,8 @@ func TestEnumAndNotIn(t *testing.T) {
 	}
 
 	is.True(Enum(uint(2), []int{2, 3}))
+	val := "a"
+	is.True(Enum(&val, []string{"a", "b"}))
 
 	is.False(Enum(nil, []int{}))
 	is.False(Enum('a', []int{}))

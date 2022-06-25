@@ -24,6 +24,10 @@ func TestValueLen(t *testing.T) {
 		is.Equal(3, ValueLen(reflect.ValueOf(sample)))
 	}
 
+	ptrArr := &[]string{"a", "b"}
+	is.Equal(2, ValueLen(reflect.ValueOf(ptrArr)))
+	is.Equal(4, ValueLen(reflect.ValueOf("ab你好")))
+
 	is.Equal(-1, ValueLen(reflect.ValueOf(nil)))
 }
 

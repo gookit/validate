@@ -201,10 +201,12 @@ func (v *Validation) RequiredIf(_ string, val interface{}, kvs ...string) bool {
 			rftDv := reflect.ValueOf(dstVal)
 			wantVal, err := convTypeByBaseKind(args[0], stringKind, rftDv.Kind())
 			if err == nil && dstVal == wantVal {
-				return val != nil && NotEqual(val, "")
+				// return val != nil && NotEqual(val, "")
+				return val != nil && !IsEmpty(val)
 			}
 		} else if Enum(dstVal, args) {
-			return val != nil && NotEqual(val, "")
+			return val != nil && !IsEmpty(val)
+			// return val != nil && NotEqual(val, "")
 		}
 	}
 
