@@ -841,6 +841,22 @@ func TestIssue_135(t *testing.T) {
 	assert.Equal(t, "score min value is 0.1", v.Errors.OneError().Error())
 }
 
+// https://github.com/gookit/validate/issues/140
+func TestIssue_140(t *testing.T) {
+	type Test struct {
+		Field1 string
+		Field2 string `validate:"requiredIf:Field1,value"`
+	}
+
+	test := &Test{Field1: "value", Field2: ""}
+
+	v := validate.Struct(test)
+	err := v.ValidateE()
+	dump.Println(err)
+	assert.Error(t, err)
+	assert.Equal(t, "Field2 is required when Field1 is [value]", err.One())
+}
+
 // https://github.com/gookit/validate/issues/143
 func TestIssue_143(t *testing.T) {
 	type Data struct {

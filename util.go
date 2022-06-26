@@ -337,11 +337,13 @@ func convTypeByBaseKind(srcVal interface{}, srcKind kind, dstType reflect.Kind) 
 	case stringKind:
 		switch dstType {
 		case reflect.Int:
-			return mathutil.Int(srcVal)
+			return mathutil.ToInt(srcVal)
 		case reflect.Int64:
-			return mathutil.Int64(srcVal)
+			return mathutil.ToInt64(srcVal)
 		case reflect.Bool:
 			return strutil.Bool(srcVal.(string))
+		case reflect.String:
+			return srcVal.(string), nil
 		}
 	case intKind, uintKind:
 		i64 := mathutil.MustInt64(srcVal)

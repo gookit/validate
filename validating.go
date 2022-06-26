@@ -25,6 +25,14 @@ func (v *Validation) ValidateData(data DataFace) bool {
 	return v.Validate()
 }
 
+// ValidateE do validate processing and return error
+func (v *Validation) ValidateE(scene ...string) Errors {
+	if v.Validate(scene...) {
+		return nil
+	}
+	return v.Errors
+}
+
 // Validate processing
 func (v *Validation) Validate(scene ...string) bool {
 	// has been validated OR has error
