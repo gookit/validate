@@ -278,6 +278,7 @@ func TestIssues_60(t *testing.T) {
 }
 
 // https://github.com/gookit/validate/issues/64
+// see validate.Enum()
 func TestPtrFieldValidation(t *testing.T) {
 	type Foo struct {
 		Name *string `validate:"in:henry,jim"`
@@ -464,12 +465,19 @@ func TestIssue_78(t *testing.T) {
 
 	// 创建 Validation 实例
 	v := validate.Struct(&u)
-	if !v.Validate() {
-		fmt.Println(v.Errors)
-	} else {
-		assert.True(t, v.Validate())
-		fmt.Println("Success...")
+	ok := v.Validate()
+	assert.False(t, ok)
+	assert.Equal(t, "Sex is required and not empty", v.Errors.One())
+
+	sex := false
+	u = UserDto{
+		Name: "abc",
+		Sex:  &sex,
 	}
+
+	v = validate.Struct(&u)
+	ok = v.Validate()
+	assert.True(t, ok)
 }
 
 // https://gitee.com/inhere/validate/issues/I36T2B
@@ -831,4 +839,107 @@ func TestIssue_135(t *testing.T) {
 	assert.False(t, ok)
 	assert.Equal(t, "score min value is 0.1", v.Errors.One())
 	assert.Equal(t, "score min value is 0.1", v.Errors.OneError().Error())
+}
+
+// https://github.com/gookit/validate/issues/143
+func TestIssue_143(t *testing.T) {
+	type Data struct {
+		Name string `validate:"required"`
+		Age  *int   `json:"age" validate:"required"`
+	}
+
+	v := validate.New(&Data{
+		Name: "tom",
+		Age:  nil,
+	})
+
+	ok := v.Validate()
+	assert.False(t, ok)
+	assert.Equal(t, "age is required and not empty", v.Errors.One())
+
+	// use ptr
+	age := 0
+	v = validate.New(&Data{
+		Name: "tom",
+		Age:  &age,
+	})
+
+	ok = v.Validate()
+	assert.True(t, ok)
+
+	// custom not_null check.
+	// TIP: validator name must start with required
+	type Data1 struct {
+		Name string `validate:"required"`
+		Age  *int   `json:"age" validate:"required_custom" message:"required_custom:{field} should not null"`
+	}
+
+	// - use nil
+	v = validate.New(&Data1{
+		Name: "tom",
+		Age:  nil,
+	})
+	v.AddValidator("required_custom", func(val interface{}) bool {
+		return !validate.IsNilObj(val)
+	})
+
+	ok = v.Validate()
+	assert.False(t, ok)
+	assert.Equal(t, "age should not null", v.Errors.One())
+
+	// - use zero value
+	age = 0
+	v = validate.New(&Data1{
+		Name: "tom",
+		Age:  &age,
+	})
+	v.AddValidator("required_custom", func(val interface{}) bool {
+		return !validate.IsNilObj(val)
+	})
+
+	ok = v.Validate()
+	assert.True(t, ok)
+
+	// - use other value
+	age = 20
+	v = validate.New(&Data1{
+		Name: "tom",
+		Age:  &age,
+	})
+	v.AddValidator("required_custom", func(val interface{}) bool {
+		return !validate.IsNilObj(val)
+	})
+
+	ok = v.Validate()
+	assert.True(t, ok)
+
+	// - with other validator
+	age = 20
+	v = validate.New(&Data1{
+		Name: "tom",
+		Age:  &age,
+	})
+	v.AddValidator("required_custom", func(val interface{}) bool {
+		return !validate.IsNilObj(val)
+	})
+	v.AddRule("age", "min", 30)
+
+	ok = v.Validate()
+	assert.False(t, ok)
+	assert.Equal(t, "age min value is 30", v.Errors.One())
+
+	age = 30
+	v = validate.New(&Data1{
+		Name: "tom",
+		Age:  &age,
+	})
+	v.AddValidator("required_custom", func(val interface{}) bool {
+		return !validate.IsNilObj(val)
+	})
+	v.AddRule("age", "min", 30)
+
+	ok = v.Validate()
+	dump.Println(v.Errors)
+	assert.False(t, ok)
+	assert.Equal(t, "age min value is 30", v.Errors.One())
 }
