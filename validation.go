@@ -52,7 +52,8 @@ type Validation struct {
 	CheckDefault bool
 	// CachingRules switch. default is False
 	// CachingRules bool
-	// save user set default values
+
+	// save user custom set default values
 	defValues map[string]interface{}
 	// mark has error occurs
 	hasError bool
@@ -111,7 +112,13 @@ func (v *Validation) ResetResult() {
 	v.filteredData = make(map[string]interface{})
 }
 
-// Reset the Validation instance
+// Reset the Validation instance.
+//
+// will reset
+// 	- validate result
+// 	- validate rules
+// 	- validate filterRules
+// 	- custom validators
 func (v *Validation) Reset() {
 	v.ResetResult()
 
@@ -380,10 +387,12 @@ func (v *Validation) RawVal(key string) interface{} {
 	return val
 }
 
-// Get value by key.
-func (v *Validation) Get(key string) (interface{}, bool) {
-	if v.data == nil { // check input data
-		return nil, false
+// try to get value by key.
+//
+// If v.data is StructData, will return zero check
+func (v *Validation) tryGet(key string) (val interface{}, exist, zero bool) {
+	if v.data == nil {
+		return
 	}
 
 	// if end withs: .*, return the parent value
@@ -393,32 +402,40 @@ func (v *Validation) Get(key string) (interface{}, bool) {
 
 	// find from filtered data.
 	if val, ok := v.filteredData[key]; ok {
-		return val, true
+		return val, true, false
 	}
 
 	// find from validated data. (such as has default value)
 	if val, ok := v.safeData[key]; ok {
-		return val, true
+		return val, true, false
 	}
 
 	// TODO add cache data v.caches[key]
-
 	// get from source data
-	return v.data.Get(key)
+	return v.data.TryGet(key)
+}
+
+// Get value by key.
+func (v *Validation) Get(key string) (val interface{}, exist bool) {
+	val, exist, _ = v.tryGet(key)
+	return
 }
 
 // GetWithDefault get field value by key.
+//
 // On not found, if it has default value, will return default-value.
 func (v *Validation) GetWithDefault(key string) (val interface{}, exist, isDefault bool) {
-	// get field value.
-	val, exist = v.Get(key)
-	if exist {
+	var zero bool
+	val, exist, zero = v.tryGet(key)
+	if exist && !zero {
 		return
 	}
 
-	// find default value
-	val, exist = v.defValues[key]
-	isDefault = exist
+	// try read custom default value
+	defVal, isDefault := v.defValues[key]
+	if isDefault {
+		val = defVal
+	}
 	return
 }
 
@@ -484,8 +501,7 @@ func (v *Validation) Set(field string, val interface{}) error {
 // only update set value by key for struct
 func (v *Validation) updateValue(field string, val interface{}) (interface{}, error) {
 	// data source is struct
-	// if _, ok := v.data.(*StructData); ok {
-	if v.data.Type() == uint8(sourceStruct) {
+	if v.data.Type() == sourceStruct {
 		return v.data.Set(field, val)
 	}
 

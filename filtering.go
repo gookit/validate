@@ -140,9 +140,8 @@ func (r *FilterRule) AddFilters(filters ...string) *FilterRule {
 func (r *FilterRule) Apply(v *Validation) (err error) {
 	// filter field value
 	for _, field := range r.Fields() {
-		// get field value.
-		val, has := v.Get(field)
-		if !has { // no field
+		val, exist, zero := v.tryGet(field)
+		if !exist || zero {
 			defVal, ok := v.GetDefValue(field)
 			// there is also no custom default value
 			if !ok {
@@ -160,13 +159,12 @@ func (r *FilterRule) Apply(v *Validation) (err error) {
 
 			// dont need check default value
 			if !v.CheckDefault {
-				// save validated value.
-				v.safeData[field] = newVal
+				v.safeData[field] = newVal // save validated value.
 				continue
 			}
 
 			// go on check custom default value
-			has = true
+			exist = true
 		}
 
 		// call filters

@@ -48,6 +48,7 @@ func TestCallByValue(t *testing.T) {
 func TestCallByValue_nil_arg(t *testing.T) {
 	fn1 := func(in interface{}) interface{} {
 		_, ok := in.(NilObject)
+		assert.True(t, IsNilObj(in))
 		dump.P(in, ok)
 		return in
 	}

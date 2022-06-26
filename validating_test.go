@@ -36,7 +36,7 @@ func TestRule_Apply(t *testing.T) {
 	is.True(v.Validate())
 }
 
-func TestStructUseDefault(t *testing.T) {
+func TestStruct_useDefault(t *testing.T) {
 	is := assert.New(t)
 
 	type user struct {
@@ -53,10 +53,19 @@ func TestStructUseDefault(t *testing.T) {
 	v = New(u)
 	is.True(v.Validate())
 	// fmt.Println(v.SafeData())
+}
+
+func TestValidation_CheckDefault(t *testing.T) {
+	is := assert.New(t)
+
+	type user struct {
+		Name string `validate:"required|default:tom" filter:"trim|upper"`
+		Age  int    `validate:"uint|default:23"`
+	}
 
 	// check/filter default value
-	u = &user{Age: 90}
-	v = New(u).WithSelf(func(v *Validation) {
+	u := &user{Age: 90}
+	v := New(u).WithSelf(func(v *Validation) {
 		v.CheckDefault = true
 	})
 

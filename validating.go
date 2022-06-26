@@ -111,8 +111,7 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 
 			// dont need check default value
 			if !v.CheckDefault {
-				// save validated value.
-				v.safeData[field] = val
+				v.safeData[field] = val // save validated value.
 				continue
 			}
 
@@ -124,7 +123,7 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 
 		// apply filter func.
 		if exist && r.filterFunc != nil {
-			if val, err = r.filterFunc(val); err != nil { // has error
+			if val, err = r.filterFunc(val); err != nil {
 				v.AddError(filterError, filterError, err.Error())
 				return true
 			}
@@ -145,7 +144,7 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 			v.filteredData[field] = val
 		}
 
-		// empty value AND skip on empty.
+		// empty value AND is not required* AND skip on empty.
 		if r.skipEmpty && isNotRequired && IsEmpty(val) {
 			continue
 		}
@@ -240,6 +239,7 @@ func (r *Rule) valueValidate(field, name string, val interface{}, v *Validation)
 	ft := fm.fv.Type()
 	arg0Kind := ft.In(0).Kind()
 
+	// rftVal := reflect.Indirect(reflect.ValueOf(val))
 	rftVal := reflect.ValueOf(val)
 	valKind := rftVal.Kind()
 
@@ -459,9 +459,8 @@ func convertArgsType(v *Validation, fm *funcMeta, field string, args []interface
 }
 
 func callValidatorValue(fv reflect.Value, val interface{}, args []interface{}) bool {
-	argNum := len(args)
-
 	// build params for the validator func.
+	argNum := len(args)
 	argIn := make([]reflect.Value, argNum+1)
 
 	// if val is interface{}(nil): rftVal.IsValid()==false
@@ -469,14 +468,14 @@ func callValidatorValue(fv reflect.Value, val interface{}, args []interface{}) b
 	rftVal := reflect.ValueOf(val)
 	// fix: #125 fv.Call() will panic on rftVal.Kind() is Invalid
 	if !rftVal.IsValid() {
-		rftVal = ifaceNilVal
+		rftVal = nilRVal
 	}
 
 	argIn[0] = rftVal
 	for i := 0; i < argNum; i++ {
 		rftValA := reflect.ValueOf(args[i])
 		if !rftValA.IsValid() {
-			rftValA = ifaceNilVal
+			rftValA = nilRVal
 		}
 		argIn[i+1] = rftValA
 	}

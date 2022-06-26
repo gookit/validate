@@ -777,17 +777,17 @@ func TestBuiltInValidators(t *testing.T) {
 	})
 }
 
-func TestStructWithArray(t *testing.T) {
-	type WithArray struct {
-		Extras []ExtraInfo `validate:"required|minLen:2"`
-	}
-	type WithPtrOfArray struct {
-		Extras *[]ExtraInfo `validate:"required|minLen:2"`
-	}
-	type WithArrayPtr struct {
-		Extras []*ExtraInfo `validate:"required|minLen:2"`
-	}
+type WithArray struct {
+	Extras []ExtraInfo `validate:"required|minLen:2"`
+}
+type WithPtrOfArray struct {
+	Extras *[]ExtraInfo `validate:"required|minLen:2"`
+}
+type WithArrayPtr struct {
+	Extras []*ExtraInfo `validate:"required|minLen:2"`
+}
 
+func TestStructWithArray(t *testing.T) {
 	is := assert.New(t)
 	v := New(WithArray{})
 
@@ -846,7 +846,12 @@ func TestStructWithArray(t *testing.T) {
 	is.Len(v.Errors, 1)
 	is.Equal("Extras.0.Github is required and not empty", v.Errors["Extras.0.Github"]["required"])
 
-	v = New(WithPtrOfArray{
+}
+
+func TestStructWithArray_ptrOfArray(t *testing.T) {
+	is := assert.New(t)
+
+	v := New(WithPtrOfArray{
 		Extras: &[]ExtraInfo{
 			{
 				Github:  "xxx",
@@ -1026,4 +1031,24 @@ func TestStructWithMap(t *testing.T) {
 
 	is.True(v.Validate())
 	is.True(v.IsOK())
+}
+
+func TestValidation_GetWithDefault(t *testing.T) {
+	type user struct {
+		Name string `validate:"required|default:tom"`
+		Age  int    `validate:"uint|default:23"`
+	}
+
+	u := &user{Age: 90}
+	v := New(u)
+
+	val, exist, isDef := v.GetWithDefault("Age")
+	assert.True(t, exist)
+	assert.Equal(t, 90, val)
+	assert.False(t, isDef)
+
+	val, exist, isDef = v.GetWithDefault("Name")
+	assert.True(t, exist)
+	assert.Equal(t, "tom", val)
+	assert.True(t, isDef)
 }

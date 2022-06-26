@@ -16,8 +16,16 @@ import (
 // NilObject represent nil value for calling functions and should be reflected at custom filters as nil variable.
 type NilObject struct{}
 
+var nilObj = NilObject{}
+
 // init a reflect nil value
-var nilRVal = reflect.ValueOf(NilObject{})
+var nilRVal = reflect.ValueOf(nilObj)
+
+// IsNilObj check value is internal NilObject
+func IsNilObj(val interface{}) bool {
+	_, ok := val.(NilObject)
+	return ok
+}
 
 // CallByValue call func by reflect.Value
 func CallByValue(fv reflect.Value, args ...interface{}) []reflect.Value {
