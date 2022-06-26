@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gookit/goutil/dump"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -97,6 +98,7 @@ func TestFormData(t *testing.T) {
 
 	// form
 	d.Add("newKey1", "new val1")
+	is.NotEmpty(d.Src())
 	is.Equal("new val1", d.String("newKey1"))
 	d.Del("newKey1")
 	is.Equal("", d.String("newKey1"))
@@ -182,6 +184,33 @@ func TestStructData_Create(t *testing.T) {
 	str, ok = d.Get("Name")
 	is.True(ok)
 	is.Equal("inhere", str)
+}
+
+func TestStructData_Set(t *testing.T) {
+	is := assert.New(t)
+	u := &UserForm{
+		Name:      "new name",
+		Status:    3,
+		UpdateAt:  time.Now(),
+		protected: "text",
+		Extra: []ExtraInfo{
+			{"xxx", 2},
+		},
+	}
+
+	d, err := FromStruct(u)
+	is.Nil(err)
+
+	v := d.Validation()
+	is.True(v.Errors.Empty())
+
+	dump.P(d.fieldNames)
+
+	_, err = d.Set("Extra.0.Github", "new url")
+	is.NoError(err)
+	val, ok := d.Get("Extra.0.Github")
+	is.True(ok)
+	is.Equal("new url", val)
 }
 
 func TestStructData_Get_ptrVal(t *testing.T) {

@@ -188,7 +188,7 @@ type StructData struct {
 	// source struct data, from user setting
 	src interface{}
 	// max depth for parse sub-struct. TODO WIP ...
-	depth int
+	// depth int
 	// from reflect source Struct
 	value reflect.Value
 	// source struct reflect.Type
@@ -196,10 +196,10 @@ type StructData struct {
 	// field names in the src struct
 	// 0:common field 1:anonymous field 2:nonAnonymous field
 	fieldNames map[string]int8
-	// cache field value info
+	// cache field reflect value info. key is path. eg: top.sub
 	fieldValues map[string]reflect.Value
 	// TODO field reflect values cache
-	fieldRftValues map[string]interface{}
+	// fieldRftValues map[string]interface{}
 	// FilterTag name in the struct tags.
 	//
 	// see GlobalOption.FilterTag
@@ -249,7 +249,7 @@ func (d *StructData) Create(err ...error) *Validation {
 	// collect field filter/validate rules from struct tags
 	d.parseRulesFromTag(v)
 
-	// if has custom config func
+	// has custom config func
 	if d.valueTpy.Implements(cvFaceType) {
 		fv := d.value.MethodByName("ConfigValidation")
 		fv.Call([]reflect.Value{reflect.ValueOf(v)})
@@ -295,9 +295,6 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 		for i := 0; i < vt.NumField(); i++ {
 			fValue := removeValuePtr(vv).Field(i)
 			fv := vt.Field(i)
-			ft := vt.Field(i).Type
-			ft = removeTypePtr(ft)
-
 			// skip don't exported field
 			name := fv.Name
 			if name[0] >= 'a' && name[0] <= 'z' {
@@ -359,6 +356,8 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 					d.loadMessagesFromTag(v.trans, name, vRule, errMsg)
 				}
 			}
+
+			ft := removeTypePtr(vt.Field(i).Type)
 
 			// collect rules from sub-struct and from arrays/slices elements
 			if ft != timeType {
@@ -447,14 +446,12 @@ func (d *StructData) loadMessagesFromTag(trans *Translator, field, vRule, vMsg s
 			vName = vRule
 			if strings.ContainsRune(vRule, '|') {
 				nodes := strings.SplitN(vRule, "|", 2)
-				// use first validator name
 				vName = nodes[0]
 			}
 
 			// has params for validator: "minLen:5"
 			if strings.ContainsRune(vName, ':') {
 				nodes := strings.SplitN(vRule, ":", 2)
-				// use first validator name
 				vName = nodes[0]
 			}
 		}
@@ -499,9 +496,13 @@ func (d *StructData) Get(field string) (val interface{}, exist bool) {
 
 // TryGet value by field name. support get sub-value by path.
 func (d *StructData) TryGet(field string) (val interface{}, exist, zero bool) {
-	var fv reflect.Value
 	field = strutil.UpperFirst(field)
+	// try read from cache
+	if fv, ok := d.fieldValues[field]; ok {
+		return fv.Interface(), true, fv.IsZero()
+	}
 
+	var fv reflect.Value
 	// want to get sub struct field.
 	if strings.IndexRune(field, '.') > 0 {
 		fieldNodes := strings.Split(field, ".")
@@ -534,7 +535,7 @@ func (d *StructData) TryGet(field string) (val interface{}, exist, zero bool) {
 				fv = fv.MapIndex(reflect.ValueOf(fieldNode))
 			case reflect.Struct:
 				fv = fv.FieldByName(fieldNode)
-			default: // no sub-value
+			default: // no sub-value, should never have happened
 				return
 			}
 
@@ -596,6 +597,7 @@ func (d *StructData) Set(field string, val interface{}) (newVal interface{}, err
 		return nil, ErrNoField
 	}
 
+	// find from cache
 	fv, ok := d.fieldValues[field]
 	if !ok {
 		f := d.fieldNames[field]
@@ -630,6 +632,9 @@ func (d *StructData) Set(field string, val interface{}) (newVal interface{}, err
 		default:
 			return nil, ErrNoField
 		}
+
+		// add cache
+		d.fieldValues[field] = fv
 	}
 
 	// check whether the value of v can be changed.
@@ -679,7 +684,6 @@ func (d *StructData) HasField(field string) bool {
 		d.fieldNames[field] = fieldAtTopStruct
 		return true
 	}
-
 	return false
 }
 
@@ -788,9 +792,9 @@ func (d *FormData) Encode() string {
 // Set sets the key to value. It replaces any existing values.
 func (d *FormData) Set(field string, val interface{}) (newVal interface{}, err error) {
 	newVal = val
-	switch val.(type) {
+	switch tpVal := val.(type) {
 	case string:
-		d.Form.Set(field, val.(string))
+		d.Form.Set(field, tpVal)
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64:
 		newVal = strutil.MustString(val)
 		d.Form.Set(field, newVal.(string))
@@ -886,7 +890,7 @@ func (d FormData) Int64(key string) int64 {
 // Float returns the first element in data[key] converted to a float.
 func (d FormData) Float(key string) float64 {
 	if val := d.String(key); val != "" {
-		result, _ := strconv.ParseFloat(val, 0)
+		result, _ := strconv.ParseFloat(val, 64)
 		return result
 	}
 	return 0

@@ -207,3 +207,10 @@ func TestStruct_nexted_field_name_tag(t *testing.T) {
 	assert.True(t, strings.HasPrefix(nameErrStr, "Display-Name"))
 	assert.True(t, strings.HasPrefix(extHomeErrStr, "ext_info.home_page"))
 }
+
+func TestStruct_create_error(t *testing.T) {
+	v := Struct(nil)
+	assert.NotEmpty(t, v.Errors)
+	assert.Equal(t, "invalid input data", v.Errors.One())
+	assert.False(t, v.Validate())
+}

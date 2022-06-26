@@ -855,6 +855,11 @@ func TestIssue_140(t *testing.T) {
 	dump.Println(err)
 	assert.Error(t, err)
 	assert.Equal(t, "Field2 is required when Field1 is [value]", err.One())
+
+	test.Field2 = "hi"
+	v = validate.Struct(test)
+	err = v.ValidateE()
+	assert.Nil(t, err)
 }
 
 // https://github.com/gookit/validate/issues/143

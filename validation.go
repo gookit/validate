@@ -218,8 +218,8 @@ func (v *Validation) validatorMeta(name string) *funcMeta {
 	}
 
 	// if v.data is StructData instance.
-	if sd, ok := v.data.(*StructData); ok {
-		fv, ok := sd.FuncValue(name)
+	if v.data.Type() == sourceStruct {
+		fv, ok := v.data.(*StructData).FuncValue(name)
 		if ok {
 			fm := newFuncMeta(name, false, fv)
 			// storage it.
@@ -441,8 +441,7 @@ func (v *Validation) GetWithDefault(key string) (val interface{}, exist, isDefau
 
 // Filtered get filtered value by key
 func (v *Validation) Filtered(key string) interface{} {
-	val, _ := v.filteredData[key]
-	return val
+	return v.filteredData[key]
 }
 
 // Safe get safe value by key

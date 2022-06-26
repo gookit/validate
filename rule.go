@@ -46,8 +46,8 @@ type Rule struct {
 	filterFunc func(val interface{}) (interface{}, error)
 	// custom check function's mate info
 	checkFuncMeta *funcMeta
-	// custom check is empty.
-	emptyChecker func(val interface{}) bool
+	// custom check is empty. TODO
+	// emptyChecker func(val interface{}) bool
 }
 
 // NewRule create new Rule instance

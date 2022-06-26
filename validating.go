@@ -45,7 +45,7 @@ func (v *Validation) Validate(scene ...string) bool {
 	v.sceneFields = v.sceneFieldMap()
 
 	// apply filter rules before validate.
-	if false == v.Filtering() && v.StopOnError {
+	if !v.Filtering() && v.StopOnError {
 		return false
 	}
 

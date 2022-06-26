@@ -1114,7 +1114,7 @@ func Enum(val, enum interface{}) bool {
 
 // NotIn value should be not in the given enum(strings, ints, uints).
 func NotIn(val, enum interface{}) bool {
-	return false == Enum(val, enum)
+	return !Enum(val, enum)
 }
 
 /*************************************************************
