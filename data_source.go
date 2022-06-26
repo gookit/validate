@@ -18,11 +18,9 @@ import (
 	"github.com/gookit/goutil/strutil"
 )
 
-type sourceType uint8
-
 const (
 	// from user setting, unmarshal JSON
-	sourceMap sourceType = iota + 1
+	sourceMap uint8 = iota + 1
 	// from URL.Values, PostForm. contains Files data
 	sourceForm
 	// from user setting
@@ -53,14 +51,17 @@ type (
 
 // DataFace data source interface definition
 //
-// current has three data source:
-// - map
-// - form
-// - struct
+// Current has three data source:
+//  - map
+// 	- form
+// 	- struct
 type DataFace interface {
 	Type() uint8
 	Src() interface{}
 	Get(key string) (val interface{}, exist bool)
+	// TryGet value by key.
+	// if source data is struct, will return zero check
+	TryGet(key string) (val interface{}, exist, zero bool)
 	Set(field string, val interface{}) (interface{}, error)
 	// Create validation instance create func
 	Create(err ...error) *Validation
@@ -80,8 +81,8 @@ type MapData struct {
 	// bodyJSON from the original JSON bytes/string.
 	// available for FromJSONBytes(), FormJSON().
 	bodyJSON []byte
-	// map field reflect.Value caches
-	// fields map[string]reflect.Value
+	// TODO map field value cache by key path
+	// cache map[string]interface{}
 }
 
 /*************************************************************
@@ -95,7 +96,7 @@ func (d *MapData) Src() interface{} {
 
 // Type get
 func (d *MapData) Type() uint8 {
-	return uint8(sourceMap)
+	return sourceMap
 }
 
 // Set value by key
@@ -111,6 +112,12 @@ func (d *MapData) Get(field string) (interface{}, bool) {
 	// }
 
 	return maputil.GetByPath(field, d.Map)
+}
+
+// TryGet value by key
+func (d *MapData) TryGet(field string) (val interface{}, exist, zero bool) {
+	val, exist = maputil.GetByPath(field, d.Map)
+	return
 }
 
 // Create a Validation from data
@@ -224,7 +231,7 @@ func (d *StructData) Src() interface{} {
 
 // Type get
 func (d *StructData) Type() uint8 {
-	return uint8(sourceStruct)
+	return sourceStruct
 }
 
 // Validation create a Validation from the StructData
@@ -485,7 +492,13 @@ func (d *StructData) loadMessagesFromTag(trans *Translator, field, vRule, vMsg s
  *************************************************************/
 
 // Get value by field name. support get sub-value by path.
-func (d *StructData) Get(field string) (interface{}, bool) {
+func (d *StructData) Get(field string) (val interface{}, exist bool) {
+	val, exist, _ = d.TryGet(field)
+	return
+}
+
+// TryGet value by field name. support get sub-value by path.
+func (d *StructData) TryGet(field string) (val interface{}, exist, zero bool) {
 	var fv reflect.Value
 	field = strutil.UpperFirst(field)
 
@@ -494,17 +507,17 @@ func (d *StructData) Get(field string) (interface{}, bool) {
 		fieldNodes := strings.Split(field, ".")
 		topLevelField, ok := d.valueTpy.FieldByName(fieldNodes[0])
 		if !ok {
-			return nil, false
+			return
 		}
 
 		kind := removeTypePtr(topLevelField.Type).Kind()
 		if kind != reflect.Struct && kind != reflect.Array && kind != reflect.Slice && kind != reflect.Map {
-			return nil, false
+			return
 		}
 
 		fv = removeValuePtr(d.value.FieldByName(fieldNodes[0]))
 		if !fv.IsValid() {
-			return nil, false
+			return
 		}
 
 		fieldNodes = fieldNodes[1:]
@@ -513,7 +526,6 @@ func (d *StructData) Get(field string) (interface{}, bool) {
 		kind = fv.Type().Kind()
 		for _, fieldNode := range fieldNodes {
 			// fieldNode = strings.ReplaceAll(fieldNode, "\"", "") // for strings as keys
-
 			switch kind {
 			case reflect.Array, reflect.Slice:
 				index, _ := strconv.Atoi(fieldNode)
@@ -523,18 +535,18 @@ func (d *StructData) Get(field string) (interface{}, bool) {
 			case reflect.Struct:
 				fv = fv.FieldByName(fieldNode)
 			default: // no sub-value
-				return nil, false
+				return
 			}
 
 			fv = removeValuePtr(fv)
 			if !fv.IsValid() {
-				return nil, false
+				return
 			}
 
 			kind = fv.Type().Kind()
 			// if IsZero(fv) || (fv.Kind() == reflect.Ptr && fv.IsNil()) {
 			if fv.Kind() == reflect.Ptr && fv.IsNil() {
-				return nil, false
+				return
 			}
 
 			// if i < lastIndex && fv.Type().Kind() != reflect.Struct {
@@ -546,33 +558,33 @@ func (d *StructData) Get(field string) (interface{}, bool) {
 	} else {
 		// field at top struct
 		fv = d.value.FieldByName(field)
+		if !fv.IsValid() { // field not exists
+			return
+		}
 
 		// is it a pointer
 		if fv.Kind() == reflect.Ptr {
 			if fv.IsNil() { // fix: top-field is nil
-				return nil, false
+				return
 			}
-			fv = removeValuePtr(fv)
-		}
-
-		if !fv.IsValid() { // field not exists
-			return nil, false
+			// fv = removeValuePtr(fv)
 		}
 	}
 
 	// check can interface
 	if fv.CanInterface() {
-		// up: if is zero value, as not exist.
+		// TIP: if is zero value, as not exist.
 		// - bool as exists.
-		if fv.Kind() != reflect.Bool && IsZero(fv) {
-			return nil, false
-		}
+		// if fv.Kind() != reflect.Bool && IsZero(fv) {
+		// 	return fv.Interface(), false
+		// 	// return nil, false
+		// }
 
 		// cache field value info
 		d.fieldValues[field] = fv
-		return fv.Interface(), true
+		return fv.Interface(), true, fv.IsZero()
 	}
-	return nil, false
+	return
 }
 
 // Set value by field name.
@@ -711,7 +723,7 @@ func (d *FormData) Src() interface{} {
 
 // Type get
 func (d *FormData) Type() uint8 {
-	return uint8(sourceForm)
+	return sourceForm
 }
 
 // Create a Validation from data
@@ -788,6 +800,12 @@ func (d *FormData) Set(field string, val interface{}) (newVal interface{}, err e
 	return
 }
 
+// TryGet value by key
+func (d FormData) TryGet(key string) (val interface{}, exist, zero bool) {
+	val, exist = d.Get(key)
+	return
+}
+
 // Get value by key
 func (d FormData) Get(key string) (interface{}, bool) {
 	// get form value
@@ -799,7 +817,6 @@ func (d FormData) Get(key string) (interface{}, bool) {
 	if fh, ok := d.Files[key]; ok {
 		return fh, true
 	}
-
 	return nil, false
 }
 
@@ -829,7 +846,6 @@ func (d FormData) Has(key string) bool {
 	if _, ok := d.Files[key]; ok {
 		return true
 	}
-
 	return false
 }
 
@@ -855,7 +871,6 @@ func (d FormData) Int(key string) int {
 		iVal, _ := strconv.Atoi(val)
 		return iVal
 	}
-
 	return 0
 }
 
@@ -865,7 +880,6 @@ func (d FormData) Int64(key string) int64 {
 		i64, _ := strconv.ParseInt(val, 10, 0)
 		return i64
 	}
-
 	return 0
 }
 
@@ -875,7 +889,6 @@ func (d FormData) Float(key string) float64 {
 		result, _ := strconv.ParseFloat(val, 0)
 		return result
 	}
-
 	return 0
 }
 
@@ -885,7 +898,6 @@ func (d FormData) Bool(key string) bool {
 		blVal, _ := filter.Bool(val)
 		return blVal
 	}
-
 	return false
 }
 

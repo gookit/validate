@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"mime/multipart"
 	"net/url"
+	"reflect"
 	"testing"
 	"time"
 
@@ -73,6 +74,15 @@ func TestFormData(t *testing.T) {
 	is.Equal(float64(0), d.Float("not-exist"))
 	is.Equal("inhere", d.String("name"))
 	is.Equal("age=30&money=23.4&name=inhere&notify=true", d.Encode())
+
+	val, exist, zero := d.TryGet("name")
+	is.True(exist)
+	is.False(zero)
+	is.Equal("inhere", val)
+
+	val, exist = d.Get("name")
+	is.True(exist)
+	is.Equal("inhere", val)
 
 	nval, err := d.Set("newKey", "strVal")
 	is.NoError(err)
@@ -172,4 +182,28 @@ func TestStructData_Create(t *testing.T) {
 	str, ok = d.Get("Name")
 	is.True(ok)
 	is.Equal("inhere", str)
+}
+
+func TestStructData_Get_ptrVal(t *testing.T) {
+	type Struct1 struct {
+		Name string `validate:"required"`
+		Age  *int   `json:"age" validate:"required"`
+	}
+
+	age := 0
+	st := &Struct1{
+		Name: "tom",
+		Age:  &age,
+	}
+
+	assert.False(t, reflect.ValueOf(&age).IsZero())
+
+	d, err := FromStruct(st)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, d.Src())
+
+	val, ok := d.Get("Age")
+	assert.True(t, ok)
+	assert.Equal(t, "*int", fmt.Sprintf("%T", val))
+	assert.Equal(t, 0, *val.(*int))
 }
