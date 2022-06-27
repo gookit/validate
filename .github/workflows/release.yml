@@ -21,7 +21,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup ENV
+      - name: Set tag ENV
         # https://docs.github.com/en/free-pro-team@latest/actions/reference/workflow-commands-for-github-actions#setting-an-environment-variable
         run: |
           echo "RELEASE_TAG=${GITHUB_REF:10}" >> $GITHUB_ENV
@@ -30,6 +30,7 @@ jobs:
       - name: Generate changelog
         run: |
           curl https://github.com/gookit/gitw/releases/latest/download/chlog-linux-amd64 -o /usr/local/bin/chlog
+          chmod a+x /usr/local/bin/chlog
           chlog -config .github/changelog.yml -output changelog.md prev last 
 
       # https://github.com/softprops/action-gh-release
