@@ -25,10 +25,10 @@ jobs:
     steps:
     - name: Check out code
       uses: actions/checkout@v2
-    # https://github.com/actions/setup-go
-    - name: Use Go ${{ matrix.go_version }}
+
+    - name: Setup Go Faster
+      uses: WillAbides/setup-go-faster@v1.7.0
       timeout-minutes: 3
-      uses: actions/setup-go@v2
       with:
         go-version: ${{ matrix.go_version }}
 
