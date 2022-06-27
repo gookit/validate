@@ -2,6 +2,7 @@ package validate
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
@@ -85,6 +86,12 @@ func (es Errors) All() map[string]map[string]string {
 		mm[field] = fe
 	}
 	return mm
+}
+
+// JSON encode
+func (es Errors) JSON() []byte {
+	bts, _ := json.Marshal(es)
+	return bts
 }
 
 // Error string get

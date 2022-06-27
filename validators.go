@@ -176,10 +176,11 @@ func Validators() map[string]int8 {
 
 // Required field val check
 func (v *Validation) Required(field string, val interface{}) bool {
-	// check is upload file
-	fd, ok := v.data.(*FormData)
-	if ok && fd.HasFile(field) {
-		return true
+	if v.data != nil && v.data.Type() == sourceForm {
+		// check is upload file
+		if v.data.(*FormData).HasFile(field) {
+			return true
+		}
 	}
 
 	// check value

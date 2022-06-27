@@ -13,8 +13,8 @@ Go通用的数据验证与过滤库，使用简单，内置大部分常用验证
   - 大多数过滤器和验证器都有别名方便使用
 - 支持验证 `Map` `Struct` `Request`（`Form`，`JSON`，`url.Values`, `UploadedFile`）数据
   - 能简单快速的配置规则并验证 Map 数据
-  - 支持检查 slice 中的每个子项值. eg: `v.StringRule("tags.*", "required|string|minlen:1")`
   - 能根据请求数据类型 `Content-Type` 快速验证 `http.Request` 并收集数据
+  - 支持检查 slice 中的每个子项值. eg: `v.StringRule("tags.*", "required|string|minlen:1")`
 - 支持将规则按场景进行分组设置，不同场景验证不同的字段
   - 已经内置了超多（**>70** 个）常用的验证器，查看 [内置验证器](#built-in-validators)
 - 支持在进行验证前对值使用过滤器进行净化过滤，适应更多场景
@@ -300,6 +300,7 @@ v := d.Validation()
 - `func (v *Validation) AtScene(scene string) *Validation` 设置当前验证场景名
 - `func (v *Validation) Filtering() bool` 应用所有过滤规则
 - `func (v *Validation) Validate() bool` 应用所有验证和过滤规则
+- `func (v *Validation) ValidateE() Errors` 应用所有验证和过滤规则，并返回错误
 - `func (v *Validation) SafeData() map[string]interface{}` 获取所有经过验证的数据
 - `func (v *Validation) BindSafeData(ptr interface{}) error` 将验证后的安全数据绑定到一个结构体
 
@@ -384,7 +385,7 @@ type GlobalOption struct {
 	CheckDefault bool
 	// CheckZero Whether validate the default zero value. (intX,uintX: 0, string: "")
 	CheckZero bool
-	// CheckSubOnParentMarked True: only collect sub-struct rule on current field has rule.
+	// CheckSubOnParentMarked 当字段是一个结构体时，仅在当前字段配置了验证tag时才收集子结构体的规则
 	CheckSubOnParentMarked bool
 }
 ```
@@ -563,7 +564,33 @@ func main() {
 }
 ```
 
+### 自定义 `required` 验证器
+
+允许自定义 `required` 验证器来自定义验证是否为空。但是，需注意验证器名称必须以 `required` 开头，例如 `required_custom`。
+
+```go
+	type Data struct {
+		Age  int    `validate:"required_custom" message:"age is required"`
+		Name string `validate:"required"`
+	}
+
+	v := validate.New(&Data{
+		Name: "tom",
+		Age:  0,
+	})
+
+	v.AddValidator("required_custom", func(val interface{}) bool {
+		// do check value
+		return false
+	})
+
+	ok := v.Validate()
+	assert.False(t, ok)
+```
+
 ## 在gin框架中使用
+
+可以在任何框架中使用 `validate`，例如 Gin、Echo、Chi 等。 这里以 gin 示例:
 
 ```go
 package main

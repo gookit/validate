@@ -256,6 +256,20 @@ func TestStruct(t *testing.T) {
 	is.True(v.Validate())
 }
 
+func TestStruct_use_method_validate(t *testing.T) {
+	is := assert.New(t)
+	u := &UserForm{
+		Name:     "inhere at",
+		Code:     "inhere",
+		UpdateAt: time.Now(),
+	}
+	v := Struct(u)
+
+	err := v.ValidateE()
+	is.Error(err)
+	is.Equal(`{"Code":{"customValidator":"Code field did not pass validation"}}`, string(err.JSON()))
+}
+
 func TestJSON(t *testing.T) {
 	is := assert.New(t)
 

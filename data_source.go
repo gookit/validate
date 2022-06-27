@@ -393,8 +393,8 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 						elemValue := removeValuePtr(fValue.MapIndex(key))
 						elemType := removeTypePtr(elemValue.Type())
 
-						kind := key.Kind()
 						format := "%s."
+						kind := key.Kind()
 						val := key.Interface()
 						switch {
 						case kind == reflect.String:

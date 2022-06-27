@@ -29,7 +29,28 @@ func TestValidation_custom_type(t *testing.T) {
 	)
 }
 
-func TestValidation_custom_required(t *testing.T) {
+// func TestValidation_custom_required1(t *testing.T) {
+// 	type Data struct {
+// 		Name string `validate:"required"`
+// 		Age  int    `validate:"required" message:"age is required"`
+// 	}
+//
+// 	v := validate.New(&Data{
+// 		Name: "tom",
+// 		Age:  0,
+// 	})
+// 	v.AddValidator("required", func(val interface{}) bool {
+// 		dump.V(val)
+// 		// do something ...
+// 		return false
+// 	})
+//
+// 	err := v.ValidateE()
+// 	assert.Error(t, err)
+// 	assert.Equal(t, "age is required", err.One())
+// }
+
+func TestValidation_custom_required2(t *testing.T) {
 	type Data struct {
 		Age  int    `validate:"required_custom" message:"age is required"`
 		Name string `validate:"required"`

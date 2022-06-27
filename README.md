@@ -10,8 +10,8 @@
 `validate` is a generic Go data validate and filter tool library.
 
 - Support quick validate `Map`, `Struct`, `Request`(`Form`, `JSON`, `url.Values`, `UploadedFile`) data
-  - Supports checking each child value in a slice. eg: `v.StringRule("tags.*", "required|string|minlen:1")`
   - Validating `http.Request` automatically collects data based on the request `Content-Type` value
+  - Supports checking each child value in a slice. eg: `v.StringRule("tags.*", "required|string")`
 - Support filter/sanitize/convert data before validate
 - Support add custom filter/validator func
 - Support scene settings, verify different fields in different scenes
@@ -593,7 +593,36 @@ func main() {
 }
 ```
 
+### Custom `required` validation
+
+Allows a custom `required` validator to customize whether the validation is empty.
+However, note that the validator name must start with `required`, e.g. `required_custom`.
+
+```go
+	type Data struct {
+		Age  int    `validate:"required_custom" message:"age is required"`
+		Name string `validate:"required"`
+	}
+
+	v := validate.New(&Data{
+		Name: "tom",
+		Age:  0,
+	})
+
+	v.AddValidator("required_custom", func(val interface{}) bool {
+		// do check value
+		return false
+	})
+
+	ok := v.Validate()
+	assert.False(t, ok)
+```
+
 ## Use on gin framework
+
+Can use `validate` in any frameworks, such as Gin, Echo, Chi and more.
+
+**Examples on gin:**
 
 ```go
 package main
