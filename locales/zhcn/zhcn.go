@@ -31,8 +31,8 @@ var Data = map[string]string{
 	"range": "{field} 值必须在此范围内 %d - %d",
 	// required
 	"required":           "{field} 是必填项",
-	"requiredIf":         "当 %v 为 {args} 时 {field} 不能为空。",
-	"requiredUnless":     "当 %v 不为 {args} 时 {field} 不能为空。",
+	"requiredIf":         "当 {args0} 为 {args1end} 时 {field} 不能为空。",
+	"requiredUnless":     "当 {args0} 不为 {args1end} 时 {field} 不能为空。",
 	"requiredWith":       "当 {values} 存在时 {field} 不能为空。",
 	"requiredWithAll":    "当 {values} 存在时 {field} 不能为空。",
 	"requiredWithout":    "当 {values} 不存在时 {field} 不能为空。",

@@ -2,6 +2,7 @@ package validate_test
 
 import (
 	"fmt"
+	"github.com/gookit/validate/locales/zhcn"
 	"testing"
 	"time"
 
@@ -963,4 +964,38 @@ func TestIssue_143(t *testing.T) {
 	dump.Println(v.Errors)
 	assert.False(t, ok)
 	assert.Equal(t, "age min value is 30", v.Errors.One())
+}
+
+func TestIssue_152(t *testing.T) {
+	zhcn.RegisterGlobal()
+
+	// test required if
+	type requiredIf struct {
+		Type int64  `validate:"required" label:"类型"`
+		Data string `validate:"required_if:Type,1" label:"数据"`
+	}
+
+	v := validate.Struct(requiredIf{
+		Type: 1,
+		Data: "",
+	})
+
+	v.Validate()
+
+	assert.Equal(t, `当 类型 为 [1] 时 数据 不能为空。`, v.Errors.One())
+
+	// test required unless
+	type requiredUnless struct {
+		Type int64  `label:"类型"`
+		Data string `validate:"required_unless:Type,1" label:"数据"`
+	}
+
+	v = validate.Struct(requiredUnless{
+		Type: 0,
+		Data: "",
+	})
+
+	v.Validate()
+
+	assert.Equal(t, `当 类型 不为 [1] 时 数据 不能为空。`, v.Errors.One())
 }
