@@ -21,6 +21,9 @@ var nilObj = NilObject{}
 // init a reflect nil value
 var nilRVal = reflect.ValueOf(nilObj)
 
+// TODO a reflect nil value
+var NilValue = reflect.Zero(reflect.TypeOf((*interface{})(nil)).Elem())
+
 // IsNilObj check value is internal NilObject
 func IsNilObj(val interface{}) bool {
 	_, ok := val.(NilObject)
@@ -57,6 +60,7 @@ func parseArgString(argStr string) (ss []string) {
 	return stringSplit(argStr, ",")
 }
 
+// TODO strutil.Split()
 func stringSplit(str, sep string) (ss []string) {
 	str = strings.TrimSpace(str)
 	if str == "" {
@@ -84,7 +88,7 @@ func strings2Args(strings []string) []interface{} {
 func args2strings(args []interface{}) []string {
 	strSlice := make([]string, len(args))
 	for i, a := range args {
-		strSlice[i] = strutil.MustString(a)
+		strSlice[i] = strutil.QuietString(a)
 	}
 	return strSlice
 }
@@ -98,7 +102,7 @@ func buildArgs(val interface{}, args []interface{}) []interface{} {
 	return newArgs
 }
 
-// ValueIsEmpty check. TODO use stdutil.ValueIsEmpty()
+// ValueIsEmpty check. TODO use reflects.IsEmpty()
 func ValueIsEmpty(v reflect.Value) bool {
 	switch v.Kind() {
 	case reflect.Invalid:
@@ -122,7 +126,7 @@ func ValueIsEmpty(v reflect.Value) bool {
 	return reflect.DeepEqual(v.Interface(), reflect.Zero(v.Type()).Interface())
 }
 
-// ValueLen get value length. TODO use stdutil.ValueLen()
+// ValueLen get value length. TODO use reflects.Len()
 func ValueLen(v reflect.Value) int {
 	v = reflect.Indirect(v)
 	k := v.Kind()
@@ -300,33 +304,14 @@ func compareFloat64(srcI64, dstI64 float64, op string) (ok bool) {
 	return
 }
 
-// getVariadicKind name. usage: getVariadicKind(reflect.TypeOf(v))
-func getVariadicKind(typString string) reflect.Kind {
-	switch typString {
-	case "[]int":
-		return reflect.Int
-	case "[]int8":
-		return reflect.Int8
-	case "[]int16":
-		return reflect.Int16
-	case "[]int32":
-		return reflect.Int32
-	case "[]int64":
-		return reflect.Int64
-	case "[]uint":
-		return reflect.Uint
-	case "[]uint8":
-		return reflect.Uint8
-	case "[]uint16":
-		return reflect.Uint16
-	case "[]uint32":
-		return reflect.Uint32
-	case "[]uint64":
-		return reflect.Uint64
-	case "[]string":
-		return reflect.String
-	case "[]interface {}": // args ...interface{}
-		return reflect.Interface
+// getVariadicKind name.
+//
+// usage:
+//
+//	getVariadicKind(reflect.TypeOf(v))
+func getVariadicKind(typ reflect.Type) reflect.Kind {
+	if typ.Kind() == reflect.Slice {
+		return typ.Elem().Kind()
 	}
 	return reflect.Invalid
 }

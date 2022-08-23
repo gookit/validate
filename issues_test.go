@@ -2,9 +2,10 @@ package validate_test
 
 import (
 	"fmt"
-	"github.com/gookit/validate/locales/zhcn"
 	"testing"
 	"time"
+
+	"github.com/gookit/validate/locales/zhcn"
 
 	"github.com/gookit/goutil/dump"
 	"github.com/gookit/goutil/jsonutil"
@@ -966,6 +967,21 @@ func TestIssue_143(t *testing.T) {
 	assert.Equal(t, "age min value is 30", v.Errors.One())
 }
 
+// https://github.com/gookit/validate/issues/148
+func TestIssues_148(t *testing.T) {
+	type A struct {
+		T1 string `validate:"required"`
+		T2 string `validate:"required"`
+	}
+
+	type B struct {
+		A
+		T1 string `json:"T1,omitempty"` // is not required
+	}
+
+}
+
+// https://github.com/gookit/validate/issues/152
 func TestIssue_152(t *testing.T) {
 	zhcn.RegisterGlobal()
 
@@ -998,4 +1014,32 @@ func TestIssue_152(t *testing.T) {
 	v.Validate()
 
 	assert.Equal(t, `当 类型 不为 [1] 时 数据 不能为空。`, v.Errors.One())
+}
+
+// https://github.com/gookit/validate/issues/156
+func TestIssues_156(t *testing.T) {
+	assert.True(t, validate.IsEmail("abc.88@qq.com"))
+	assert.True(t, validate.IsEmail("xxxx.88@qq.com"))
+}
+
+// https://github.com/gookit/validate/issues/157
+func TestIssues_157(t *testing.T) {
+	type SubsrcSubmitReq struct {
+		StockCode string `form:"stock_code" json:"stock_code" validate:"required|maxLen:20" filter:"trim"`
+		UserEmail string `form:"user_email" json:"user_email" validate:"required|regexp:\\w{4,6}" filter:"trim"`
+	}
+
+	req := &SubsrcSubmitReq{}
+	err := jsonutil.DecodeString(`{
+    "stock_code": "11111111",
+    "user_email": "aaaaaaaaaaaaaaaaa"
+}`, req)
+
+	assert.NoError(t, err)
+
+	v := validate.Struct(req)
+	ok := v.Validate()
+
+	assert.False(t, ok)
+	dump.Println(req, v.Errors)
 }

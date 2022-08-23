@@ -151,7 +151,8 @@ func AddValidators(m map[string]interface{}) {
 // AddValidator to the pkg. checkFunc must return a bool
 //
 // Usage:
-// 	v.AddValidator("myFunc", func(val interface{}) bool {
+//
+//	v.AddValidator("myFunc", func(val interface{}) bool {
 //		// do validate val ...
 //		return true
 //	})
@@ -411,8 +412,9 @@ func (v *Validation) IsFormFile(fd *FormData, field string) (ok bool) {
 
 // IsFormImage check field is uploaded image file.
 // Usage:
-// 	v.AddRule("avatar", "image")
-// 	v.AddRule("avatar", "image", "jpg", "png", "gif") // set ext limit
+//
+//	v.AddRule("avatar", "image")
+//	v.AddRule("avatar", "image", "jpg", "png", "gif") // set ext limit
 func (v *Validation) IsFormImage(fd *FormData, field string, exts ...string) (ok bool) {
 	mime := fd.FileMimeType(field)
 	if mime == "" {
@@ -438,7 +440,8 @@ func (v *Validation) IsFormImage(fd *FormData, field string, exts ...string) (ok
 
 // InMimeTypes check field is uploaded file and mime type is in the mimeTypes.
 // Usage:
-// 	v.AddRule("video", "mimeTypes", "video/avi", "video/mpeg", "video/quicktime")
+//
+//	v.AddRule("video", "mimeTypes", "video/avi", "video/mpeg", "video/quicktime")
 func (v *Validation) InMimeTypes(fd *FormData, field, mimeType string, moreTypes ...string) bool {
 	mime := fd.FileMimeType(field)
 	if mime == "" {
@@ -632,9 +635,10 @@ func IsInt(val interface{}, minAndMax ...int64) (ok bool) {
 // IsString check and support length check.
 //
 // Usage:
-// 	ok := IsString(val)
-// 	ok := IsString(val, 5) // with min len check
-// 	ok := IsString(val, 5, 12) // with min and max len check
+//
+//	ok := IsString(val)
+//	ok := IsString(val, 5) // with min len check
+//	ok := IsString(val, 5, 12) // with min and max len check
 func IsString(val interface{}, minAndMaxLen ...int) (ok bool) {
 	if val == nil {
 		return false
@@ -817,35 +821,22 @@ func IsStringNumber(s string) bool {
 }
 
 // IsEmail check
-func IsEmail(s string) bool {
-	return s != "" && rxEmail.MatchString(s)
-}
+func IsEmail(s string) bool { return s != "" && rxEmail.MatchString(s) }
 
 // IsUUID string
-func IsUUID(s string) bool {
-	return s != "" && rxUUID.MatchString(s)
-}
+func IsUUID(s string) bool { return s != "" && rxUUID.MatchString(s) }
 
 // IsUUID3 string
-func IsUUID3(s string) bool {
-	return s != "" && rxUUID3.MatchString(s)
-}
+func IsUUID3(s string) bool { return s != "" && rxUUID3.MatchString(s) }
 
 // IsUUID4 string
-func IsUUID4(s string) bool {
-	return s != "" && rxUUID4.MatchString(s)
-}
+func IsUUID4(s string) bool { return s != "" && rxUUID4.MatchString(s) }
 
 // IsUUID5 string
-func IsUUID5(s string) bool {
-	return s != "" && rxUUID5.MatchString(s)
-}
+func IsUUID5(s string) bool { return s != "" && rxUUID5.MatchString(s) }
 
 // IsIP is the validation function for validating if the field's value is a valid v4 or v6 IP address.
-func IsIP(s string) bool {
-	// ip := net.ParseIP(s)
-	return s != "" && net.ParseIP(s) != nil
-}
+func IsIP(s string) bool { return s != "" && net.ParseIP(s) != nil }
 
 // IsIPv4 is the validation function for validating if a value is a valid v4 IP address.
 func IsIPv4(s string) bool {
@@ -954,12 +945,12 @@ func PathExists(path string) bool {
 	return fsutil.PathExists(path)
 }
 
-// IsFilePath path is an local filepath
+// IsFilePath path is a local filepath
 func IsFilePath(path string) bool {
 	return fsutil.IsFile(path)
 }
 
-// IsDirPath path is an local dir path
+// IsDirPath path is a local dir path
 func IsDirPath(path string) bool {
 	return fsutil.IsDir(path)
 }
@@ -981,7 +972,8 @@ func IsUnixPath(s string) bool {
 // IsEqual check two value is equals.
 //
 // Support:
-// 	bool, int(X), uint(X), string, float(X) AND slice, array, map
+//
+//	bool, int(X), uint(X), string, float(X) AND slice, array, map
 func IsEqual(val, wantVal interface{}) bool {
 	// check is nil
 	if val == nil || wantVal == nil {
@@ -1041,15 +1033,11 @@ func IntEqual(val interface{}, wantVal int64) bool {
 
 // Gt check value greater dst value.
 // only check for: int(X), uint(X), float(X)
-func Gt(val, min interface{}) bool {
-	return compareIntFloat(val, min, "gt")
-}
+func Gt(val, min interface{}) bool { return mathutil.Compare(val, min, ">") }
 
 // Min check value greater or equal dst value, alias Gte()
 // only check for: int(X), uint(X), float(X).
-func Min(val, min interface{}) bool {
-	return compareIntFloat(val, min, "gte")
-}
+func Min(val, min interface{}) bool { return mathutil.Compare(val, min, ">=") }
 
 // Lt less than dst value.
 // only check for: int(X), uint(X), float(X).
@@ -1153,7 +1141,7 @@ func ByteLength(str string, minLen int, maxLen ...int) bool {
 	return strLen >= minLen && strLen <= maxLen[0]
 }
 
-// RuneLength check string's length (including multi byte strings)
+// RuneLength check string's length (including multibyte strings)
 func RuneLength(val interface{}, minLen int, maxLen ...int) bool {
 	str, isString := val.(string)
 	if !isString {
@@ -1172,7 +1160,7 @@ func RuneLength(val interface{}, minLen int, maxLen ...int) bool {
 	return strLen >= minLen && strLen <= maxLen[0]
 }
 
-// StringLength check string's length (including multi byte strings)
+// StringLength check string's length (including multibyte strings)
 func StringLength(val interface{}, minLen int, maxLen ...int) bool {
 	return RuneLength(val, minLen, maxLen...)
 }

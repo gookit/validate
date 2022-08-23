@@ -12,8 +12,6 @@ jobs:
     timeout-minutes: 10
     strategy:
       fail-fast: true
-      matrix:
-        go: [1.17]
 
     steps:
       - name: Checkout
