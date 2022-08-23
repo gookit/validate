@@ -59,8 +59,7 @@ func TestUtil_Func_getVariadicKind(t *testing.T) {
 	}
 
 	for _, item := range noErrTests {
-		vt := reflect.TypeOf(item.val)
-		eleType := getVariadicKind(vt.String())
+		eleType := getVariadicKind(reflect.TypeOf(item.val))
 		assert.Equal(t, item.want, eleType)
 	}
 }

@@ -396,7 +396,7 @@ func convertArgsType(v *Validation, fm *funcMeta, field string, args []interface
 	// eg. "...int64" -> slice "[]int64"
 	if fm.isVariadic {
 		// get variadic kind. "[]int64" -> reflect.Int64
-		lastTyp = getVariadicKind(ft.In(lastArgIndex).String())
+		lastTyp = getVariadicKind(ft.In(lastArgIndex))
 	}
 
 	// only one args and type is interface{}
