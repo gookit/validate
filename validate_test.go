@@ -1,9 +1,11 @@
 package validate
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/gookit/goutil/dump"
 	"github.com/stretchr/testify/assert"
@@ -20,6 +22,31 @@ import (
 // 	dump.Println("--------- setup ---------")
 // 	StdTranslator.Reset()
 // }
+
+func ExampleStruct() {
+	// UserForm struct
+	type UserForm struct {
+		Name      string      `validate:"required|minLen:7" message:"required:{field} is required" label:"User Name"`
+		Email     string      `validate:"email" message:"email:input must be a EMAIL address"`
+		CreateAt  int         `validate:"email"`
+		Safe      int         `validate:"-"`
+		UpdateAt  time.Time   `validate:"required"`
+		Code      string      `validate:"customValidator|default:abc"`
+		Status    int         `validate:"required|gtField:Extra.0.Status1"`
+		Extra     []ExtraInfo `validate:"required"`
+		protected string
+	}
+
+	u := &UserForm{
+		Name: "inhere",
+	}
+
+	v := Struct(u)
+	ok := v.Validate()
+
+	fmt.Println(ok)
+	dump.P(v.Errors, u)
+}
 
 func TestUtil_Func_valueToInt64(t *testing.T) {
 	noErrTests := []struct {

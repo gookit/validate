@@ -31,9 +31,10 @@ var (
 // Errors validate errors definition
 //
 // Example:
-// 	{
-// 		"field": {validator: message, validator1: message1}
-// 	}
+//
+//	{
+//		"field": {validator: message, validator1: message1}
+//	}
 type Errors map[string]MS
 
 // Empty no error
@@ -198,7 +199,7 @@ var builtinMessages = map[string]string{
 	"notContains": "{field} value contains the given %s",
 	"startsWith":  "{field} value does not start with the given %s",
 	"endsWith":    "{field} value does not end with the given %s",
-	"email":       "{field} value is invalid mail",
+	"email":       "{field} value is invalid email address",
 	"regex":       "{field} value does not pass regex check",
 	"file":        "{field} value must be a file",
 	"image":       "{field} value must be an image",

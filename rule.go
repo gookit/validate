@@ -109,7 +109,8 @@ func (r *Rule) SetBeforeFunc(fn func(v *Validation) bool) {
 // SetMessage set error message.
 //
 // Usage:
-// 	v.AddRule("name", "required").SetMessage("error message")
+//
+//	v.AddRule("name", "required").SetMessage("error message")
 func (r *Rule) SetMessage(errMsg string) *Rule {
 	r.message = errMsg
 	return r
@@ -118,10 +119,11 @@ func (r *Rule) SetMessage(errMsg string) *Rule {
 // SetMessages set error message map.
 //
 // Usage:
-// 	v.AddRule("name,email", "required").SetMessages(MS{
-// 		"name": "error message 1",
-// 		"email": "error message 2",
-// 	})
+//
+//	v.AddRule("name,email", "required").SetMessages(MS{
+//		"name": "error message 1",
+//		"email": "error message 2",
+//	})
 func (r *Rule) SetMessages(msgMap MS) *Rule {
 	r.messages = msgMap
 	return r
@@ -135,7 +137,7 @@ func (r *Rule) Fields() []string {
 func (r *Rule) errorMessage(field, validator string, v *Validation) (msg string) {
 	if r.messages != nil {
 		var ok bool
-		// use full key. "field.validator"
+		// use the full key. "field.validator"
 		fKey := field + "." + validator
 		if msg, ok = r.messages[fKey]; ok {
 			return
@@ -161,9 +163,10 @@ func (r *Rule) errorMessage(field, validator string, v *Validation) (msg string)
 // StringRule add field rules by string
 //
 // Usage:
-// 	v.StringRule("name", "required|string|minLen:6")
-// 	// will try convert to int before apply validate.
-// 	v.StringRule("age", "required|int|min:12", "toInt")
+//
+//	v.StringRule("name", "required|string|minLen:6")
+//	// will try convert to int before apply validate.
+//	v.StringRule("age", "required|int|min:12", "toInt")
 func (v *Validation) StringRule(field, rule string, filterRule ...string) *Validation {
 	rule = strings.TrimSpace(rule)
 	if rule == "" {
@@ -211,10 +214,11 @@ func (v *Validation) StringRule(field, rule string, filterRule ...string) *Valid
 // StringRules add multi rules by string map.
 //
 // Usage:
-// 	v.StringRules(map[string]string{
-// 		"name": "required|string|min_len:12",
-// 		"age": "required|int|min:12",
-// 	})
+//
+//	v.StringRules(map[string]string{
+//		"name": "required|string|min_len:12",
+//		"age": "required|int|min:12",
+//	})
 func (v *Validation) StringRules(mp MS) *Validation {
 	for name, rule := range mp {
 		v.StringRule(name, rule)
@@ -225,10 +229,11 @@ func (v *Validation) StringRules(mp MS) *Validation {
 // ConfigRules add multi rules by string map. alias of StringRules()
 //
 // Usage:
-// 	v.ConfigRules(map[string]string{
-// 		"name": "required|string|min:12",
-// 		"age": "required|int|min:12",
-// 	})
+//
+//	v.ConfigRules(map[string]string{
+//		"name": "required|string|min:12",
+//		"age": "required|int|min:12",
+//	})
 func (v *Validation) ConfigRules(mp MS) *Validation {
 	for name, rule := range mp {
 		v.StringRule(name, rule)

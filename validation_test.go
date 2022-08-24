@@ -14,17 +14,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func ExampleStruct() {
-	u := &UserForm{
-		Name: "inhere",
-	}
-
-	v := Struct(u)
-	ok := v.Validate()
-
-	fmt.Println(ok)
-}
-
 var mpSample = M{
 	"age":   100,
 	"name":  "inhere",
