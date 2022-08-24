@@ -314,12 +314,17 @@ Quick create `DataFace` instance.
 - `FromURLValues(values url.Values) *FormData`
 - `FromRequest(r *http.Request, maxMemoryLimit ...int64) (DataFace, error)`
 
-> Create `Validation` by `DataFace`
+> Create `Validation` from `DataFace`
 
 ```go
 d := FromMap(map[string]interface{}{"key": "val"})
 v := d.Validation()
 ```
+
+### Methods In Validation
+
+- `func (v *Validation) Validate(scene ...string) bool` Do validating and return is success.
+- `func (v *Validation) ValidateE(scene ...string) Errors` Do validating and return error.
 
 ## More Usage
 

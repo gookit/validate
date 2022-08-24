@@ -295,12 +295,12 @@ d := FromMap(map[string]interface{}{"key": "val"})
 v := d.Validation()
 ```
 
-`Validation` 常用方法：
+### `Validation` 常用方法：
 
 - `func (v *Validation) AtScene(scene string) *Validation` 设置当前验证场景名
 - `func (v *Validation) Filtering() bool` 应用所有过滤规则
-- `func (v *Validation) Validate() bool` 应用所有验证和过滤规则
-- `func (v *Validation) ValidateE() Errors` 应用所有验证和过滤规则，并返回错误
+- `func (v *Validation) Validate() bool` 应用所有验证和过滤规则，返回是否验证成功
+- `func (v *Validation) ValidateE() Errors` 应用所有验证和过滤规则，并在失败时返回错误
 - `func (v *Validation) SafeData() map[string]interface{}` 获取所有经过验证的数据
 - `func (v *Validation) BindSafeData(ptr interface{}) error` 将验证后的安全数据绑定到一个结构体
 
