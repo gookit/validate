@@ -10,6 +10,7 @@ import (
 
 	"github.com/gookit/filter"
 	"github.com/gookit/goutil/mathutil"
+	"github.com/gookit/goutil/reflects"
 	"github.com/gookit/goutil/strutil"
 )
 
@@ -21,7 +22,7 @@ var nilObj = NilObject{}
 // init a reflect nil value
 var nilRVal = reflect.ValueOf(nilObj)
 
-// TODO a reflect nil value
+// NilValue TODO a reflect nil value, use for instead of nilRVal
 var NilValue = reflect.Zero(reflect.TypeOf((*interface{})(nil)).Elem())
 
 // IsNilObj check value is internal NilObject
@@ -126,32 +127,14 @@ func ValueIsEmpty(v reflect.Value) bool {
 	return reflect.DeepEqual(v.Interface(), reflect.Zero(v.Type()).Interface())
 }
 
-// ValueLen get value length. TODO use reflects.Len()
+// ValueLen get value length.
+// Deprecated: please use reflects.Len()
 func ValueLen(v reflect.Value) int {
-	v = reflect.Indirect(v)
-	k := v.Kind()
-
-	// (u)int use width.
-	switch k {
-	case reflect.String:
-		return len([]rune(v.String()))
-	case reflect.Map, reflect.Array, reflect.Chan, reflect.Slice:
-		return v.Len()
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-		return len(strconv.FormatInt(int64(v.Uint()), 10))
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return len(strconv.FormatInt(v.Int(), 10))
-	case reflect.Float32, reflect.Float64:
-		return len(fmt.Sprint(v.Interface()))
-	}
-
-	// cannot get length
-	return -1
+	return reflects.Len(v)
 }
 
-var (
-	ErrConvertFail = errors.New("convert value is failure")
-)
+// ErrConvertFail error
+var ErrConvertFail = errors.New("convert value is failure")
 
 func valueToInt64(v interface{}, strict bool) (i64 int64, err error) {
 	switch tVal := v.(type) {
@@ -202,11 +185,8 @@ func CalcLength(val interface{}) int {
 		return -1
 	}
 
-	// fix: issues#39 dont use `return len(str)` for string.
-	if str, ok := val.(string); ok {
-		return len([]rune(str))
-	}
-	return ValueLen(reflect.ValueOf(val))
+	// return ValueLen(reflect.ValueOf(val))
+	return reflects.Len(reflect.ValueOf(val))
 }
 
 // value compare.
@@ -215,8 +195,8 @@ func CalcLength(val interface{}) int {
 func valueCompare(srcVal, dstVal interface{}, op string) (ok bool) {
 	// string compare
 	if str1, ok := srcVal.(string); ok {
-		str2, ok := dstVal.(string)
-		if !ok {
+		str2, err := strutil.ToString(dstVal)
+		if err != nil {
 			return false
 		}
 

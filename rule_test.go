@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestRule(t *testing.T) {
+func TestRule_basic(t *testing.T) {
 	is := assert.New(t)
 	data := url.Values{
 		"name": []string{"inhere"},
@@ -33,7 +33,7 @@ func TestRule(t *testing.T) {
 	v.AddRule("key0", "inRule").SetCheckFunc(func(s string) bool {
 		return s == "val0"
 	})
-	v.AddRule("name", "gtField", "key0")
+	v.AddRule("name", "ltField", "key0")
 
 	// validate. will skip validate field "name"
 	v.Validate()
@@ -63,8 +63,7 @@ func TestRule_SetBeforeFunc(t *testing.T) {
 
 	// use SetBeforeFunc
 	v = Map(mp)
-	v.
-		AddRule("avatar", "isFile").
+	v.AddRule("avatar", "isFile").
 		SetBeforeFunc(func(v *Validation) bool {
 			// return false for skip validate
 			return false
@@ -81,8 +80,7 @@ func TestRule_SetFilterFunc(t *testing.T) {
 		"age":  "abc",
 	})
 
-	v.
-		AddRule("age", "int", 1, 100).
+	v.AddRule("age", "int", 1, 100).
 		SetFilterFunc(func(val interface{}) (i interface{}, e error) {
 			return filter.Int(val)
 		})
@@ -102,6 +100,7 @@ func TestRule_SetSkipEmpty(t *testing.T) {
 	v.AddRule("age", "int", 1)
 	v.AddRule("name", "string", 1, 10)
 	is.True(v.Validate())
+
 	sd := v.SafeData()
 	is.Contains(sd, "name")
 	is.NotContains(sd, "age")

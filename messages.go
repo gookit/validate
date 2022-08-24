@@ -257,16 +257,22 @@ func AddGlobalMessages(mp map[string]string) {
 }
 
 // AddBuiltinMessages alias of the AddGlobalMessages()
-func AddBuiltinMessages(mp map[string]string) {
-	for name, msg := range mp {
-		builtinMessages[name] = msg
-	}
-}
+func AddBuiltinMessages(mp map[string]string) { AddGlobalMessages(mp) }
 
 // BuiltinMessages get builtin messages
-func BuiltinMessages() map[string]string {
-	return builtinMessages
+func BuiltinMessages() map[string]string { return builtinMessages }
+
+// CopyGlobalMessages copy get builtin messages
+func CopyGlobalMessages() map[string]string {
+	cp := make(map[string]string, len(builtinMessages))
+	for name, msg := range builtinMessages {
+		cp[name] = msg
+	}
+	return cp
 }
+
+// SetBuiltinMessages override set builtin messages
+func SetBuiltinMessages(mp map[string]string) { builtinMessages = mp }
 
 /*************************************************************
  * Error messages translator

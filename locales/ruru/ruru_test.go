@@ -1,9 +1,10 @@
 package ruru
 
 import (
+	"testing"
+
 	"github.com/gookit/validate"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestRegister(t *testing.T) {
@@ -21,6 +22,11 @@ func TestRegister(t *testing.T) {
 }
 
 func TestRegisterGlobal(t *testing.T) {
+	old := validate.CopyGlobalMessages()
+	defer func() {
+		validate.SetBuiltinMessages(old)
+	}()
+
 	RegisterGlobal()
 
 	is := assert.New(t)

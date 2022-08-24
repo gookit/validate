@@ -246,7 +246,7 @@ func TestLtGt(t *testing.T) {
 	is.True(Gt(0.3, 0.2))
 	is.True(Gt(2.1, 2))
 	is.False(Gt(2, 3))
-	is.False(Gt("invalid", 3))
+	is.False(Gt([]int{23}, 3))
 }
 
 func TestMin(t *testing.T) {
@@ -261,7 +261,7 @@ func TestMin(t *testing.T) {
 		{val: float32(3.2), min: 3.1},
 		{val: 3.2, min: 3.2},
 		{val: 3.2, min: "3.2"},
-		{val: "3", min: 3.2},
+		{val: 3, min: 3.2},
 		{val: 0.02, min: 0.01},
 		{val: 0.02, min: 0.02},
 	}
@@ -271,9 +271,9 @@ func TestMin(t *testing.T) {
 
 	// fail
 	tests = []struct{ val, min interface{} }{
-		{val: "3.2", min: 3.2},
+		{val: 3.1, min: 3.2},
 		{nil, 3},
-		{"str", 3},
+		{"abc", "def"},
 		{3, nil},
 		{3, 4},
 		{3, "abc"},

@@ -10,7 +10,7 @@ func Register(v *validate.Validation) {
 	v.AddMessages(Data)
 }
 
-// RegisterGlobal register to the validate global messages
+// RegisterGlobal register to validate global messages
 func RegisterGlobal() {
 	validate.AddGlobalMessages(Data)
 }

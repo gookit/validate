@@ -22,6 +22,11 @@ func TestRegister(t *testing.T) {
 }
 
 func TestRegisterGlobal(t *testing.T) {
+	old := validate.CopyGlobalMessages()
+	defer func() {
+		validate.SetBuiltinMessages(old)
+	}()
+
 	RegisterGlobal()
 
 	is := assert.New(t)

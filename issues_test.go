@@ -1002,6 +1002,11 @@ func TestIssues_148(t *testing.T) {
 
 // https://github.com/gookit/validate/issues/152
 func TestIssue_152(t *testing.T) {
+	old := validate.CopyGlobalMessages()
+	defer func() {
+		validate.SetBuiltinMessages(old)
+	}()
+
 	zhcn.RegisterGlobal()
 
 	// test required if
@@ -1031,7 +1036,6 @@ func TestIssue_152(t *testing.T) {
 	})
 
 	v.Validate()
-
 	assert.Equal(t, `当 类型 不为 [1] 时 数据 不能为空。`, v.Errors.One())
 }
 
@@ -1077,7 +1081,7 @@ func TestIssues_159(t *testing.T) {
 
 	v := validate.Struct(ts)
 	ok := v.Validate()
-	dump.Println(v.Errors)
+	// dump.Println(v.Errors)
 	assert.False(t, ok)
 	assert.Equal(t, "end value should be greater or equal to field start", v.Errors.One())
 }
