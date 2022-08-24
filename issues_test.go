@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gookit/goutil/stdutil"
 	"github.com/gookit/validate/locales/zhcn"
 
 	"github.com/gookit/goutil/dump"
@@ -974,11 +975,29 @@ func TestIssues_148(t *testing.T) {
 		T2 string `validate:"required"`
 	}
 
+	a := &A{}
+	stdutil.PanicIf(jsonutil.DecodeString(`{"T2":"xxx"}`, a))
+
+	v := validate.Struct(a)
+	v.Validate()
+
+	assert.True(t, v.IsFail())
+	assert.False(t, v.IsSuccess())
+	assert.Equal(t, "T1 is required and not empty", v.Errors.One())
+
 	type B struct {
 		A
 		T1 string `json:"T1,omitempty"` // is not required
 	}
 
+	b := &B{}
+	stdutil.PanicIf(jsonutil.DecodeString(`{"T2":"xxx"}`, b))
+
+	// dump.Println(b)
+	v = validate.Struct(b)
+	v.Validate()
+
+	assert.False(t, v.IsOK())
 }
 
 // https://github.com/gookit/validate/issues/152
@@ -1042,6 +1061,25 @@ func TestIssues_157(t *testing.T) {
 	assert.False(t, ok)
 	assert.Error(t, v.Errors)
 	// dump.Println(req, v.Errors)
+}
+
+// https://github.com/gookit/validate/issues/159
+func TestIssues_159(t *testing.T) {
+	type TestStruct struct {
+		Start string `json:"start" validate:"date|minLen:10"`
+		End   string `json:"end" validate:"date|minLen:10|gteField:start"`
+	}
+
+	ts := &TestStruct{
+		Start: "2021-12-17",
+		End:   "2020-12-16",
+	}
+
+	v := validate.Struct(ts)
+	ok := v.Validate()
+	dump.Println(v.Errors)
+	assert.False(t, ok)
+	assert.Equal(t, "end value should be greater or equal to field start", v.Errors.One())
 }
 
 // https://github.com/gookit/validate/issues/160

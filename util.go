@@ -206,102 +206,25 @@ func CalcLength(val interface{}) int {
 	if str, ok := val.(string); ok {
 		return len([]rune(str))
 	}
-
 	return ValueLen(reflect.ValueOf(val))
 }
 
-// value compare. use for compare intX, string.
+// value compare.
+//
+// only check for: int(X), uint(X), float(X), string.
 func valueCompare(srcVal, dstVal interface{}, op string) (ok bool) {
-	var err error
-	var srcInt, dstInt int64
-
-	// string: compare length
-	if str, ok := srcVal.(string); ok {
-		dst, ok := dstVal.(string)
+	// string compare
+	if str1, ok := srcVal.(string); ok {
+		str2, ok := dstVal.(string)
 		if !ok {
 			return false
 		}
 
-		srcInt = int64(len(str))
-		dstInt = int64(len(dst))
-	} else { // as int: compare size
-		srcInt, err = mathutil.ToInt64(srcVal)
-		if err != nil {
-			return false
-		}
-
-		dstInt, err = mathutil.ToInt64(dstVal)
-		if err != nil {
-			return false
-		}
+		return strutil.VersionCompare(str1, str2, op)
 	}
 
-	return compareInt64(srcInt, dstInt, op)
-}
-
-// compare int,float value. returns `srcVal op(lt,lte,gt,gte) dstVal`?
-func compareIntFloat(srcVal, dstVal interface{}, op string) (ok bool) {
-	if srcVal == nil || dstVal == nil {
-		return false
-	}
-
-	if srcFlt, ok := srcVal.(float64); ok {
-		dstFlt, err := mathutil.ToFloat(dstVal)
-		if err != nil {
-			return false
-		}
-		return compareFloat64(srcFlt, dstFlt, op)
-	}
-
-	if srcFlt, ok := srcVal.(float32); ok {
-		dstFlt, err := mathutil.ToFloat(dstVal)
-		if err != nil {
-			return false
-		}
-		return compareFloat64(float64(srcFlt), dstFlt, op)
-	}
-
-	// as int64
-	srcInt, err := mathutil.Int64(srcVal)
-	if err != nil {
-		return false
-	}
-
-	dstInt, err := mathutil.Int64(dstVal)
-	if err != nil {
-		return false
-	}
-
-	return compareInt64(srcInt, dstInt, op)
-}
-
-// compare int64, returns the srcI64 op(lt,lte,gt,gte) dstI64?
-func compareInt64(srcI64, dstI64 int64, op string) (ok bool) {
-	switch op {
-	case "lt":
-		ok = srcI64 < dstI64
-	case "lte":
-		ok = srcI64 <= dstI64
-	case "gt":
-		ok = srcI64 > dstI64
-	case "gte":
-		ok = srcI64 >= dstI64
-	}
-	return
-}
-
-func compareFloat64(srcI64, dstI64 float64, op string) (ok bool) {
-	switch op {
-	case "lt":
-		ok = srcI64 < dstI64
-	case "lte":
-		ok = srcI64 <= dstI64
-	case "gt":
-		ok = srcI64 > dstI64
-	case "gte":
-		ok = srcI64 >= dstI64
-	}
-	return
+	// as int or float to compare
+	return mathutil.Compare(srcVal, dstVal, op)
 }
 
 // getVariadicKind name.

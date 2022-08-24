@@ -1055,3 +1055,21 @@ func TestValidation_GetWithDefault(t *testing.T) {
 	assert.Equal(t, "tom", val)
 	assert.True(t, isDef)
 }
+
+func TestValidation_GteField(t *testing.T) {
+	type TestStruct struct {
+		Start string `json:"start" validate:"date|minLen:10"`
+		End   string `json:"end" validate:"date|minLen:10|gteField:start"`
+	}
+
+	ts := &TestStruct{
+		Start: "2021-12-17",
+		End:   "2020-12-16",
+	}
+
+	assert.False(t, Gte(ts.End, ts.Start))
+
+	v := Struct(ts)
+	ok := v.GteField(ts.End, "start")
+	assert.False(t, ok)
+}

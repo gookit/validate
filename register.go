@@ -340,6 +340,8 @@ var validatorAliases = map[string]string{
 	// field compare
 	"eq_field":  "eqField",
 	"ne_field":  "neField",
+	"neqField":  "neField",
+	"neq_field": "neField",
 	"gt_field":  "gtField",
 	"gte_field": "gteField",
 	"lt_field":  "ltField",

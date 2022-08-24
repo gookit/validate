@@ -293,6 +293,7 @@ func TestMax(t *testing.T) {
 	is.True(Max(3.2, 3.2))
 	is.True(Max(3.1, 3.2))
 	is.True(Max(int64(3), 3))
+	is.True(Lte(int64(3), 3))
 
 	// fail
 	is.False(Max("str", 3))

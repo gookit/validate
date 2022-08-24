@@ -319,13 +319,11 @@ func (v *Validation) EqField(val interface{}, dstField string) bool {
 
 // NeField value should not equal the dst field value
 func (v *Validation) NeField(val interface{}, dstField string) bool {
-	// get dst field value.
 	dstVal, has := v.Get(dstField)
 	if !has {
 		return false
 	}
 
-	// return val != dstVal
 	return !IsEqual(val, dstVal)
 }
 
@@ -337,18 +335,17 @@ func (v *Validation) GtField(val interface{}, dstField string) bool {
 		return false
 	}
 
-	return valueCompare(val, dstVal, "gt")
+	return valueCompare(val, dstVal, ">")
 }
 
 // GteField value should GTE the dst field value
 func (v *Validation) GteField(val interface{}, dstField string) bool {
-	// get dst field value.
 	dstVal, has := v.Get(dstField)
 	if !has {
 		return false
 	}
 
-	return valueCompare(val, dstVal, "gte")
+	return valueCompare(val, dstVal, ">=")
 }
 
 // LtField value should LT the dst field value
@@ -359,7 +356,7 @@ func (v *Validation) LtField(val interface{}, dstField string) bool {
 		return false
 	}
 
-	return valueCompare(val, dstVal, "lt")
+	return valueCompare(val, dstVal, "<")
 }
 
 // LteField value should LTE the dst field value(for int, string)
@@ -370,7 +367,7 @@ func (v *Validation) LteField(val interface{}, dstField string) bool {
 		return false
 	}
 
-	return valueCompare(val, dstVal, "lte")
+	return valueCompare(val, dstVal, "<=")
 }
 
 /*************************************************************
@@ -1032,24 +1029,29 @@ func IntEqual(val interface{}, wantVal int64) bool {
 }
 
 // Gt check value greater dst value.
-// only check for: int(X), uint(X), float(X)
-func Gt(val, min interface{}) bool { return mathutil.Compare(val, min, ">") }
+//
+// only check for: int(X), uint(X), float(X), string.
+func Gt(val, min interface{}) bool { return valueCompare(val, min, ">") }
+
+// Gte check value greater or equal dst value
+// only check for: int(X), uint(X), float(X), string.
+func Gte(val, min interface{}) bool { return valueCompare(val, min, ">=") }
 
 // Min check value greater or equal dst value, alias Gte()
-// only check for: int(X), uint(X), float(X).
-func Min(val, min interface{}) bool { return mathutil.Compare(val, min, ">=") }
+// only check for: int(X), uint(X), float(X), string.
+func Min(val, min interface{}) bool { return valueCompare(val, min, ">=") }
 
 // Lt less than dst value.
 // only check for: int(X), uint(X), float(X).
-func Lt(val, max interface{}) bool {
-	return compareIntFloat(val, max, "lt")
-}
+func Lt(val, max interface{}) bool { return valueCompare(val, max, "<") }
 
-// Max less than or equal dst value, alias `Lte`.
+// Lte less than or equal dst value.
 // only check for: int(X), uint(X), float(X).
-func Max(val, max interface{}) bool {
-	return compareIntFloat(val, max, "lte")
-}
+func Lte(val, max interface{}) bool { return valueCompare(val, max, "<=") }
+
+// Max less than or equal dst value, alias Lte()
+// only check for: int(X), uint(X), float(X).
+func Max(val, max interface{}) bool { return valueCompare(val, max, "<=") }
 
 // Between int value in the given range.
 // only check for: int(X), uint(X).
