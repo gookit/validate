@@ -52,9 +52,9 @@ type (
 // DataFace data source interface definition
 //
 // Current has three data source:
-//  - map
-// 	- form
-// 	- struct
+//   - map
+//   - form
+//   - struct
 type DataFace interface {
 	Type() uint8
 	Src() interface{}
@@ -153,30 +153,32 @@ type ConfigValidationFace interface {
 
 // FieldTranslatorFace definition. you can custom field translates.
 // Usage:
-// 	type User struct {
-// 		Name string `json:"name" validate:"required|minLen:5"`
-// 	}
 //
-// 	func (u *User) Translates() map[string]string {
-// 		return MS{
-// 			"Name": "Username",
-// 		}
-// 	}
+//	type User struct {
+//		Name string `json:"name" validate:"required|minLen:5"`
+//	}
+//
+//	func (u *User) Translates() map[string]string {
+//		return MS{
+//			"Name": "Username",
+//		}
+//	}
 type FieldTranslatorFace interface {
 	Translates() map[string]string
 }
 
 // CustomMessagesFace definition. you can custom validator error messages.
 // Usage:
-// 	type User struct {
-// 		Name string `json:"name" validate:"required|minLen:5"`
-// 	}
 //
-// 	func (u *User) Messages() map[string]string {
-// 		return MS{
-// 			"Name.required": "oh! User name is required",
-// 		}
-// 	}
+//	type User struct {
+//		Name string `json:"name" validate:"required|minLen:5"`
+//	}
+//
+//	func (u *User) Messages() map[string]string {
+//		return MS{
+//			"Name.required": "oh! User name is required",
+//		}
+//	}
 type CustomMessagesFace interface {
 	Messages() map[string]string
 }
@@ -468,17 +470,12 @@ func (d *StructData) loadMessagesFromTag(trans *Translator, field, vRule, vMsg s
 
 	// multi message for validators
 	// eg: `message:"required:name is required | minLen:name min len is %d"`
-	msgNodes := strings.Split(vMsg, "|")
-	for _, validatorWithMsg := range msgNodes {
+	for _, validatorWithMsg := range strings.Split(vMsg, "|") {
 		// validatorWithMsg eg: "required:name is required"
 		nodes := strings.SplitN(validatorWithMsg, ":", 2)
 
 		validator := nodes[0]
-		if rName, has := validatorAliases[validator]; has {
-			msgKey = field + "." + rName
-		} else {
-			msgKey = field + "." + validator
-		}
+		msgKey = field + "." + validator
 
 		trans.AddMessage(msgKey, strings.TrimSpace(nodes[1]))
 	}

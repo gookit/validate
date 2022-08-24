@@ -160,7 +160,7 @@ func TestIssues_22(t *testing.T) {
 
 	// multi messages
 	type userInfo1 struct {
-		Nickname string `validate:"required|minLen:6" message:"required:OO! nickname cannot be empty!|minLen:OO! nickname min len is %d"`
+		Nickname string `validate:"required|min_len:6" message:"required:OO! nickname cannot be empty!|min_len:OO! nickname min len is %d"`
 	}
 
 	u1 := &userInfo1{Nickname: ""}
@@ -1025,8 +1025,8 @@ func TestIssues_156(t *testing.T) {
 // https://github.com/gookit/validate/issues/157
 func TestIssues_157(t *testing.T) {
 	type SubsrcSubmitReq struct {
-		StockCode string `form:"stock_code" json:"stock_code" validate:"required|maxLen:20" filter:"trim"`
-		UserEmail string `form:"user_email" json:"user_email" validate:"required|regexp:\\w{4,6}" filter:"trim"`
+		StockCode string `json:"stock_code" validate:"required|maxLen:20" filter:"trim"`
+		UserEmail string `json:"user_email" validate:"required|regexp:^\\w{4,6}$" filter:"trim"`
 	}
 
 	req := &SubsrcSubmitReq{}
@@ -1034,12 +1034,32 @@ func TestIssues_157(t *testing.T) {
     "stock_code": "11111111",
     "user_email": "aaaaaaaaaaaaaaaaa"
 }`, req)
-
 	assert.NoError(t, err)
 
 	v := validate.Struct(req)
 	ok := v.Validate()
 
 	assert.False(t, ok)
-	dump.Println(req, v.Errors)
+	assert.Error(t, v.Errors)
+	// dump.Println(req, v.Errors)
+}
+
+// https://github.com/gookit/validate/issues/160
+func TestIssues_160(t *testing.T) {
+	type User struct {
+		Email string `json:"email" validate:"required|email" message:"required:eamil必填的信息|email:邮箱验证失败的信息"`
+	}
+
+	req := &User{}
+	err := jsonutil.DecodeString(`{
+    "email": "aaaaaaaaaaaaaaaaa"
+}`, req)
+	assert.NoError(t, err)
+
+	v := validate.Struct(req)
+	v.Validate()
+
+	// dump.Println(req, v.Errors)
+	assert.False(t, v.IsOK())
+	assert.Equal(t, "邮箱验证失败的信息", v.Errors.One())
 }
