@@ -431,6 +431,7 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 // eg: `message:"required:name is required|minLen:name min len is %d"`
 func (d *StructData) loadMessagesFromTag(trans *Translator, field, vRule, vMsg string) {
 	var msgKey, vName string
+	var vNames []string
 
 	// only one message, use for first validator.
 	// eg: `message:"name is required"`
@@ -439,32 +440,37 @@ func (d *StructData) loadMessagesFromTag(trans *Translator, field, vRule, vMsg s
 		if strings.ContainsRune(vMsg, ':') {
 			nodes := strings.SplitN(vMsg, ":", 2)
 			vName = strings.TrimSpace(nodes[0])
+			vNames = []string{vName}
 			// first is validator name
 			vMsg = strings.TrimSpace(nodes[1])
 		}
 
 		if vName == "" {
 			// eg `validate:"required|date"`
-			vName = vRule
+			vNames = []string{vRule}
+
 			if strings.ContainsRune(vRule, '|') {
-				nodes := strings.SplitN(vRule, "|", 2)
-				vName = nodes[0]
+				vNames = strings.Split(vRule, "|")
 			}
 
-			// has params for validator: "minLen:5"
-			if strings.ContainsRune(vName, ':') {
-				nodes := strings.SplitN(vRule, ":", 2)
-				vName = nodes[0]
+			for i, node := range vNames {
+				// has params for validator: "minLen:5"
+				if strings.ContainsRune(node, ':') {
+					tmp := strings.SplitN(node, ":", 2)
+					vNames[i] = tmp[0]
+				}
 			}
 		}
 
 		// if rName, has := validatorAliases[validator]; has {
 		// 	msgKey = field + "." + rName
 		// } else {
-		msgKey = field + "." + vName
-		// }
 
-		trans.AddMessage(msgKey, vMsg)
+		for _, name := range vNames {
+			msgKey = field + "." + name
+			trans.AddMessage(msgKey, vMsg)
+		}
+
 		return
 	}
 
