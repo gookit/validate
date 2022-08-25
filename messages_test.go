@@ -155,6 +155,32 @@ func TestMessageOnStruct(t *testing.T) {
 	v = Struct(s4)
 	is.False(v.Validate())
 	is.Equal("出生日期有误", v.Errors.One())
+
+	// Ensure message with no specified field applies to all validation errors on a single field if SkipOnError=false
+	// Set custom global options
+	Config(func(opt *GlobalOption) {
+		opt.SkipOnEmpty = false
+		opt.StopOnError = false
+	})
+
+	s5 := &struct {
+		Name     string `validate:"string"`
+		BirthDay string `validate:"max_len:1|date" message:"出生日期有误"`
+	}{
+		"tom",
+		"ff",
+	}
+
+	v = Struct(s5)
+
+	is.False(v.Validate())
+	is.Equal("BirthDay:\n max_len: 出生日期有误\n date: 出生日期有误", v.Errors.String())
+
+	// Restore original global options
+	Config(func(opt *GlobalOption) {
+		opt.SkipOnEmpty = true
+		opt.StopOnError = true
+	})
 }
 
 // with field tag: json
