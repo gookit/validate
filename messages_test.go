@@ -174,7 +174,9 @@ func TestMessageOnStruct(t *testing.T) {
 	v = Struct(s5)
 
 	is.False(v.Validate())
-	is.Equal("BirthDay:\n max_len: 出生日期有误\n date: 出生日期有误", v.Errors.String())
+	is.Contains(v.Errors.String(), "BirthDay")
+	is.Contains(v.Errors.String(), "max_len: 出生日期有误")
+	is.Contains(v.Errors.String(), "date: 出生日期有误")
 
 	// Restore original global options
 	Config(func(opt *GlobalOption) {
