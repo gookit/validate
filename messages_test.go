@@ -159,7 +159,6 @@ func TestMessageOnStruct(t *testing.T) {
 	// Ensure message with no specified field applies to all validation errors on a single field if SkipOnError=false
 	// Set custom global options
 	Config(func(opt *GlobalOption) {
-		opt.SkipOnEmpty = false
 		opt.StopOnError = false
 	})
 
@@ -180,7 +179,6 @@ func TestMessageOnStruct(t *testing.T) {
 
 	// Restore original global options
 	Config(func(opt *GlobalOption) {
-		opt.SkipOnEmpty = true
 		opt.StopOnError = true
 	})
 }
