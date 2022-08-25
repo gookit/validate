@@ -156,8 +156,8 @@ func TestMessageOnStruct(t *testing.T) {
 	is.False(v.Validate())
 	is.Equal("出生日期有误", v.Errors.One())
 
-	// Ensure message with no specified field applies to all validation errors on a single field if SkipOnError=false
-	// Set custom global options
+	// Ensure message override with no specified field applies to all validation errors if SkipOnError=false is set in
+	// global options
 	Config(func(opt *GlobalOption) {
 		opt.StopOnError = false
 	})
