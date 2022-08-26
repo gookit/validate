@@ -242,6 +242,8 @@ func (d *StructData) Validation(err ...error) *Validation {
 }
 
 // Create from the StructData
+//
+//nolint:forcetypeassert
 func (d *StructData) Create(err ...error) *Validation {
 	v := NewValidation(d)
 	if len(err) > 0 && err[0] != nil {
@@ -401,7 +403,7 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 						switch {
 						case kind == reflect.String:
 							format += "%s"
-							val = strings.ReplaceAll(val.(string), "\"", "")
+							val = strings.ReplaceAll(val.(string), "\"", "") //nolint:forcetypeassert
 						case kind >= reflect.Int && kind <= reflect.Uint64:
 							format += "%d"
 						case kind >= reflect.Float32 && kind <= reflect.Complex128:
@@ -707,9 +709,6 @@ type FormData struct {
 	// need to have more than one file per key, parse the
 	// files manually using r.MultipartForm.File.
 	Files map[string]*multipart.FileHeader
-	// jsonBodies holds the original body of the request.
-	// Only available for json requests.
-	jsonBodies []byte
 }
 
 func newFormData() *FormData {

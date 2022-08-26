@@ -28,7 +28,7 @@ func TestIsEmpty(t *testing.T) {
 	is.True(ValueIsEmpty(reflect.ValueOf(nil)))
 	is.True(ValueIsEmpty(reflect.ValueOf("")))
 
-	type T struct{ v interface{} }
+	type T struct{ _ interface{} }
 	rv := reflect.ValueOf(T{}).Field(0)
 	is.True(ValueIsEmpty(rv))
 }

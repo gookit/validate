@@ -57,8 +57,7 @@ func TestCallByValue_nil_arg(t *testing.T) {
 	// typ := reflect.TypeOf(interface{}(nil))
 	// typ.Kind()
 
-	var nilV interface{}
-	nilV = 2
+	nilV := 2
 
 	dump.P(
 		reflect.ValueOf(nilV).Kind().String(),

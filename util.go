@@ -220,6 +220,8 @@ func getVariadicKind(typ reflect.Type) reflect.Kind {
 }
 
 // convTypeByBaseKind convert value type by base kind
+//
+//nolint:forcetypeassert
 func convTypeByBaseKind(srcVal interface{}, srcKind kind, dstType reflect.Kind) (interface{}, error) {
 	switch srcKind {
 	case stringKind:
@@ -391,10 +393,10 @@ func basicKindV2(kind reflect.Kind) (kind, error) {
 		return complexKind, nil
 	case reflect.String:
 		return stringKind, nil
+	default:
+		// like: slice, array, map ...
+		return invalidKind, errBadComparisonType
 	}
-
-	// like: slice, array, map ...
-	return invalidKind, errBadComparisonType
 }
 
 // eq evaluates the comparison a == b

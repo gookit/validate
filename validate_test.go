@@ -34,7 +34,7 @@ func ExampleStruct() {
 		Code      string      `validate:"customValidator|default:abc"`
 		Status    int         `validate:"required|gtField:Extra.0.Status1"`
 		Extra     []ExtraInfo `validate:"required"`
-		protected string
+		protected string      //nolint:unused
 	}
 
 	u := &UserForm{

@@ -2,8 +2,7 @@
 //
 // Source code and other details for the project are available at GitHub:
 //
-// 	https://github.com/gookit/validate
-//
+//	https://github.com/gookit/validate
 package validate
 
 import (
@@ -39,7 +38,7 @@ func (ms MS) String() string {
 		return ""
 	}
 
-	var ss []string
+	ss := make([]string, 0, len(ms))
 	for name, msg := range ms {
 		ss = append(ss, " "+name+": "+msg)
 	}
@@ -391,7 +390,8 @@ func FromURLValues(values url.Values) *FormData {
 // FromQuery build data instance.
 //
 // Usage:
-// 	validate.FromQuery(r.URL.Query()).Create()
+//
+//	validate.FromQuery(r.URL.Query()).Create()
 func FromQuery(values url.Values) *FormData {
 	return FromURLValues(values)
 }

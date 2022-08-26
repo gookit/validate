@@ -21,8 +21,6 @@ type Rule struct {
 	optional bool
 	// skip validate not exist field/empty value
 	skipEmpty bool
-	// default value setting
-	defValue interface{}
 	// error message
 	message string
 	// error messages, if fields contains multi field.
