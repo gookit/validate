@@ -17,7 +17,7 @@ const defaultErrMsg = " field did not pass validation"
 
 // some internal error definition
 var (
-	ErrUnaddressableField = errors.New("cannot set field as it was not passed-by-reference")
+	ErrUnaddressableField = errors.New("cannot set value as it was not passed-by-reference")
 	ErrNoField  = errors.New("field not exist in the source data")
 
 	ErrEmptyData   = errors.New("please input data use for validate")
