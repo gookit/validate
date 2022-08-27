@@ -642,7 +642,7 @@ func (d *StructData) Set(field string, val interface{}) (newVal interface{}, err
 
 	// check whether the value of v can be changed.
 	if !fv.CanSet() {
-		return nil, ErrSetValue
+		return nil, ErrUnaddressableField
 	}
 
 	// Notice: need convert value type
