@@ -185,7 +185,7 @@ func (r *Rule) fileValidate(field, name string, v *Validation) uint8 {
 		return statusSkip
 	}
 
-	var ss []string
+	ss := make([]string, 0, len(r.arguments))
 	for _, item := range r.arguments {
 		ss = append(ss, item.(string))
 	}

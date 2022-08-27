@@ -115,10 +115,10 @@ func (v *Validation) ResetResult() {
 // Reset the Validation instance.
 //
 // will reset
-// 	- validate result
-// 	- validate rules
-// 	- validate filterRules
-// 	- custom validators
+//   - validate result
+//   - validate rules
+//   - validate filterRules
+//   - custom validators
 func (v *Validation) Reset() {
 	v.ResetResult()
 
@@ -148,11 +148,12 @@ func (v *Validation) WithScenarios(scenes SValues) *Validation {
 // WithScenes set scene config.
 //
 // Usage:
-// 	v.WithScenes(SValues{
-// 		"create": []string{"name", "email"},
-// 		"update": []string{"name"},
-// 	})
-// 	ok := v.AtScene("create").Validate()
+//
+//	v.WithScenes(SValues{
+//		"create": []string{"name", "email"},
+//		"update": []string{"name"},
+//	})
+//	ok := v.AtScene("create").Validate()
 func (v *Validation) WithScenes(scenes map[string][]string) *Validation {
 	v.scenes = scenes
 	return v
@@ -191,7 +192,8 @@ func (v *Validation) AddValidators(m map[string]interface{}) *Validation {
 
 // AddValidator to the Validation. checkFunc must return a bool.
 // Usage:
-// 	v.AddValidator("myFunc", func(val interface{}) bool {
+//
+//	v.AddValidator("myFunc", func(val interface{}) bool {
 //		// do validate val ...
 //		return true
 //	})
@@ -297,10 +299,11 @@ func (v *Validation) Filtering() bool {
 // WithTranslates settings. you can be custom field translates.
 //
 // Usage:
-// 	v.WithTranslates(map[string]string{
-// 		"name": "Username",
-// 		"pwd": "Password",
-//  })
+//
+//		v.WithTranslates(map[string]string{
+//			"name": "Username",
+//			"pwd": "Password",
+//	 })
 func (v *Validation) WithTranslates(m map[string]string) *Validation {
 	v.trans.AddLabelMap(m)
 	return v
@@ -314,11 +317,12 @@ func (v *Validation) AddTranslates(m map[string]string) {
 // WithMessages settings. you can custom validator error messages.
 //
 // Usage:
-// 	// key is "validator" or "field.validator"
-// 	v.WithMessages(map[string]string{
-// 		"require": "oh! {field} is required",
-// 		"range": "oh! {field} must be in the range %d - %d",
-//  })
+//
+//		// key is "validator" or "field.validator"
+//		v.WithMessages(map[string]string{
+//			"require": "oh! {field} is required",
+//			"range": "oh! {field} must be in the range %d - %d",
+//	 })
 func (v *Validation) WithMessages(m map[string]string) *Validation {
 	v.trans.AddMessages(m)
 	return v
@@ -396,9 +400,7 @@ func (v *Validation) tryGet(key string) (val interface{}, exist, zero bool) {
 	}
 
 	// if end withs: .*, return the parent value
-	if strings.HasSuffix(key, ".*") {
-		key = key[0 : len(key)-2]
-	}
+	key = strings.TrimSuffix(key, ".*")
 
 	// find from filtered data.
 	if val, ok := v.filteredData[key]; ok {

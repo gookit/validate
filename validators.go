@@ -445,7 +445,7 @@ func (v *Validation) InMimeTypes(fd *FormData, field, mimeType string, moreTypes
 		return false
 	}
 
-	mimeTypes := append(moreTypes, mimeType)
+	mimeTypes := append(moreTypes, mimeType) //nolint:gocritic
 	return Enum(mime, mimeTypes)
 }
 

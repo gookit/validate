@@ -91,7 +91,7 @@ func (es Errors) All() map[string]map[string]string {
 
 // JSON encode
 func (es Errors) JSON() []byte {
-	bts, _ := json.Marshal(es)
+	bts, _ := json.Marshal(es) //nolint:errchkjson
 	return bts
 }
 

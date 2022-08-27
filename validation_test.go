@@ -359,7 +359,7 @@ func TestValidate_Request(t *testing.T) {
 	is := assert.New(t)
 
 	// =================== GET query data ===================
-	r, _ := http.NewRequest("GET", "/users?page=1&size=10&name= inhere ", nil)
+	r, _ := http.NewRequest(http.MethodGet, "/users?page=1&size=10&name= inhere ", nil)
 	v := Request(r)
 	v.StringRule("page", "required|min:1", "int")
 	// v.StringRule("status", "required|min:1")
@@ -375,7 +375,7 @@ func TestValidate_Request(t *testing.T) {
 
 	// =================== POST: form data ===================
 	body := strings.NewReader("name= inhere &age=50&remember=yes&email=eml@a.com")
-	r, _ = http.NewRequest("POST", "/users", body)
+	r, _ = http.NewRequest(http.MethodPost, "/users", body)
 	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	// create data
 	d, err := FromRequest(r)
@@ -422,7 +422,7 @@ func TestFromRequest_FileForm(t *testing.T) {
 	_ = mw.WriteField("name", "inhere")
 	_ = mw.Close()
 
-	r, _ := http.NewRequest("POST", "/users", buf)
+	r, _ := http.NewRequest(http.MethodPost, "/users", buf)
 	r.Header.Set("Content-Type", mw.FormDataContentType())
 	// - create data
 	d, err := FromRequest(r, defaultMaxMemory)
@@ -548,7 +548,7 @@ func TestFromRequest_JSON(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			is := assert.New(t)
 
-			r, _ := http.NewRequest("POST", "/users", strings.NewReader(test.body))
+			r, _ := http.NewRequest(http.MethodPost, "/users", strings.NewReader(test.body))
 			r.Header.Set("Content-Type", test.header)
 
 			// - create data

@@ -68,8 +68,9 @@ func (v *Validation) FilterFuncValue(name string) reflect.Value {
 // FilterRule add filter rule.
 //
 // Usage:
-// 	v.FilterRule("name", "trim|lower")
-// 	v.FilterRule("age", "int")
+//
+//	v.FilterRule("name", "trim|lower")
+//	v.FilterRule("age", "int")
 func (v *Validation) FilterRule(field string, rule string) *FilterRule {
 	rule = strings.TrimSpace(rule)
 	rules := stringSplit(strings.Trim(rule, "|:"), "|")
@@ -119,7 +120,8 @@ func newFilterRule(fields []string) *FilterRule {
 // AddFilters add filter(s).
 //
 // Usage:
-// 	r.AddFilters("int", "str2arr:,")
+//
+//	r.AddFilters("int", "str2arr:,")
 func (r *FilterRule) AddFilters(filters ...string) *FilterRule {
 	for _, filterName := range filters {
 		pos := strings.IndexRune(filterName, ':')
@@ -162,9 +164,6 @@ func (r *FilterRule) Apply(v *Validation) (err error) {
 				v.safeData[field] = newVal // save validated value.
 				continue
 			}
-
-			// go on check custom default value
-			exist = true
 		}
 
 		// call filters

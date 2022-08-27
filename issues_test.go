@@ -685,10 +685,10 @@ func TestIssues_107(t *testing.T) {
 		if val != nil {
 			// log.WithFields(log.Fields{"value": val}).Info("value should be other than nil")
 			return int64(val.(float64))
-		} else {
-			// log.WithFields(log.Fields{"value": val}).Info("value should be nil")
-			return -1
 		}
+
+		// log.WithFields(log.Fields{"value": val}).Info("value should be nil")
+		return -1
 	}
 
 	v := validate.Map(map[string]interface{}{
