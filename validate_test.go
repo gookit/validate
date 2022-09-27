@@ -196,7 +196,7 @@ func TestStruct_nexted_anonymity_struct(t *testing.T) {
 	dump.Println(v.Errors)
 	assert.True(t, v.Errors.HasField("ExtInfo.Homepage"))
 	assert.Contains(t, v.Errors, "ExtInfo.Homepage")
-	assert.Equal(t, "ExtInfo.Homepage is required and not empty", v.Errors.FieldOne("ExtInfo.Homepage"))
+	assert.Equal(t, "ExtInfo.Homepage is required to not be empty", v.Errors.FieldOne("ExtInfo.Homepage"))
 
 	u.ExtInfo.Homepage = "https://github.com/inhere"
 	v = Struct(u)

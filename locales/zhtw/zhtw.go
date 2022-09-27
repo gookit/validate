@@ -21,8 +21,8 @@ var Data = map[string]string{
 	// int
 	"min": "{field} 的最小值是 %v",
 	"max": "{field} 的最大值是 %v",
-	"lt":  "{field} value should less than %v",
-	"gt":  "{field} value should greater the %v",
+	"lt":  "{field} value should be less than %v",
+	"gt":  "{field} value should be greater than %v",
 	// Length
 	"minLength": "{field} 的最小長度是 %d",
 	"maxLength": "{field} 的最大長度是 %d",

@@ -232,7 +232,7 @@ func TestStruct(t *testing.T) {
 	u.UpdateAt = time.Now()
 	v = Struct(u)
 	is.False(v.Validate())
-	is.Equal("Status value must be greater the field Extra.0.Status1", v.Errors.One())
+	is.Equal("Status value must be greater than the field Extra.0.Status1", v.Errors.One())
 
 	u.Status = 5
 	u.Extra = []ExtraInfo{
@@ -798,7 +798,7 @@ func TestStructWithArray(t *testing.T) {
 	is.True(v.IsFail())
 	is.Len(v.Errors, 1)
 	is.Len(v.Errors["Extras"], 1)
-	is.Equal("Extras is required and not empty", v.Errors["Extras"]["required"])
+	is.Equal("Extras is required to not be empty", v.Errors["Extras"]["required"])
 
 	v = New(WithArray{
 		Extras: []ExtraInfo{
@@ -847,7 +847,7 @@ func TestStructWithArray(t *testing.T) {
 	is.False(v.Validate())
 	is.True(v.IsFail())
 	is.Len(v.Errors, 1)
-	is.Equal("Extras.0.Github is required and not empty", v.Errors["Extras.0.Github"]["required"])
+	is.Equal("Extras.0.Github is required to not be empty", v.Errors["Extras.0.Github"]["required"])
 
 }
 
@@ -886,7 +886,7 @@ func TestStructWithArray_ptrOfArray(t *testing.T) {
 	is.False(v.Validate())
 	is.True(v.IsFail())
 	is.Len(v.Errors, 1)
-	is.Equal("Extras.0.Github is required and not empty", v.Errors["Extras.0.Github"]["required"])
+	is.Equal("Extras.0.Github is required to not be empty", v.Errors["Extras.0.Github"]["required"])
 
 	v = New(WithArrayPtr{
 		Extras: []*ExtraInfo{
@@ -924,7 +924,7 @@ func TestStructWithMap(t *testing.T) {
 	is.True(v.IsFail())
 	is.Len(v.Errors, 1)
 	is.Len(v.Errors["Extras"], 1)
-	is.Equal("Extras is required and not empty", v.Errors["Extras"]["required"])
+	is.Equal("Extras is required to not be empty", v.Errors["Extras"]["required"])
 
 	v = New(WithMap{
 		Extras: map[string]ExtraInfo{
@@ -978,7 +978,7 @@ func TestStructWithMap(t *testing.T) {
 	if _, ok := v.Errors[key]["required"]; !ok {
 		key = "Extras.second.Github"
 	}
-	is.Equal(fmt.Sprintf("%s is required and not empty", key), v.Errors[key]["required"])
+	is.Equal(fmt.Sprintf("%s is required to not be empty", key), v.Errors[key]["required"])
 
 	v = New(WithPtrOfMap{
 		Extras: &map[string]ExtraInfo{
@@ -1017,7 +1017,7 @@ func TestStructWithMap(t *testing.T) {
 	if _, ok := v.Errors[key]["required"]; !ok {
 		key = "Extras.second.Github"
 	}
-	is.Equal(fmt.Sprintf("%s is required and not empty", key), v.Errors[key]["required"])
+	is.Equal(fmt.Sprintf("%s is required to not be empty", key), v.Errors[key]["required"])
 
 	v = New(WithMapPtrs{
 		Extras: map[string]*ExtraInfo{

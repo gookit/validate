@@ -10,7 +10,7 @@ import (
 func TestVal_basic(t *testing.T) {
 	err := validate.Val(nil, "required")
 	assert.Error(t, err)
-	assert.Equal(t, "input is required and not empty", err.Error())
+	assert.Equal(t, "input is required to not be empty", err.Error())
 
 	err = validate.Val(23, "required|min:23")
 	assert.NoError(t, err)
@@ -35,7 +35,7 @@ func TestVal_regexp(t *testing.T) {
 
 	err = validate.Val("inhere", `required|regexp:\w{12,}`)
 	assert.Error(t, err)
-	assert.Equal(t, `input must be match pattern \w{12,}`, err.Error())
+	assert.Equal(t, `input must match pattern \w{12,}`, err.Error())
 }
 
 func TestVal_enum(t *testing.T) {
