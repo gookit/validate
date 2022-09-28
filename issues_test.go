@@ -127,13 +127,13 @@ func TestIssues_20(t *testing.T) {
 	v = validate.New(req1)
 	is.False(v.Validate())
 	is.Len(v.Errors, 1)
-	is.Equal("Avatar must be an valid full URL address", v.Errors.One())
+	is.Equal("Avatar must be a valid full URL address", v.Errors.One())
 
 	validate.ResetOption()
 	v = validate.New(req1)
 	is.False(v.Validate())
 	is.Len(v.Errors, 1)
-	is.Equal("avatar must be an valid full URL address", v.Errors.One())
+	is.Equal("avatar must be a valid full URL address", v.Errors.One())
 }
 
 // https://github.com/gookit/validate/issues/22
@@ -470,7 +470,7 @@ func TestIssue_78(t *testing.T) {
 	v := validate.Struct(&u)
 	ok := v.Validate()
 	assert.False(t, ok)
-	assert.Equal(t, "Sex is required and not empty", v.Errors.One())
+	assert.Equal(t, "Sex is required to not be empty", v.Errors.One())
 
 	sex := false
 	u = UserDto{
@@ -501,7 +501,7 @@ func TestIssues_I36T2B(t *testing.T) {
 
 	ok = v.Validate()
 	assert.False(t, ok)
-	assert.Equal(t, "a value should greater the 100", v.Errors.One())
+	assert.Equal(t, "a value should be greater than 100", v.Errors.One())
 
 	v = validate.Map(m)
 	v.AddRule("a", "required")
@@ -509,7 +509,7 @@ func TestIssues_I36T2B(t *testing.T) {
 
 	ok = v.Validate()
 	assert.False(t, ok)
-	assert.Equal(t, "a is required and not empty", v.Errors.One())
+	assert.Equal(t, "a is required to not be empty", v.Errors.One())
 }
 
 // https://gitee.com/inhere/validate/issues/I3B3AV
@@ -609,7 +609,7 @@ func TestIssues_103(t *testing.T) {
 	m := v.Errors.All()
 	// dump.Println(m)
 	assert.Contains(t, m, "SomeID")
-	assert.Contains(t, v.Errors.String(), "SomeID is required and not empty")
+	assert.Contains(t, v.Errors.String(), "SomeID is required to not be empty")
 
 	type Example2 struct {
 		SomeID string `json:"some_id" validate:"required" `
@@ -621,7 +621,7 @@ func TestIssues_103(t *testing.T) {
 	dump.Println(v2.Errors)
 	err2 := v2.Errors.String() // here we get something like {"some_id": { /* ... */ }}
 	assert.Contains(t, err2, "some_id")
-	assert.Contains(t, err2, "some_id is required and not empty")
+	assert.Contains(t, err2, "some_id is required to not be empty")
 }
 
 type Issue104A struct {
@@ -663,14 +663,14 @@ func TestIssues_104(t *testing.T) {
 	ok := v.Validate()
 	dump.Println(v.Errors)
 	assert.False(t, ok)
-	assert.Equal(t, "id is required and not empty", v.Errors.One())
+	assert.Equal(t, "id is required to not be empty", v.Errors.One())
 
 	v = validate.Struct(d, "add")
 	ok = v.Validate()
 	dump.Println(v.Errors, v.SceneFields())
 	assert.False(t, ok)
 	assert.Equal(t, "add", v.Scene())
-	assert.Equal(t, "id is required and not empty", v.Errors.One())
+	assert.Equal(t, "id is required to not be empty", v.Errors.One())
 
 	// right
 	d.Issue104A.ID = 34
@@ -879,7 +879,7 @@ func TestIssue_143(t *testing.T) {
 
 	ok := v.Validate()
 	assert.False(t, ok)
-	assert.Equal(t, "age is required and not empty", v.Errors.One())
+	assert.Equal(t, "age is required to not be empty", v.Errors.One())
 
 	// use ptr
 	age := 0
@@ -983,7 +983,7 @@ func TestIssues_148(t *testing.T) {
 
 	assert.True(t, v.IsFail())
 	assert.False(t, v.IsSuccess())
-	assert.Equal(t, "T1 is required and not empty", v.Errors.One())
+	assert.Equal(t, "T1 is required to not be empty", v.Errors.One())
 
 	type B struct {
 		A
@@ -1083,7 +1083,7 @@ func TestIssues_159(t *testing.T) {
 	ok := v.Validate()
 	// dump.Println(v.Errors)
 	assert.False(t, ok)
-	assert.Equal(t, "end value should be greater or equal to field start", v.Errors.One())
+	assert.Equal(t, "end value should be greater or equal to the field start", v.Errors.One())
 }
 
 // https://github.com/gookit/validate/issues/160
