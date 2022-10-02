@@ -281,7 +281,6 @@ func (d *StructData) Create(err ...error) *Validation {
 
 // parse and collect rules from struct tags.
 func (d *StructData) parseRulesFromTag(v *Validation) {
-	var recursiveFunc func(vv reflect.Value, vt reflect.Type, preStrName string, parentIsAnonymous bool)
 	if d.ValidateTag == "" {
 		d.ValidateTag = gOpt.ValidateTag
 	}
@@ -291,6 +290,7 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 	}
 
 	fOutMap := make(map[string]string, 0)
+	var recursiveFunc func(vv reflect.Value, vt reflect.Type, preStrName string, parentIsAnonymous bool)
 
 	vv := d.value
 	vt := d.valueTpy

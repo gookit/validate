@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/gookit/goutil/stdutil"
+	"github.com/gookit/goutil/timex"
 	"github.com/gookit/validate/locales/zhcn"
 
 	"github.com/gookit/goutil/dump"
@@ -1104,4 +1105,47 @@ func TestIssues_160(t *testing.T) {
 	// dump.Println(req, v.Errors)
 	assert.False(t, v.IsOK())
 	assert.Equal(t, "邮箱验证失败的信息", v.Errors.One())
+}
+
+// https://github.com/gookit/goutil/issues/60
+func TestGoutilIssues_60(t *testing.T) {
+	type User struct {
+		Time timex.TimeX `json:"time" validate:"required"`
+	}
+
+	req := &User{}
+	err := jsonutil.DecodeString(`{
+    "time": "2018-10-16 12:34:01"
+}`, req)
+	assert.NoError(t, err)
+	assert.Equal(t, "2018-10-16 12:34", req.Time.TplFormat("Y-m-d H:i"))
+
+	// v := validate.Struct(req)
+	// v.Validate()
+
+	dump.Println(req)
+}
+
+type Foo172 struct {
+	Domains []string
+}
+
+func (gs Foo172) ConfigValidation(v *validate.Validation) {
+	// v.StringRule("Domains.*", "trim") // ERR: should use param 'filterRule'
+	v.StringRule("Domains.*", "", "trimStrings")
+}
+
+// https://github.com/gookit/validate/issues/172
+func TestIssues_172(t *testing.T) {
+	f := Foo172{
+		Domains: []string{"   test.com   ", "oof.com", " foobar.com"},
+	}
+
+	v := validate.Struct(&f) // nolint:varnamelen
+	if !v.Validate() {
+		fmt.Println(v.Errors)
+	}
+	dump.Println(f)
+
+	assert.Equal(t, []string{"test.com", "oof.com", "foobar.com"}, f.Domains)
 }

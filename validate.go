@@ -70,6 +70,10 @@ type GlobalOption struct {
 	//
 	// default: message
 	MessageTag string
+	// DefaultTag define default value for the field.
+	//
+	// tag: default TODO
+	DefaultTag string
 	// StopOnError If true: An error occurs, it will cease to continue to verify
 	StopOnError bool
 	// SkipOnEmpty Skip check on field not exist or value is empty
@@ -100,7 +104,7 @@ func Config(fn func(opt *GlobalOption)) {
 
 // ResetOption reset global option
 func ResetOption() {
-	gOpt = newGlobalOption()
+	*gOpt = *newGlobalOption()
 }
 
 // Option get global options

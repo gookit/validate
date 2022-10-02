@@ -503,6 +503,10 @@ func (v *Validation) Set(field string, val interface{}) error {
 func (v *Validation) updateValue(field string, val interface{}) (interface{}, error) {
 	// data source is struct
 	if v.data.Type() == sourceStruct {
+		// if end withs: .*, trim suffix
+		if strings.HasSuffix(field, ".*") {
+			field = field[0 : len(field)-2]
+		}
 		return v.data.Set(field, val)
 	}
 
