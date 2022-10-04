@@ -252,7 +252,8 @@ func (r *Rule) valueValidate(field, name string, val interface{}, v *Validation)
 	valKind := rftVal.Kind()
 
 	// feat: support check sub element in a slice list. eg: field=names.*
-	if valKind == reflect.Slice && strings.HasSuffix(field, ".*") {
+	hasSliceSuffix := len(strings.Split(field, ".*")) > 1
+	if valKind == reflect.Slice && hasSliceSuffix {
 		var subVal interface{}
 		for i := 0; i < rftVal.Len(); i++ {
 			subRv := rftVal.Index(i)
