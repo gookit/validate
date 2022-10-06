@@ -766,15 +766,30 @@ func TestIssues_120(t *testing.T) {
 func TestIssue_124(t *testing.T) {
 	m := map[string]interface{}{
 		"names": []string{"John", "Jane", "abc"},
+		"address": []map[string]string{
+			{"number": "1b", "country": "en"},
+			{"number": "1", "country": "cz"},
+		},
 	}
 
 	v := validate.Map(m)
+	v.StopOnError = false
+
+	// simple slices
 	v.StringRule("names", "required|array|minLen:1")
 	v.StringRule("names.*", "required|string|min_len:4")
 
+	// slices of maps
+	v.StringRule("address.*.number", "required|int")
+	v.StringRule("address.*.country", "required|in:es,us")
+
 	assert.False(t, v.Validate())
 	assert.Error(t, v.Errors.ErrOrNil())
-	assert.Equal(t, "names.* min length is 4", v.Errors.One())
+
+	assert.Equal(t, len(v.Errors.All()), 3)
+	assert.Equal(t, "names.* min length is 4", v.Errors.Field("names.*")["min_len"])
+	assert.Equal(t, "address.*.number value must be an integer", v.Errors.Field("address.*.number")["int"])
+	assert.Equal(t, "address.*.country value must be in the enum [es us]", v.Errors.Field("address.*.country")["in"])
 	// dump.Println(v.Errors)
 
 	// TODO how to use on struct.

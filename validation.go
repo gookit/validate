@@ -398,7 +398,10 @@ func (v *Validation) tryGet(key string) (val interface{}, exist, zero bool) {
 	if v.data == nil {
 		return
 	}
-
+	vals := strings.Split(key, ".*")
+	if len(vals) > 1 {
+		key = vals[0]
+	}
 	// if end withs: .*, return the parent value
 	key = strings.TrimSuffix(key, ".*")
 
@@ -503,11 +506,7 @@ func (v *Validation) Set(field string, val interface{}) error {
 func (v *Validation) updateValue(field string, val interface{}) (interface{}, error) {
 	// data source is struct
 	if v.data.Type() == sourceStruct {
-		// if end withs: .*, trim suffix
-		if strings.HasSuffix(field, ".*") {
-			field = field[0 : len(field)-2]
-		}
-		return v.data.Set(field, val)
+		return v.data.Set(strings.TrimSuffix(field, ".*"), val)
 	}
 
 	// TODO dont update value for Form and Map data source
