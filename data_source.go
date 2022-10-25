@@ -289,7 +289,7 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 		d.FilterTag = gOpt.FilterTag
 	}
 
-	fOutMap := make(map[string]string, 0)
+	fOutMap := make(map[string]string)
 	var recursiveFunc func(vv reflect.Value, vt reflect.Type, preStrName string, parentIsAnonymous bool)
 
 	vv := d.value
