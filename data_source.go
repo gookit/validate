@@ -332,6 +332,7 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 			outName := ""
 			if gOpt.FieldTag != "" {
 				outName = fv.Tag.Get(gOpt.FieldTag)
+				outName = strings.SplitN(outName, ",", 2)[0]
 			}
 
 			// add pre field display name to fName
