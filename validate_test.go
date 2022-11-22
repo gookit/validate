@@ -240,3 +240,37 @@ func TestStruct_create_error(t *testing.T) {
 	assert.Equal(t, "invalid input data", v.Errors.One())
 	assert.False(t, v.Validate())
 }
+
+func TestStruct_json_tag_name_parsing(t *testing.T) {
+	// Ensure that the JSON tag after comma is ignored.
+	type Thing struct {
+		Field string `json:"test,omitempty" validate:"email"`
+	}
+
+	th := Thing{Field: "a"}
+
+	v := Struct(th)
+	assert.False(t, v.Validate())
+
+	dump.Println(v.Errors)
+	assert.True(t, v.Errors.HasField("test"))
+
+	errStr := v.Errors["test"]["email"]
+	assert.True(t, strings.HasPrefix(errStr, "test "))
+
+	// Ensure that the field name is used if the JSON tag name is empty.
+	type Thing2 struct {
+		Field string `json:",omitempty" validate:"email"`
+	}
+
+	th2 := Thing2{Field: "a"}
+
+	v = Struct(th2)
+	assert.False(t, v.Validate())
+
+	dump.Println(v.Errors)
+	assert.True(t, v.Errors.HasField("Field"))
+
+	errStr = v.Errors["Field"]["email"]
+	assert.True(t, strings.HasPrefix(errStr, "Field "))
+}
