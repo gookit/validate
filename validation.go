@@ -591,6 +591,14 @@ func (v *Validation) isNotNeedToCheck(field string) bool {
 		return false
 	}
 
+	fields := strings.Split(field, ".")
+	for i := 0; i < len(fields); i++ {
+		_, ok := v.sceneFields[strings.Join(fields[0:i], ".")]
+		if ok {
+			return false
+		}
+	}
+
 	_, ok := v.sceneFields[field]
 	return !ok
 }
