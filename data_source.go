@@ -297,7 +297,6 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 	// preStrName - the parent field name.
 	recursiveFunc = func(vv reflect.Value, vt reflect.Type, parentFName string, parentIsAnonymous bool) {
 		for i := 0; i < vt.NumField(); i++ {
-			fValue := removeValuePtr(vv).Field(i)
 			fv := vt.Field(i)
 			// skip don't exported field
 			name := fv.Name
@@ -365,15 +364,14 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 			ft := removeTypePtr(vt.Field(i).Type)
 
 			// collect rules from sub-struct and from arrays/slices elements
-			if ft != timeType {
-				if fValue.Type().Kind() == reflect.Ptr && fValue.IsNil() {
-					continue
-				}
+			if ft != timeType && removeValuePtr(vv).IsValid() {
 
 				// feat: only collect sub-struct rule on current field has rule.
 				if vRule == "" && gOpt.CheckSubOnParentMarked {
 					continue
 				}
+
+				fValue := removeValuePtr(vv).Field(i)
 
 				switch ft.Kind() {
 				case reflect.Struct:

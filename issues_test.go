@@ -1,6 +1,7 @@
 package validate_test
 
 import (
+	"encoding/json"
 	"fmt"
 	"testing"
 	"time"
@@ -295,6 +296,100 @@ func TestPtrFieldValidation(t *testing.T) {
 	name = "fish"
 	valid := validate.New(&Foo{Name: &name})
 	assert.False(t, valid.Validate())
+}
+
+type Pet struct {
+	Breed string `json:"breed" validate:"min_len:3"`
+	Color string `json:"color" validate:"in:orange,black,brown"`
+}
+type Human struct {
+	Age  int    `json:"age" validate:"gt:13"`
+	Name string `json:"name" validate:"min_len:3"`
+}
+type Settings struct {
+	*Pet   `json:",omitempty"`
+	*Human `json:",omitempty"`
+}
+
+type Entity struct {
+	ID       string   `json:"id" validate:"uuid4"`
+	Kind     string   `json:"kind" validate:"in:pet,human"`
+	Settings Settings `json:"settings"`
+}
+
+func (Entity) ConfigValidation(v *validate.Validation) {
+	v.WithScenes(validate.SValues{
+		"required": []string{"ID", "Kind"},
+		"pet":      []string{"Settings.Pet"},
+		"human":    []string{"Settings.Human"},
+	})
+
+}
+
+func TestPtrFieldEmbeddedValid(t *testing.T) {
+	// Valid case :)
+	input := []byte(`{
+		"id": "59fcf270-8646-4250-b4ff-d50f6121bc9d",
+		"kind": "pet",
+		"settings": {
+		  "breed": "dog",
+		  "color": "brown"
+		}
+	  }`)
+	var entity Entity
+	err := json.Unmarshal(input, &entity)
+	fmt.Println(entity)
+	assert.NoError(t, err)
+
+	validate.Config(func(opt *validate.GlobalOption) {
+		opt.SkipOnEmpty = false
+		opt.StopOnError = false
+	})
+
+	vld := validate.Struct(&entity)
+	vld.SkipOnEmpty = false
+	err = vld.ValidateE("required")
+	assert.Empty(t, err)
+	vld.ResetResult()
+	err = vld.ValidateE(entity.Kind)
+	assert.Empty(t, err)
+
+	validate.ResetOption()
+}
+
+func TestPtrFieldEmbeddedInvalid(t *testing.T) {
+	// Invalid case
+	input := []byte(`{
+		"id": "59fcf270-8646-4250-b4ff-d50f6121bc9d",
+		"kind": "pet",
+		"settings": {
+		}
+	  }`)
+	var entity Entity
+	err := json.Unmarshal(input, &entity)
+	fmt.Println(entity)
+	assert.NoError(t, err)
+
+	validate.Config(func(opt *validate.GlobalOption) {
+		opt.SkipOnEmpty = false
+		opt.StopOnError = false
+	})
+	vld := validate.Struct(&entity)
+	err = vld.ValidateE("required")
+	assert.Empty(t, err)
+	vld.ResetResult()
+	err = vld.ValidateE(entity.Kind)
+	expected := validate.Errors{
+		"breed": validate.MS{
+			"min_len": "breed min length is 3",
+		},
+		"color": validate.MS{
+			"in": "color value must be in the enum [orange black brown]",
+		},
+	}
+
+	assert.Equal(t, expected, err)
+	validate.ResetOption()
 }
 
 // ----- test case structs
