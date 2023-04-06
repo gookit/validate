@@ -237,7 +237,7 @@ func TestStructData_Get_ptrVal(t *testing.T) {
 	assert.Equal(t, 0, *val.(*int))
 }
 
-func privateFieldValidation(t *testing.T, validatePrivate, expect bool) {
+func TestValidatePrivateFieldsWhenTrue(t *testing.T) {
 	type foo struct {
 		Field1 int `validate:"required|min:5|max:20" message:"Field1 outside of range"`
 	}
@@ -256,19 +256,39 @@ func privateFieldValidation(t *testing.T, validatePrivate, expect bool) {
 	}
 
 	Config(func(opt *GlobalOption) {
-		opt.ValidatePrivateFields = validatePrivate
+		opt.ValidatePrivateFields = true
 	})
 
 	v := Struct(barz)
 	v.Validate()
 
-	assert.Equal(t, v.hasError, expect)
-}
-
-func TestValidatePrivateFieldsWhenTrue(t *testing.T) {
-	privateFieldValidation(t, true, true)
+	assert.Equal(t, v.hasError, true)
 }
 
 func TestValidatePrivateFieldsWhenFalse(t *testing.T) {
-	privateFieldValidation(t, false, false)
+	type foo struct {
+		Field1 int `validate:"required|min:5|max:20" message:"Field1 outside of range"`
+	}
+	type bar struct {
+		foo
+		Field2 int `validate:"required|int" message:"Field2 outside of range"`
+	}
+
+	fooInt := 4
+	barInt := 25
+
+	myFoo := foo{Field1: fooInt}
+	barz := &bar{
+		foo:    myFoo,
+		Field2: barInt,
+	}
+
+	Config(func(opt *GlobalOption) {
+		opt.ValidatePrivateFields = false
+	})
+
+	v := Struct(barz)
+	v.Validate()
+
+	assert.Equal(t, v.hasError, false)
 }
