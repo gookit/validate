@@ -420,6 +420,18 @@ type GlobalOption struct {
 	CheckZero bool
 	// CheckSubOnParentMarked True: only collect sub-struct rule on current field has rule.
 	CheckSubOnParentMarked bool
+	// ValidatePrivateFields Whether to validate private fields or not, especially when inheriting other other structs.
+	//
+	//  type foo struct {
+	//	  Field int `json:"field" validate:"required"`
+	//  }
+	//  type bar struct {
+	//    foo // <-- validate this field
+	//    Field2 int `json:"field2" validate:"required"`
+	//  }
+	//
+	// default: false
+	ValidatePrivateFields bool
 }
 ```
 
@@ -431,6 +443,28 @@ validate.Config(func(opt *validate.GlobalOption) {
 	opt.StopOnError = false
 	opt.SkipOnEmpty = false
 })
+```
+
+### Validating Private (Unexported fields)
+By default, private fields are skipped. It is not uncommon to find code such as the following
+
+```go
+type foo struct {
+	somefield int
+}
+
+type Bar struct {
+	foo
+	SomeOtherField string
+}
+```
+In order to have `foo.somefield` validated, enable the behavior by setting `GlobalOption.ValidatePrivateFields` to `true`.
+
+```go
+validate.Config(func(opt *validate.GlobalOption) {
+	opt.ValidatePrivateFields = true
+})
+
 ```
 
 ### Custom Error Messages

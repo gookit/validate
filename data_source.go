@@ -301,7 +301,9 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 			// skip don't exported field
 			name := fv.Name
 			if name[0] >= 'a' && name[0] <= 'z' {
-				continue
+				if !gOpt.ValidatePrivateFields {
+					continue
+				}
 			}
 
 			if parentFName == "" {
