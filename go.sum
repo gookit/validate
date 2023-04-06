@@ -1,13 +1,14 @@
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/gookit/color v1.5.2 h1:uLnfXcaFjlrDnQDT+NCBcfhrXqYTx/rcCa6xn01Y8yI=
 github.com/gookit/color v1.5.2/go.mod h1:w8h4bGiHeeBpvQVePTutdbERIUf3oJE5lZ8HM0UgXyg=
+github.com/gookit/color v1.5.3 h1:twfIhZs4QLCtimkP7MOxlF3A0U/5cDPseRT9M/+2SCE=
+github.com/gookit/color v1.5.3/go.mod h1:NUzwzeehUfl7GIb36pqId+UGmRfQcU/WiiyTTeNjHtE=
 github.com/gookit/filter v1.1.4 h1:SXd6PEumiP/0jtF2crQRaz1wmKwHbW9xg5Ds6/ZP16w=
 github.com/gookit/filter v1.1.4/go.mod h1:0CEPQvudso375RitQf9X8HerUg9cz8N7c/yn6b1RMzM=
 github.com/gookit/goutil v0.5.12/go.mod h1:6vhWm/bSYXGE8poqFbFz6IGM7jV2r6qVhyK567SX/AI=
-github.com/gookit/goutil v0.6.7 h1:Sz0y5eslPZ8M2lUhRaSMnwEeX5nb9z7SoCsw0ZbMwe4=
-github.com/gookit/goutil v0.6.7/go.mod h1:ti+JpLBGSN83ga6SSZa6uozhntToWSzOPm2z1hvpQSc=
+github.com/gookit/goutil v0.6.8 h1:B2XXSCGav5TXWtKRT9i/s/owOLXXB7sY6UsfqeSLroE=
+github.com/gookit/goutil v0.6.8/go.mod h1:u+Isykc6RQcZ4GQzulsaGm+Famd97U5Tzp3aQyo+jyA=
 github.com/mattn/go-isatty v0.0.16/go.mod h1:kYGgaQfpe5nmfYZH+SKPsOc2e4SrIfOl2e/yFXSvRLM=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
