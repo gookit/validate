@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go_version: [1.16, 1.17, 1.18, 1.19]
+        go_version: [1.18, 1.19, '1.20']
 #        os: [ubuntu-latest, windows-latest, macOS-latest]
 
     steps:
@@ -34,7 +34,7 @@ jobs:
 
     - name: Run unit tests
 #      run: go test -v -cover ./...
-#      must add " for profile.cov on windows OS
+#      must add " for profile.cov on Windows OS
       run: go test -v -coverprofile="profile.cov" ./...
 
     - name: Send coverage
