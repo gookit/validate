@@ -246,13 +246,13 @@ func privateFieldValidation(validatePrivate, expect bool, t *testing.T) {
 		Field2 int `validate:"required|int" message:"Field2 outside of range"`
 	}
 
-	foo_int := 4
-	bar_int := 25
+	fooInt := 4
+	barInt := 25
 
-	_foo := foo{Field1: foo_int}
+	myFoo := foo{Field1: fooInt}
 	barz := &bar{
-		foo:    _foo,
-		Field2: bar_int,
+		foo:    myFoo,
+		Field2: barInt,
 	}
 
 	Config(func(opt *GlobalOption) {
