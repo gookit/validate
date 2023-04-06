@@ -236,3 +236,39 @@ func TestStructData_Get_ptrVal(t *testing.T) {
 	assert.Equal(t, "*int", fmt.Sprintf("%T", val))
 	assert.Equal(t, 0, *val.(*int))
 }
+
+func privateFieldValidation(validatePrivate, expect bool, t *testing.T) {
+	type foo struct {
+		Field1 int `validate:"required|min:5|max:20" message:"Field1 outside of range"`
+	}
+	type bar struct {
+		foo
+		Field2 int `validate:"required|int" message:"Field2 outside of range"`
+	}
+
+	foo_int := 4
+	bar_int := 25
+
+	_foo := foo{Field1: foo_int}
+	barz := &bar{
+		foo:    _foo,
+		Field2: bar_int,
+	}
+
+	Config(func(opt *GlobalOption) {
+		opt.ValidatePrivateFields = validatePrivate
+	})
+
+	v := Struct(barz)
+	v.Validate()
+
+	assert.Equal(t, v.hasError, expect)
+}
+
+func TestValidatePrivateFieldsWhenTrue(t *testing.T) {
+	privateFieldValidation(true, true, t)
+}
+
+func TestValidatePrivateFieldsWhenFalse(t *testing.T) {
+	privateFieldValidation(false, false, t)
+}

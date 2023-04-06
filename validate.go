@@ -92,6 +92,18 @@ type GlobalOption struct {
 	ErrKeyFmt int8
 	// CheckSubOnParentMarked True: only collect sub-struct rule on current field has rule.
 	CheckSubOnParentMarked bool
+	// ValidatePrivateFields Whether to validate private fields or not, expecially when inheriting other other structs.
+	//
+	//  type foo struct {
+	//	  Field int `json:"field" validate:"required"`
+	//  }
+	//  type bar struct {
+	//    foo // <-- validate this field
+	//    Field2 int `json:"field2" validate:"required"`
+	//  }
+	//
+	// default: false
+	ValidatePrivateFields bool
 }
 
 // global options
