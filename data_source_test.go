@@ -237,7 +237,7 @@ func TestStructData_Get_ptrVal(t *testing.T) {
 	assert.Equal(t, 0, *val.(*int))
 }
 
-func privateFieldValidation(validatePrivate, expect bool, t *testing.T) {
+func privateFieldValidation(t *testing.T, validatePrivate, expect bool) {
 	type foo struct {
 		Field1 int `validate:"required|min:5|max:20" message:"Field1 outside of range"`
 	}
