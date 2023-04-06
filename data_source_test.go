@@ -266,9 +266,9 @@ func privateFieldValidation(t *testing.T, validatePrivate, expect bool) {
 }
 
 func TestValidatePrivateFieldsWhenTrue(t *testing.T) {
-	privateFieldValidation(true, true, t)
+	privateFieldValidation(t, true, true)
 }
 
 func TestValidatePrivateFieldsWhenFalse(t *testing.T) {
-	privateFieldValidation(false, false, t)
+	privateFieldValidation(t, false, false)
 }
