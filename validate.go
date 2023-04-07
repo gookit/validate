@@ -7,7 +7,7 @@ package validate
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"reflect"
@@ -380,7 +380,7 @@ func FromRequest(r *http.Request, maxMemoryLimit ...int64) (DataFace, error) {
 
 	// JSON body request
 	if jsonContent.MatchString(cType) {
-		bs, err := ioutil.ReadAll(r.Body)
+		bs, err := io.ReadAll(r.Body)
 		if err != nil {
 			return nil, err
 		}

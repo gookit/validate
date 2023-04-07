@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"net/url"
@@ -923,7 +922,7 @@ func (d FormData) FileBytes(field string) ([]byte, error) {
 		return nil, err
 	}
 
-	return ioutil.ReadAll(file)
+	return io.ReadAll(file)
 }
 
 // FileMimeType get File Mime Type name. eg "image/png"
