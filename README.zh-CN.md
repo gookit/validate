@@ -258,7 +258,12 @@ func main()  {
 		v.AddRule("age", "max", 99)
 		
 		if v.Validate() { // validate ok
+			// safeData := v.SafeData()
+			userForm := &UserForm{}
+			v.BindSafeData(userForm)
+
 			// do something ...
+			fmt.Println(userForm.Name)
 		} else {
 			fmt.Println(v.Errors) // all error messages
 			fmt.Println(v.Errors.One()) // returns a random error message text
