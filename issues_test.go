@@ -12,8 +12,8 @@ import (
 
 	"github.com/gookit/goutil/dump"
 	"github.com/gookit/goutil/jsonutil"
+	"github.com/gookit/goutil/testutil/assert"
 	"github.com/gookit/validate"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestIssue_2(t *testing.T) {
@@ -1258,4 +1258,29 @@ func TestIssues_172(t *testing.T) {
 	dump.Println(f)
 
 	assert.Equal(t, []string{"test.com", "oof.com", "foobar.com"}, f.Domains)
+}
+
+// https://github.com/gookit/validate/issues/213
+func TestIssues_141(t *testing.T) {
+	type Person struct {
+		Name string `json:"name" validate:"required"`
+		Age  int    `json:"age" validate:"required"`
+	}
+	type Form struct {
+		Data []Person `validate:"required"`
+	}
+
+	f := &Form{}
+	v := validate.Struct(&f) // nolint:varnamelen
+	assert.False(t, v.Validate())
+	fmt.Println(v.Errors)
+
+	f = &Form{
+		Data: []Person{
+			{Name: "tome"},
+		},
+	}
+	v = validate.Struct(&f) // nolint:varnamelen
+	assert.False(t, v.Validate())
+	fmt.Println(v.Errors)
 }

@@ -5,7 +5,7 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/gookit/goutil/testutil/assert"
 )
 
 func TestFilterOnStruct(t *testing.T) {

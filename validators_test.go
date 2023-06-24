@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/gookit/goutil/testutil/assert"
 )
 
 func TestIsEmpty(t *testing.T) {

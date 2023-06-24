@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/gookit/filter"
-	"github.com/stretchr/testify/assert"
+	"github.com/gookit/goutil/testutil/assert"
 )
 
 func TestRule_basic(t *testing.T) {

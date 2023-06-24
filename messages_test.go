@@ -6,7 +6,7 @@ import (
 
 	"github.com/gookit/goutil/dump"
 	"github.com/gookit/goutil/jsonutil"
-	"github.com/stretchr/testify/assert"
+	"github.com/gookit/goutil/testutil/assert"
 )
 
 func TestBuiltinMessages(t *testing.T) {

@@ -3,7 +3,7 @@ package validate
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/gookit/goutil/testutil/assert"
 )
 
 func TestNew(t *testing.T) {

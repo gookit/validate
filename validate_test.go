@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/gookit/goutil/dump"
-	"github.com/stretchr/testify/assert"
+	"github.com/gookit/goutil/testutil/assert"
 )
 
 // func TestMain(m *testing.M) {

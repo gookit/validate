@@ -1,6 +1,7 @@
 *.log
 *.swp
-.idea
+.idea/
+.fleet/
 *.patch
 ### Go template
 # Binaries for programs and plugins

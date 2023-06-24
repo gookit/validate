@@ -3,8 +3,8 @@ package zhtw
 import (
 	"testing"
 
+	"github.com/gookit/goutil/testutil/assert"
 	"github.com/gookit/validate"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestRegister(t *testing.T) {

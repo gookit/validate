@@ -3,8 +3,8 @@ package validate_test
 import (
 	"testing"
 
+	"github.com/gookit/goutil/testutil/assert"
 	"github.com/gookit/validate"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestVal_basic(t *testing.T) {

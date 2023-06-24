@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/gookit/goutil/dump"
-	"github.com/stretchr/testify/assert"
+	"github.com/gookit/goutil/testutil/assert"
 )
 
 func TestValueLen(t *testing.T) {
