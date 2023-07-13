@@ -414,7 +414,7 @@ func TestFromRequest_FileForm(t *testing.T) {
 	buf := new(bytes.Buffer)
 	mw := multipart.NewWriter(buf)
 	w, err := mw.CreateFormFile("file", "test.jpg")
-	if is.NoError(err) {
+	if is.NoErr(err).IsOk() {
 		// write file content, this is jpg file start content
 		_, _ = w.Write([]byte("\xFF\xD8\xFF"))
 	}
@@ -426,7 +426,7 @@ func TestFromRequest_FileForm(t *testing.T) {
 	r.Header.Set("Content-Type", mw.FormDataContentType())
 	// - create data
 	d, err := FromRequest(r, defaultMaxMemory)
-	is.NoError(err)
+	is.NoErr(err)
 	fd, ok := d.(*FormData)
 	is.True(ok)
 	is.True(fd.HasFile("file"))
@@ -434,11 +434,11 @@ func TestFromRequest_FileForm(t *testing.T) {
 	is.Equal(24, fd.Int("age"))
 
 	bts, err := fd.FileBytes("file")
-	is.NoError(err)
+	is.NoErr(err)
 	is.Equal([]byte("\xFF\xD8\xFF"), bts)
 	bts, err = fd.FileBytes("not-exist")
 	is.Nil(bts)
-	is.NoError(err)
+	is.NoErr(err)
 	is.Equal("", fd.FileMimeType("not-exist"))
 	is.Equal("image/jpeg", fd.FileMimeType("file"))
 
@@ -464,9 +464,9 @@ func TestFromRequest_FileForm(t *testing.T) {
 	// clear rules
 	v.Reset()
 	v.AddRule("file", "mimes")
-	is.PanicsWithValue("validate: not enough parameters for validator 'mimes'!", func() {
+	is.PanicsMsg(func() {
 		v.Validate()
-	})
+	}, "validate: not enough parameters for validator 'mimes'!")
 }
 
 func TestFromRequest_JSON(t *testing.T) {
@@ -572,7 +572,7 @@ func TestFromRequest_JSON(t *testing.T) {
 				v.Validate() // validate
 				is.True(v.IsOK())
 				err = v.BindSafeData(user)
-				is.NoError(err)
+				is.NoErr(err)
 				is.Equal("INHERE", user.Name)
 			} else {
 				is.Nil(d)

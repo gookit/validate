@@ -236,7 +236,7 @@ func convTypeByBaseKind(srcVal interface{}, srcKind kind, dstType reflect.Kind) 
 			return srcVal.(string), nil
 		}
 	case intKind, uintKind:
-		i64 := mathutil.MustInt64(srcVal)
+		i64 := mathutil.SafeInt64(srcVal)
 		switch dstType {
 		case reflect.Int64:
 			return i64, nil

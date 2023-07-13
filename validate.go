@@ -13,6 +13,8 @@ import (
 	"reflect"
 	"regexp"
 	"strings"
+
+	"github.com/gookit/goutil/reflects"
 )
 
 // M is short name for map[string]interface{}
@@ -308,7 +310,7 @@ func FromJSONBytes(bs []byte) (*MapData, error) {
 }
 
 // FromStruct create a Data from struct
-func FromStruct(s interface{}) (*StructData, error) {
+func FromStruct(s any) (*StructData, error) {
 	data := &StructData{
 		ValidateTag: gOpt.ValidateTag,
 		// init map
@@ -320,7 +322,7 @@ func FromStruct(s interface{}) (*StructData, error) {
 		return data, ErrInvalidData
 	}
 
-	val := reflect.Indirect(reflect.ValueOf(s))
+	val := reflects.Elem(reflect.ValueOf(s))
 	typ := val.Type()
 
 	if val.Kind() != reflect.Struct || typ == timeType {

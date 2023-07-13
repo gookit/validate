@@ -86,11 +86,11 @@ func TestFormData(t *testing.T) {
 	is.Equal("inhere", val)
 
 	nval, err := d.Set("newKey", "strVal")
-	is.NoError(err)
+	is.NoErr(err)
 	is.Equal("strVal", nval)
 	is.Equal("strVal", d.String("newKey"))
 	_, err = d.Set("newInt", 23)
-	is.NoError(err)
+	is.NoErr(err)
 	is.Equal(23, d.Int("newInt"))
 	_, err = d.Set("invalid", []int{2})
 	is.Error(err)
@@ -207,7 +207,7 @@ func TestStructData_Set(t *testing.T) {
 	dump.P(d.fieldNames)
 
 	_, err = d.Set("Extra.0.Github", "new url")
-	is.NoError(err)
+	is.NoErr(err)
 	val, ok := d.Get("Extra.0.Github")
 	is.True(ok)
 	is.Equal("new url", val)
