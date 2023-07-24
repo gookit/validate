@@ -407,7 +407,7 @@ func (t *Translator) HasMessage(key string) bool {
 }
 
 // Message get by validator name and field name.
-func (t *Translator) Message(validator, field string, args ...interface{}) (msg string) {
+func (t *Translator) Message(validator, field string, args ...any) (msg string) {
 	argLen := len(args)
 	errMsg := t.findMessage(validator, field, argLen)
 	if errMsg == "" {
@@ -426,7 +426,7 @@ func (t *Translator) Message(validator, field string, args ...interface{}) (msg 
 }
 
 // format message for the validator
-func (t *Translator) format(errMsg, field string, args []interface{}) string {
+func (t *Translator) format(errMsg, field string, args []any) string {
 	argLen := len(args)
 
 	// fix: #111 argN maybe is a field name

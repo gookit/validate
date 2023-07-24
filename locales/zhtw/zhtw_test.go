@@ -9,7 +9,7 @@ import (
 
 func TestRegister(t *testing.T) {
 	is := assert.New(t)
-	v := validate.Map(map[string]interface{}{
+	v := validate.Map(map[string]any{
 		"age":  23,
 		"name": "inhere",
 	})
@@ -31,7 +31,7 @@ func TestRegisterGlobal(t *testing.T) {
 	RegisterGlobal()
 
 	is := assert.New(t)
-	v := validate.Map(map[string]interface{}{
+	v := validate.Map(map[string]any{
 		"age":  23,
 		"name": "inhere",
 	})

@@ -102,12 +102,12 @@ type funcMeta struct {
 	numOut int
 	// is internal built in validator
 	isInternal bool
-	// last arg is like "... interface{}"
+	// last arg is like "... any"
 	isVariadic bool
 }
 
 func (fm *funcMeta) checkArgNum(argNum int, name string) {
-	// last arg is like "... interface{}"
+	// last arg is like "... any"
 	if fm.isVariadic {
 		if argNum+1 < fm.numIn {
 			panicf("not enough parameters for validator '%s'!", name)
@@ -142,7 +142,7 @@ func ValidatorName(name string) string {
 }
 
 // AddValidators to the global validators map
-func AddValidators(m map[string]interface{}) {
+func AddValidators(m map[string]any) {
 	for name, checkFunc := range m {
 		AddValidator(name, checkFunc)
 	}
@@ -152,11 +152,11 @@ func AddValidators(m map[string]interface{}) {
 //
 // Usage:
 //
-//	v.AddValidator("myFunc", func(val interface{}) bool {
+//	v.AddValidator("myFunc", func(val any) bool {
 //		// do validate val ...
 //		return true
 //	})
-func AddValidator(name string, checkFunc interface{}) {
+func AddValidator(name string, checkFunc any) {
 	fv := checkValidatorFunc(name, checkFunc)
 
 	validators[name] = 2 // custom
@@ -176,7 +176,7 @@ func Validators() map[string]int8 {
  *************************************************************/
 
 // Required field val check
-func (v *Validation) Required(field string, val interface{}) bool {
+func (v *Validation) Required(field string, val any) bool {
 	if v.data != nil && v.data.Type() == sourceForm {
 		// check is upload file
 		if v.data.(*FormData).HasFile(field) {
@@ -190,7 +190,7 @@ func (v *Validation) Required(field string, val interface{}) bool {
 
 // RequiredIf field under validation must be present and not empty,
 // if the anotherField field is equal to any value.
-func (v *Validation) RequiredIf(_ string, val interface{}, kvs ...string) bool {
+func (v *Validation) RequiredIf(_ string, val any, kvs ...string) bool {
 	// format error
 	if len(kvs) < 2 {
 		return false
@@ -218,7 +218,7 @@ func (v *Validation) RequiredIf(_ string, val interface{}, kvs ...string) bool {
 
 // RequiredUnless field under validation must be present and not empty
 // unless the anotherField field is equal to any value.
-func (v *Validation) RequiredUnless(_ string, val interface{}, kvs ...string) bool {
+func (v *Validation) RequiredUnless(_ string, val any, kvs ...string) bool {
 	// format error
 	if len(kvs) < 2 {
 		return false
@@ -236,7 +236,7 @@ func (v *Validation) RequiredUnless(_ string, val interface{}, kvs ...string) bo
 }
 
 // RequiredWith field under validation must be present and not empty only if any of the other specified fields are present.
-func (v *Validation) RequiredWith(_ string, val interface{}, kvs ...string) bool {
+func (v *Validation) RequiredWith(_ string, val any, kvs ...string) bool {
 	// format error
 	if len(kvs) == 0 {
 		return false
@@ -253,7 +253,7 @@ func (v *Validation) RequiredWith(_ string, val interface{}, kvs ...string) bool
 }
 
 // RequiredWithAll field under validation must be present and not empty only if all of the other specified fields are present.
-func (v *Validation) RequiredWithAll(_ string, val interface{}, kvs ...string) bool {
+func (v *Validation) RequiredWithAll(_ string, val any, kvs ...string) bool {
 	// format error
 	if len(kvs) == 0 {
 		return false
@@ -271,7 +271,7 @@ func (v *Validation) RequiredWithAll(_ string, val interface{}, kvs ...string) b
 }
 
 // RequiredWithout field under validation must be present and not empty only when any of the other specified fields are not present.
-func (v *Validation) RequiredWithout(_ string, val interface{}, kvs ...string) bool {
+func (v *Validation) RequiredWithout(_ string, val any, kvs ...string) bool {
 	// format error
 	if len(kvs) == 0 {
 		return false
@@ -288,7 +288,7 @@ func (v *Validation) RequiredWithout(_ string, val interface{}, kvs ...string) b
 }
 
 // RequiredWithoutAll field under validation must be present and not empty only when any of the other specified fields are not present.
-func (v *Validation) RequiredWithoutAll(_ string, val interface{}, kvs ...string) bool {
+func (v *Validation) RequiredWithoutAll(_ string, val any, kvs ...string) bool {
 	// format error
 	if len(kvs) == 0 {
 		return false
@@ -306,7 +306,7 @@ func (v *Validation) RequiredWithoutAll(_ string, val interface{}, kvs ...string
 }
 
 // EqField value should EQ the dst field value
-func (v *Validation) EqField(val interface{}, dstField string) bool {
+func (v *Validation) EqField(val any, dstField string) bool {
 	// get dst field value.
 	dstVal, has := v.Get(dstField)
 	if !has {
@@ -318,7 +318,7 @@ func (v *Validation) EqField(val interface{}, dstField string) bool {
 }
 
 // NeField value should not equal the dst field value
-func (v *Validation) NeField(val interface{}, dstField string) bool {
+func (v *Validation) NeField(val any, dstField string) bool {
 	dstVal, has := v.Get(dstField)
 	if !has {
 		return false
@@ -328,7 +328,7 @@ func (v *Validation) NeField(val interface{}, dstField string) bool {
 }
 
 // GtField value should GT the dst field value
-func (v *Validation) GtField(val interface{}, dstField string) bool {
+func (v *Validation) GtField(val any, dstField string) bool {
 	// get dst field value.
 	dstVal, has := v.Get(dstField)
 	if !has {
@@ -339,7 +339,7 @@ func (v *Validation) GtField(val interface{}, dstField string) bool {
 }
 
 // GteField value should GTE the dst field value
-func (v *Validation) GteField(val interface{}, dstField string) bool {
+func (v *Validation) GteField(val any, dstField string) bool {
 	dstVal, has := v.Get(dstField)
 	if !has {
 		return false
@@ -349,7 +349,7 @@ func (v *Validation) GteField(val interface{}, dstField string) bool {
 }
 
 // LtField value should LT the dst field value
-func (v *Validation) LtField(val interface{}, dstField string) bool {
+func (v *Validation) LtField(val any, dstField string) bool {
 	// get dst field value.
 	dstVal, has := v.Get(dstField)
 	if !has {
@@ -360,7 +360,7 @@ func (v *Validation) LtField(val interface{}, dstField string) bool {
 }
 
 // LteField value should LTE the dst field value(for int, string)
-func (v *Validation) LteField(val interface{}, dstField string) bool {
+func (v *Validation) LteField(val any, dstField string) bool {
 	// get dst field value.
 	dstVal, has := v.Get(dstField)
 	if !has {
@@ -454,7 +454,7 @@ func (v *Validation) InMimeTypes(fd *FormData, field, mimeType string, moreTypes
  *************************************************************/
 
 // IsEmpty of the value
-func IsEmpty(val interface{}) bool {
+func IsEmpty(val any) bool {
 	if val == nil {
 		return true
 	}
@@ -469,7 +469,7 @@ func IsEmpty(val interface{}) bool {
 // specified substring or element.
 //
 // Notice: list check value exist. map check key exist.
-func Contains(s, sub interface{}) bool {
+func Contains(s, sub any) bool {
 	ok, found := includeElement(s, sub)
 
 	// ok == false: 's' could not be applied builtin len()
@@ -481,7 +481,7 @@ func Contains(s, sub interface{}) bool {
 // specified substring or element.
 //
 // Notice: list check value exist. map check key exist.
-func NotContains(s, sub interface{}) bool {
+func NotContains(s, sub any) bool {
 	ok, found := includeElement(s, sub)
 
 	// ok == false: could not be applied builtin len()
@@ -494,7 +494,7 @@ func NotContains(s, sub interface{}) bool {
  *************************************************************/
 
 // IsUint check, allow: intX, uintX, string
-func IsUint(val interface{}) bool {
+func IsUint(val any) bool {
 	switch typVal := val.(type) {
 	case int:
 		return typVal >= 0
@@ -516,7 +516,7 @@ func IsUint(val interface{}) bool {
 }
 
 // IsBool check. allow: bool, string.
-func IsBool(val interface{}) bool {
+func IsBool(val any) bool {
 	if _, ok := val.(bool); ok {
 		return true
 	}
@@ -529,7 +529,7 @@ func IsBool(val interface{}) bool {
 }
 
 // IsFloat check. allow: floatX, string
-func IsFloat(val interface{}) bool {
+func IsFloat(val any) bool {
 	if val == nil {
 		return false
 	}
@@ -544,7 +544,7 @@ func IsFloat(val interface{}) bool {
 }
 
 // IsArray check value is array or slice.
-func IsArray(val interface{}, strict ...bool) (ok bool) {
+func IsArray(val any, strict ...bool) (ok bool) {
 	if val == nil {
 		return false
 	}
@@ -561,7 +561,7 @@ func IsArray(val interface{}, strict ...bool) (ok bool) {
 }
 
 // IsSlice check value is slice type
-func IsSlice(val interface{}) (ok bool) {
+func IsSlice(val any) (ok bool) {
 	if val == nil {
 		return false
 	}
@@ -571,7 +571,7 @@ func IsSlice(val interface{}) (ok bool) {
 }
 
 // IsInts is int slice check
-func IsInts(val interface{}) bool {
+func IsInts(val any) bool {
 	if val == nil {
 		return false
 	}
@@ -584,7 +584,7 @@ func IsInts(val interface{}) bool {
 }
 
 // IsStrings is string slice check
-func IsStrings(val interface{}) (ok bool) {
+func IsStrings(val any) (ok bool) {
 	if val == nil {
 		return false
 	}
@@ -594,7 +594,7 @@ func IsStrings(val interface{}) (ok bool) {
 }
 
 // IsMap check
-func IsMap(val interface{}) (ok bool) {
+func IsMap(val any) (ok bool) {
 	if val == nil {
 		return false
 	}
@@ -604,7 +604,7 @@ func IsMap(val interface{}) (ok bool) {
 }
 
 // IsInt check, and support length check
-func IsInt(val interface{}, minAndMax ...int64) (ok bool) {
+func IsInt(val any, minAndMax ...int64) (ok bool) {
 	if val == nil {
 		return false
 	}
@@ -636,7 +636,7 @@ func IsInt(val interface{}, minAndMax ...int64) (ok bool) {
 //	ok := IsString(val)
 //	ok := IsString(val, 5) // with min len check
 //	ok := IsString(val, 5, 12) // with min and max len check
-func IsString(val interface{}, minAndMaxLen ...int) (ok bool) {
+func IsString(val any, minAndMaxLen ...int) (ok bool) {
 	if val == nil {
 		return false
 	}
@@ -789,7 +789,7 @@ func IsAlphaDash(s string) bool {
 }
 
 // IsNumber string. should >= 0
-func IsNumber(v interface{}) bool {
+func IsNumber(v any) bool {
 	if v == nil {
 		return false
 	}
@@ -801,7 +801,7 @@ func IsNumber(v interface{}) bool {
 }
 
 // IsNumeric is string/int number. should >= 0
-func IsNumeric(v interface{}) bool {
+func IsNumeric(v any) bool {
 	if v == nil {
 		return false
 	}
@@ -971,7 +971,7 @@ func IsUnixPath(s string) bool {
 // Support:
 //
 //	bool, int(X), uint(X), string, float(X) AND slice, array, map
-func IsEqual(val, wantVal interface{}) bool {
+func IsEqual(val, wantVal any) bool {
 	// check is nil
 	if val == nil || wantVal == nil {
 		return val == wantVal
@@ -1013,12 +1013,12 @@ func IsEqual(val, wantVal interface{}) bool {
 }
 
 // NotEqual check
-func NotEqual(val, wantVal interface{}) bool {
+func NotEqual(val, wantVal any) bool {
 	return !IsEqual(val, wantVal)
 }
 
 // IntEqual check
-func IntEqual(val interface{}, wantVal int64) bool {
+func IntEqual(val any, wantVal int64) bool {
 	// intVal, isInt := IntVal(val)
 	intVal, err := mathutil.Int64(val)
 	if err != nil {
@@ -1031,31 +1031,31 @@ func IntEqual(val interface{}, wantVal int64) bool {
 // Gt check value greater dst value.
 //
 // only check for: int(X), uint(X), float(X), string.
-func Gt(val, min interface{}) bool { return valueCompare(val, min, ">") }
+func Gt(val, min any) bool { return valueCompare(val, min, ">") }
 
 // Gte check value greater or equal dst value
 // only check for: int(X), uint(X), float(X), string.
-func Gte(val, min interface{}) bool { return valueCompare(val, min, ">=") }
+func Gte(val, min any) bool { return valueCompare(val, min, ">=") }
 
 // Min check value greater or equal dst value, alias Gte()
 // only check for: int(X), uint(X), float(X), string.
-func Min(val, min interface{}) bool { return valueCompare(val, min, ">=") }
+func Min(val, min any) bool { return valueCompare(val, min, ">=") }
 
 // Lt less than dst value.
 // only check for: int(X), uint(X), float(X).
-func Lt(val, max interface{}) bool { return valueCompare(val, max, "<") }
+func Lt(val, max any) bool { return valueCompare(val, max, "<") }
 
 // Lte less than or equal dst value.
 // only check for: int(X), uint(X), float(X).
-func Lte(val, max interface{}) bool { return valueCompare(val, max, "<=") }
+func Lte(val, max any) bool { return valueCompare(val, max, "<=") }
 
 // Max less than or equal dst value, alias Lte()
 // only check for: int(X), uint(X), float(X).
-func Max(val, max interface{}) bool { return valueCompare(val, max, "<=") }
+func Max(val, max any) bool { return valueCompare(val, max, "<=") }
 
 // Between int value in the given range.
 // only check for: int(X), uint(X).
-func Between(val interface{}, min, max int64) bool {
+func Between(val any, min, max int64) bool {
 	intVal, err := mathutil.Int64(val)
 	if err != nil {
 		return false
@@ -1069,7 +1069,7 @@ func Between(val interface{}, min, max int64) bool {
  *************************************************************/
 
 // Enum value(int(X),string) should be in the given enum(strings, ints, uints).
-func Enum(val, enum interface{}) bool {
+func Enum(val, enum any) bool {
 	if val == nil || enum == nil {
 		return false
 	}
@@ -1104,7 +1104,7 @@ func Enum(val, enum interface{}) bool {
 }
 
 // NotIn value should be not in the given enum(strings, ints, uints).
-func NotIn(val, enum interface{}) bool {
+func NotIn(val, enum any) bool {
 	return !Enum(val, enum)
 }
 
@@ -1113,19 +1113,19 @@ func NotIn(val, enum interface{}) bool {
  *************************************************************/
 
 // Length equal check for string, array, slice, map
-func Length(val interface{}, wantLen int) bool {
+func Length(val any, wantLen int) bool {
 	ln := CalcLength(val)
 	return ln != -1 && ln == wantLen
 }
 
 // MinLength check for string, array, slice, map
-func MinLength(val interface{}, minLen int) bool {
+func MinLength(val any, minLen int) bool {
 	ln := CalcLength(val)
 	return ln != -1 && ln >= minLen
 }
 
 // MaxLength check for string, array, slice, map
-func MaxLength(val interface{}, maxLen int) bool {
+func MaxLength(val any, maxLen int) bool {
 	ln := CalcLength(val)
 	return ln != -1 && ln <= maxLen
 }
@@ -1144,7 +1144,7 @@ func ByteLength(str string, minLen int, maxLen ...int) bool {
 }
 
 // RuneLength check string's length (including multibyte strings)
-func RuneLength(val interface{}, minLen int, maxLen ...int) bool {
+func RuneLength(val any, minLen int, maxLen ...int) bool {
 	str, isString := val.(string)
 	if !isString {
 		return false
@@ -1163,7 +1163,7 @@ func RuneLength(val interface{}, minLen int, maxLen ...int) bool {
 }
 
 // StringLength check string's length (including multibyte strings)
-func StringLength(val interface{}, minLen int, maxLen ...int) bool {
+func StringLength(val any, minLen int, maxLen ...int) bool {
 	return RuneLength(val, minLen, maxLen...)
 }
 

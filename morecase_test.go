@@ -39,7 +39,7 @@ func TestValidation_custom_type(t *testing.T) {
 // 		Name: "tom",
 // 		Age:  0,
 // 	})
-// 	v.AddValidator("required", func(val interface{}) bool {
+// 	v.AddValidator("required", func(val any) bool {
 // 		dump.V(val)
 // 		// do something ...
 // 		return false
@@ -62,7 +62,7 @@ func TestValidation_custom_required2(t *testing.T) {
 	})
 
 	buf := new(bytes.Buffer)
-	v.AddValidator("required_custom", func(val interface{}) bool {
+	v.AddValidator("required_custom", func(val any) bool {
 		buf.WriteString("value:")
 		buf.WriteString(fmt.Sprint(val))
 		return false

@@ -15,13 +15,13 @@ import (
 func main() {
 	mux := http.NewServeMux()
 	// 字符串转整型
-	validate.AddFilter("newIsInt", func(val interface{}) interface{} {
+	validate.AddFilter("newIsInt", func(val any) any {
 		switch val.(type) {
 		case int:
 			return val.(int)
 		case string:
 			num, parseErr := strconv.Atoi(val.(string))
-			if  parseErr != nil {
+			if parseErr != nil {
 				return errors.New("参数类型错误！")
 			}
 			return num
@@ -36,7 +36,7 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-dump.P(data)
+		dump.P(data)
 		v := data.Create()
 		// setting rules
 		v.
@@ -57,8 +57,6 @@ dump.P(data)
 			w.Write([]byte(v.Errors.String()))
 		}
 	})
-
-
 
 	mux.HandleFunc("/post-json", handler1)
 

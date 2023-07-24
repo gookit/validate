@@ -10,7 +10,7 @@ import (
 
 func TestValueLen(t *testing.T) {
 	is := assert.New(t)
-	tests := []interface{}{
+	tests := []any{
 		"abc",
 		123,
 		int8(123), int16(123), int32(123), int64(123),
@@ -46,7 +46,7 @@ func TestCallByValue(t *testing.T) {
 }
 
 func TestCallByValue_nil_arg(t *testing.T) {
-	fn1 := func(in interface{}) interface{} {
+	fn1 := func(in any) any {
 		_, ok := in.(NilObject)
 		assert.True(t, IsNilObj(in))
 		dump.P(in, ok)
@@ -54,7 +54,7 @@ func TestCallByValue_nil_arg(t *testing.T) {
 	}
 
 	// runtime error: invalid memory address or nil pointer dereference
-	// typ := reflect.TypeOf(interface{}(nil))
+	// typ := reflect.TypeOf(any(nil))
 	// typ.Kind()
 
 	nilV := 2

@@ -13,11 +13,11 @@ var (
 )
 
 // apply validator to each sub-element of the val(slice, map)
-// TODO func Each(val interface{}, rule string)
+// TODO func Each(val any, rule string)
 
 // Var validating the value by given rule.
 // alias of the Val()
-func Var(val interface{}, rule string) error {
+func Var(val any, rule string) error {
 	return Val(val, rule)
 }
 
@@ -29,7 +29,7 @@ func Var(val interface{}, rule string) error {
 //	validate.Val("xyz@mail.com", "required|email")
 //
 // refer the Validation.StringRule() for parse rule string.
-func Val(val interface{}, rule string) error {
+func Val(val any, rule string) error {
 	rule = strings.TrimSpace(rule)
 	// input empty rule, skip validate
 	if rule == "" {
@@ -58,12 +58,12 @@ func Val(val interface{}, rule string) error {
 			// eg 'regex:\d{4,6}' dont need split args. args is "\d{4,6}"
 			case "regexp":
 				// v.AddRule(field, validator, list[1])
-				r = buildRule(field, validator, realName, []interface{}{list[1]})
+				r = buildRule(field, validator, realName, []any{list[1]})
 				// some special validator. need merge args to one.
 			case "enum", "notIn":
 				arg := parseArgString(list[1])
 				// ev.AddRule(field, validator, arg)
-				r = buildRule(field, validator, realName, []interface{}{arg})
+				r = buildRule(field, validator, realName, []any{arg})
 			default:
 				args := parseArgString(list[1])
 				r = buildRule(field, validator, realName, strings2Args(args))
@@ -84,7 +84,7 @@ func Val(val interface{}, rule string) error {
 }
 
 // add one Rule
-func buildRule(fields, validator, realName string, args []interface{}) *Rule {
+func buildRule(fields, validator, realName string, args []any) *Rule {
 	rule := NewRule(fields, validator, args...)
 
 	// init some settings

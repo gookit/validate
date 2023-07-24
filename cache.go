@@ -23,7 +23,7 @@ type factory struct {
 
 func newFactory() *factory {
 	f := &factory{}
-	f.pool.New = func() interface{} {
+	f.pool.New = func() any {
 		return newValidation(nil)
 	}
 

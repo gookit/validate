@@ -23,7 +23,7 @@ var nilObj = NilObject{}
 var nilRVal = reflect.ValueOf(nilObj)
 
 // NilValue TODO a reflect nil value, use for instead of nilRVal
-var NilValue = reflect.Zero(reflect.TypeOf((*interface{})(nil)).Elem())
+var NilValue = reflect.Zero(reflect.TypeOf((*any)(nil)).Elem())
 
 // From package "text/template" -> text/template/funcs.go
 var (
@@ -34,13 +34,13 @@ var (
 )
 
 // IsNilObj check value is internal NilObject
-func IsNilObj(val interface{}) bool {
+func IsNilObj(val any) bool {
 	_, ok := val.(NilObject)
 	return ok
 }
 
 // CallByValue call func by reflect.Value
-func CallByValue(fv reflect.Value, args ...interface{}) []reflect.Value {
+func CallByValue(fv reflect.Value, args ...any) []reflect.Value {
 	if fv.Kind() != reflect.Func {
 		panicf("parameter must be an func type")
 	}
@@ -85,8 +85,8 @@ func stringSplit(str, sep string) (ss []string) {
 }
 
 // TODO use arrutil.StringsToSlice()
-func strings2Args(strings []string) []interface{} {
-	args := make([]interface{}, len(strings))
+func strings2Args(strings []string) []any {
+	args := make([]any, len(strings))
 	for i, s := range strings {
 		args[i] = s
 	}
@@ -94,7 +94,7 @@ func strings2Args(strings []string) []interface{} {
 }
 
 // TODO use arrutil.SliceToStrings()
-func args2strings(args []interface{}) []string {
+func args2strings(args []any) []string {
 	strSlice := make([]string, len(args))
 	for i, a := range args {
 		strSlice[i] = strutil.QuietString(a)
@@ -102,8 +102,8 @@ func args2strings(args []interface{}) []string {
 	return strSlice
 }
 
-func buildArgs(val interface{}, args []interface{}) []interface{} {
-	newArgs := make([]interface{}, len(args)+1)
+func buildArgs(val any, args []any) []any {
+	newArgs := make([]any, len(args)+1)
 	newArgs[0] = val
 	// as[1:] = args // error
 	copy(newArgs[1:], args)
@@ -125,7 +125,7 @@ func ValueLen(v reflect.Value) int {
 // ErrConvertFail error
 var ErrConvertFail = errors.New("convert value is failure")
 
-func valueToInt64(v interface{}, strict bool) (i64 int64, err error) {
+func valueToInt64(v any, strict bool) (i64 int64, err error) {
 	switch tVal := v.(type) {
 	case string:
 		if strict {
@@ -169,7 +169,7 @@ func valueToInt64(v interface{}, strict bool) (i64 int64, err error) {
 }
 
 // CalcLength for input value
-func CalcLength(val interface{}) int {
+func CalcLength(val any) int {
 	if val == nil {
 		return -1
 	}
@@ -181,7 +181,7 @@ func CalcLength(val interface{}) int {
 // value compare.
 //
 // only check for: int(X), uint(X), float(X), string.
-func valueCompare(srcVal, dstVal interface{}, op string) (ok bool) {
+func valueCompare(srcVal, dstVal any, op string) (ok bool) {
 	// string compare
 	if str1, ok := srcVal.(string); ok {
 		str2, err := strutil.ToString(dstVal)
@@ -211,7 +211,7 @@ func getVariadicKind(typ reflect.Type) reflect.Kind {
 // convTypeByBaseKind convert value type by base kind
 //
 //nolint:forcetypeassert
-func convTypeByBaseKind(srcVal interface{}, srcKind kind, dstType reflect.Kind) (interface{}, error) {
+func convTypeByBaseKind(srcVal any, srcKind kind, dstType reflect.Kind) (any, error) {
 	switch srcKind {
 	case stringKind:
 		switch dstType {
@@ -243,7 +243,7 @@ func convTypeByBaseKind(srcVal interface{}, srcKind kind, dstType reflect.Kind) 
 
 // convert custom type to generic basic int, string, unit.
 // returns string, int64 or error
-func convToBasicType(val interface{}) (value interface{}, err error) {
+func convToBasicType(val any) (value any, err error) {
 	v := reflect.Indirect(reflect.ValueOf(val))
 
 	switch v.Kind() {
@@ -259,11 +259,11 @@ func convToBasicType(val interface{}) (value interface{}, err error) {
 	return
 }
 
-func panicf(format string, args ...interface{}) {
+func panicf(format string, args ...any) {
 	panic("validate: " + fmt.Sprintf(format, args...))
 }
 
-func checkValidatorFunc(name string, fn interface{}) reflect.Value {
+func checkValidatorFunc(name string, fn any) reflect.Value {
 	if !goodName(name) {
 		panicf("validate name %s is not a valid identifier", name)
 	}
@@ -286,7 +286,7 @@ func checkValidatorFunc(name string, fn interface{}) reflect.Value {
 	return fv
 }
 
-func checkFilterFunc(name string, fn interface{}) reflect.Value {
+func checkFilterFunc(name string, fn any) reflect.Value {
 	if !goodName(name) {
 		panicf("filter name %s is not a valid identifier", name)
 	}
@@ -430,7 +430,7 @@ func eq(arg1 reflect.Value, arg2 reflect.Value) (bool, error) {
 }
 
 // from package: github.com/stretchr/testify/assert/assertions.go
-func includeElement(list, element interface{}) (ok, found bool) {
+func includeElement(list, element any) (ok, found bool) {
 	listValue := reflect.ValueOf(list)
 	elementValue := reflect.ValueOf(element)
 	listKind := listValue.Type().Kind()

@@ -50,15 +50,15 @@ func TestAddFilter(t *testing.T) {
 		AddFilter("myFilter", func(v string) (bool, int) { return false, 0 })
 	})
 	is.Panics(func() {
-		AddFilter("myFilter", func() interface{} { return nil })
+		AddFilter("myFilter", func() any { return nil })
 	})
 
 	AddFilters(M{
-		"myFilter0": func(val interface{}) string { return "myFilter0" },
+		"myFilter0": func(val any) string { return "myFilter0" },
 	})
-	AddFilter("myFilter1", func(val interface{}) string { return "myFilter1" })
+	AddFilter("myFilter1", func(val any) string { return "myFilter1" })
 
-	v := New(map[string]interface{}{
+	v := New(map[string]any{
 		"name": " inhere ",
 		"age":  " 50 ",
 		"key0": "val0",
@@ -66,7 +66,7 @@ func TestAddFilter(t *testing.T) {
 		"tags": "go,php",
 	})
 	v.AddFilters(M{
-		"myFilter2": func(val interface{}, a, b string) (string, error) { return "myFilter2:" + a + b, nil },
+		"myFilter2": func(val any, a, b string) (string, error) { return "myFilter2:" + a + b, nil },
 	})
 	v.FilterRule("key0", "myFilter0")
 	v.FilterRules(MS{
@@ -127,11 +127,11 @@ func TestAddFilter(t *testing.T) {
 
 // check panic caused nil value with custom filter
 func TestFilterRuleNilValue(t *testing.T) {
-	AddFilter("X", func(in interface{}) interface{} {
+	AddFilter("X", func(in any) any {
 		return in
 	})
 
-	v := Map(map[string]interface{}{
+	v := Map(map[string]any{
 		"bad": nil,
 	})
 	v.FilterRule("bad", "X")

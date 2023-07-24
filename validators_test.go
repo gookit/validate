@@ -9,7 +9,7 @@ import (
 
 func TestIsEmpty(t *testing.T) {
 	is := assert.New(t)
-	tests := []interface{}{
+	tests := []any{
 		"",
 		nil,
 		0,
@@ -28,7 +28,7 @@ func TestIsEmpty(t *testing.T) {
 	is.True(ValueIsEmpty(reflect.ValueOf(nil)))
 	is.True(ValueIsEmpty(reflect.ValueOf("")))
 
-	type T struct{ _ interface{} }
+	type T struct{ _ any }
 	rv := reflect.ValueOf(T{}).Field(0)
 	is.True(ValueIsEmpty(rv))
 }
@@ -54,7 +54,7 @@ func TestIntCheck(t *testing.T) {
 	is := assert.New(t)
 
 	// type check
-	tests := []interface{}{
+	tests := []any{
 		2, -2,
 		int8(2), int16(2), int32(2), int64(2),
 		uint(2), uint8(2), uint16(2), uint32(2), uint64(2),
@@ -79,7 +79,7 @@ func TestIntCheck(t *testing.T) {
 	is.False(IsInt("str", 4, 6))
 
 	// IsUint
-	cases := []interface{}{
+	cases := []any{
 		2,
 		int8(2), int16(2), int32(2), int64(2),
 		uint(2), uint8(2), uint16(2), uint32(2), uint64(2),
@@ -179,7 +179,7 @@ func TestValueCompare(t *testing.T) {
 	is := assert.New(t)
 
 	// IsEqual
-	tests := []interface{}{
+	tests := []any{
 		2,
 		int8(2), int16(2), int32(2), int64(2),
 		uint8(2), uint16(2), uint32(2), uint64(2),
@@ -200,7 +200,7 @@ func TestValueCompare(t *testing.T) {
 	is.True(IsEqual([]int{1}, []int{1}))
 	is.True(IsEqual([]byte(`abc`), []byte(`abc`)))
 	is.True(IsEqual([]string{"a"}, []string{"a"}))
-	is.True(IsEqual([]interface{}{"a"}, []interface{}{"a"}))
+	is.True(IsEqual([]any{"a"}, []any{"a"}))
 	is.True(IsEqual(map[string]string{"a": "v0"}, map[string]string{"a": "v0"}))
 
 	is.False(IsEqual(2, "2"))
@@ -253,7 +253,7 @@ func TestMin(t *testing.T) {
 	is := assert.New(t)
 
 	// ok
-	tests := []struct{ val, min interface{} }{
+	tests := []struct{ val, min any }{
 		{val: 3, min: 2},
 		{val: 3, min: 3},
 		{val: int64(3), min: 3},
@@ -270,7 +270,7 @@ func TestMin(t *testing.T) {
 	}
 
 	// fail
-	tests = []struct{ val, min interface{} }{
+	tests = []struct{ val, min any }{
 		{val: 3.1, min: 3.2},
 		{nil, 3},
 		{"abc", "def"},
@@ -676,7 +676,7 @@ func TestLength(t *testing.T) {
 
 func TestEnumAndNotIn(t *testing.T) {
 	is := assert.New(t)
-	tests := map[interface{}]interface{}{
+	tests := map[any]any{
 		1:   []int{1, 2, 3},
 		2:   []int8{1, 2, 3},
 		3:   []int16{1, 2, 3},
@@ -710,7 +710,7 @@ func TestEnumAndNotIn(t *testing.T) {
 	is.False(Enum(12, nil))
 	is.False(Enum(12, map[int]int{2: 3}))
 
-	tests1 := map[interface{}]interface{}{
+	tests1 := map[any]any{
 		2:   []int{1, 3},
 		"a": []string{"b", "c"},
 	}
