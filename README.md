@@ -2,7 +2,7 @@
 
 [![GitHub tag (latest SemVer)](https://img.shields.io/github/tag/gookit/validate)](https://github.com/gookit/validate)
 [![GoDoc](https://godoc.org/github.com/gookit/validate?status.svg)](https://pkg.go.dev/github.com/gookit/validate)
-[![Build Status](https://travis-ci.org/gookit/validate.svg?branch=master)](https://travis-ci.org/gookit/validate)
+![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/gookit/goutil?style=flat-square)
 [![Coverage Status](https://coveralls.io/repos/github/gookit/validate/badge.svg?branch=master)](https://coveralls.io/github/gookit/validate?branch=master)
 [![Go Report Card](https://goreportcard.com/badge/github.com/gookit/validate)](https://goreportcard.com/report/github.com/gookit/validate)
 [![Actions Status](https://github.com/gookit/validate/workflows/Unit-Tests/badge.svg)](https://github.com/gookit/validate/actions)
@@ -22,8 +22,6 @@
 - Many commonly used validators have been built in(**> 70**), see [Built In Validators](#built-in-validators)
 - Can use `validate` in any frameworks, such as Gin, Echo, Chi and more
 - Supports direct use of rules to validate value. eg: `validate.Val("xyz@mail.com", "required|email")`
-
-> Inspired the projects [albrow/forms](https://github.com/albrow/forms) and [asaskevich/govalidator](https://github.com/asaskevich/govalidator) and [inhere/php-validate](https://github.com/inhere/php-validate). Thank you very much
 
 ## [中文说明](README.zh-CN.md)
 

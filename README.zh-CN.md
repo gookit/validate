@@ -2,7 +2,7 @@
 
 [![GitHub tag (latest SemVer)](https://img.shields.io/github/tag/gookit/validate)](https://github.com/gookit/validate)
 [![GoDoc](https://godoc.org/github.com/gookit/validate?status.svg)](https://pkg.go.dev/github.com/gookit/validate)
-[![Build Status](https://travis-ci.org/gookit/validate.svg?branch=master)](https://travis-ci.org/gookit/validate)
+![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/gookit/goutil?style=flat-square)
 [![Coverage Status](https://coveralls.io/repos/github/gookit/validate/badge.svg?branch=master)](https://coveralls.io/github/gookit/validate?branch=master)
 [![Go Report Card](https://goreportcard.com/badge/github.com/gookit/validate)](https://goreportcard.com/report/github.com/gookit/validate)
 [![Actions Status](https://github.com/gookit/validate/workflows/Unit-Tests/badge.svg)](https://github.com/gookit/validate/actions)
@@ -25,8 +25,6 @@ Go通用的数据验证与过滤库，使用简单，内置大部分常用验证
 - 可以在任何框架中使用 `validate`，例如 Gin、Echo、Chi 等
 - 支持直接使用规则来验证值 例如: `validate.Val("xyz@mail.com", "required|email")`
 - 完善的单元测试，测试覆盖率 **> 90%**
-
-> 受到 [albrow/forms](https://github.com/albrow/forms) [asaskevich/govalidator](https://github.com/asaskevich/govalidator) [inhere/php-validate](https://github.com/inhere/php-validate) 这些项目的启发. 非常感谢它们
 
 ## [English](README.md)
 
