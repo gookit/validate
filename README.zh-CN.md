@@ -186,7 +186,7 @@ import "fmt"
 import "github.com/gookit/validate"
 
 func main()  {
-	m := map[string]interface{}{
+	m := map[string]any{
 		"name":  "inhere",
 		"age":   100,
 		"oldSt": 1,
@@ -280,14 +280,14 @@ func main()  {
 
 - `Request(r *http.Request) *Validation`
 - `JSON(s string, scene ...string) *Validation`
-- `Struct(s interface{}, scene ...string) *Validation`
-- `Map(m map[string]interface{}, scene ...string) *Validation`
-- `New(data interface{}, scene ...string) *Validation` 
+- `Struct(s any, scene ...string) *Validation`
+- `Map(m map[string]any, scene ...string) *Validation`
+- `New(data any, scene ...string) *Validation` 
 
 快速创建 `DataFace` 实例：
 
-- `FromMap(m map[string]interface{}) *MapData`
-- `FromStruct(s interface{}) (*StructData, error)`
+- `FromMap(m map[string]any) *MapData`
+- `FromStruct(s any) (*StructData, error)`
 - `FromJSON(s string) (*MapData, error)`
 - `FromJSONBytes(bs []byte) (*MapData, error)`
 - `FromURLValues(values url.Values) *FormData`
@@ -296,7 +296,7 @@ func main()  {
 > 通过 `DataFace` 创建 `Validation` 
 
 ```go
-d := FromMap(map[string]interface{}{"key": "val"})
+d := FromMap(map[string]any{"key": "val"})
 v := d.Validation()
 ```
 
@@ -306,8 +306,8 @@ v := d.Validation()
 - `func (v *Validation) Filtering() bool` 应用所有过滤规则
 - `func (v *Validation) Validate() bool` 应用所有验证和过滤规则，返回是否验证成功
 - `func (v *Validation) ValidateE() Errors` 应用所有验证和过滤规则，并在失败时返回错误
-- `func (v *Validation) SafeData() map[string]interface{}` 获取所有经过验证的数据
-- `func (v *Validation) BindSafeData(ptr interface{}) error` 将验证后的安全数据绑定到一个结构体
+- `func (v *Validation) SafeData() map[string]any` 获取所有经过验证的数据
+- `func (v *Validation) BindSafeData(ptr any) error` 将验证后的安全数据绑定到一个结构体
 
 ## 更多使用
 
@@ -435,7 +435,7 @@ validate.AddGlobalMessages(map[string]string{
 - 为当前验证添加消息(_仅本次验证有效_)
 
 ```go
-v := validate.New(map[string]interface{}{
+v := validate.New(map[string]any{
     "name": "inhere",
 })
 v.StringRule("name", "required|string|minLen:7|maxLen:15")
@@ -482,12 +482,12 @@ func (f UserForm) Messages() map[string]string {
 你可以一次添加一个或者多个自定义验证器
 
 ```go
-	validate.AddValidator("myCheck0", func(val interface{}) bool {
+	validate.AddValidator("myCheck0", func(val any) bool {
 		// do validate val ...
 		return true
 	})
 	validate.AddValidators(M{
-		"myCheck1": func(val interface{}) bool {
+		"myCheck1": func(val any) bool {
 			// do validate val ...
 			return true
 		},
@@ -500,12 +500,12 @@ func (f UserForm) Messages() map[string]string {
 
 ```go
 	v := validate.Struct(u)
-	v.AddValidator("myFunc3", func(val interface{}) bool {
+	v.AddValidator("myFunc3", func(val any) bool {
 		// do validate val ...
 		return true
 	})
 	v.AddValidators(M{
-		"myFunc4": func(val interface{}) bool {
+		"myFunc4": func(val any) bool {
 			// do validate val ...
 			return true
 		},
@@ -531,12 +531,12 @@ package main
 import "github.com/gookit/validate"
 
 func init() {
-	validate.AddFilter("myToIntFilter0", func(val interface{}) int {
+	validate.AddFilter("myToIntFilter0", func(val any) int {
 		// do filtering val ...
 		return 1
 	})
 	validate.AddFilters(validate.M{
-		"myToIntFilter1": func(val interface{}) (int, error) {
+		"myToIntFilter1": func(val any) (int, error) {
 			// do filtering val ...
 			return 1, nil
 		},
@@ -556,12 +556,12 @@ import "github.com/gookit/validate"
 func main() {
 	v := validate.New(&someStrcut{})
 
-	v.AddFilter("myToIntFilter0", func(val interface{}) int {
+	v.AddFilter("myToIntFilter0", func(val any) int {
 		// do filtering val ...
 		return 1
 	})
 	v.AddFilters(validate.M{
-		"myToIntFilter1": func(val interface{}) (int, error) {
+		"myToIntFilter1": func(val any) (int, error) {
 			// do filtering val ...
 			return 1, nil
 		},
@@ -584,7 +584,7 @@ func main() {
 		Age:  0,
 	})
 
-	v.AddValidator("required_custom", func(val interface{}) bool {
+	v.AddValidator("required_custom", func(val any) bool {
 		// do check value
 		return false
 	})
@@ -607,14 +607,14 @@ import (
 // implements the binding.StructValidator
 type customValidator struct {}
 
-func (c *customValidator) ValidateStruct(ptr interface{}) error {
+func (c *customValidator) ValidateStruct(ptr any) error {
     v := validate.Struct(ptr)
     v.Validate() // 调用验证
 
     return v.Errors
 }
 
-func (c *customValidator) Engine() interface{} {
+func (c *customValidator) Engine() any {
     return nil
 }
 

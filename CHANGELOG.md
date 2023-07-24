@@ -8,14 +8,14 @@
 
 ```go
 // Gt check value greater dst value. only check for: int(X), uint(X), float(X)
-func Gt(val interface{}, dstVal int64) bool {
+func Gt(val any, dstVal int64) bool {
 ```
 
 **v2 new:**
 
 ```go
 // Gt check value greater dst value. only check for: int(X), uint(X), float(X)
-func Gt(val, dstVal interface{}) bool {
+func Gt(val, dstVal any) bool {
 	return gt(reflect.ValueOf(val), reflect.ValueOf(dstVal))
 }
 
@@ -37,7 +37,7 @@ type Validation struct {
 }
 
 	v.pool = &sync.Pool{
-		New: func() interface{} {
+		New: func() any {
 			return &Validation{
 				v: v,
 			}
@@ -50,7 +50,7 @@ type Validation struct {
 ```go
 type DataFace interface {
 	BindStruct() error
-	SafeVal(field string) interface{}
+	SafeVal(field string) any
 
 ...
 }

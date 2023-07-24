@@ -196,7 +196,7 @@ import (
 )
 
 func main()  {
-	m := map[string]interface{}{
+	m := map[string]any{
 		"name":  "inhere",
 		"age":   100,
 		"oldSt": 1,
@@ -299,16 +299,16 @@ func main()  {
 
 Quick create `Validation` instance.
 
-- `New(data interface{}, scene ...string) *Validation`
+- `New(data any, scene ...string) *Validation`
 - `Request(r *http.Request) *Validation`
 - `JSON(s string, scene ...string) *Validation`
-- `Struct(s interface{}, scene ...string) *Validation`
-- `Map(m map[string]interface{}, scene ...string) *Validation`
+- `Struct(s any, scene ...string) *Validation`
+- `Map(m map[string]any, scene ...string) *Validation`
 
 Quick create `DataFace` instance.
 
-- `FromMap(m map[string]interface{}) *MapData`
-- `FromStruct(s interface{}) (*StructData, error)`
+- `FromMap(m map[string]any) *MapData`
+- `FromStruct(s any) (*StructData, error)`
 - `FromJSON(s string) (*MapData, error)`
 - `FromJSONBytes(bs []byte) (*MapData, error)`
 - `FromURLValues(values url.Values) *FormData`
@@ -317,7 +317,7 @@ Quick create `DataFace` instance.
 > Create `Validation` from `DataFace`
 
 ```go
-d := FromMap(map[string]interface{}{"key": "val"})
+d := FromMap(map[string]any{"key": "val"})
 v := d.Validation()
 ```
 
@@ -497,7 +497,7 @@ validate.AddGlobalMessages(map[string]string{
 - Add messages for current validation
 
 ```go
-v := validate.New(map[string]interface{}{
+v := validate.New(map[string]any{
     "name": "inhere",
 })
 v.StringRule("name", "required|string|minLen:7|maxLen:15")
@@ -545,12 +545,12 @@ func (f UserForm) Messages() map[string]string {
 You can add one or more custom validators at once.
 
 ```go
-validate.AddValidator("myCheck0", func(val interface{}) bool {
+validate.AddValidator("myCheck0", func(val any) bool {
 	// do validate val ...
 	return true
 })
 validate.AddValidators(validate.M{
-	"myCheck1": func(val interface{}) bool {
+	"myCheck1": func(val any) bool {
 		// do validate val ...
 		return true
 	},
@@ -563,12 +563,12 @@ Again, you can add one or more custom validators at once.
 
 ```go
 v := validate.Struct(u)
-v.AddValidator("myFunc3", func(val interface{}) bool {
+v.AddValidator("myFunc3", func(val any) bool {
 	// do validate val ...
 	return true
 })
 v.AddValidators(validate.M{
-	"myFunc4": func(val interface{}) bool {
+	"myFunc4": func(val any) bool {
 		// do validate val ...
 		return true
 	},
@@ -594,12 +594,12 @@ package main
 import "github.com/gookit/validate"
 
 func init() {
-	validate.AddFilter("myToIntFilter0", func(val interface{}) int {
+	validate.AddFilter("myToIntFilter0", func(val any) int {
 		// do filtering val ...
 		return 1
 	})
 	validate.AddFilters(validate.M{
-		"myToIntFilter1": func(val interface{}) (int, error) {
+		"myToIntFilter1": func(val any) (int, error) {
 			// do filtering val ...
 			return 1, nil
 		},
@@ -619,12 +619,12 @@ import "github.com/gookit/validate"
 func main() {
 	v := validate.New(&someStrcut{})
 
-	v.AddFilter("myToIntFilter0", func(val interface{}) int {
+	v.AddFilter("myToIntFilter0", func(val any) int {
 		// do filtering val ...
 		return 1
 	})
 	v.AddFilters(validate.M{
-		"myToIntFilter1": func(val interface{}) (int, error) {
+		"myToIntFilter1": func(val any) (int, error) {
 			// do filtering val ...
 			return 1, nil
 		},
@@ -648,7 +648,7 @@ However, note that the validator name must start with `required`, e.g. `required
 		Age:  0,
 	})
 
-	v.AddValidator("required_custom", func(val interface{}) bool {
+	v.AddValidator("required_custom", func(val any) bool {
 		// do check value
 		return false
 	})
@@ -673,7 +673,7 @@ import (
 // implements the binding.StructValidator
 type customValidator struct {}
 
-func (c *customValidator) ValidateStruct(ptr interface{}) error {
+func (c *customValidator) ValidateStruct(ptr any) error {
     v := validate.Struct(ptr)
     v.Validate() // do validating
     
@@ -684,7 +684,7 @@ func (c *customValidator) ValidateStruct(ptr interface{}) error {
     return v.Errors
 }
 
-func (c *customValidator) Engine() interface{} {
+func (c *customValidator) Engine() any {
     return nil
 }
 
