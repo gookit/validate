@@ -171,7 +171,7 @@ func TestVariadicArgs(t *testing.T) {
 	v := New(M{
 		"age": 2,
 	})
-	v.AddValidator("checkAge", func(val interface{}, ints ...int) bool {
+	v.AddValidator("checkAge", func(val any, ints ...int) bool {
 		return Enum(val, ints)
 	})
 	v.StringRule("age", "required|checkAge:1,2,3,4")
@@ -180,7 +180,7 @@ func TestVariadicArgs(t *testing.T) {
 	v = New(M{
 		"age": 2,
 	})
-	v.AddValidator("checkAge", func(val interface{}, ints ...interface{}) bool {
+	v.AddValidator("checkAge", func(val any, ints ...any) bool {
 		return Enum(val, ints)
 	})
 	v.StringRule("age", "required|checkAge:1,2,3,4")
@@ -263,7 +263,7 @@ func TestRequired_AllItemsPassed(t *testing.T) {
 }
 
 func TestRequired_MissingField(t *testing.T) {
-	m := map[string]interface{}{
+	m := map[string]any{
 		"names": []string{"John", "Jane", "abc"},
 		"coding": []map[string]any{
 			{
@@ -351,7 +351,7 @@ func TestValidate_sliceValue_1dotStar(t *testing.T) {
 }
 
 func TestRequired_MissingParentField(t *testing.T) {
-	m := map[string]interface{}{
+	m := map[string]any{
 		"names": []string{"John", "Jane", "abc"},
 		"coding": []map[string]any{
 			{

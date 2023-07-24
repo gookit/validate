@@ -73,7 +73,7 @@ func TestValidation_max_invalidArg(t *testing.T) {
 	// v.AddRule("age", "max", []string{"a"})
 	is.False(v.Validate())
 	// is.Contains(v.Errors.String(), "cannot convert invalid to arg#1(int64)")
-	// since 1.3.2+ max, min input params is update to interface{}
+	// since 1.3.2+ max, min input params is update to any
 	is.Contains(v.Errors.String(), "max: age max value is <nil>")
 }
 
@@ -661,16 +661,16 @@ func TestAddValidator(t *testing.T) {
 		AddValidator("myCheck", func() bool { return false })
 	})
 	is.Panics(func() {
-		AddValidator("myCheck", func(val interface{}) {})
+		AddValidator("myCheck", func(val any) {})
 	})
 
 	is.Contains(Validators(), "min")
 
-	AddValidator("myCheck0", func(val interface{}) bool {
+	AddValidator("myCheck0", func(val any) bool {
 		return true
 	})
 	AddValidators(M{
-		"myCheck1": func(val interface{}) bool {
+		"myCheck1": func(val any) bool {
 			return true
 		},
 	})
@@ -686,11 +686,11 @@ func TestAddValidator(t *testing.T) {
 		v.AddValidator("myFunc2", func() {})
 	})
 
-	v.AddValidator("myFunc3", func(val interface{}) bool {
+	v.AddValidator("myFunc3", func(val any) bool {
 		return true
 	})
 	v.AddValidators(M{
-		"myFunc4": func(val interface{}) bool {
+		"myFunc4": func(val any) bool {
 			return true
 		},
 	})

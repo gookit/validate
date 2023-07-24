@@ -17,8 +17,8 @@ import (
 	"github.com/gookit/goutil/reflects"
 )
 
-// M is short name for map[string]interface{}
-type M map[string]interface{}
+// M is short name for map[string]any
+type M map[string]any
 
 // MS is short name for map[string]string
 type MS map[string]string
@@ -151,11 +151,11 @@ func newValidation(data DataFace) *Validation {
 		// trans: StdTranslator,
 		trans: NewTranslator(),
 		// validated data
-		safeData: make(map[string]interface{}),
+		safeData: make(map[string]any),
 		// validator names
 		validators: make(map[string]int8),
 		// filtered data
-		filteredData: make(map[string]interface{}),
+		filteredData: make(map[string]any),
 		// default config
 		StopOnError: gOpt.StopOnError,
 		SkipOnEmpty: gOpt.SkipOnEmpty,
@@ -192,7 +192,7 @@ func newValidation(data DataFace) *Validation {
 	}
 
 	// v.pool = &sync.Pool{
-	// 	New: func() interface{} {
+	// 	New: func() any {
 	// 		return &Validation{
 	// 			v: v,
 	// 		}
@@ -209,16 +209,16 @@ func newValidation(data DataFace) *Validation {
 // New create a Validation instance
 // data support:
 // - DataFace
-// - M/map[string]interface{}
+// - M/map[string]any
 // - SValues/url.Values/map[string][]string
 // - struct ptr
-func New(data interface{}, scene ...string) *Validation {
+func New(data any, scene ...string) *Validation {
 	switch td := data.(type) {
 	case DataFace:
 		return NewValidation(td, scene...)
 	case M:
 		return FromMap(td).Create().SetScene(scene...)
-	case map[string]interface{}:
+	case map[string]any:
 		return FromMap(td).Create().SetScene(scene...)
 	case SValues:
 		return FromURLValues(url.Values(td)).Create().SetScene(scene...)
@@ -232,18 +232,18 @@ func New(data interface{}, scene ...string) *Validation {
 }
 
 // NewWithOptions new Validation with options
-// func NewWithOptions(data interface{}, fn func(opt *GlobalOption)) *Validation {
+// func NewWithOptions(data any, fn func(opt *GlobalOption)) *Validation {
 // 	fn(gOpt)
 // 	return New(data)
 // }
 
 // Map validation create
-func Map(m map[string]interface{}, scene ...string) *Validation {
+func Map(m map[string]any, scene ...string) *Validation {
 	return FromMap(m).Create().SetScene(scene...)
 }
 
 // MapWithRules validation create and with rules
-// func MapWithRules(m map[string]interface{}, rules MS) *Validation {
+// func MapWithRules(m map[string]any, rules MS) *Validation {
 // 	return FromMap(m).Create().StringRules(rules)
 // }
 
@@ -253,7 +253,7 @@ func JSON(s string, scene ...string) *Validation {
 }
 
 // Struct validation create
-func Struct(s interface{}, scene ...string) *Validation {
+func Struct(s any, scene ...string) *Validation {
 	return mustNewValidation(FromStruct(s)).SetScene(scene...)
 }
 
@@ -278,7 +278,7 @@ func mustNewValidation(d DataFace, err error) *Validation {
  *************************************************************/
 
 // FromMap build data instance.
-func FromMap(m map[string]interface{}) *MapData {
+func FromMap(m map[string]any) *MapData {
 	data := &MapData{}
 	if m != nil {
 		data.Map = m
@@ -294,7 +294,7 @@ func FromJSON(s string) (*MapData, error) {
 
 // FromJSONBytes string build data instance.
 func FromJSONBytes(bs []byte) (*MapData, error) {
-	mp := map[string]interface{}{}
+	mp := map[string]any{}
 	if err := json.Unmarshal(bs, &mp); err != nil {
 		return nil, err
 	}

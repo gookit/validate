@@ -55,7 +55,7 @@ type Validation struct {
 	// CachingRules bool
 
 	// save user custom set default values
-	defValues map[string]interface{}
+	defValues map[string]any
 	// mark has error occurs
 	hasError bool
 	// mark is filtered
@@ -109,8 +109,8 @@ func (v *Validation) ResetResult() {
 	v.hasFiltered = false
 	v.hasValidated = false
 	// result data
-	v.safeData = make(map[string]interface{})
-	v.filteredData = make(map[string]interface{})
+	v.safeData = make(map[string]any)
+	v.filteredData = make(map[string]any)
 }
 
 // Reset the Validation instance.
@@ -184,7 +184,7 @@ func (v *Validation) SetScene(scene ...string) *Validation {
  *************************************************************/
 
 // AddValidators to the Validation
-func (v *Validation) AddValidators(m map[string]interface{}) *Validation {
+func (v *Validation) AddValidators(m map[string]any) *Validation {
 	for name, checkFunc := range m {
 		v.AddValidator(name, checkFunc)
 	}
@@ -194,11 +194,11 @@ func (v *Validation) AddValidators(m map[string]interface{}) *Validation {
 // AddValidator to the Validation. checkFunc must return a bool.
 // Usage:
 //
-//	v.AddValidator("myFunc", func(val interface{}) bool {
+//	v.AddValidator("myFunc", func(val any) bool {
 //		// do validate val ...
 //		return true
 //	})
-func (v *Validation) AddValidator(name string, checkFunc interface{}) *Validation {
+func (v *Validation) AddValidator(name string, checkFunc any) *Validation {
 	fv := checkValidatorFunc(name, checkFunc)
 
 	v.validators[name] = 2 // custom
@@ -353,7 +353,7 @@ func (v *Validation) AddError(field, validator, msg string) {
 }
 
 // AddErrorf add a formatted error message
-func (v *Validation) AddErrorf(field, msgFormat string, args ...interface{}) {
+func (v *Validation) AddErrorf(field, msgFormat string, args ...any) {
 	v.AddError(field, validateError, fmt.Sprintf(msgFormat, args...))
 }
 
@@ -393,7 +393,7 @@ func (v *Validation) RawVal(key string) any {
 // try to get value by key.
 //
 // If v.data is StructData, will return zero check
-func (v *Validation) tryGet(key string) (val interface{}, exist, zero bool) {
+func (v *Validation) tryGet(key string) (val any, exist, zero bool) {
 	if v.data == nil {
 		return
 	}
@@ -424,7 +424,7 @@ func (v *Validation) tryGet(key string) (val interface{}, exist, zero bool) {
 }
 
 // Get value by key.
-func (v *Validation) Get(key string) (val interface{}, exist bool) {
+func (v *Validation) Get(key string) (val any, exist bool) {
 	val, exist, _ = v.tryGet(key)
 	return
 }
@@ -432,7 +432,7 @@ func (v *Validation) Get(key string) (val interface{}, exist bool) {
 // GetWithDefault get field value by key.
 //
 // On not found, if it has default value, will return default-value.
-func (v *Validation) GetWithDefault(key string) (val interface{}, exist, isDefault bool) {
+func (v *Validation) GetWithDefault(key string) (val any, exist, isDefault bool) {
 	var zero bool
 	val, exist, zero = v.tryGet(key)
 	if exist && !zero {
@@ -448,12 +448,12 @@ func (v *Validation) GetWithDefault(key string) (val interface{}, exist, isDefau
 }
 
 // Filtered get filtered value by key
-func (v *Validation) Filtered(key string) interface{} {
+func (v *Validation) Filtered(key string) any {
 	return v.filteredData[key]
 }
 
 // Safe get safe value by key
-func (v *Validation) Safe(key string) (val interface{}, ok bool) {
+func (v *Validation) Safe(key string) (val any, ok bool) {
 	if v.data == nil { // check input data
 		return
 	}
@@ -463,24 +463,24 @@ func (v *Validation) Safe(key string) (val interface{}, ok bool) {
 }
 
 // SafeVal get safe value by key
-func (v *Validation) SafeVal(key string) interface{} {
+func (v *Validation) SafeVal(key string) any {
 	val, _ := v.Safe(key)
 	return val
 }
 
 // GetSafe get safe value by key
-func (v *Validation) GetSafe(key string) interface{} {
+func (v *Validation) GetSafe(key string) any {
 	val, _ := v.Safe(key)
 	return val
 }
 
 // BindStruct binding safe data to an struct.
-func (v *Validation) BindStruct(ptr interface{}) error {
+func (v *Validation) BindStruct(ptr any) error {
 	return v.BindSafeData(ptr)
 }
 
 // BindSafeData binding safe data to an struct.
-func (v *Validation) BindSafeData(ptr interface{}) error {
+func (v *Validation) BindSafeData(ptr any) error {
 	if len(v.safeData) == 0 { // no safe data.
 		return nil
 	}
@@ -495,7 +495,7 @@ func (v *Validation) BindSafeData(ptr interface{}) error {
 }
 
 // Set value by key
-func (v *Validation) Set(field string, val interface{}) error {
+func (v *Validation) Set(field string, val any) error {
 	// check input data
 	if v.data == nil {
 		return ErrEmptyData
@@ -506,7 +506,7 @@ func (v *Validation) Set(field string, val interface{}) error {
 }
 
 // only update set value by key for struct
-func (v *Validation) updateValue(field string, val interface{}) (interface{}, error) {
+func (v *Validation) updateValue(field string, val any) (any, error) {
 	// data source is struct
 	if v.data.Type() == sourceStruct {
 		return v.data.Set(strings.TrimSuffix(field, ".*"), val)
@@ -517,16 +517,16 @@ func (v *Validation) updateValue(field string, val interface{}) (interface{}, er
 }
 
 // SetDefValue set a default value of given field
-func (v *Validation) SetDefValue(field string, val interface{}) {
+func (v *Validation) SetDefValue(field string, val any) {
 	if v.defValues == nil {
-		v.defValues = make(map[string]interface{})
+		v.defValues = make(map[string]any)
 	}
 
 	v.defValues[field] = val
 }
 
 // GetDefValue get default value of the field
-func (v *Validation) GetDefValue(field string) (interface{}, bool) {
+func (v *Validation) GetDefValue(field string) (any, bool) {
 	defVal, ok := v.defValues[field]
 	return defVal, ok
 }

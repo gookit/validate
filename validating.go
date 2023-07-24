@@ -69,7 +69,7 @@ func (v *Validation) Validate(scene ...string) bool {
 	v.hasValidated = true
 	if v.hasError {
 		// clear safe data on error.
-		v.safeData = make(map[string]interface{})
+		v.safeData = make(map[string]any)
 	}
 
 	return v.IsSuccess()
@@ -238,7 +238,7 @@ type value struct {
 //
 //   - field: the field name. eg: "name", "details.sub.*.field"
 //   - name: the validator name. eg: "required", "min"
-func (r *Rule) valueValidate(field, name string, val interface{}, v *Validation) (ok bool) {
+func (r *Rule) valueValidate(field, name string, val any, v *Validation) (ok bool) {
 	// "-" OR "safe" mark field value always is safe.
 	if name == "-" || name == "safe" {
 		return true
@@ -348,7 +348,7 @@ func (r *Rule) valueValidate(field, name string, val interface{}, v *Validation)
 }
 
 // convert input field value type, is validator func first argument.
-func convValAsFuncArg0Type(arg0Kind, valKind reflect.Kind, val interface{}) (interface{}, bool) {
+func convValAsFuncArg0Type(arg0Kind, valKind reflect.Kind, val any) (any, bool) {
 	// ak, err := basicKind(rftVal)
 	bk, err := basicKindV2(valKind)
 	if err != nil {
@@ -363,7 +363,7 @@ func convValAsFuncArg0Type(arg0Kind, valKind reflect.Kind, val interface{}) (int
 	return val, true
 }
 
-func callValidator(v *Validation, fm *funcMeta, field string, val interface{}, args []interface{}) (ok bool) {
+func callValidator(v *Validation, fm *funcMeta, field string, val any, args []any) (ok bool) {
 	// use `switch` can avoid using reflection to call methods and improve speed
 	// fm.name please see pkg var: validatorValues
 	switch fm.name {
@@ -441,7 +441,7 @@ func callValidator(v *Validation, fm *funcMeta, field string, val interface{}, a
 }
 
 // convert args data type
-func convertArgsType(v *Validation, fm *funcMeta, field string, args []interface{}) (ok bool) {
+func convertArgsType(v *Validation, fm *funcMeta, field string, args []any) (ok bool) {
 	if len(args) == 0 {
 		return true
 	}
@@ -457,7 +457,7 @@ func convertArgsType(v *Validation, fm *funcMeta, field string, args []interface
 		lastTyp = getVariadicKind(ft.In(lastArgIndex))
 	}
 
-	// only one args and type is interface{}
+	// only one args and type is any
 	if lastArgIndex == 1 && lastTyp == reflect.Interface {
 		return true
 	}
@@ -524,12 +524,12 @@ func convertArgsType(v *Validation, fm *funcMeta, field string, args []interface
 	return true
 }
 
-func callValidatorValue(fv reflect.Value, val interface{}, args []interface{}) bool {
+func callValidatorValue(fv reflect.Value, val any, args []any) bool {
 	// build params for the validator func.
 	argNum := len(args)
 	argIn := make([]reflect.Value, argNum+1)
 
-	// if val is interface{}(nil): rftVal.IsValid()==false
+	// if val is any(nil): rftVal.IsValid()==false
 	// if val is typed(nil): rftVal.IsValid()==true
 	rftVal := reflect.ValueOf(val)
 	// fix: #125 fv.Call() will panic on rftVal.Kind() is Invalid

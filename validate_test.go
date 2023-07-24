@@ -50,7 +50,7 @@ func ExampleStruct() {
 
 func TestUtil_Func_valueToInt64(t *testing.T) {
 	noErrTests := []struct {
-		val    interface{}
+		val    any
 		strict bool
 		want   int64
 	}{
@@ -68,7 +68,7 @@ func TestUtil_Func_valueToInt64(t *testing.T) {
 
 func TestUtil_Func_getVariadicKind(t *testing.T) {
 	noErrTests := []struct {
-		val  interface{}
+		val  any
 		want reflect.Kind
 	}{
 		{"invalid", reflect.Invalid},
