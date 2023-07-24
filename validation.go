@@ -374,7 +374,7 @@ func (v *Validation) convArgTypeError(field, name string, argKind, wantKind refl
  *************************************************************/
 
 // Raw value get by key
-func (v *Validation) Raw(key string) (interface{}, bool) {
+func (v *Validation) Raw(key string) (any, bool) {
 	if v.data == nil { // check input data
 		return nil, false
 	}
@@ -382,7 +382,7 @@ func (v *Validation) Raw(key string) (interface{}, bool) {
 }
 
 // RawVal value get by key
-func (v *Validation) RawVal(key string) interface{} {
+func (v *Validation) RawVal(key string) any {
 	if v.data == nil { // check input data
 		return nil
 	}

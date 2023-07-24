@@ -36,20 +36,20 @@ type Rule struct {
 	// real validator name is requiredXXX validators
 	nameNotRequired bool
 	// arguments for the validator
-	arguments []interface{}
+	arguments []any
 	// --- some hooks function
 	// has beforeFunc. if return false, skip validate current rule
-	beforeFunc func(v *Validation) bool // func (val interface{}) bool
+	beforeFunc func(v *Validation) bool // func (val any) bool
 	// you can custom filter func
-	filterFunc func(val interface{}) (interface{}, error)
+	filterFunc func(val any) (any, error)
 	// custom check function's mate info
 	checkFuncMeta *funcMeta
 	// custom check is empty. TODO
-	// emptyChecker func(val interface{}) bool
+	// emptyChecker func(val any) bool
 }
 
 // NewRule create new Rule instance
-func NewRule(fields, validator string, args ...interface{}) *Rule {
+func NewRule(fields, validator string, args ...any) *Rule {
 	return &Rule{
 		fields: stringSplit(fields, ","),
 		// validator args
@@ -75,12 +75,12 @@ func (r *Rule) SetSkipEmpty(skipEmpty bool) {
 }
 
 // SetDefValue for the rule
-// func (r *Rule) SetDefValue(defValue interface{}) {
+// func (r *Rule) SetDefValue(defValue any) {
 // 	r.defValue = defValue
 // }
 
 // SetCheckFunc set custom validate func.
-func (r *Rule) SetCheckFunc(checkFunc interface{}) *Rule {
+func (r *Rule) SetCheckFunc(checkFunc any) *Rule {
 	var name string
 	if r.validator != "" {
 		name = "rule_" + r.validator
@@ -94,7 +94,7 @@ func (r *Rule) SetCheckFunc(checkFunc interface{}) *Rule {
 }
 
 // SetFilterFunc for the rule
-func (r *Rule) SetFilterFunc(fn func(val interface{}) (interface{}, error)) *Rule {
+func (r *Rule) SetFilterFunc(fn func(val any) (any, error)) *Rule {
 	r.filterFunc = fn
 	return r
 }
@@ -243,12 +243,12 @@ func (v *Validation) ConfigRules(mp MS) *Validation {
 }
 
 // AddRule for current validation
-func (v *Validation) AddRule(fields, validator string, args ...interface{}) *Rule {
+func (v *Validation) AddRule(fields, validator string, args ...any) *Rule {
 	return v.addOneRule(fields, validator, ValidatorName(validator), args)
 }
 
 // add one Rule for current validation
-func (v *Validation) addOneRule(fields, validator, realName string, args []interface{}) *Rule {
+func (v *Validation) addOneRule(fields, validator, realName string, args []any) *Rule {
 	rule := NewRule(fields, validator, args...)
 
 	// init some settings

@@ -20,7 +20,7 @@ func TestRule_basic(t *testing.T) {
 	// new rule
 	r := NewRule("name", "minLen", 6)
 	r.SetScene("test") // only validate on scene "test"
-	r.SetFilterFunc(func(val interface{}) (interface{}, error) {
+	r.SetFilterFunc(func(val any) (any, error) {
 		return val.(string) + "-HI", nil
 	})
 	r.SetBeforeFunc(func(v *Validation) bool {
@@ -81,7 +81,7 @@ func TestRule_SetFilterFunc(t *testing.T) {
 	})
 
 	v.AddRule("age", "int", 1, 100).
-		SetFilterFunc(func(val interface{}) (i interface{}, e error) {
+		SetFilterFunc(func(val any) (i any, e error) {
 			return filter.Int(val)
 		})
 

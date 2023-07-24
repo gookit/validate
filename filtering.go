@@ -16,14 +16,14 @@ var (
 )
 
 // AddFilters add global filters
-func AddFilters(m map[string]interface{}) {
+func AddFilters(m map[string]any) {
 	for name, filterFunc := range m {
 		AddFilter(name, filterFunc)
 	}
 }
 
 // AddFilter add global filter to the pkg.
-func AddFilter(name string, filterFunc interface{}) {
+func AddFilter(name string, filterFunc any) {
 	if filterValues == nil {
 		filterValues = make(map[string]reflect.Value)
 	}
@@ -36,14 +36,14 @@ func AddFilter(name string, filterFunc interface{}) {
  *************************************************************/
 
 // AddFilters to the Validation
-func (v *Validation) AddFilters(m map[string]interface{}) {
+func (v *Validation) AddFilters(m map[string]any) {
 	for name, filterFunc := range m {
 		v.AddFilter(name, filterFunc)
 	}
 }
 
 // AddFilter to the Validation.
-func (v *Validation) AddFilter(name string, filterFunc interface{}) {
+func (v *Validation) AddFilter(name string, filterFunc any) {
 	if v.filterValues == nil {
 		v.filterValues = make(map[string]reflect.Value)
 	}
@@ -197,7 +197,7 @@ func (r *FilterRule) Fields() []string {
 	return r.fields
 }
 
-func callCustomFilter(fv reflect.Value, val interface{}, args []string) (interface{}, error) {
+func callCustomFilter(fv reflect.Value, val any, args []string) (any, error) {
 	var rs []reflect.Value
 	if len(args) > 0 {
 		rs = CallByValue(fv, buildArgs(val, strings2Args(args))...)

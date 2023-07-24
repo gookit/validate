@@ -198,7 +198,7 @@ func TestIssues_34(t *testing.T) {
 	v := validate.New(validate.M{
 		"age": s1,
 	})
-	v.AddValidator("checkAge", func(val interface{}, ints ...int) bool {
+	v.AddValidator("checkAge", func(val any, ints ...int) bool {
 		return validate.Enum(int32(val.(STATUS)), ints)
 	})
 	v.StringRule("age", "required|checkAge:1,2,3,4")
@@ -268,7 +268,7 @@ func TestIssues36(t *testing.T) {
 // https://github.com/gookit/validate/issues/60
 func TestIssues_60(t *testing.T) {
 	is := assert.New(t)
-	m := map[string]interface{}{
+	m := map[string]any{
 		"title": "1",
 	}
 
@@ -581,7 +581,7 @@ func TestIssue_78(t *testing.T) {
 
 // https://gitee.com/inhere/validate/issues/I36T2B
 func TestIssues_I36T2B(t *testing.T) {
-	m := map[string]interface{}{
+	m := map[string]any{
 		"a": 0,
 	}
 
@@ -610,7 +610,7 @@ func TestIssues_I36T2B(t *testing.T) {
 
 // https://gitee.com/inhere/validate/issues/I3B3AV
 func TestIssues_I3B3AV(t *testing.T) {
-	m := map[string]interface{}{
+	m := map[string]any{
 		"a": 0.01,
 		"b": float32(0.03),
 	}
@@ -624,7 +624,7 @@ func TestIssues_I3B3AV(t *testing.T) {
 
 // https://github.com/gookit/validate/issues/92
 func TestIssues_92(t *testing.T) {
-	m := map[string]interface{}{
+	m := map[string]any{
 		"t": 1.1,
 	}
 
@@ -777,7 +777,7 @@ func TestIssues_104(t *testing.T) {
 
 // https://github.com/gookit/validate/issues/107
 func TestIssues_107(t *testing.T) {
-	taFilter := func(val interface{}) int64 {
+	taFilter := func(val any) int64 {
 		if val != nil {
 			// log.WithFields(log.Fields{"value": val}).Info("value should be other than nil")
 			return int64(val.(float64))
@@ -787,7 +787,7 @@ func TestIssues_107(t *testing.T) {
 		return -1
 	}
 
-	v := validate.Map(map[string]interface{}{
+	v := validate.Map(map[string]any{
 		"tip_amount": float64(12),
 	})
 	v.AddFilter("tip_amount_filter", taFilter)
@@ -809,7 +809,7 @@ func TestIssues_107(t *testing.T) {
 
 // https://github.com/gookit/validate/issues/111
 func TestIssues_111(t *testing.T) {
-	v := validate.New(map[string]interface{}{
+	v := validate.New(map[string]any{
 		"username":  "inhere",
 		"password":  "h9i8tssx9153",
 		"password2": "h9i8XYZ9153",
@@ -859,7 +859,7 @@ func TestIssues_120(t *testing.T) {
 
 // https://github.com/gookit/validate/issues/124
 func TestIssue_124(t *testing.T) {
-	m := map[string]interface{}{
+	m := map[string]any{
 		"names": []string{"John", "Jane", "abc"},
 		"address": []map[string]string{
 			{"number": "1b", "country": "en"},
@@ -900,19 +900,19 @@ func TestIssue_125(t *testing.T) {
 	validate.Config(func(opt *validate.GlobalOption) {
 		opt.SkipOnEmpty = false
 	})
-	validate.AddValidator("custom", func(value interface{}) bool {
+	validate.AddValidator("custom", func(value any) bool {
 		// validation...
 		return true
 	})
 
-	v := validate.Map(map[string]interface{}{
+	v := validate.Map(map[string]any{
 		"field": nil,
 	})
 	v.StringRule("field", "custom")
 	assert.True(t, v.Validate())
 
 	var val *int
-	v2 := validate.Map(map[string]interface{}{
+	v2 := validate.Map(map[string]any{
 		"field": val,
 	})
 	v2.StringRule("field", "custom")
@@ -1014,7 +1014,7 @@ func TestIssue_143(t *testing.T) {
 		Name: "tom",
 		Age:  nil,
 	})
-	v.AddValidator("required_custom", func(val interface{}) bool {
+	v.AddValidator("required_custom", func(val any) bool {
 		return !validate.IsNilObj(val)
 	})
 
@@ -1028,7 +1028,7 @@ func TestIssue_143(t *testing.T) {
 		Name: "tom",
 		Age:  &age,
 	})
-	v.AddValidator("required_custom", func(val interface{}) bool {
+	v.AddValidator("required_custom", func(val any) bool {
 		return !validate.IsNilObj(val)
 	})
 
@@ -1041,7 +1041,7 @@ func TestIssue_143(t *testing.T) {
 		Name: "tom",
 		Age:  &age,
 	})
-	v.AddValidator("required_custom", func(val interface{}) bool {
+	v.AddValidator("required_custom", func(val any) bool {
 		return !validate.IsNilObj(val)
 	})
 
@@ -1054,7 +1054,7 @@ func TestIssue_143(t *testing.T) {
 		Name: "tom",
 		Age:  &age,
 	})
-	v.AddValidator("required_custom", func(val interface{}) bool {
+	v.AddValidator("required_custom", func(val any) bool {
 		return !validate.IsNilObj(val)
 	})
 	v.AddRule("age", "min", 30)
@@ -1068,7 +1068,7 @@ func TestIssue_143(t *testing.T) {
 		Name: "tom",
 		Age:  &age,
 	})
-	v.AddValidator("required_custom", func(val interface{}) bool {
+	v.AddValidator("required_custom", func(val any) bool {
 		return !validate.IsNilObj(val)
 	})
 	v.AddRule("age", "min", 30)
@@ -1283,4 +1283,39 @@ func TestIssues_213(t *testing.T) {
 	v = validate.Struct(f) // nolint:varnamelen
 	assert.False(t, v.Validate())
 	fmt.Println(v.Errors)
+}
+
+// https://github.com/gookit/validate/issues/217
+func TestIssues_217(t *testing.T) {
+	type Sample struct {
+		Val *bool `validate:"required"`
+	}
+
+	type Nested struct {
+		Samples []Sample `validate:"slice"`
+	}
+
+	val, val2 := false, true
+	data := Sample{Val: &val}
+	data2 := Sample{Val: &val2}
+	data3 := Sample{Val: nil}
+
+	data4 := Nested{Samples: []Sample{data, data2}}
+
+	v4 := validate.Struct(data4)
+	ok4 := v4.Validate()
+	fmt.Println(ok4, v4.Errors) // TODO Should not fail and fails. required check bool value
+
+	v1 := validate.Struct(data)
+	ok1 := v1.Validate()
+	assert.True(t, ok1) // Should not fail and does not fail.
+
+	v2 := validate.Struct(data2)
+	ok2 := v2.Validate()
+	assert.True(t, ok2) // Should not fail and does not fail.
+
+	v3 := validate.Struct(data3)
+	ok3 := v3.Validate()
+	assert.False(t, ok3) // Should fail and fails.
+
 }

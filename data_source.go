@@ -43,9 +43,9 @@ var (
 
 type (
 	// MarshalFunc define
-	MarshalFunc func(v interface{}) ([]byte, error)
+	MarshalFunc func(v any) ([]byte, error)
 	// UnmarshalFunc define
-	UnmarshalFunc func(data []byte, ptr interface{}) error
+	UnmarshalFunc func(data []byte, ptr any) error
 )
 
 // DataFace data source interface definition
@@ -56,12 +56,12 @@ type (
 //   - struct
 type DataFace interface {
 	Type() uint8
-	Src() interface{}
-	Get(key string) (val interface{}, exist bool)
+	Src() any
+	Get(key string) (val any, exist bool)
 	// TryGet value by key.
 	// if source data is struct, will return zero check
-	TryGet(key string) (val interface{}, exist, zero bool)
-	Set(field string, val interface{}) (interface{}, error)
+	TryGet(key string) (val any, exist, zero bool)
+	Set(field string, val any) (any, error)
 	// Create validation instance create func
 	Create(err ...error) *Validation
 	Validation(err ...error) *Validation
@@ -74,14 +74,14 @@ type DataFace interface {
 // MapData definition
 type MapData struct {
 	// Map the source map data
-	Map map[string]interface{}
+	Map map[string]any
 	// from reflect Map
 	value reflect.Value
 	// bodyJSON from the original JSON bytes/string.
 	// available for FromJSONBytes(), FormJSON().
 	bodyJSON []byte
 	// TODO map field value cache by key path
-	// cache map[string]interface{}
+	// cache map[string]any
 }
 
 /*************************************************************
@@ -89,7 +89,7 @@ type MapData struct {
  *************************************************************/
 
 // Src get
-func (d *MapData) Src() interface{} {
+func (d *MapData) Src() any {
 	return d.Map
 }
 
@@ -99,13 +99,13 @@ func (d *MapData) Type() uint8 {
 }
 
 // Set value by key
-func (d *MapData) Set(field string, val interface{}) (interface{}, error) {
+func (d *MapData) Set(field string, val any) (any, error) {
 	d.Map[field] = val
 	return val, nil
 }
 
 // Get value by key. support get value by path.
-func (d *MapData) Get(field string) (interface{}, bool) {
+func (d *MapData) Get(field string) (any, bool) {
 	// if fv, ok := d.fields[field]; ok {
 	// 	return fv, true
 	// }
@@ -114,7 +114,7 @@ func (d *MapData) Get(field string) (interface{}, bool) {
 }
 
 // TryGet value by key
-func (d *MapData) TryGet(field string) (val interface{}, exist, zero bool) {
+func (d *MapData) TryGet(field string) (val any, exist, zero bool) {
 	val, exist = maputil.GetByPath(field, d.Map)
 	return
 }
@@ -134,7 +134,7 @@ func (d *MapData) Validation(err ...error) *Validation {
 
 // BindJSON binds v to the JSON data in the request body.
 // It calls json.Unmarshal and sets the value of v.
-func (d *MapData) BindJSON(ptr interface{}) error {
+func (d *MapData) BindJSON(ptr any) error {
 	if len(d.bodyJSON) == 0 {
 		return nil
 	}
@@ -187,7 +187,7 @@ type CustomMessagesFace interface {
 // more struct tags define please see GlobalOption
 type StructData struct {
 	// source struct data, from user setting
-	src interface{}
+	src any
 	// max depth for parse sub-struct. TODO WIP ...
 	// depth int
 	// from reflect source Struct
@@ -200,7 +200,7 @@ type StructData struct {
 	// cache field reflect value info. key is path. eg: top.sub
 	fieldValues map[string]reflect.Value
 	// TODO field reflect values cache
-	// fieldRftValues map[string]interface{}
+	// fieldRftValues map[string]any
 	// FilterTag name in the struct tags.
 	//
 	// see GlobalOption.FilterTag
@@ -226,7 +226,7 @@ var (
 )
 
 // Src get
-func (d *StructData) Src() interface{} {
+func (d *StructData) Src() any {
 	return d.src
 }
 
@@ -494,19 +494,20 @@ func (d *StructData) loadMessagesFromTag(trans *Translator, field, vRule, vMsg s
  *************************************************************/
 
 // Get value by field name. support get sub-value by path.
-func (d *StructData) Get(field string) (val interface{}, exist bool) {
+func (d *StructData) Get(field string) (val any, exist bool) {
 	val, exist, _ = d.TryGet(field)
 	return
 }
 
 // TryGet value by field name. support get sub-value by path.
-func (d *StructData) TryGet(field string) (val interface{}, exist, zero bool) {
+func (d *StructData) TryGet(field string) (val any, exist, zero bool) {
 	field = strutil.UpperFirst(field)
 	// try read from cache
 	if fv, ok := d.fieldValues[field]; ok {
 		return fv.Interface(), true, fv.IsZero()
 	}
 
+	// var isPtr bool
 	var fv reflect.Value
 	// want to get sub struct field.
 	if strings.IndexByte(field, '.') > 0 {
@@ -549,6 +550,7 @@ func (d *StructData) TryGet(field string) (val interface{}, exist, zero bool) {
 				return
 			}
 
+			// isPtr = fv.Kind() == reflect.Pointer
 			fv = removeValuePtr(fv)
 			if !fv.IsValid() {
 				return
@@ -574,7 +576,7 @@ func (d *StructData) TryGet(field string) (val interface{}, exist, zero bool) {
 		}
 
 		// is it a pointer
-		if fv.Kind() == reflect.Ptr {
+		if fv.Kind() == reflect.Pointer {
 			if fv.IsNil() { // fix: top-field is nil
 				return
 			}
@@ -593,6 +595,11 @@ func (d *StructData) TryGet(field string) (val interface{}, exist, zero bool) {
 
 		// cache field value info
 		d.fieldValues[field] = fv
+		// isZero := fv.IsZero()
+		// if isPtr {
+		// 	isZero = fv.Elem().IsZero()
+		// }
+
 		return fv.Interface(), true, fv.IsZero()
 	}
 	return
@@ -601,7 +608,7 @@ func (d *StructData) TryGet(field string) (val interface{}, exist, zero bool) {
 // Set value by field name.
 //
 // Notice: `StructData.src` the incoming struct must be a pointer to set the value
-func (d *StructData) Set(field string, val interface{}) (newVal interface{}, err error) {
+func (d *StructData) Set(field string, val any) (newVal any, err error) {
 	field = strutil.UpperFirst(field)
 	if !d.HasField(field) { // field not found
 		return nil, ErrNoField
@@ -728,7 +735,7 @@ func newFormData() *FormData {
  *************************************************************/
 
 // Src data get
-func (d *FormData) Src() interface{} {
+func (d *FormData) Src() any {
 	return d.Form
 }
 
@@ -797,7 +804,7 @@ func (d *FormData) Encode() string {
 }
 
 // Set sets the key to value. It replaces any existing values.
-func (d *FormData) Set(field string, val interface{}) (newVal interface{}, err error) {
+func (d *FormData) Set(field string, val any) (newVal any, err error) {
 	newVal = val
 	switch tpVal := val.(type) {
 	case string:
@@ -812,13 +819,13 @@ func (d *FormData) Set(field string, val interface{}) (newVal interface{}, err e
 }
 
 // TryGet value by key
-func (d FormData) TryGet(key string) (val interface{}, exist, zero bool) {
+func (d FormData) TryGet(key string) (val any, exist, zero bool) {
 	val, exist = d.Get(key)
 	return
 }
 
 // Get value by key
-func (d FormData) Get(key string) (interface{}, bool) {
+func (d FormData) Get(key string) (any, bool) {
 	// get form value
 	if vs, ok := d.Form[key]; ok && len(vs) > 0 {
 		return vs[0], true

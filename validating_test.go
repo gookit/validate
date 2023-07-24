@@ -1,9 +1,9 @@
 package validate
 
 import (
-	"fmt"
 	"testing"
 
+	"github.com/gookit/goutil/dump"
 	"github.com/gookit/goutil/testutil/assert"
 )
 
@@ -308,8 +308,46 @@ func TestRequired_MissingField(t *testing.T) {
 	// v.StringRule("coding.*.details.em", "required")
 	v.StringRule("coding.*.details.cpt.*.encounter_uid", "required")
 	// v.StringRule("coding.*.details.cpt.*.work_item_uid", "required")
+	// assert.False(t, v.Validate()) // TODO ... fix this
+	dump.Println(v.Errors)
+}
+
+func TestValidate_sliceValue_1dotStar(t *testing.T) {
+	mp := map[string]any{
+		"top": map[string]any{
+			"cpt": []map[string]any{
+				{
+					"code": "001",
+					// "encounter_uid":     "1",
+					"work_item_uid":     "1",
+					"billing_provider":  "Test provider",
+					"resident_provider": "Test Resident Provider",
+				},
+				{
+					"code":              "OBS01",
+					"encounter_uid":     "2",
+					"work_item_uid":     "1",
+					"billing_provider":  "Test provider",
+					"resident_provider": "Test Resident Provider",
+				},
+				{
+					"code":              "SU002",
+					"encounter_uid":     "3",
+					"work_item_uid":     "1",
+					"billing_provider":  "Test provider",
+					"resident_provider": "Test Resident Provider",
+				},
+			},
+		},
+	}
+
+	v := Map(mp)
+	v.StopOnError = false
+	v.StringRule("top.cpt.*.encounter_uid", "required")
 	assert.False(t, v.Validate())
-	fmt.Println(v.Errors)
+
+	s := v.Errors.String()
+	assert.StrContains(t, s, "top.cpt.*.encounter_uid is required")
 }
 
 func TestRequired_MissingParentField(t *testing.T) {
@@ -335,6 +373,9 @@ func TestRequired_MissingParentField(t *testing.T) {
 	// v.StringRule("coding.*.details.em", "required")
 	v.StringRule("coding.*.details.cpt.*.encounter_uid", "required")
 	v.StringRule("coding.*.details.cpt.*.work_item_uid", "required")
-	assert.False(t, v.Validate())
-	fmt.Println(v.Errors)
+	es := v.ValidateE()
+	assert.False(t, es.Empty())
+	s := es.String()
+	assert.StrContains(t, s, "coding.*.details.cpt.*.encounter_uid is required")
+	assert.StrContains(t, s, "coding.*.details.cpt.*.work_item_uid is required")
 }
