@@ -55,7 +55,7 @@ jobs:
           uses: WillAbides/setup-go-faster@v1.8.0
           timeout-minutes: 3
           with:
-            go-version: 1.19
+            go-version: 1.20
 
         - name: golangci-lint
           uses: golangci/golangci-lint-action@v3
@@ -65,7 +65,7 @@ jobs:
 
   # notifies that all test jobs are finished.
   finish:
-    needs: [test, lint]
+    needs: [test]
     runs-on: ubuntu-latest
     steps:
       - uses: shogo82148/actions-goveralls@v1

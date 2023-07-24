@@ -24,7 +24,7 @@ var (
 	ErrInvalidData = errors.New("invalid input data")
 )
 
-// var emtpyErrors = Errors{}
+// var emptyErrors = Errors{}
 
 /*************************************************************
  * Validate Errors

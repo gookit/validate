@@ -294,7 +294,7 @@ func (r *Rule) valueValidate(field, name string, val any, v *Validation) (ok boo
 		// dsCount := strings.Count(field, ".*")
 
 		// check requiredXX validate TODO need flatten multi level slice, count ".*" number.
-		// TIP: if len < cap: not enough elements in the slice. use emtpy val call validator.
+		// TIP: if len < cap: not enough elements in the slice. use empty val call validator.
 		if !r.nameNotRequired && sliceLen < rftVal.Cap() {
 			return callValidator(v, fm, field, nil, r.arguments)
 		}
