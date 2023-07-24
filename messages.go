@@ -456,7 +456,7 @@ func (t *Translator) format(errMsg, field string, args []interface{}) string {
 		msgArgs := []string{
 			"{field}", field,
 			"{values}", arrutil.ToString(args),
-			"{args0}", strutil.MustString(args[0]),
+			"{args0}", strutil.SafeString(args[0]),
 		}
 
 		// {args1end} -> args[1:]

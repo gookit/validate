@@ -1,6 +1,7 @@
 package validate
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/gookit/goutil/testutil/assert"
@@ -209,4 +210,131 @@ func TestValidation_Validate_argHasNil(t *testing.T) {
 
 	assert.False(t, v.Validate())
 	assert.Equal(t, `age field did not pass validation`, v.Errors.One())
+}
+
+var nestedMap = map[string]any{
+	"names": []string{"John", "Jane", "abc"},
+	"coding": []map[string]any{
+		{
+			"details": map[string]any{
+				"em": map[string]any{
+					"code":              "001",
+					"encounter_uid":     "1",
+					"billing_provider":  "Test provider",
+					"resident_provider": "Test Resident Provider",
+				},
+				"cpt": []map[string]any{
+					{
+						"code":              "001",
+						"encounter_uid":     "1",
+						"work_item_uid":     "1",
+						"billing_provider":  "Test provider",
+						"resident_provider": "Test Resident Provider",
+					},
+					{
+						"code":              "OBS01",
+						"encounter_uid":     "1",
+						"work_item_uid":     "1",
+						"billing_provider":  "Test provider",
+						"resident_provider": "Test Resident Provider",
+					},
+					{
+						"code":              "SU002",
+						"encounter_uid":     "1",
+						"work_item_uid":     "1",
+						"billing_provider":  "Test provider",
+						"resident_provider": "Test Resident Provider",
+					},
+				},
+			},
+		},
+	},
+}
+
+func TestRequired_AllItemsPassed(t *testing.T) {
+	v := Map(nestedMap)
+	v.StopOnError = false
+	// v.StringRule("coding.*.details", "required")
+	v.StringRule("coding.*.details.em", "required")
+	v.StringRule("coding.*.details.cpt.*.encounter_uid", "required")
+	v.StringRule("coding.*.details.cpt.*.work_item_uid", "required")
+	assert.True(t, v.Validate())
+	// fmt.Println(v.Errors)
+}
+
+func TestRequired_MissingField(t *testing.T) {
+	m := map[string]interface{}{
+		"names": []string{"John", "Jane", "abc"},
+		"coding": []map[string]any{
+			{
+				"details": map[string]any{
+					"em": map[string]any{
+						"code":              "001",
+						"encounter_uid":     "1",
+						"billing_provider":  "Test provider",
+						"resident_provider": "Test Resident Provider",
+					},
+					"cpt": []map[string]any{
+						{
+							"code": "001",
+							// "encounter_uid":     "1",
+							"work_item_uid":     "1",
+							"billing_provider":  "Test provider",
+							"resident_provider": "Test Resident Provider",
+						},
+						{
+							"code":              "OBS01",
+							"encounter_uid":     "2",
+							"work_item_uid":     "1",
+							"billing_provider":  "Test provider",
+							"resident_provider": "Test Resident Provider",
+						},
+						{
+							"code":              "SU002",
+							"encounter_uid":     "3",
+							"work_item_uid":     "1",
+							"billing_provider":  "Test provider",
+							"resident_provider": "Test Resident Provider",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	v := Map(m)
+	v.StopOnError = false
+	// v.StringRule("coding.*.details", "required")
+	// v.StringRule("coding.*.details.em", "required")
+	v.StringRule("coding.*.details.cpt.*.encounter_uid", "required")
+	// v.StringRule("coding.*.details.cpt.*.work_item_uid", "required")
+	assert.False(t, v.Validate())
+	fmt.Println(v.Errors)
+}
+
+func TestRequired_MissingParentField(t *testing.T) {
+	m := map[string]interface{}{
+		"names": []string{"John", "Jane", "abc"},
+		"coding": []map[string]any{
+			{
+				"details": map[string]any{
+					"em": map[string]any{
+						"code":              "001",
+						"encounter_uid":     "1",
+						"billing_provider":  "Test provider",
+						"resident_provider": "Test Resident Provider",
+					},
+				},
+			},
+		},
+	}
+
+	v := Map(m)
+	v.StopOnError = false
+	// v.StringRule("coding.*.details", "required")
+	// v.StringRule("coding.*.details.em", "required")
+	v.StringRule("coding.*.details.cpt.*.encounter_uid", "required")
+	v.StringRule("coding.*.details.cpt.*.work_item_uid", "required")
+	assert.False(t, v.Validate())
+	fmt.Println(v.Errors)
 }

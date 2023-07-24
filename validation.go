@@ -34,7 +34,8 @@ type Validation struct {
 	data DataFace
 	// all validated fields list
 	// fields []string
-	// filtered/validated safe data
+
+	// save filtered/validated safe data
 	safeData M
 	// filtered clean data
 	filteredData M
@@ -377,7 +378,6 @@ func (v *Validation) Raw(key string) (interface{}, bool) {
 	if v.data == nil { // check input data
 		return nil, false
 	}
-
 	return v.data.Get(key)
 }
 
@@ -386,7 +386,6 @@ func (v *Validation) RawVal(key string) interface{} {
 	if v.data == nil { // check input data
 		return nil
 	}
-
 	val, _ := v.data.Get(key)
 	return val
 }
@@ -398,12 +397,16 @@ func (v *Validation) tryGet(key string) (val interface{}, exist, zero bool) {
 	if v.data == nil {
 		return
 	}
-	vals := strings.Split(key, ".*")
-	if len(vals) > 1 {
-		key = vals[0]
-	}
+
+	// get last parent key path. eg: "top.*.b.*.d" => "top.*.b"
+	// idx := strings.LastIndex(key, ".*")
+	// if idx > 1 {
+	// 	// get last parent value, check sub value on: Rule.valueValidate()
+	// 	key = key[:idx]
+	// }
+
 	// if end withs: .*, return the parent value
-	key = strings.TrimSuffix(key, ".*")
+	// key = strings.TrimSuffix(key, ".*")
 
 	// find from filtered data.
 	if val, ok := v.filteredData[key]; ok {
@@ -582,6 +585,7 @@ func (v *Validation) FilteredData() M {
  * helper methods
  *************************************************************/
 
+// on stop on error
 func (v *Validation) shouldStop() bool {
 	return v.hasError && v.StopOnError
 }

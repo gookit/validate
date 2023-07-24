@@ -25,6 +25,14 @@ var nilRVal = reflect.ValueOf(nilObj)
 // NilValue TODO a reflect nil value, use for instead of nilRVal
 var NilValue = reflect.Zero(reflect.TypeOf((*interface{})(nil)).Elem())
 
+// From package "text/template" -> text/template/funcs.go
+var (
+	emptyValue = reflect.Value{}
+	errorType  = reflect.TypeOf((*error)(nil)).Elem()
+	// fmtStringerType  = reflect.TypeOf((*fmt.Stringer)(nil)).Elem()
+	// reflectValueType = reflect.TypeOf((*reflect.Value)(nil)).Elem()
+)
+
 // IsNilObj check value is internal NilObject
 func IsNilObj(val interface{}) bool {
 	_, ok := val.(NilObject)
@@ -103,28 +111,9 @@ func buildArgs(val interface{}, args []interface{}) []interface{} {
 	return newArgs
 }
 
-// ValueIsEmpty check. TODO use reflects.IsEmpty()
+// ValueIsEmpty check. alias of reflects.IsEmpty()
 func ValueIsEmpty(v reflect.Value) bool {
-	switch v.Kind() {
-	case reflect.Invalid:
-		return true
-	case reflect.String, reflect.Array:
-		return v.Len() == 0
-	case reflect.Map, reflect.Slice:
-		return v.Len() == 0 || v.IsNil()
-	case reflect.Bool:
-		return !v.Bool()
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return v.Int() == 0
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-		return v.Uint() == 0
-	case reflect.Float32, reflect.Float64:
-		return v.Float() == 0
-	case reflect.Interface, reflect.Ptr:
-		return v.IsNil()
-	}
-
-	return reflect.DeepEqual(v.Interface(), reflect.Zero(v.Type()).Interface())
+	return reflects.IsEmpty(v)
 }
 
 // ValueLen get value length.
@@ -270,14 +259,6 @@ func convToBasicType(val interface{}) (value interface{}, err error) {
 	return
 }
 
-// From package "text/template" -> text/template/funcs.go
-var (
-	emptyValue = reflect.Value{}
-	errorType  = reflect.TypeOf((*error)(nil)).Elem()
-	// fmtStringerType  = reflect.TypeOf((*fmt.Stringer)(nil)).Elem()
-	// reflectValueType = reflect.TypeOf((*reflect.Value)(nil)).Elem()
-)
-
 func panicf(format string, args ...interface{}) {
 	panic("validate: " + fmt.Sprintf(format, args...))
 }
@@ -297,6 +278,7 @@ func checkValidatorFunc(name string, fn interface{}) reflect.Value {
 		panicf("validator '%s' func at least one parameter position", name)
 	}
 
+	// TODO support return error as validate error.
 	if ft.NumOut() != 1 || ft.Out(0).Kind() != reflect.Bool {
 		panicf("validator '%s' func must be return a bool value", name)
 	}

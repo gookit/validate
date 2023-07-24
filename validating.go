@@ -25,7 +25,17 @@ func (v *Validation) ValidateData(data DataFace) bool {
 	return v.Validate()
 }
 
-// ValidateE do validate processing and return error
+// ValidateErr do validate processing and return error
+func (v *Validation) ValidateErr(scene ...string) error {
+	if v.Validate(scene...) {
+		return nil
+	}
+	return v.Errors
+}
+
+// ValidateE do validate processing and return Errors
+//
+// TIP: need use len() to check the Errors is empty or not.
 func (v *Validation) ValidateE(scene ...string) Errors {
 	if v.Validate(scene...) {
 		return nil
@@ -159,12 +169,11 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 
 		// validate field value
 		if r.valueValidate(field, name, val, v) {
-			v.safeData[field] = val // save validated value.
+			v.safeData[field] = val
 		} else { // build and collect error message
 			v.AddError(field, r.validator, r.errorMessage(field, r.validator, v))
 		}
 
-		// stop on error
 		if v.shouldStop() {
 			return true
 		}
@@ -213,17 +222,37 @@ func (r *Rule) fileValidate(field, name string, v *Validation) uint8 {
 	return statusFail
 }
 
+// value by tryGet(key) TODO
+type value struct {
+	val any
+	key string
+	// has dot-star ".*" in the key. eg: details.sub.*.field
+	dotStar bool
+	// last index of dot-star on the key. eg: details.sub.*.field, lastIdx=11
+	lastIdx int
+	// is required or requiredXX check
+	require bool
+}
+
 // validate the field value
+//
+//   - field: the field name. eg: "name", "details.sub.*.field"
+//   - name: the validator name. eg: "required", "min"
 func (r *Rule) valueValidate(field, name string, val interface{}, v *Validation) (ok bool) {
 	// "-" OR "safe" mark field value always is safe.
 	if name == "-" || name == "safe" {
 		return true
 	}
 
+	// "required": check field value is not empty.
+	// if name == "required" {
+	// 	return !IsEmpty(val)
+	// }
+
 	// call custom validator in the rule.
 	fm := r.checkFuncMeta
 	if fm == nil {
-		// get validator for global or validation
+		// fallback: get validator for global or validation
 		fm = v.validatorMeta(name)
 		if fm == nil {
 			panicf("the validator '%s' does not exist", r.validator)
@@ -244,25 +273,37 @@ func (r *Rule) valueValidate(field, name string, val interface{}, v *Validation)
 		return false
 	}
 
-	ft := fm.fv.Type()
+	ft := fm.fv.Type() // type of check func
 	arg0Kind := ft.In(0).Kind()
 
 	// rftVal := reflect.Indirect(reflect.ValueOf(val))
 	rftVal := reflect.ValueOf(val)
 	valKind := rftVal.Kind()
-	isRequired := fm.name == "required"
-	arrField := ""
-	if strings.Contains(field, ".*.") {
-		arrField = strings.Split(field, ".*.")[1]
-	}
+	// isRequired := fm.name == "required"
+	// arrField := ""
+	// if strings.Contains(field, ".*.") {
+	// 	arrField = strings.Split(field, ".*.")[1]
+	// }
 
 	// feat: support check sub element in a slice list. eg: field=names.*
-	hasSliceSuffix := len(strings.Split(field, ".*")) > 1
-	if valKind == reflect.Slice && hasSliceSuffix {
-		var subVal interface{}
-		for i := 0; i < rftVal.Len(); i++ {
+	dotStarIdx := strings.LastIndex(field, ".*")
+	// hasSliceSuffix := len(strings.Split(field, ".*")) > 1
+	if valKind == reflect.Slice && dotStarIdx > 1 {
+		sliceLen := rftVal.Len()
+		// dsIsLast := dotStarIdx == len(field)-2
+		// dsCount := strings.Count(field, ".*")
+
+		// check requiredXX validate TODO need flatten multi level slice, count ".*" number.
+		if !r.nameNotRequired && (sliceLen == 0 || sliceLen < rftVal.Cap()) {
+			return callValidator(v, fm, field, val, r.arguments)
+		}
+
+		var subVal any
+		// check each element in the slice.
+		for i := 0; i < sliceLen; i++ {
 			subRv := rftVal.Index(i)
 			subKind := subRv.Kind()
+
 			// 1.1 convert field value type, is func first argument.
 			if r.nameNotRequired && arg0Kind != reflect.Interface && arg0Kind != subKind {
 				subVal, ok = convValAsFuncArg0Type(arg0Kind, subKind, subRv.Interface())
@@ -273,20 +314,22 @@ func (r *Rule) valueValidate(field, name string, val interface{}, v *Validation)
 			} else {
 				subVal = subRv.Interface()
 			}
-			switch subVal := subVal.(type) {
-			case map[string]any:
-				if arrField != "" {
-					if _, exists := subVal[arrField]; !exists && isRequired {
-						return false
-					}
-				}
-			}
+
+			// switch subVal := subVal.(type) {
+			// case map[string]any:
+			// 	if arrField != "" {
+			// 		if _, exists := subVal[arrField]; !exists && isRequired {
+			// 			return false
+			// 		}
+			// 	}
+			// }
 
 			// 2. call built in validator
 			if !callValidator(v, fm, field, subVal, r.arguments) {
 				return false
 			}
 		}
+
 		return true
 	}
 
@@ -315,13 +358,13 @@ func convValAsFuncArg0Type(arg0Kind, valKind reflect.Kind, val interface{}) (int
 	if nVal, _ := convTypeByBaseKind(val, bk, arg0Kind); nVal != nil {
 		return nVal, true
 	}
-
 	// TODO return nil, false
 	return val, true
 }
 
 func callValidator(v *Validation, fm *funcMeta, field string, val interface{}, args []interface{}) (ok bool) {
 	// use `switch` can avoid using reflection to call methods and improve speed
+	// fm.name please see pkg var: validatorValues
 	switch fm.name {
 	case "required":
 		ok = v.Required(field, val)
@@ -501,6 +544,17 @@ func callValidatorValue(fv reflect.Value, val interface{}, args []interface{}) b
 		}
 		argIn[i+1] = rftValA
 	}
+
+	// TODO panic recover, refer the text/template/funcs.go
+	// defer func() {
+	// 	if r := recover(); r != nil {
+	// 		if e, ok := r.(error); ok {
+	// 			err = e
+	// 		} else {
+	// 			err = fmt.Errorf("%v", r)
+	// 		}
+	// 	}
+	// }()
 
 	// NOTICE: f.CallSlice()与Call() 不一样的是，CallSlice参数的最后一个会被展开
 	// vs := fv.Call(argIn)

@@ -509,7 +509,7 @@ func (d *StructData) TryGet(field string) (val interface{}, exist, zero bool) {
 
 	var fv reflect.Value
 	// want to get sub struct field.
-	if strings.IndexRune(field, '.') > 0 {
+	if strings.IndexByte(field, '.') > 0 {
 		fieldNodes := strings.Split(field, ".")
 		topLevelField, ok := d.valueTpy.FieldByName(fieldNodes[0])
 		if !ok {
@@ -528,6 +528,11 @@ func (d *StructData) TryGet(field string) (val interface{}, exist, zero bool) {
 
 		fieldNodes = fieldNodes[1:]
 		// lastIndex := len(fieldNodes) - 1
+
+		// last key is wildcard, return all sub-value
+		if len(fieldNodes) == 1 && fieldNodes[0] == maputil.Wildcard {
+			return fv.Interface(), true, fv.IsZero()
+		}
 
 		kind = fv.Type().Kind()
 		for _, fieldNode := range fieldNodes {

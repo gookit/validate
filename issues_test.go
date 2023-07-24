@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gookit/goutil/stdutil"
+	"github.com/gookit/goutil"
 	"github.com/gookit/goutil/timex"
 	"github.com/gookit/validate/locales/zhcn"
 
@@ -1087,7 +1087,7 @@ func TestIssues_148(t *testing.T) {
 	}
 
 	a := &A{}
-	stdutil.PanicIf(jsonutil.DecodeString(`{"T2":"xxx"}`, a))
+	goutil.PanicErr(jsonutil.DecodeString(`{"T2":"xxx"}`, a))
 
 	v := validate.Struct(a)
 	v.Validate()
@@ -1102,7 +1102,7 @@ func TestIssues_148(t *testing.T) {
 	}
 
 	b := &B{}
-	stdutil.PanicIf(jsonutil.DecodeString(`{"T2":"xxx"}`, b))
+	goutil.PanicIfErr(jsonutil.DecodeString(`{"T2":"xxx"}`, b))
 
 	// dump.Println(b)
 	v = validate.Struct(b)
@@ -1261,7 +1261,7 @@ func TestIssues_172(t *testing.T) {
 }
 
 // https://github.com/gookit/validate/issues/213
-func TestIssues_141(t *testing.T) {
+func TestIssues_213(t *testing.T) {
 	type Person struct {
 		Name string `json:"name" validate:"required"`
 		Age  int    `json:"age" validate:"required"`
@@ -1271,7 +1271,7 @@ func TestIssues_141(t *testing.T) {
 	}
 
 	f := &Form{}
-	v := validate.Struct(&f) // nolint:varnamelen
+	v := validate.Struct(f) // nolint:varnamelen
 	assert.False(t, v.Validate())
 	fmt.Println(v.Errors)
 
@@ -1280,7 +1280,7 @@ func TestIssues_141(t *testing.T) {
 			{Name: "tome"},
 		},
 	}
-	v = validate.Struct(&f) // nolint:varnamelen
+	v = validate.Struct(f) // nolint:varnamelen
 	assert.False(t, v.Validate())
 	fmt.Println(v.Errors)
 }

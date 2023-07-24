@@ -28,7 +28,7 @@ func TestData(t *testing.T) {
 	is.Equal("inhere", val)
 	is.Nil(d.BindJSON(nil))
 
-	// mp := map[string]interface{}{"age": "45"}
+	// mp := map[string]any{"age": "45"}
 	// d = FromMap(&mp)
 
 	// StructData
