@@ -295,7 +295,7 @@ func (r *Rule) valueValidate(field, name string, val any, v *Validation) (ok boo
 		var subVal any
 		// check each element in the slice.
 		for i := 0; i < sliceLen; i++ {
-			subRv := rftVal.Index(i)
+			subRv := indirectInterface(rftVal.Index(i))
 			subKind := subRv.Kind()
 
 			// 1.1 convert field value type, is func first argument.

@@ -102,6 +102,8 @@ func NewValidation(data DataFace, scene ...string) *Validation {
  * validation settings
  *************************************************************/
 
+// TODO Config(opt *Options) *Validation
+
 // ResetResult reset the validate result.
 func (v *Validation) ResetResult() {
 	v.Errors = Errors{}

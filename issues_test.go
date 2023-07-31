@@ -1261,6 +1261,39 @@ func TestIssues_172(t *testing.T) {
 	assert.Equal(t, []string{"test.com", "oof.com", "foobar.com"}, f.Domains)
 }
 
+// https://github.com/gookit/validate/issues/206
+func TestIssues_206(t *testing.T) {
+	m := map[string]any{
+		"name":  "inhere",
+		"age":   99,
+		"oldSt": 10,
+		"newSt": 10,
+		"email": "some@email.com",
+		"tags":  []string{"go", "php", "java"},
+		"origins": []map[string]string{
+			{"name": "test", "url": "https://test.com"},
+			{"name": "test", "url": "https://test.com"},
+		},
+	}
+
+	v := validate.Map(m)
+	v.StopOnError = false
+	v.SkipOnEmpty = false
+	// can also
+	v.StringRule("age", "required|int|min:1|max:99")
+	v.StringRule("name", "required|minLen:2")
+	v.StringRule("tags", "required|slice|minlen:1")
+	// feat: support check sub-item in slice
+	v.StringRule("tags.*", "required|string|min_len:1")
+	v.StringRule("origins", "required|slice|minlen:1")
+	v.StringRule("origins.*.name", "required|full_url")
+
+	assert.False(t, v.Validate())
+	// fmt.Println(v.Errors)
+	assert.Len(t, v.Errors, 1)
+	assert.StrContains(t, v.Errors.String(), "full_url: origins.*.name must be a valid full URL address")
+}
+
 // https://github.com/gookit/validate/issues/213
 func TestIssues_213(t *testing.T) {
 	type Person struct {
