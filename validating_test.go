@@ -257,7 +257,7 @@ func TestRequired_AllItemsPassed(t *testing.T) {
 	// v.StringRule("coding.*.details", "required")
 	v.StringRule("coding.*.details.em", "required")
 	v.StringRule("coding.*.details.cpt.*.encounter_uid", "required")
-	v.StringRule("coding.*.details.cpt.*.work_item_uid", "required")
+	v.StringRule("coding.*.details.cpt.*.work_item_uid", "required|string")
 	assert.True(t, v.Validate())
 	// fmt.Println(v.Errors)
 }
