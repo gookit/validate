@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/gookit/goutil/dump"
+	"github.com/gookit/goutil/maputil"
 	"github.com/gookit/goutil/testutil/assert"
 )
 
@@ -254,15 +255,15 @@ var nestedMap = map[string]any{
 func TestRequired_AllItemsPassed(t *testing.T) {
 	v := Map(nestedMap)
 	v.StopOnError = false
-	// v.StringRule("coding.*.details", "required")
+	v.StringRule("coding.*.details", "required")
 	v.StringRule("coding.*.details.em", "required")
 	v.StringRule("coding.*.details.cpt.*.encounter_uid", "required")
-	v.StringRule("coding.*.details.cpt.*.work_item_uid", "required")
+	v.StringRule("coding.*.details.cpt.*.work_item_uid", "required|string")
 	assert.True(t, v.Validate())
-	// fmt.Println(v.Errors)
+	assert.Empty(t, v.Errors)
 }
 
-func TestRequired_MissingField(t *testing.T) {
+func TestRequired__map_subSlice_mDotStar(t *testing.T) {
 	m := map[string]any{
 		"names": []string{"John", "Jane", "abc"},
 		"coding": []map[string]any{
@@ -302,17 +303,20 @@ func TestRequired_MissingField(t *testing.T) {
 		},
 	}
 
+	dump.Println(maputil.GetByPath("coding.*.details.cpt.*.encounter_uid", m))
+	dump.Println(maputil.GetByPath("coding.*.details.cpt.*.work_item_uid", m))
+
 	v := Map(m)
 	v.StopOnError = false
 	// v.StringRule("coding.*.details", "required")
 	// v.StringRule("coding.*.details.em", "required")
 	v.StringRule("coding.*.details.cpt.*.encounter_uid", "required")
-	// v.StringRule("coding.*.details.cpt.*.work_item_uid", "required")
-	// assert.False(t, v.Validate()) // TODO ... fix this
+	v.StringRule("coding.*.details.cpt.*.work_item_uid", "required")
+	assert.False(t, v.Validate())
 	dump.Println(v.Errors)
 }
 
-func TestValidate_sliceValue_1dotStar(t *testing.T) {
+func TestValidate_map_subSlice_1dotStar(t *testing.T) {
 	mp := map[string]any{
 		"top": map[string]any{
 			"cpt": []map[string]any{

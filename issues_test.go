@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gookit/goutil"
+	"github.com/gookit/goutil/maputil"
 	"github.com/gookit/goutil/timex"
 	"github.com/gookit/validate/locales/zhcn"
 
@@ -1318,4 +1319,46 @@ func TestIssues_217(t *testing.T) {
 	ok3 := v3.Validate()
 	assert.False(t, ok3) // Should fail and fails.
 
+}
+
+// https://github.com/gookit/validate/issues/221
+func TestIssues_221(t *testing.T) {
+	m := map[string]any{
+		"clinics": []map[string]any{
+			{
+				"clinic_id": "1",
+				"doctors": []map[string]any{
+					{
+						"doctor_id": 1,
+						"dates": []map[string]string{
+							{
+								"date": "2023-01-01",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	dump.Println(maputil.GetByPath("clinics.*.doctors.*.dates.*.date", m))
+
+	v := validate.Map(m)
+
+	v.StringRule("clinics", "required|array")
+	v.StringRule("clinics.*.clinic_id", "required|string")
+	v.StringRule("clinics.*.doctors", "required|array")
+	v.StringRule("clinics.*.doctors.*.doctor_id", "required")
+	v.StringRule("clinics.*.doctors.*.dates", "required|array")
+	v.StringRule("clinics.*.doctors.*.dates.*.date", "required|string")
+
+	if assert.True(t, v.Validate()) { // validate ok
+		safeData := v.SafeData()
+
+		fmt.Println("Validation OK:")
+		dump.Println(safeData)
+	} else {
+		fmt.Println("Validation Fail:")
+		fmt.Println(v.Errors) // all error messages
+	}
 }

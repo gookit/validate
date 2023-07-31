@@ -31,6 +31,49 @@ func TestValueLen(t *testing.T) {
 	is.Equal(-1, ValueLen(reflect.ValueOf(nil)))
 }
 
+func TestFlatSlice(t *testing.T) {
+	sl := []any{
+		[]string{"a", "b"},
+	}
+	fsl := flatSlice(reflect.ValueOf(sl), 1)
+	// dump.P(fsl.Interface())
+	assert.Equal(t, 2, fsl.Len())
+	assert.Equal(t, 2, fsl.Cap())
+
+	// make slice len=2, cap=3
+	sub1 := make([]string, 0, 3)
+	sub1 = append(sub1, "a", "b")
+
+	sl = []any{
+		sub1,
+	}
+	fsl = flatSlice(reflect.ValueOf(sl), 1)
+	dump.P(fsl.Interface())
+	assert.Equal(t, 2, fsl.Len())
+	assert.Equal(t, 3, fsl.Cap())
+
+	sl = []any{
+		[]string{"a", "b"},
+		sub1,
+	}
+	fsl = flatSlice(reflect.ValueOf(sl), 1)
+	// dump.P(fsl.Interface())
+	assert.Equal(t, 4, fsl.Len())
+	assert.Equal(t, 5, fsl.Cap())
+
+	// 3 level
+	sl = []any{
+		[]any{
+			[]string{"a", "b"},
+		},
+	}
+
+	fsl = flatSlice(reflect.ValueOf(sl), 2)
+	dump.P(fsl.Interface())
+	assert.Equal(t, 2, fsl.Len())
+	assert.Equal(t, 2, fsl.Cap())
+}
+
 func TestCallByValue(t *testing.T) {
 	is := assert.New(t)
 	is.Panics(func() {

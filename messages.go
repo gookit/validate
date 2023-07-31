@@ -292,8 +292,7 @@ type Translator struct {
 	// format: {"field": "translate name"}
 	labelMap map[string]string
 	// the error message data map.
-	// key allow:
-	// TODO
+	// key allow: TODO
 	messages map[string]string
 }
 

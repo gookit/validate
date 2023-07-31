@@ -28,7 +28,7 @@ rules:
     contains: ['refactor:']
   - name: Fixed
     start_withs: [fix]
-    contains: ['fix:']
+    contains: ['fix:', 'bug:']
   - name: Feature
     start_withs: [feat, new]
     contains: [feature, 'feat:']

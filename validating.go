@@ -244,11 +244,6 @@ func (r *Rule) valueValidate(field, name string, val any, v *Validation) (ok boo
 		return true
 	}
 
-	// "required": check field value is not empty.
-	// if name == "required" {
-	// 	return !IsEmpty(val)
-	// }
-
 	// call custom validator in the rule.
 	fm := r.checkFuncMeta
 	if fm == nil {
@@ -279,23 +274,21 @@ func (r *Rule) valueValidate(field, name string, val any, v *Validation) (ok boo
 	// rftVal := reflect.Indirect(reflect.ValueOf(val))
 	rftVal := reflect.ValueOf(val)
 	valKind := rftVal.Kind()
-	// isRequired := fm.name == "required"
-	// arrField := ""
-	// if strings.Contains(field, ".*.") {
-	// 	arrField = strings.Split(field, ".*.")[1]
-	// }
 
-	// feat: support check sub element in a slice list. eg: field=names.*
-	dotStarIdx := strings.LastIndex(field, ".*")
-	// hasSliceSuffix := len(strings.Split(field, ".*")) > 1
-	if valKind == reflect.Slice && dotStarIdx > 1 {
-		sliceLen := rftVal.Len()
-		// dsIsLast := dotStarIdx == len(field)-2
-		// dsCount := strings.Count(field, ".*")
+	// feat: support check sub element in a slice list. eg: field=top.user.*.name
+	dotStarNum := strings.Count(field, ".*")
+	if valKind == reflect.Slice && dotStarNum > 0 {
+		sliceLen, sliceCap := rftVal.Len(), rftVal.Cap()
 
-		// check requiredXX validate TODO need flatten multi level slice, count ".*" number.
+		// if dotStarNum > 1, need flatten multi level slice with depth=dotStarNum.
+		if dotStarNum > 1 {
+			rftVal = flatSlice(rftVal, dotStarNum-1)
+			sliceLen, sliceCap = rftVal.Len(), rftVal.Cap()
+		}
+
+		// check requiredXX validate - flatten multi level slice, count ".*" number.
 		// TIP: if len < cap: not enough elements in the slice. use empty val call validator.
-		if !r.nameNotRequired && sliceLen < rftVal.Cap() {
+		if !r.nameNotRequired && sliceLen < sliceCap {
 			return callValidator(v, fm, field, nil, r.arguments)
 		}
 
@@ -316,15 +309,6 @@ func (r *Rule) valueValidate(field, name string, val any, v *Validation) (ok boo
 				subVal = subRv.Interface()
 			}
 
-			// switch subVal := subVal.(type) {
-			// case map[string]any:
-			// 	if arrField != "" {
-			// 		if _, exists := subVal[arrField]; !exists && isRequired {
-			// 			return false
-			// 		}
-			// 	}
-			// }
-
 			// 2. call built in validator
 			if !callValidator(v, fm, field, subVal, r.arguments) {
 				return false
@@ -334,7 +318,7 @@ func (r *Rule) valueValidate(field, name string, val any, v *Validation) (ok boo
 		return true
 	}
 
-	// 1.1 convert field value type, is func first argument.
+	// 1 convert field value type, is func first argument.
 	if r.nameNotRequired && arg0Kind != reflect.Interface && arg0Kind != valKind {
 		val, ok = convValAsFuncArg0Type(arg0Kind, valKind, val)
 		if !ok {
