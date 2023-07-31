@@ -1274,7 +1274,8 @@ func TestIssues_213(t *testing.T) {
 	f := &Form{}
 	v := validate.Struct(f) // nolint:varnamelen
 	assert.False(t, v.Validate())
-	fmt.Println(v.Errors)
+	// fmt.Println(v.Errors)
+	assert.StrContains(t, v.Errors.String(), "Data is required to not be empty")
 
 	f = &Form{
 		Data: []Person{
@@ -1283,7 +1284,8 @@ func TestIssues_213(t *testing.T) {
 	}
 	v = validate.Struct(f) // nolint:varnamelen
 	assert.False(t, v.Validate())
-	fmt.Println(v.Errors)
+	// fmt.Println(v.Errors)
+	assert.StrContains(t, v.Errors.String(), "age is required to not be empty")
 }
 
 // https://github.com/gookit/validate/issues/217
