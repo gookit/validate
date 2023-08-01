@@ -248,7 +248,15 @@ func (r *Rule) valueValidate(field, name string, val any, v *Validation) (ok boo
 		return true
 	}
 
-	// call custom validator in the rule.
+	// support check sub element in a slice list. eg: field=top.user.*.name
+	dotStarNum := strings.Count(field, ".*")
+
+	// perf: The most commonly used rule "required" - direct call v.Required()
+	if name == RuleRequired && dotStarNum == 0 {
+		return v.Required(field, val)
+	}
+
+	// call value validator in the rule.
 	fm := r.checkFuncMeta
 	if fm == nil {
 		// fallback: get validator from global or validation
@@ -279,8 +287,6 @@ func (r *Rule) valueValidate(field, name string, val any, v *Validation) (ok boo
 	rftVal := reflect.ValueOf(val)
 	valKind := rftVal.Kind()
 
-	// feat: support check sub element in a slice list. eg: field=top.user.*.name
-	dotStarNum := strings.Count(field, ".*")
 	if valKind == reflect.Slice && dotStarNum > 0 {
 		sliceLen, sliceCap := rftVal.Len(), rftVal.Cap()
 

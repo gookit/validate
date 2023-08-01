@@ -717,9 +717,11 @@ func TestValidation_ValidateData(t *testing.T) {
 
 	ok := v.ValidateData(d)
 	assert.True(t, ok)
+	assert.NotEmpty(t, v.SafeData())
 
 	v.Reset()
-	assert.Len(t, v.Validators(false), 0)
+	assert.Empty(t, v.SafeData())
+	assert.Empty(t, v.FilteredData())
 }
 
 func TestGetSet_OnNilData(t *testing.T) {
