@@ -352,6 +352,14 @@ func TestValidate_map_subSlice_1dotStar(t *testing.T) {
 
 	s := v.Errors.String()
 	assert.StrContains(t, s, "top.cpt.*.encounter_uid is required")
+
+	// test invalid path
+	v = Map(mp)
+	v.StopOnError = false
+	v.StringRule("top.*.cpt.*.invalid_path", "required")
+	assert.False(t, v.Validate())
+	// fmt.Println(v.Errors)
+	assert.StrContains(t, v.Errors.String(), "required: top.*.cpt.*.invalid_path is required")
 }
 
 func TestRequired_MissingParentField(t *testing.T) {
@@ -373,13 +381,15 @@ func TestRequired_MissingParentField(t *testing.T) {
 
 	v := Map(m)
 	v.StopOnError = false
-	// v.StringRule("coding.*.details", "required")
-	// v.StringRule("coding.*.details.em", "required")
+	v.StringRule("coding.*.details", "required")
+	v.StringRule("coding.*.details.em", "required")
 	v.StringRule("coding.*.details.cpt.*.encounter_uid", "required")
-	v.StringRule("coding.*.details.cpt.*.work_item_uid", "required")
+	// not exist field
+	v.StringRule("coding.*.details.cpt.*.not_exist_field", "required")
 	es := v.ValidateE()
 	assert.False(t, es.Empty())
+
 	s := es.String()
 	assert.StrContains(t, s, "coding.*.details.cpt.*.encounter_uid is required")
-	assert.StrContains(t, s, "coding.*.details.cpt.*.work_item_uid is required")
+	assert.StrContains(t, s, "coding.*.details.cpt.*.not_exist_field is required")
 }

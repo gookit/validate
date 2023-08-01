@@ -100,9 +100,9 @@ type funcMeta struct {
 	// readonly cache
 	numIn  int
 	numOut int
-	// is internal built in validator
-	isInternal bool
-	// last arg is like "... any"
+	// is internal built-in validator
+	builtin bool
+	// last arg is variadic param. like "... any"
 	isVariadic bool
 }
 
@@ -122,8 +122,8 @@ func (fm *funcMeta) checkArgNum(argNum int, name string) {
 	}
 }
 
-func newFuncMeta(name string, isInternal bool, fv reflect.Value) *funcMeta {
-	fm := &funcMeta{fv: fv, name: name, isInternal: isInternal}
+func newFuncMeta(name string, builtin bool, fv reflect.Value) *funcMeta {
+	fm := &funcMeta{fv: fv, name: name, builtin: builtin}
 	ft := fv.Type()
 
 	fm.numIn = ft.NumIn()   // arg num of the func
@@ -159,8 +159,8 @@ func AddValidators(m map[string]any) {
 func AddValidator(name string, checkFunc any) {
 	fv := checkValidatorFunc(name, checkFunc)
 
-	validators[name] = 2 // custom
-	validatorValues[name] = fv
+	validators[name] = validatorTypeCustom
+	// validatorValues[name] = fv
 	validatorMetas[name] = newFuncMeta(name, false, fv)
 }
 

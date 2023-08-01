@@ -5,7 +5,7 @@ import "reflect"
 var (
 	// global validators. contains built-in and user custom
 	validators map[string]int8
-	// all validators func meta information
+	// global validators func meta information
 	validatorMetas map[string]*funcMeta
 )
 
@@ -15,12 +15,18 @@ func init() {
 	validatorMetas = make(map[string]*funcMeta)
 
 	for n, fv := range validatorValues {
-		validators[n] = 1 // built in
+		validators[n] = validatorTypeBuiltin
 		validatorMetas[n] = newFuncMeta(n, true, fv)
 	}
 }
 
-// validator func reflect.Value
+// some commonly validation rule names.
+const (
+	RuleRequired = "required"
+	RuleRegexp   = "regexp"
+)
+
+// validator func reflect.Value map
 var validatorValues = map[string]reflect.Value{
 	// int value
 	"lt":  reflect.ValueOf(Lt),

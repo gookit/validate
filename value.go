@@ -107,13 +107,13 @@ func newValValidation() *Validation {
 
 	// init build in context validator
 	v.validatorMetas = make(map[string]*funcMeta, 2)
-	v.validatorValues = map[string]reflect.Value{
+	ctxValidatorMap := map[string]reflect.Value{
 		"required": reflect.ValueOf(v.Required),
 	}
 
 	// collect func meta info
-	for n, fv := range v.validatorValues {
-		v.validators[n] = 1 // built in
+	for n, fv := range ctxValidatorMap {
+		v.validators[n] = validatorTypeBuiltin
 		v.validatorMetas[n] = newFuncMeta(n, true, fv)
 	}
 

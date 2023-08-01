@@ -76,9 +76,9 @@ type GlobalOption struct {
 	//
 	// tag: default TODO
 	DefaultTag string
-	// StopOnError If true: An error occurs, it will cease to continue to verify
+	// StopOnError If true: An error occurs, it will cease to continue to verify. default is True.
 	StopOnError bool
-	// SkipOnEmpty Skip check on field not exist or value is empty
+	// SkipOnEmpty Skip check on field not exist or value is empty. default is True.
 	SkipOnEmpty bool
 	// UpdateSource Whether to update source field value, useful for struct validate
 	UpdateSource bool
@@ -142,18 +142,34 @@ func newGlobalOption() *GlobalOption {
 	}
 }
 
+// pool for validation instance
+// var vPool = &sync.Pool{
+// 	New: func() any {
+// 		return newEmpty()
+// 	},
+// }
+
 func newValidation(data DataFace) *Validation {
+	// v := vPool.Get().(*Validation)
+	// // reset some runtime data
+	// v.ResetResult()
+	// v.trans = NewTranslator()
+
+	v := newEmpty()
+	v.data = data
+	return v
+}
+
+func newEmpty() *Validation {
 	v := &Validation{
 		Errors: make(Errors),
-		// add data source on usage
-		data: data,
 		// create message translator
 		// trans: StdTranslator,
 		trans: NewTranslator(),
 		// validated data
 		safeData: make(map[string]any),
 		// validator names
-		validators: make(map[string]int8),
+		validators: make(map[string]int8, 16),
 		// filtered data
 		filteredData: make(map[string]any),
 		// default config
@@ -162,7 +178,7 @@ func newValidation(data DataFace) *Validation {
 	}
 
 	// init build in context validator
-	v.validatorValues = map[string]reflect.Value{
+	ctxValidatorMap := map[string]reflect.Value{
 		"required":           reflect.ValueOf(v.Required),
 		"requiredIf":         reflect.ValueOf(v.RequiredIf),
 		"requiredUnless":     reflect.ValueOf(v.RequiredUnless),
@@ -183,21 +199,13 @@ func newValidation(data DataFace) *Validation {
 		"inMimeTypes": reflect.ValueOf(v.InMimeTypes),
 	}
 
-	v.validatorMetas = make(map[string]*funcMeta)
+	v.validatorMetas = make(map[string]*funcMeta, len(ctxValidatorMap))
 
-	// collect meta info
-	for n, fv := range v.validatorValues {
-		v.validators[n] = 1 // built in
+	// make and collect meta info
+	for n, fv := range ctxValidatorMap {
+		v.validators[n] = validatorTypeBuiltin
 		v.validatorMetas[n] = newFuncMeta(n, true, fv)
 	}
-
-	// v.pool = &sync.Pool{
-	// 	New: func() any {
-	// 		return &Validation{
-	// 			v: v,
-	// 		}
-	// 	},
-	// }
 
 	return v
 }
@@ -207,11 +215,12 @@ func newValidation(data DataFace) *Validation {
  *************************************************************/
 
 // New create a Validation instance
-// data support:
-// - DataFace
-// - M/map[string]any
-// - SValues/url.Values/map[string][]string
-// - struct ptr
+//
+// data type support:
+//   - DataFace
+//   - M/map[string]any
+//   - SValues/url.Values/map[string][]string
+//   - struct ptr
 func New(data any, scene ...string) *Validation {
 	switch td := data.(type) {
 	case DataFace:
@@ -231,7 +240,7 @@ func New(data any, scene ...string) *Validation {
 	return Struct(data, scene...)
 }
 
-// NewWithOptions new Validation with options
+// NewWithOptions new Validation with options TODO
 // func NewWithOptions(data any, fn func(opt *GlobalOption)) *Validation {
 // 	fn(gOpt)
 // 	return New(data)

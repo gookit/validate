@@ -22,6 +22,10 @@ const (
 	sniffLen = 512
 	// 32 MB
 	defaultMaxMemory int64 = 32 << 20
+
+	// validator type
+	validatorTypeBuiltin int8 = 1
+	validatorTypeCustom  int8 = 2
 )
 
 // Validation definition
@@ -39,6 +43,9 @@ type Validation struct {
 	safeData M
 	// filtered clean data
 	filteredData M
+	// save user custom set default values
+	defValues map[string]any
+
 	// Errors for validate
 	Errors Errors
 	// CacheKey for cache rules
@@ -54,8 +61,6 @@ type Validation struct {
 	// CachingRules switch. default is False
 	// CachingRules bool
 
-	// save user custom set default values
-	defValues map[string]any
 	// mark has error occurs
 	hasError bool
 	// mark is filtered
@@ -64,14 +69,12 @@ type Validation struct {
 	hasValidated bool
 	// validate rules for the validation
 	rules []*Rule
-	// validators for the validation
+
+	// validators for the validation. map-value: 1=builtin, 2=custom
 	validators map[string]int8
 	// validator func meta info
 	validatorMetas map[string]*funcMeta
-	// validator func reflect.Value map
-	validatorValues map[string]reflect.Value
-	// translator instance
-	trans *Translator
+
 	// current scene name
 	scene string
 	// scenes config.
@@ -82,13 +85,17 @@ type Validation struct {
 	scenes SValues
 	// should check fields in current scene.
 	sceneFields map[string]uint8
+
 	// filtering rules for the validation
 	filterRules []*FilterRule
 	// filter func reflect.Value map
 	filterValues map[string]reflect.Value
+
+	// translator instance
+	trans *Translator
 }
 
-// NewEmpty new validation instance, but not add data.
+// NewEmpty new validation instance, but not with data.
 func NewEmpty(scene ...string) *Validation {
 	return NewValidation(nil, scene...)
 }
@@ -101,8 +108,6 @@ func NewValidation(data DataFace, scene ...string) *Validation {
 /*************************************************************
  * validation settings
  *************************************************************/
-
-// TODO Config(opt *Options) *Validation
 
 // ResetResult reset the validate result.
 func (v *Validation) ResetResult() {
@@ -117,21 +122,27 @@ func (v *Validation) ResetResult() {
 
 // Reset the Validation instance.
 //
-// will reset
+// Will resets:
 //   - validate result
 //   - validate rules
 //   - validate filterRules
-//   - custom validators
+//   - custom validators TODO
 func (v *Validation) Reset() {
 	v.ResetResult()
 
-	// rules
-	v.rules = v.rules[:0]
-	v.filterRules = v.filterRules[:0]
-	v.validators = make(map[string]int8)
+	// v.validators = make(map[string]int8)
+	v.resetRules()
 }
 
-// WithSelf config the Validation instance
+func (v *Validation) resetRules() {
+	// reset rules
+	v.rules = v.rules[:0]
+	v.filterRules = v.filterRules[:0]
+}
+
+// TODO Config(opt *Options) *Validation
+
+// WithSelf config the Validation instance. TODO rename to WithConfig
 func (v *Validation) WithSelf(fn func(v *Validation)) *Validation {
 	fn(v)
 	return v
@@ -185,7 +196,7 @@ func (v *Validation) SetScene(scene ...string) *Validation {
  * add validators for validation
  *************************************************************/
 
-// AddValidators to the Validation
+// AddValidators to the Validation instance.
 func (v *Validation) AddValidators(m map[string]any) *Validation {
 	for name, checkFunc := range m {
 		v.AddValidator(name, checkFunc)
@@ -193,7 +204,8 @@ func (v *Validation) AddValidators(m map[string]any) *Validation {
 	return v
 }
 
-// AddValidator to the Validation. checkFunc must return a bool.
+// AddValidator to the Validation instance. checkFunc must return a bool.
+//
 // Usage:
 //
 //	v.AddValidator("myFunc", func(val any) bool {
@@ -203,14 +215,14 @@ func (v *Validation) AddValidators(m map[string]any) *Validation {
 func (v *Validation) AddValidator(name string, checkFunc any) *Validation {
 	fv := checkValidatorFunc(name, checkFunc)
 
-	v.validators[name] = 2 // custom
-	v.validatorValues[name] = fv
+	v.validators[name] = validatorTypeCustom
+	// v.validatorValues[name] = fv
 	v.validatorMetas[name] = newFuncMeta(name, false, fv)
 
 	return v
 }
 
-// ValidatorMeta get by name
+// ValidatorMeta get by name. get validator from global or validation instance.
 func (v *Validation) validatorMeta(name string) *funcMeta {
 	// current validation
 	if fm, ok := v.validatorMetas[name]; ok {
@@ -228,7 +240,7 @@ func (v *Validation) validatorMeta(name string) *funcMeta {
 		if ok {
 			fm := newFuncMeta(name, false, fv)
 			// storage it.
-			v.validators[name] = 2 // custom
+			v.validators[name] = validatorTypeCustom
 			v.validatorMetas[name] = fm
 
 			return fm
@@ -273,9 +285,7 @@ func (v *Validation) Validators(withGlobal bool) map[string]int8 {
  *************************************************************/
 
 // Sanitize data by filter rules
-func (v *Validation) Sanitize() bool {
-	return v.Filtering()
-}
+func (v *Validation) Sanitize() bool { return v.Filtering() }
 
 // Filtering data by filter rules
 func (v *Validation) Filtering() bool {
@@ -400,16 +410,6 @@ func (v *Validation) tryGet(key string) (val any, exist, zero bool) {
 		return
 	}
 
-	// get last parent key path. eg: "top.*.b.*.d" => "top.*.b"
-	// idx := strings.LastIndex(key, ".*")
-	// if idx > 1 {
-	// 	// get last parent value, check sub value on: Rule.valueValidate()
-	// 	key = key[:idx]
-	// }
-
-	// if end withs: .*, return the parent value
-	// key = strings.TrimSuffix(key, ".*")
-
 	// find from filtered data.
 	if val, ok := v.filteredData[key]; ok {
 		return val, true, false
@@ -459,7 +459,6 @@ func (v *Validation) Safe(key string) (val any, ok bool) {
 	if v.data == nil { // check input data
 		return
 	}
-
 	val, ok = v.safeData[key]
 	return
 }
@@ -523,7 +522,6 @@ func (v *Validation) SetDefValue(field string, val any) {
 	if v.defValues == nil {
 		v.defValues = make(map[string]any)
 	}
-
 	v.defValues[field] = val
 }
 
@@ -554,29 +552,19 @@ func (v *Validation) sceneFieldMap() (m map[string]uint8) {
 }
 
 // Scene name get for current validation
-func (v *Validation) Scene() string {
-	return v.scene
-}
+func (v *Validation) Scene() string { return v.scene }
 
 // IsOK for the validating
-func (v *Validation) IsOK() bool {
-	return !v.hasError
-}
+func (v *Validation) IsOK() bool { return !v.hasError }
 
 // IsFail for the validating
-func (v *Validation) IsFail() bool {
-	return v.hasError
-}
+func (v *Validation) IsFail() bool { return v.hasError }
 
 // IsSuccess for the validating
-func (v *Validation) IsSuccess() bool {
-	return !v.hasError
-}
+func (v *Validation) IsSuccess() bool { return !v.hasError }
 
 // SafeData get all validated safe data
-func (v *Validation) SafeData() M {
-	return v.safeData
-}
+func (v *Validation) SafeData() M { return v.safeData }
 
 // FilteredData return filtered data.
 func (v *Validation) FilteredData() M {
