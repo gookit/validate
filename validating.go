@@ -35,7 +35,7 @@ func (v *Validation) ValidateErr(scene ...string) error {
 
 // ValidateE do validate processing and return Errors
 //
-// TIP: need use len() to check the Errors is empty or not.
+// NOTE: need use len() to check the return is empty or not.
 func (v *Validation) ValidateE(scene ...string) Errors {
 	if v.Validate(scene...) {
 		return nil
@@ -49,6 +49,12 @@ func (v *Validation) Validate(scene ...string) bool {
 	if v.hasValidated || v.shouldStop() {
 		return v.IsSuccess()
 	}
+
+	// release instance to pool TODO
+	// defer func() {
+	// 	v.resetRules()
+	// 	vPool.Put(v)
+	// }()
 
 	// init scene info
 	v.SetScene(scene...)
@@ -67,11 +73,9 @@ func (v *Validation) Validate(scene ...string) bool {
 	}
 
 	v.hasValidated = true
-	if v.hasError {
-		// clear safe data on error.
+	if v.hasError { // clear safe data on error.
 		v.safeData = make(map[string]any)
 	}
-
 	return v.IsSuccess()
 }
 
@@ -247,7 +251,7 @@ func (r *Rule) valueValidate(field, name string, val any, v *Validation) (ok boo
 	// call custom validator in the rule.
 	fm := r.checkFuncMeta
 	if fm == nil {
-		// fallback: get validator for global or validation
+		// fallback: get validator from global or validation
 		fm = v.validatorMeta(name)
 		if fm == nil {
 			panicf("the validator '%s' does not exist", r.validator)
@@ -306,7 +310,11 @@ func (r *Rule) valueValidate(field, name string, val any, v *Validation) (ok boo
 					return false
 				}
 			} else {
-				subVal = subRv.Interface()
+				if subRv.IsValid() {
+					subVal = subRv.Interface()
+				} else {
+					subVal = nil
+				}
 			}
 
 			// 2. call built in validator

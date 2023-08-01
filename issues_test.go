@@ -1397,3 +1397,30 @@ func TestIssues_221(t *testing.T) {
 		fmt.Println(v.Errors) // all error messages
 	}
 }
+
+// https://github.com/gookit/validate/issues/223
+func TestIssues_223(t *testing.T) {
+	m := map[string]any{
+		"clinics": []map[string]any{
+			{
+				"clinic_id": nil,
+			},
+		},
+	}
+
+	v := validate.Map(m)
+
+	v.StringRule("clinics", "required|array")
+	v.StringRule("clinics.*.clinic_id", "string")
+
+	if !assert.False(t, v.Validate()) { // validate ok
+		safeData := v.SafeData()
+
+		fmt.Println("Validation OK:")
+		dump.Println(safeData)
+	} else {
+		fmt.Println("Validation Fail:")
+		fmt.Println(string(v.Errors.JSON())) // all error messages
+		assert.StrContains(t, v.Errors.String(), "clinics.*.clinic_id value must be a string")
+	}
+}
