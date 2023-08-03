@@ -1404,6 +1404,11 @@ func TestIssues_223(t *testing.T) {
 		"clinics": []map[string]any{
 			{
 				"clinic_id": nil,
+				"doctors": []map[string]any{
+					{
+						"duration": nil,
+					},
+				},
 			},
 		},
 	}
@@ -1411,7 +1416,7 @@ func TestIssues_223(t *testing.T) {
 	v := validate.Map(m)
 
 	v.StringRule("clinics", "required|array")
-	v.StringRule("clinics.*.clinic_id", "string")
+	v.StringRule("clinics.*.doctors.*.duration", "int")
 
 	if !assert.False(t, v.Validate()) { // validate ok
 		safeData := v.SafeData()
@@ -1421,6 +1426,6 @@ func TestIssues_223(t *testing.T) {
 	} else {
 		fmt.Println("Validation Fail:")
 		fmt.Println(string(v.Errors.JSON())) // all error messages
-		assert.StrContains(t, v.Errors.String(), "clinics.*.clinic_id value must be a string")
+		assert.StrContains(t, v.Errors.String(), "clinics.*.doctors.*.duration value must be an integer")
 	}
 }
