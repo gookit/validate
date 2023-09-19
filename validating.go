@@ -347,6 +347,17 @@ func (r *Rule) valueValidate(field, name string, val any, v *Validation) (ok boo
 
 // convert input field value type, is validator func first argument.
 func convValAsFuncArg0Type(arg0Kind, valKind reflect.Kind, val any) (any, bool) {
+	// If the validator function does not expect a pointer, but the value is a pointer,
+	// dereference the value.
+	if arg0Kind != reflect.Ptr && valKind == reflect.Ptr {
+		if val == nil {
+			return nil, true
+		}
+
+		val = reflect.ValueOf(val).Elem().Interface()
+		valKind = reflect.TypeOf(val).Kind()
+	}
+
 	// ak, err := basicKind(rftVal)
 	bk, err := basicKindV2(valKind)
 	if err != nil {
