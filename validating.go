@@ -546,6 +546,11 @@ func callValidatorValue(fv reflect.Value, val any, args []any) bool {
 		rftVal = nilRVal
 	}
 
+	// Add this check to handle pointer values
+	if rftVal.Kind() == reflect.Ptr && !rftVal.IsNil() {
+		rftVal = rftVal.Elem()
+	}
+
 	argIn[0] = rftVal
 	for i := 0; i < argNum; i++ {
 		rftValA := reflect.ValueOf(args[i])
