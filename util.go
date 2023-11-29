@@ -223,6 +223,8 @@ func CalcLength(val any) int {
 //
 // only check for: int(X), uint(X), float(X), string.
 func valueCompare(srcVal, dstVal any, op string) (ok bool) {
+	srcVal = indirectValue(srcVal)
+
 	// string compare
 	if str1, ok := srcVal.(string); ok {
 		str2, err := strutil.ToString(dstVal)
@@ -534,6 +536,32 @@ func removeValuePtr(t reflect.Value) reflect.Value {
 		t = t.Elem()
 	}
 	return t
+}
+
+func indirectValue(input any) any {
+	// Check if input is nil
+	if input == nil {
+		return nil
+	}
+
+	// Use reflect to handle the value
+	val := reflect.ValueOf(input)
+
+	// If the value is a pointer, then use reflect.Indirect to get the actual value it points to
+	if val.Kind() == reflect.Ptr {
+		// Use reflect.Indirect to safely dereference the pointer
+		val = reflect.Indirect(val)
+
+		// If the dereferenced value is valid (not nil), return the interface
+		if val.IsValid() {
+			return val.Interface()
+		}
+		// If the dereferenced value is not valid, return nil
+		return nil
+	}
+
+	// If the input is not a pointer, just return the input as it is
+	return input
 }
 
 // ---- From package "text/template" -> text/template/exec.go

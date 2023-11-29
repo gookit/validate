@@ -1076,8 +1076,8 @@ func TestIssue_143(t *testing.T) {
 
 	ok = v.Validate()
 	dump.Println(v.Errors)
-	assert.False(t, ok)
-	assert.Equal(t, "age min value is 30", v.Errors.One())
+	assert.True(t, ok)
+	assert.Equal(t, "", v.Errors.One())
 }
 
 // https://github.com/gookit/validate/issues/148
