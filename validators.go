@@ -517,6 +517,8 @@ func IsUint(val any) bool {
 
 // IsBool check. allow: bool, string.
 func IsBool(val any) bool {
+	val = indirectValue(val)
+
 	if _, ok := val.(bool); ok {
 		return true
 	}
@@ -530,6 +532,8 @@ func IsBool(val any) bool {
 
 // IsFloat check. allow: floatX, string
 func IsFloat(val any) bool {
+	val = indirectValue(val)
+
 	if val == nil {
 		return false
 	}
@@ -605,6 +609,8 @@ func IsMap(val any) (ok bool) {
 
 // IsInt check, and support length check
 func IsInt(val any, minAndMax ...int64) (ok bool) {
+	val = indirectValue(val)
+
 	if val == nil {
 		return false
 	}
@@ -637,6 +643,8 @@ func IsInt(val any, minAndMax ...int64) (ok bool) {
 //	ok := IsString(val, 5) // with min len check
 //	ok := IsString(val, 5, 12) // with min and max len check
 func IsString(val any, minAndMaxLen ...int) (ok bool) {
+	val = indirectValue(val)
+
 	if val == nil {
 		return false
 	}
@@ -790,6 +798,8 @@ func IsAlphaDash(s string) bool {
 
 // IsNumber string. should >= 0
 func IsNumber(v any) bool {
+	v = indirectValue(v)
+
 	if v == nil {
 		return false
 	}
@@ -802,6 +812,8 @@ func IsNumber(v any) bool {
 
 // IsNumeric is string/int number. should >= 0
 func IsNumeric(v any) bool {
+	v = indirectValue(v)
+
 	if v == nil {
 		return false
 	}
@@ -1056,6 +1068,8 @@ func Max(val, max any) bool { return valueCompare(val, max, "<=") }
 // Between int value in the given range.
 // only check for: int(X), uint(X).
 func Between(val any, min, max int64) bool {
+	val = indirectValue(val)
+
 	intVal, err := mathutil.Int64(val)
 	if err != nil {
 		return false
