@@ -14,6 +14,7 @@ import (
 
 	"github.com/gookit/filter"
 	"github.com/gookit/goutil/maputil"
+	"github.com/gookit/goutil/reflects"
 	"github.com/gookit/goutil/strutil"
 )
 
@@ -669,18 +670,21 @@ func (d *StructData) Set(field string, val any) (newVal any, err error) {
 	}
 
 	// try manual convert type
-	srcKind, err := basicKindV2(rftVal.Kind())
-	if err != nil {
-		return nil, err
-	}
+	// srcKind, err := basicKindV2(rftVal.Kind())
+	// if err != nil {
+	//	 return nil, err
+	// }
+	// newVal, err = convTypeByBaseKind(val, srcKind, fv.Kind())
 
-	newVal, err = convTypeByBaseKind(val, srcKind, fv.Kind())
-	if err != nil {
-		return nil, err
+	// try manual convert type
+	newRv, err1 := reflects.ValueByKind(val, fv.Kind())
+	if err1 != nil {
+		return nil, err1
 	}
 
 	// update field value
-	fv.Set(reflect.ValueOf(newVal))
+	// fv.Set(reflect.ValueOf(newVal))
+	fv.Set(newRv)
 	return
 }
 

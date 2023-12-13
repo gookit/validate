@@ -119,11 +119,15 @@ var anyType = reflect.TypeOf((*any)(nil)).Elem()
 //
 //	FlatSlice([]any{ []any{3, 4}, []any{5, 6} }, 1) // Output: []any{3, 4, 5, 6}
 //
-// always return reflect.Value of []any. note: maybe flatSl.Cap != flatSl.Len
+// always return reflect.Value of []any. NOTE: maybe flatSl.Cap != flatSl.Len
 func flatSlice(sl reflect.Value, depth int) reflect.Value {
 	items := make([]reflect.Value, 0, sl.Cap())
 	slCap := addSliceItem(sl, depth, func(item reflect.Value) {
-		items = append(items, item)
+		if item.IsValid() {
+			items = append(items, item)
+		} else { // fix: if sub elem is nil, item will an invalid kind.
+			items = append(items, NilValue)
+		}
 	})
 
 	flatSl := reflect.MakeSlice(reflect.SliceOf(anyType), 0, slCap)
@@ -255,33 +259,11 @@ func getVariadicKind(typ reflect.Type) reflect.Kind {
 //
 //nolint:forcetypeassert
 func convTypeByBaseKind(srcVal any, srcKind kind, dstType reflect.Kind) (any, error) {
-	switch srcKind {
-	case stringKind:
-		switch dstType {
-		case reflect.Int:
-			return mathutil.ToInt(srcVal)
-		case reflect.Int64:
-			return mathutil.ToInt64(srcVal)
-		case reflect.Bool:
-			return strutil.Bool(srcVal.(string))
-		case reflect.String:
-			return srcVal.(string), nil
-		}
-	case intKind, uintKind:
-		i64 := mathutil.SafeInt64(srcVal)
-		switch dstType {
-		case reflect.Int64:
-			return i64, nil
-		case reflect.String:
-			return strutil.ToString(srcVal)
-		}
-	default:
-		switch dstType {
-		case reflect.String:
-			return strutil.ToString(srcVal)
-		}
+	rv, err := reflects.ConvToKind(srcVal, dstType)
+	if err != nil {
+		return nil, err
 	}
-	return nil, ErrConvertFail
+	return rv.Interface(), nil
 }
 
 // convert custom type to generic basic int, string, unit.

@@ -55,7 +55,7 @@ func TestIssue_2(t *testing.T) {
 	// type is error
 	err = v.Set("A", "abc")
 	assert.Error(t, err)
-	assert.Equal(t, validate.ErrConvertFail.Error(), err.Error())
+	assert.ErrMsg(t, err, `strconv.ParseFloat: parsing "abc": invalid syntax`)
 }
 
 // https://github.com/gookit/validate/issues/19
@@ -1294,6 +1294,47 @@ func TestIssues_206(t *testing.T) {
 	assert.StrContains(t, v.Errors.String(), "full_url: origins.*.name must be a valid full URL address")
 }
 
+// https://github.com/gookit/validate/issues/209
+func TestIssues_209(t *testing.T) {
+	mp := make(map[string]any)
+	err := jsonutil.DecodeString(`{
+    "em": {
+        "code": "001",
+        "encounter_uid": 1,
+        "work_item_uid": 2, 
+        "billing_provider": "Test provider",
+        "resident_provider": "Test Resident Provider"
+    },
+    "cpt": [
+        {
+            "code": "001",
+            "billing_provider": "Test provider",
+            "resident_provider": "Test Resident Provider"
+        },
+        {
+            "code": "OBS01",
+            "billing_provider": "Test provider",
+            "resident_provider": "Test Resident Provider"
+        },
+        {
+            "code": "SU002",
+            "resident_provider": "Test Resident Provider"
+        }
+    ]
+}`, &mp)
+	assert.NoErr(t, err)
+
+	v := validate.Map(mp)
+	v.StopOnError = false
+	v.StringRule("cpt.*.encounter", "required|int")
+	v.StringRule("cpt.*.billing_provider", "required")
+
+	assert.False(t, v.Validate())
+	// fmt.Println(v.Errors)
+	assert.StrContains(t, v.Errors.String(), "cpt.*.encounter is required to not be empty")
+	assert.StrContains(t, v.Errors.String(), "cpt.*.billing_provider is required to not be empty")
+}
+
 // https://github.com/gookit/validate/issues/213
 func TestIssues_213(t *testing.T) {
 	type Person struct {
@@ -1404,23 +1445,36 @@ func TestIssues_223(t *testing.T) {
 		"clinics": []map[string]any{
 			{
 				"clinic_id": nil,
+				"doctors": []map[string]any{
+					{
+						"duration": nil,
+					},
+				},
 			},
 		},
 	}
 
 	v := validate.Map(m)
-
 	v.StringRule("clinics", "required|array")
 	v.StringRule("clinics.*.clinic_id", "string")
 
-	if !assert.False(t, v.Validate()) { // validate ok
-		safeData := v.SafeData()
-
-		fmt.Println("Validation OK:")
-		dump.Println(safeData)
-	} else {
+	if assert.False(t, v.Validate()) {
 		fmt.Println("Validation Fail:")
 		fmt.Println(string(v.Errors.JSON())) // all error messages
 		assert.StrContains(t, v.Errors.String(), "clinics.*.clinic_id value must be a string")
+	} else {
+		safeData := v.SafeData()
+		fmt.Println("Validation OK:")
+		dump.Println(safeData)
 	}
+
+	// test field in sub slice
+	v = validate.Map(m)
+
+	v.StringRule("clinics", "required|array")
+	v.StringRule("clinics.*.doctors.*.duration", "int")
+	assert.False(t, v.Validate())
+	s := v.Errors.String()
+	fmt.Println(s)
+	assert.StrContains(t, s, "clinics.*.doctors.*.duration value must be an integer")
 }
