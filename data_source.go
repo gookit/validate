@@ -381,6 +381,11 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 
 				case reflect.Array, reflect.Slice:
 					fValue = removeValuePtr(fValue)
+
+					// Check if the reflect.Value is valid and not a nil pointer
+					if !fValue.IsValid() || (fValue.Kind() == reflect.Ptr && fValue.IsNil()) {
+						continue
+					}
 					for j := 0; j < fValue.Len(); j++ {
 						elemValue := removeValuePtr(fValue.Index(j))
 						elemType := removeTypePtr(elemValue.Type())
