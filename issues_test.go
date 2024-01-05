@@ -1480,6 +1480,23 @@ func TestIssues_223(t *testing.T) {
 	assert.StrContains(t, s, "clinics.*.doctors.*.duration value must be an integer")
 }
 
+// https://github.com/gookit/validate/issues/245
+// required_if 中，当指定的 anotherField 为 uint8 类型时，校验失效
+func TestIssues_245(t *testing.T) {
+	type MyStruct struct {
+		ID     int64    `json:"id" validate:"required"`
+		Type   uint8    `json:"ip_type" validate:"in:0,1"`
+		IpList []string `json:"ip_list" validate:"required|validateIP"`
+		Field  int      `json:"field" validate:"required_if:Type,1"`
+	}
+
+	ms := &MyStruct{Type: 1}
+	v := validate.Struct(ms)
+	assert.False(t, v.Validate())
+	assert.ErrSubMsg(t, v.Errors, "id is required to not be empty")
+	// fmt.Println(v.Errors)
+}
+
 // issues#246 类似这样的结构体和规则
 type CertStore struct {
 	Type      string   `form:"type" json:"type"`
