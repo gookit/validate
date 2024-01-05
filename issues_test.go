@@ -1491,7 +1491,7 @@ type TestUser struct {
 }
 
 // https://github.com/gookit/validate/issues/247
-// Pointer of UUID will break the Validate() function #247
+// Pointer of UUID will break the Validate() function
 func TestIssues_247(t *testing.T) {
 	str := "    Optional String   "
 	str1 := "    Optional String1   "
@@ -1520,4 +1520,18 @@ func TestIssues_247(t *testing.T) {
 	assert.True(t, v.Validate())
 	dump.P(tu)
 	fmt.Println(v.Errors)
+}
+
+// DataIssues252 struct
+type DataIssues252 struct {
+	PtrStrings *[]string `validate:"strings"`
+}
+
+// https://github.com/gookit/validate/issues/252
+// Panic when validating struct with nil pointer to a slice field
+func TestIssues_252(t *testing.T) {
+	v := validate.New(&DataIssues252{})
+
+	ok := v.Validate()
+	assert.True(t, ok)
 }
