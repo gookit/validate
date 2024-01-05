@@ -91,8 +91,8 @@ func TestVal_indirect(t *testing.T) {
 	err = validate.Val(&foobar, "required|alpha_num")
 	assert.NoError(t, err)
 
-	foo_bar := "foo bar"
-	err = validate.Val(&foo_bar, "required|hasWhitespace")
+	fooBar := "foo bar"
+	err = validate.Val(&fooBar, "required|hasWhitespace")
 	assert.NoError(t, err)
 
 	email := "hello@email.com"

@@ -146,7 +146,7 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 		// apply filter func.
 		if exist && r.filterFunc != nil {
 			if val, err = r.filterFunc(val); err != nil {
-				v.AddError(filterError, filterError, err.Error())
+				v.AddError(filterError, filterError, field+": "+err.Error())
 				return true
 			}
 
@@ -460,7 +460,7 @@ func convertArgsType(v *Validation, fm *funcMeta, field string, args []any) (ok 
 	lastArgIndex := fm.numIn - 1
 
 	// fix: isVariadic == true. last arg always is slice.
-	// eg. "...int64" -> slice "[]int64"
+	// eg: "...int64" -> slice "[]int64"
 	if fm.isVariadic {
 		// get variadic kind. "[]int64" -> reflect.Int64
 		lastTyp = getVariadicKind(ft.In(lastArgIndex))

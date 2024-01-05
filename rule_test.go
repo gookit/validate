@@ -86,7 +86,7 @@ func TestRule_SetFilterFunc(t *testing.T) {
 		})
 
 	is.False(v.Validate())
-	is.Equal(`strconv.Atoi: parsing "abc": invalid syntax`, v.Errors.One())
+	is.Equal(`age: strconv.Atoi: parsing "abc": invalid syntax`, v.Errors.One())
 }
 
 func TestRule_SetSkipEmpty(t *testing.T) {

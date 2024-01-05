@@ -3,6 +3,7 @@ package validate_test
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -1477,4 +1478,46 @@ func TestIssues_223(t *testing.T) {
 	s := v.Errors.String()
 	fmt.Println(s)
 	assert.StrContains(t, s, "clinics.*.doctors.*.duration value must be an integer")
+}
+
+type mockUUID [16]byte
+
+type TestUser struct {
+	Name             string    `validate:"required|minLen:2|maxLen:100" filter:"trim|lower"`
+	Email            string    `validate:"required|email" filter:"lower"`
+	PtrString        *string   `validate:"required|minLen:2|maxLen:100" filter:"trim|lower"`
+	OptionalString   *string   `validate:"required|minLen:2|maxLen:100" filter:"trimPtr|lowerPtr"`
+	TestOptionalUUID *mockUUID // **Problem LINE**
+}
+
+// https://github.com/gookit/validate/issues/247
+// Pointer of UUID will break the Validate() function #247
+func TestIssues_247(t *testing.T) {
+	str := "    Optional String   "
+	str1 := "    Optional String1   "
+	tu := &TestUser{
+		Name:           "  John Doe  ",
+		Email:          "JOHNDOE@EXAMPLE.COM",
+		PtrString:      &str,
+		OptionalString: &str1,
+	}
+
+	v := validate.Struct(tu)
+	v.AddFilter("trimPtr", func(val any) any {
+		if strPtr, ok := val.(*string); ok && strPtr != nil {
+			trimmed := strings.TrimSpace(*strPtr)
+			return &trimmed
+		}
+		return val
+	})
+	v.AddFilter("lowerPtr", func(val any) any {
+		if strPtr, ok := val.(*string); ok && strPtr != nil {
+			lowered := strings.ToLower(*strPtr)
+			return &lowered
+		}
+		return val
+	})
+	assert.True(t, v.Validate())
+	dump.P(tu)
+	fmt.Println(v.Errors)
 }

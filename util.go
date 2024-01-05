@@ -258,7 +258,7 @@ func getVariadicKind(typ reflect.Type) reflect.Kind {
 // convTypeByBaseKind convert value type by base kind
 //
 //nolint:forcetypeassert
-func convTypeByBaseKind(srcVal any, srcKind kind, dstType reflect.Kind) (any, error) {
+func convTypeByBaseKind(srcVal any, _ kind, dstType reflect.Kind) (any, error) {
 	rv, err := reflects.ConvToKind(srcVal, dstType)
 	if err != nil {
 		return nil, err

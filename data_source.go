@@ -383,9 +383,10 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 					fValue = removeValuePtr(fValue)
 
 					// Check if the reflect.Value is valid and not a nil pointer
-					if !fValue.IsValid() || (fValue.Kind() == reflect.Ptr && fValue.IsNil()) {
+					if !fValue.IsValid() {
 						continue
 					}
+
 					for j := 0; j < fValue.Len(); j++ {
 						elemValue := removeValuePtr(fValue.Index(j))
 						elemType := removeTypePtr(elemValue.Type())
@@ -423,7 +424,8 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 							recursiveFunc(elemValue, elemType, arrayName, fv.Anonymous)
 						}
 					}
-
+				default:
+					// do nothing
 				}
 			}
 		}
@@ -649,7 +651,7 @@ func (d *StructData) Set(field string, val any) (newVal any, err error) {
 				case reflect.Map:
 					fv = fv.MapIndex(reflect.ValueOf(fieldNode))
 				default:
-					fv = removeValuePtr(fv.FieldByName(fieldNode))
+					fv = fv.FieldByName(fieldNode)
 				}
 			}
 		default:
@@ -661,25 +663,18 @@ func (d *StructData) Set(field string, val any) (newVal any, err error) {
 	}
 
 	// check whether the value of v can be changed.
+	fv = removeValuePtr(fv)
 	if !fv.CanSet() {
 		return nil, ErrUnaddressableField
 	}
 
 	// Notice: need convert value type
+	// - check whether you can direct convert type
 	rftVal := reflect.ValueOf(val)
-
-	// check whether you can direct convert type
 	if rftVal.Type().ConvertibleTo(fv.Type()) {
 		fv.Set(rftVal.Convert(fv.Type()))
 		return val, nil
 	}
-
-	// try manual convert type
-	// srcKind, err := basicKindV2(rftVal.Kind())
-	// if err != nil {
-	//	 return nil, err
-	// }
-	// newVal, err = convTypeByBaseKind(val, srcKind, fv.Kind())
 
 	// try manual convert type
 	newRv, err1 := reflects.ValueByKind(val, fv.Kind())
@@ -688,8 +683,12 @@ func (d *StructData) Set(field string, val any) (newVal any, err error) {
 	}
 
 	// update field value
-	// fv.Set(reflect.ValueOf(newVal))
 	fv.Set(newRv)
+
+	// fix: custom func return ptr type, fv.Kind() always is real type.
+	if rftVal.Kind() != fv.Kind() {
+		newVal = newRv.Interface()
+	}
 	return
 }
 

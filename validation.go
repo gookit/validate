@@ -296,7 +296,7 @@ func (v *Validation) Filtering() bool {
 	// apply rule to validate data.
 	for _, rule := range v.filterRules {
 		if err := rule.Apply(v); err != nil { // has error
-			v.AddError(filterError, filterError, err.Error())
+			v.AddError(filterError, filterError, rule.fields[0]+": "+err.Error())
 			break
 		}
 	}

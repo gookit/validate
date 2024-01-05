@@ -122,7 +122,7 @@ func TestAddFilter(t *testing.T) {
 	})
 	v.Filtering()
 	is.True(v.IsFail())
-	is.Equal("report a error", v.Errors.FieldOne("_filter"))
+	is.Equal("age: report a error", v.Errors.FieldOne("_filter"))
 }
 
 // check panic caused nil value with custom filter
