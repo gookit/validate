@@ -404,7 +404,9 @@ func (v *Validation) RawVal(key string) any {
 
 // try to get value by key.
 //
-// If v.data is StructData, will return zero check
+// **NOTE:**
+//
+// If v.data is StructData, will return zero value check. Other dataSource will always return `zero=False`.
 func (v *Validation) tryGet(key string) (val any, exist, zero bool) {
 	if v.data == nil {
 		return

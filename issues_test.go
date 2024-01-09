@@ -532,7 +532,7 @@ func TestIssues_76(t *testing.T) {
 	ok := v.Validate()
 	assert.False(t, ok)
 	dump.Println(v.Errors)
-	assert.Equal(t, "categories is required when is_private is [false]", v.Errors.One())
+	assert.Equal(t, "categories is required when is_private is in [false]", v.Errors.One())
 
 	v = validate.Struct(&Issue76{Categories: []*CategoryReq{
 		{Name: "book"},
@@ -970,7 +970,7 @@ func TestIssue_140(t *testing.T) {
 	err := v.ValidateE()
 	dump.Println(err)
 	assert.Error(t, err)
-	assert.Equal(t, "Field2 is required when Field1 is [value]", err.One())
+	assert.Equal(t, "Field2 is required when Field1 is in [value]", err.One())
 
 	test.Field2 = "hi"
 	v = validate.Struct(test)
@@ -1120,8 +1120,6 @@ func TestIssue_152(t *testing.T) {
 		validate.SetBuiltinMessages(old)
 	}()
 
-	zhcn.RegisterGlobal()
-
 	// test required if
 	type requiredIf struct {
 		Type int64  `validate:"required" label:"类型"`
@@ -1132,9 +1130,9 @@ func TestIssue_152(t *testing.T) {
 		Type: 1,
 		Data: "",
 	})
+	zhcn.Register(v)
 
-	v.Validate()
-
+	assert.False(t, v.Validate())
 	assert.Equal(t, `当 类型 为 [1] 时 数据 不能为空。`, v.Errors.One())
 
 	// test required unless
@@ -1147,8 +1145,9 @@ func TestIssue_152(t *testing.T) {
 		Type: 0,
 		Data: "",
 	})
+	zhcn.Register(v)
 
-	v.Validate()
+	assert.False(t, v.Validate())
 	assert.Equal(t, `当 类型 不为 [1] 时 数据 不能为空。`, v.Errors.One())
 }
 
@@ -1478,6 +1477,23 @@ func TestIssues_223(t *testing.T) {
 	s := v.Errors.String()
 	fmt.Println(s)
 	assert.StrContains(t, s, "clinics.*.doctors.*.duration value must be an integer")
+}
+
+// https://github.com/gookit/validate/issues/242
+// requiredWithoutAll tag is not work with struct validation
+func TestIssues_242(t *testing.T) {
+	type RequiredWithoutAll struct {
+		ID    string `validate:"requiredWithoutAll:NewID|uuid4"`
+		NewID string `validate:"requiredWithoutAll:OldID|uuid4"`
+		OldID string `validate:"requiredWithoutAll:NewID|string"`
+	}
+
+	h := RequiredWithoutAll{}
+	v := validate.Struct(h)
+	assert.False(t, v.Validate())
+	s := v.Errors.String()
+	fmt.Println(v.Errors)
+	assert.StrContains(t, s, "requiredWithoutAll: ID field is required when none of [NewID] are present")
 }
 
 // https://github.com/gookit/validate/issues/245

@@ -340,7 +340,7 @@ func FromStruct(s any) (*StructData, error) {
 
 	data.src = s
 	data.value = val
-	data.valueTpy = typ
+	data.valueTyp = typ
 
 	return data, nil
 }

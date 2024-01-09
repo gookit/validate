@@ -175,7 +175,7 @@ var builtinMessages = map[string]string{
 	"gt": "{field} value should be greater than %v",
 	// required
 	"required":           "{field} is required to not be empty",
-	"requiredIf":         "{field} is required when {args0} is {args1end}",
+	"requiredIf":         "{field} is required when {args0} is in {args1end}",
 	"requiredUnless":     "{field} field is required unless {args0} is in {args1end}",
 	"requiredWith":       "{field} field is required when {values} is present",
 	"requiredWithAll":    "{field} field is required when {values} is present",

@@ -76,6 +76,7 @@ func TestValidation_CheckDefault(t *testing.T) {
 }
 
 func TestValidation_RequiredIf(t *testing.T) {
+	// test map data
 	v := New(M{
 		"name": "lee",
 		"age":  "12",
@@ -85,10 +86,24 @@ func TestValidation_RequiredIf(t *testing.T) {
 		"nothing": "required_if:age,12,13,14",
 	})
 
-	v.Validate()
-	assert.Equal(t, "nothing is required when age is [12,13,14]", v.Errors.One())
+	assert.False(t, v.RequiredIf("age", "12"))
+	assert.False(t, v.Validate())
+	assert.Equal(t, "nothing is required when age is in [12,13,14]", v.Errors.One())
+
+	// test struct data
+	type user struct {
+		Name string `validate:"required"`
+		Age  int    `validate:"required_if:Name,lee"`
+	}
+
+	u := &user{Name: "lee"}
+	v = New(u)
+	e := v.ValidateErr()
+	assert.Err(t, e)
+	assert.StrContains(t, e.Error(), "Age is required when Name is in [lee]")
 }
 
+// 验证的字段必须存在且不为空，除非目标字段等于给定的任何值。
 func TestValidation_RequiredUnless(t *testing.T) {
 	v := New(M{
 		"age":     "18",
@@ -100,11 +115,25 @@ func TestValidation_RequiredUnless(t *testing.T) {
 		"nothing": "required_unless:age,12,13,14",
 	})
 
-	v.Validate()
+	assert.False(t, v.RequiredUnless("age", "12"))
+	assert.False(t, v.Validate())
 	assert.Equal(t, "nothing field is required unless age is in [12,13,14]", v.Errors.One())
+
+	// test struct data
+	type user struct {
+		Name string `validate:"required"`
+		Age  int    `validate:"required_unless:Name,tom"`
+	}
+
+	u := &user{Name: "lee"}
+	v = New(u)
+	assert.False(t, v.Validate())
+	assert.Equal(t, "Age field is required unless Name is in [tom]", v.Errors.One())
 }
 
+// 仅当任何其他指定字段存在时，验证下的字段才必须存在且不为空。
 func TestValidation_RequiredWith(t *testing.T) {
+	// test map data
 	v := New(M{
 		"age":  "18",
 		"name": "test",
@@ -115,10 +144,24 @@ func TestValidation_RequiredWith(t *testing.T) {
 		"nothing":  "required_with:age,name",
 	})
 
-	v.Validate()
+	assert.False(t, v.RequiredWith("age", "12"))
+	assert.False(t, v.Validate())
 	assert.Equal(t, "nothing field is required when [age,name] is present", v.Errors.One())
+
+	// test struct data
+	type user struct {
+		Name string `validate:"requiredWith:Age,City"`
+		Age  int    `validate:"required_with:Name,City"`
+		City string `validate:"required_with:Name,Age"`
+	}
+
+	u := &user{Name: "lee"}
+	v = New(u)
+	assert.False(t, v.Validate())
+	assert.Equal(t, "Age field is required when [Name,City] is present", v.Errors.One())
 }
 
+// 仅当所有其他指定字段都存在时，验证下的字段才必须存在且不为空。
 func TestValidation_RequiredWithAll(t *testing.T) {
 	v := New(M{
 		"age":     "18",
@@ -132,11 +175,27 @@ func TestValidation_RequiredWithAll(t *testing.T) {
 		"nothing":  "required_with_all:age,name,sex",
 	})
 
-	v.Validate()
-	// fmt.Println(v.Errors)
+	assert.False(t, v.RequiredWithAll("age", "12"))
+	assert.False(t, v.Validate())
 	assert.Equal(t, "nothing field is required when [age,name,sex] is present", v.Errors.One())
+
+	// test struct data
+	type user struct {
+		Age  int
+		Sex  string
+		Name string `validate:"requiredWithAll:age,sex"`
+	}
+
+	u := &user{Age: 23}
+	v = New(u)
+	assert.True(t, v.Validate())
+	u.Sex = "man"
+	v = New(u)
+	assert.False(t, v.Validate())
+	assert.Equal(t, "Name field is required when [age,sex] is present", v.Errors.One())
 }
 
+// 仅当任何一个其他指定字段不存在时，验证中的字段才必须存在且不为空。
 func TestValidation_RequiredWithout(t *testing.T) {
 	v := New(M{
 		"age":  "18",
@@ -148,10 +207,24 @@ func TestValidation_RequiredWithout(t *testing.T) {
 		"nothing":  "required_without:sex,name",
 	})
 
-	v.Validate()
+	assert.False(t, v.RequiredWithout("age", "12"))
+	assert.False(t, v.Validate())
 	assert.Equal(t, "nothing field is required when [sex,name] is not present", v.Errors.One())
+
+	// test struct data
+	type user struct {
+		Name string `validate:"requiredWithout:Age,City"`
+		Age  int    `validate:"required_without:Name,City"`
+		City string
+	}
+
+	u := &user{Name: "lee"}
+	v = New(u)
+	assert.False(t, v.Validate())
+	assert.Equal(t, "Age field is required when [Name,City] is not present", v.Errors.One())
 }
 
+// 仅当任何其他指定字段都不存在时，验证中的字段才必须存在且不为空。
 func TestValidation_RequiredWithoutAll(t *testing.T) {
 	v := New(M{
 		"age":     "18",
@@ -163,8 +236,24 @@ func TestValidation_RequiredWithoutAll(t *testing.T) {
 		"nothing":  "required_without_all:sex,city",
 	})
 
-	v.Validate()
+	assert.False(t, v.RequiredWithoutAll("age", "12"))
+	assert.False(t, v.Validate())
 	assert.Equal(t, "nothing field is required when none of [sex,city] are present", v.Errors.One())
+
+	// test struct data
+	type user struct {
+		Name string `validate:"requiredWithoutAll:Age,City"`
+		Age  int
+		City string
+	}
+
+	u := &user{Name: "lee"}
+	v = New(u)
+	assert.True(t, v.Validate())
+	u.Name = ""
+	v = New(u)
+	assert.False(t, v.Validate())
+	assert.Equal(t, "Name field is required when none of [Age,City] are present", v.Errors.One())
 }
 
 func TestVariadicArgs(t *testing.T) {

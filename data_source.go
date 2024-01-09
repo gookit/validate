@@ -191,10 +191,11 @@ type StructData struct {
 	src any
 	// max depth for parse sub-struct. TODO WIP ...
 	// depth int
-	// from reflect source Struct
+
+	// reflect.Value of the source struct
 	value reflect.Value
-	// source struct reflect.Type
-	valueTpy reflect.Type
+	// reflect.Type of the source struct
+	valueTyp reflect.Type
 	// field names in the src struct
 	// 0:common field 1:anonymous field 2:nonAnonymous field
 	fieldNames map[string]int8
@@ -254,21 +255,21 @@ func (d *StructData) Create(err ...error) *Validation {
 	d.parseRulesFromTag(v)
 
 	// has custom config func
-	if d.valueTpy.Implements(cvFaceType) {
+	if d.valueTyp.Implements(cvFaceType) {
 		fv := d.value.MethodByName("ConfigValidation")
 		fv.Call([]reflect.Value{reflect.ValueOf(v)})
 	}
 
 	// collect custom field translates config
-	if d.valueTpy.Implements(ftFaceType) {
+	if d.valueTyp.Implements(ftFaceType) {
 		fv := d.value.MethodByName("Translates")
 		vs := fv.Call(nil)
 		v.WithTranslates(vs[0].Interface().(map[string]string))
 	}
 
 	// collect custom error messages config
-	// if reflect.PtrTo(d.valueTpy).Implements(cmFaceType) {
-	if d.valueTpy.Implements(cmFaceType) {
+	// if reflect.PtrTo(d.valueTyp).Implements(cmFaceType) {
+	if d.valueTyp.Implements(cmFaceType) {
 		fv := d.value.MethodByName("Messages")
 		vs := fv.Call(nil)
 		v.WithMessages(vs[0].Interface().(map[string]string))
@@ -293,7 +294,7 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 	var recursiveFunc func(vv reflect.Value, vt reflect.Type, preStrName string, parentIsAnonymous bool)
 
 	vv := d.value
-	vt := d.valueTpy
+	vt := d.valueTyp
 	// preStrName - the parent field name.
 	recursiveFunc = func(vv reflect.Value, vt reflect.Type, parentFName string, parentIsAnonymous bool) {
 		for i := 0; i < vt.NumField(); i++ {
@@ -520,7 +521,7 @@ func (d *StructData) TryGet(field string) (val any, exist, zero bool) {
 	// want to get sub struct field.
 	if strings.IndexByte(field, '.') > 0 {
 		fieldNodes := strings.Split(field, ".")
-		topLevelField, ok := d.valueTpy.FieldByName(fieldNodes[0])
+		topLevelField, ok := d.valueTyp.FieldByName(fieldNodes[0])
 		if !ok {
 			return
 		}
@@ -569,10 +570,6 @@ func (d *StructData) TryGet(field string) (val any, exist, zero bool) {
 			if fv.Kind() == reflect.Ptr && fv.IsNil() {
 				return
 			}
-
-			// if i < lastIndex && fv.Type().Kind() != reflect.Struct {
-			// 	return nil, false
-			// }
 		}
 
 		d.fieldNames[field] = fieldAtSubStruct
@@ -705,7 +702,7 @@ func (d *StructData) HasField(field string) bool {
 	}
 
 	// has field, cache it
-	if _, ok := d.valueTpy.FieldByName(field); ok {
+	if _, ok := d.valueTyp.FieldByName(field); ok {
 		d.fieldNames[field] = fieldAtTopStruct
 		return true
 	}

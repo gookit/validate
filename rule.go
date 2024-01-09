@@ -165,6 +165,7 @@ func (r *Rule) errorMessage(field, validator string, v *Validation) (msg string)
 //	v.StringRule("name", "required|string|minLen:6")
 //	// will try convert to int before applying validation.
 //	v.StringRule("age", "required|int|min:12", "toInt")
+//	v.StringRule("email", "required|min_len:6", "trim|email|lower")
 func (v *Validation) StringRule(field, rule string, filterRule ...string) *Validation {
 	rule = strings.TrimSpace(rule)
 	if rule == "" {
@@ -243,6 +244,11 @@ func (v *Validation) ConfigRules(mp MS) *Validation {
 }
 
 // AddRule for current validation
+//
+// Usage:
+//
+//	v.AddRule("name", "required")
+//	v.AddRule("name", "min_len", "2")
 func (v *Validation) AddRule(fields, validator string, args ...any) *Rule {
 	return v.addOneRule(fields, validator, ValidatorName(validator), args)
 }

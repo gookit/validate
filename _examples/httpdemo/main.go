@@ -20,7 +20,7 @@ type UserForm struct {
 	Code     string
 }
 
-func main()  {
+func main() {
 	mux := http.NewServeMux()
 
 	handler1 := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -36,7 +36,7 @@ func main()  {
 		v.AddRule("name", "required")
 		v.AddRule("name", "minLen", 7)
 		v.AddRule("age", "max", 99)
-		v.AddRule("code", `required|regex:\d{4,6}`)
+		v.AddRule("code", "regex", `\d{4,6}`)
 
 		if v.Validate() { // validate ok
 			// safeData := v.SafeData()
@@ -46,7 +46,7 @@ func main()  {
 			// do something ...
 			fmt.Println(userForm.Name)
 		} else {
-			fmt.Println(v.Errors) // all error messages
+			fmt.Println(v.Errors)       // all error messages
 			fmt.Println(v.Errors.One()) // returns a random error message text
 		}
 	})
