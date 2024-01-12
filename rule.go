@@ -193,7 +193,7 @@ func (v *Validation) StringRule(field, rule string, filterRule ...string) *Valid
 			case "default":
 				v.SetDefValue(field, list[1])
 			// eg 'regex:\d{4,6}' dont need split args. args is "\d{4,6}"
-			case "regexp":
+			case RuleRegexp:
 				v.AddRule(field, validator, list[1])
 			// some special validator. need merge args to one.
 			case "enum", "notIn":

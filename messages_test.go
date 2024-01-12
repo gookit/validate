@@ -34,13 +34,14 @@ func TestErrorsBasic(t *testing.T) {
 
 	assert.True(t, es.Empty())
 	assert.Equal(t, "", es.One())
+	assert.Equal(t, "", es.String())
 	assert.Nil(t, es.ErrOrNil())
 
 	es.Add("field", "required", "error msg0")
 	assert.Len(t, es, 1)
 	assert.Equal(t, "error msg0", es.One())
 	assert.Equal(t, "error msg0", es.FieldOne("field"))
-	assert.Equal(t, "field:\n required: error msg0", es.String())
+	assert.Equal(t, "field: error msg0", es.String())
 
 	es.Add("field2", "min", "error msg2")
 	assert.Contains(t, fmt.Sprintf("%v", es.All()), "field:map[required:error msg0]")

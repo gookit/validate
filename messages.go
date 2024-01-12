@@ -35,7 +35,10 @@ var (
 // Example:
 //
 //	{
-//		"field": {validator: message, validator1: message1}
+//		"field": {
+//			"required": "error message",
+//			"min_len": "error message1"
+//		}
 //	}
 type Errors map[string]MS
 
@@ -44,7 +47,7 @@ func (es Errors) Empty() bool {
 	return len(es) == 0
 }
 
-// Add a error for the field
+// Add an error for the field
 func (es Errors) Add(field, validator, message string) {
 	if _, ok := es[field]; ok {
 		es[field][validator] = message
@@ -84,7 +87,6 @@ func (es Errors) Random() string {
 // All get all errors data
 func (es Errors) All() map[string]map[string]string {
 	mm := make(map[string]map[string]string, len(es))
-
 	for field, fe := range es {
 		mm[field] = fe
 	}
@@ -104,8 +106,20 @@ func (es Errors) Error() string {
 
 // String errors to string
 func (es Errors) String() string {
+	ln := len(es)
+	if ln == 0 {
+		return ""
+	}
+
 	buf := new(bytes.Buffer)
 	for field, fe := range es {
+		// only one error, return simple format: "field: message"
+		if ln == 1 && len(fe) == 1 {
+			for _, msg := range fe {
+				return fmt.Sprintf("%s: %s", field, msg)
+			}
+		}
+
 		buf.WriteString(fmt.Sprintf("%s:\n%s\n", field, fe.String()))
 	}
 

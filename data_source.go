@@ -459,7 +459,6 @@ func (d *StructData) loadMessagesFromTag(trans *Translator, field, vRule, vMsg s
 		if vName == "" {
 			// eg `validate:"required|date"`
 			vNames = []string{vRule}
-
 			if strings.ContainsRune(vRule, '|') {
 				vNames = strings.Split(vRule, "|")
 			}

@@ -24,6 +24,9 @@ func init() {
 const (
 	RuleRequired = "required"
 	RuleRegexp   = "regexp"
+	// RuleSafe means skip validate this field
+	RuleSafe  = "safe"
+	RuleSafe1 = "-"
 )
 
 // validator func reflect.Value map

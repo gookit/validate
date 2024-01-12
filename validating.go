@@ -244,7 +244,7 @@ type value struct {
 //   - name: the validator name. eg: "required", "min"
 func (r *Rule) valueValidate(field, name string, val any, v *Validation) (ok bool) {
 	// "-" OR "safe" mark field value always is safe.
-	if name == "-" || name == "safe" {
+	if name == RuleSafe1 || name == RuleSafe {
 		return true
 	}
 
