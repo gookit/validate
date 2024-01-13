@@ -1597,6 +1597,59 @@ func TestIssues_247(t *testing.T) {
 	fmt.Println(v.Errors)
 }
 
+// https://github.com/gookit/validate/issues/250
+// Does not work with *int ?
+func TestIssues_250(t *testing.T) {
+	type Salary struct {
+		MinSalary   *int `json:"MinSalary" validate:"int|min:10000" message:"The minimum salary is 10.000 EUR"`
+		OkSalary    *int `json:"OkSalary" validate:"int|min:10000" message:"The ok salary is larger than 10.000 EUR"`
+		HappySalary *int `json:"HappySalary" validate:"int|min:10000" message:"The happy salary is larger than 10.000 EUR"`
+	}
+
+	// works: optional
+	st := &Salary{}
+	v := validate.Struct(st)
+	assert.True(t, v.Validate())
+
+	// works
+	iv := 3
+	st = &Salary{
+		MinSalary: &iv,
+	}
+	v = validate.Struct(st)
+	assert.False(t, v.Validate())
+	assert.ErrMsg(t, v.Errors, "MinSalary: The minimum salary is 10.000 EUR")
+
+	// works: use zero value
+	iv2 := 0
+	st = &Salary{
+		MinSalary: &iv2,
+	}
+	v = validate.Struct(st)
+	assert.False(t, v.Validate())
+	assert.ErrMsg(t, v.Errors, "MinSalary: The minimum salary is 10.000 EUR")
+
+	// case 2
+	type A struct {
+		A1 *int `validate:"int|min:200"`
+		A2 *int `validate:"int|min:200"`
+	}
+
+	// works
+	i := 3
+	pa := A{A1: &i, A2: nil}
+	v = validate.Struct(pa)
+	assert.False(t, v.Validate())
+	assert.StrContains(t, v.Errors.String(), "A1 min value is 200")
+
+	// works
+	i2 := 0
+	pa = A{A1: &i2, A2: nil}
+	v = validate.Struct(pa)
+	assert.False(t, v.Validate())
+	assert.StrContains(t, v.Errors.String(), "A1 min value is 200")
+}
+
 // DataIssues252 struct
 type DataIssues252 struct {
 	PtrStrings *[]string `validate:"strings"`
