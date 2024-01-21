@@ -93,6 +93,10 @@ type Validation struct {
 
 	// translator instance
 	trans *Translator
+	// optional fields, useful for sub-struct field in struct data. eg: "Parent"
+	//
+	// key is field name, value is field vale is: init=0 empty=1 not-empty=2.
+	optionals map[string]int8
 }
 
 // NewEmpty new validation instance, but not with data.
@@ -137,6 +141,7 @@ func (v *Validation) Reset() {
 func (v *Validation) resetRules() {
 	// reset rules
 	v.rules = v.rules[:0]
+	v.optionals = make(map[string]int8)
 	v.filterRules = v.filterRules[:0]
 }
 
@@ -580,6 +585,35 @@ func (v *Validation) FilteredData() M {
 // on stop on error
 func (v *Validation) shouldStop() bool {
 	return v.hasError && v.StopOnError
+}
+
+// check current field is in optional parent field.
+//
+// return: true - optional parent field value is empty.
+func (v *Validation) isInOptional(field string) bool {
+	for name, flag := range v.optionals {
+		// check like: field="Parent.Child" name="Parent"
+		if strings.HasPrefix(field, name+".") {
+			if flag != 0 {
+				return flag == 1 // 1=empty
+			}
+
+			pVal, exist, zero := v.tryGet(name)
+			if !exist || zero {
+				v.optionals[name] = 1
+				return true // not check field.
+			}
+			if IsEmpty(pVal) {
+				v.optionals[name] = 1
+				return true // not check field.
+			}
+
+			v.optionals[name] = 2
+			return false
+		}
+	}
+
+	return false
 }
 
 func (v *Validation) isNotNeedToCheck(field string) bool {

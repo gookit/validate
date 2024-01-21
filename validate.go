@@ -167,7 +167,8 @@ func newEmpty() *Validation {
 		// trans: StdTranslator,
 		trans: NewTranslator(),
 		// validated data
-		safeData: make(map[string]any),
+		safeData:  make(map[string]any),
+		optionals: make(map[string]int8),
 		// validator names
 		validators: make(map[string]int8, 16),
 		// filtered data

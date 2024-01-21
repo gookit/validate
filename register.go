@@ -23,7 +23,10 @@ func init() {
 // some commonly validation rule names.
 const (
 	RuleRequired = "required"
-	RuleRegexp   = "regexp"
+	RuleOptional = "optional"
+
+	RuleDefault = "default"
+	RuleRegexp  = "regexp"
 	// RuleSafe means skip validate this field
 	RuleSafe  = "safe"
 	RuleSafe1 = "-"

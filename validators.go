@@ -177,6 +177,10 @@ func Validators() map[string]int8 {
 
 // Required field val check
 func (v *Validation) Required(field string, val any) bool {
+	if v.isInOptional(field) {
+		return true
+	}
+
 	if v.data != nil && v.data.Type() == sourceForm {
 		// check is upload file
 		if v.data.(*FormData).HasFile(field) {

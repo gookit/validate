@@ -190,7 +190,7 @@ func (v *Validation) StringRule(field, rule string, filterRule ...string) *Valid
 			realName := ValidatorName(validator)
 			switch realName {
 			// add default value for the field
-			case "default":
+			case RuleDefault:
 				v.SetDefValue(field, list[1])
 			// eg 'regex:\d{4,6}' dont need split args. args is "\d{4,6}"
 			case RuleRegexp:
@@ -260,11 +260,18 @@ func (v *Validation) addOneRule(fields, validator, realName string, args []any) 
 	// init some settings
 	rule.realName = realName
 	rule.skipEmpty = v.SkipOnEmpty
-	// validator name is not "required"
-	rule.nameNotRequired = !strings.HasPrefix(realName, "required")
+	rule.optional = realName == RuleOptional
+	// validator name is not "requiredX"
+	rule.nameNotRequired = !strings.HasPrefix(realName, RuleRequired)
 
-	// append
+	// append rule
 	v.rules = append(v.rules, rule)
+	if rule.optional {
+		for _, field := range rule.fields {
+			v.optionals[field] = 0
+		}
+	}
+
 	return rule
 }
 

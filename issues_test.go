@@ -1261,6 +1261,49 @@ func TestIssues_172(t *testing.T) {
 	assert.Equal(t, []string{"test.com", "oof.com", "foobar.com"}, f.Domains)
 }
 
+// https://github.com/gookit/validate/issues/192
+// v1.4.6 change has broken existing behaviour #192
+func TestIssues_192(t *testing.T) {
+	type Request struct {
+		Main1 *struct {
+			Child11 int `json:"child11" validate:"required"`
+			Child12 int `json:"child12" validate:"required"`
+		} `json:"main1" validate:"optional"` // optional sometimes
+
+		Main2 *struct {
+			Child21 int `json:"child21" validate:"required"`
+			Child22 int `json:"child22" validate:"required"`
+		} `json:"main2"`
+	}
+
+	jsonStr := `{
+  "main1": {
+    "child12": 2
+  },
+  "main2": {
+    "child21": 5,
+    "child22": 6
+  }
+}`
+
+	req := &Request{}
+	err := jsonutil.DecodeString(jsonStr, req)
+	assert.NoErr(t, err)
+
+	t.Run("with child data", func(t *testing.T) {
+		v := validate.Struct(req)
+		assert.False(t, v.Validate())
+		assert.StrContains(t, v.Errors.String(), "main1.child11 is required to not be empty")
+	})
+
+	// set main1 = nil, should not validate Main1.child1
+	t.Run("set main1 to nil", func(t *testing.T) {
+		req.Main1 = nil // TODO 应该不验证child1字段了
+		v := validate.Struct(req)
+		assert.True(t, v.Validate())
+	})
+}
+
 // https://github.com/gookit/validate/issues/206
 func TestIssues_206(t *testing.T) {
 	m := map[string]any{
@@ -1291,7 +1334,7 @@ func TestIssues_206(t *testing.T) {
 	assert.False(t, v.Validate())
 	// fmt.Println(v.Errors)
 	assert.Len(t, v.Errors, 1)
-	assert.StrContains(t, v.Errors.String(), "full_url: origins.*.name must be a valid full URL address")
+	assert.StrContains(t, v.Errors.String(), "origins.*.name must be a valid full URL address")
 }
 
 // https://github.com/gookit/validate/issues/209
@@ -1493,7 +1536,7 @@ func TestIssues_242(t *testing.T) {
 	assert.False(t, v.Validate())
 	s := v.Errors.String()
 	fmt.Println(v.Errors)
-	assert.StrContains(t, s, "requiredWithoutAll: ID field is required when none of [NewID] are present")
+	assert.StrContains(t, s, "ID field is required when none of [NewID] are present")
 }
 
 // https://github.com/gookit/validate/issues/245
@@ -1606,28 +1649,25 @@ func TestIssues_250(t *testing.T) {
 		HappySalary *int `json:"HappySalary" validate:"int|min:10000" message:"The happy salary is larger than 10.000 EUR"`
 	}
 
-	// works: optional
-	st := &Salary{}
+	// works: optional + right value
+	iv1 := 30000
+	st := &Salary{OkSalary: &iv1}
 	v := validate.Struct(st)
 	assert.True(t, v.Validate())
 
 	// works
 	iv := 3
-	st = &Salary{
-		MinSalary: &iv,
-	}
+	st = &Salary{MinSalary: &iv}
 	v = validate.Struct(st)
 	assert.False(t, v.Validate())
-	assert.ErrMsg(t, v.Errors, "MinSalary: The minimum salary is 10.000 EUR")
+	assert.ErrMsg(t, v.Errors, "min: The minimum salary is 10.000 EUR")
 
 	// works: use zero value
 	iv2 := 0
-	st = &Salary{
-		MinSalary: &iv2,
-	}
+	st = &Salary{MinSalary: &iv2}
 	v = validate.Struct(st)
 	assert.False(t, v.Validate())
-	assert.ErrMsg(t, v.Errors, "MinSalary: The minimum salary is 10.000 EUR")
+	assert.ErrMsg(t, v.Errors, "min: The minimum salary is 10.000 EUR")
 
 	// case 2
 	type A struct {
@@ -1635,16 +1675,22 @@ func TestIssues_250(t *testing.T) {
 		A2 *int `validate:"int|min:200"`
 	}
 
-	// works
-	i := 3
+	// works: optional + right value
+	i := 300
 	pa := A{A1: &i, A2: nil}
+	v = validate.Struct(pa)
+	assert.True(t, v.Validate())
+
+	// works: optional + error value
+	i2 := 3
+	pa = A{A1: &i2, A2: nil}
 	v = validate.Struct(pa)
 	assert.False(t, v.Validate())
 	assert.StrContains(t, v.Errors.String(), "A1 min value is 200")
 
 	// works
-	i2 := 0
-	pa = A{A1: &i2, A2: nil}
+	i3 := 0
+	pa = A{A1: &i3, A2: nil}
 	v = validate.Struct(pa)
 	assert.False(t, v.Validate())
 	assert.StrContains(t, v.Errors.String(), "A1 min value is 200")
