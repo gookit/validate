@@ -115,8 +115,8 @@ func (es Errors) String() string {
 	for field, fe := range es {
 		// only one error, return simple format: "field: message"
 		if ln == 1 && len(fe) == 1 {
-			for _, msg := range fe {
-				return fmt.Sprintf("%s: %s", field, msg)
+			for vName, msg := range fe {
+				return fmt.Sprintf("%s: %s", vName, msg)
 			}
 		}
 
