@@ -58,7 +58,7 @@ jobs:
           uses: WillAbides/setup-go-faster@v1.13.0
           timeout-minutes: 3
           with:
-            go-version: *
+            go-version: "*"
 
         - name: golangci-lint
           uses: golangci/golangci-lint-action@v3

@@ -94,7 +94,7 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 	var err error
 	// get real validator name
 	name := r.realName
-	// validator name is not "required"
+	// validator name is not "requiredXXX"
 	isNotRequired := r.nameNotRequired
 
 	// validate each field
