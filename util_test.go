@@ -110,3 +110,7 @@ func TestCallByValue_nil_arg(t *testing.T) {
 	rs := CallByValue(reflect.ValueOf(fn1), nil)
 	dump.P(rs[0].CanInterface(), rs[0].Interface())
 }
+
+func TestFunc_convertArgsType(t *testing.T) {
+	// TODO add more test case ...
+}

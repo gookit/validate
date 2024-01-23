@@ -860,6 +860,7 @@ func TestIssues_120(t *testing.T) {
 }
 
 // https://github.com/gookit/validate/issues/124
+// Validate array/slice items #124
 func TestIssue_124(t *testing.T) {
 	m := map[string]any{
 		"names": []string{"John", "Jane", "abc"},
@@ -1268,7 +1269,7 @@ func TestIssues_192(t *testing.T) {
 		Main1 *struct {
 			Child11 int `json:"child11" validate:"required"`
 			Child12 int `json:"child12" validate:"required"`
-		} `json:"main1" validate:"optional"` // optional sometimes
+		} `json:"main1" validate:"optional"` // optional - will not validate Main1.* on Main1 is nil
 
 		Main2 *struct {
 			Child21 int `json:"child21" validate:"required"`
@@ -1296,9 +1297,9 @@ func TestIssues_192(t *testing.T) {
 		assert.StrContains(t, v.Errors.String(), "main1.child11 is required to not be empty")
 	})
 
-	// set main1 = nil, should not validate Main1.child1
+	// set main1 = nil, should not validate Main1.*
 	t.Run("set main1 to nil", func(t *testing.T) {
-		req.Main1 = nil // TODO 应该不验证child1字段了
+		req.Main1 = nil // fields under Main1 will not be validated
 		v := validate.Struct(req)
 		assert.True(t, v.Validate())
 	})
