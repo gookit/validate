@@ -1709,3 +1709,50 @@ func TestIssues_252(t *testing.T) {
 	ok := v.Validate()
 	assert.True(t, ok)
 }
+
+// https://github.com/gookit/validate/issues/255
+// Error when using custom filter with pointer to slice of strings #255
+func TestIssues_255(t *testing.T) {
+	type Request struct {
+		PtrStringSlice *[]string `json:"string_slice" filter:"ptrTrimStrings" validate:"strings"`
+	}
+
+	t.Run("return pointer", func(t *testing.T) {
+		ss1 := []string{" foobar "}
+		req := &Request{PtrStringSlice: &ss1}
+		v := validate.New(req)
+
+		v.AddFilters(validate.M{
+			"ptrTrimStrings": func(val *[]string) *[]string {
+				trimmedSlice := make([]string, len(*val))
+				for i, str := range *val {
+					trimmedSlice[i] = strings.TrimSpace(str)
+				}
+				return &trimmedSlice
+			},
+		})
+
+		assert.True(t, v.Validate())
+		assert.Equal(t, []string{"foobar"}, *req.PtrStringSlice)
+	})
+
+	t.Run("return value", func(t *testing.T) {
+		ss1 := []string{" foobar "}
+		req := &Request{PtrStringSlice: &ss1}
+		v := validate.New(req)
+
+		// return value []string
+		v.AddFilters(validate.M{
+			"ptrTrimStrings": func(val *[]string) []string {
+				trimmedSlice := make([]string, len(*val))
+				for i, str := range *val {
+					trimmedSlice[i] = strings.TrimSpace(str)
+				}
+				return trimmedSlice
+			},
+		})
+
+		assert.True(t, v.Validate())
+		assert.Equal(t, []string{"foobar"}, *req.PtrStringSlice)
+	})
+}

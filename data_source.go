@@ -666,7 +666,7 @@ func (d *StructData) Set(field string, val any) (newVal any, err error) {
 
 	// Notice: need convert value type
 	// - check whether you can direct convert type
-	rftVal := reflect.ValueOf(val)
+	rftVal := removeValuePtr(reflect.ValueOf(val))
 	if rftVal.Type().ConvertibleTo(fv.Type()) {
 		fv.Set(rftVal.Convert(fv.Type()))
 		return val, nil
