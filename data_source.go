@@ -384,7 +384,7 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 					fValue = removeValuePtr(fValue)
 
 					// Check if the reflect.Value is valid and not a nil pointer
-					if !fValue.IsValid() {
+					if !fValue.IsValid() || fValue.IsNil() {
 						continue
 					}
 
@@ -400,6 +400,12 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 
 				case reflect.Map:
 					fValue = removeValuePtr(fValue)
+
+					// Check if the reflect.Value is valid and not a nil pointer
+					if !fValue.IsValid() || fValue.IsNil() {
+						continue
+					}
+
 					for _, key := range fValue.MapKeys() {
 						key = removeValuePtr(key)
 						elemValue := removeValuePtr(fValue.MapIndex(key))
