@@ -627,6 +627,8 @@ func main() {
 			return 1, nil
 		},
 	})
+	// use the added filter
+	v.FilterRule("field", "myToIntFilter0")
 }
 ```
 

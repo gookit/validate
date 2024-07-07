@@ -40,8 +40,7 @@ func main() {
 		v := data.Create()
 		// setting rules
 		v.
-			// StringRule("categoryId", "required|int|min:1", "newIsInt").
-			StringRule("categoryId", "required|int|min:1", "toInt").
+			StringRule("categoryId", "required|int|min:1", "newIsInt").
 			AddMessages(map[string]string{
 				"required": "the {field} is required",
 				"min":      "{field} min value is %d",
