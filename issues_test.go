@@ -1757,3 +1757,21 @@ func TestIssues_255(t *testing.T) {
 		assert.Equal(t, []string{"foobar"}, *req.PtrStringSlice)
 	})
 }
+
+// https://github.com/gookit/validate/issues/276
+// Struct validation: invalid memory address or nil pointer dereference #276
+func TestIssues_276(t *testing.T) {
+	type user struct {
+		Name string `validate:"required"`
+		Age  int    `validate:"required_if:Name,lee"`
+	}
+
+	u := &user{Name: "lee"}
+	v := validate.Struct(u)
+
+	assert.False(t, v.Validate())
+	fmt.Println(v.Errors)              // all error messages
+	fmt.Println(v.Errors.One())        // returns a random error message text
+	fmt.Println(v.Errors.OneError())   // returns a random error
+	fmt.Println(v.Errors.Field("Age")) // returns error messages of the field
+}

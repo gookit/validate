@@ -462,11 +462,19 @@ func IsEmpty(val any) bool {
 	if val == nil {
 		return true
 	}
-
 	if s, ok := val.(string); ok {
 		return s == ""
 	}
-	return ValueIsEmpty(reflect.ValueOf(val))
+
+	var rv reflect.Value
+
+	// type check val is reflect.Value
+	if v2, ok := val.(reflect.Value); ok {
+		rv = v2
+	} else {
+		rv = reflect.ValueOf(val)
+	}
+	return ValueIsEmpty(rv)
 }
 
 // Contains check that the specified string, list(array, slice) or map contains the
