@@ -3,7 +3,7 @@ module github.com/gookit/validate
 go 1.18
 
 require (
-	github.com/gookit/filter v1.2.1
+	github.com/gookit/filter v1.2.2
 	github.com/gookit/goutil v0.6.18
 )
 

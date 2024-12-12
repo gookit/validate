@@ -1,8 +1,8 @@
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/gookit/color v1.5.4 h1:FZmqs7XOyGgCAxmWyPslpiok1k05wmY3SJTytgvYFs0=
 github.com/gookit/color v1.5.4/go.mod h1:pZJOeOS8DM43rXbp4AZo1n9zCU2qjpcRko0b6/QJi9w=
-github.com/gookit/filter v1.2.1 h1:37XivkBm2E5qe1KaGdJ5ZfF5l9NYdGWfLEeQadJD8O4=
-github.com/gookit/filter v1.2.1/go.mod h1:rxynQFr793x+XDwnRmJFEb53zDw0Zqx3OD7TXWoR9mQ=
+github.com/gookit/filter v1.2.2 h1:LSBQLk4M4fpfhaOG0hJ/GJ+qu+2+lLddgxlGfzcd8VQ=
+github.com/gookit/filter v1.2.2/go.mod h1:y4xpiqM/fV9g9yT/Vg5OWUq4q9siPj0UlH9O57xYuGs=
 github.com/gookit/goutil v0.6.18 h1:MUVj0G16flubWT8zYVicIuisUiHdgirPAkmnfD2kKgw=
 github.com/gookit/goutil v0.6.18/go.mod h1:AY/5sAwKe7Xck+mEbuxj0n/bc3qwrGNe3Oeulln7zBA=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
