@@ -1775,3 +1775,14 @@ func TestIssues_276(t *testing.T) {
 	fmt.Println(v.Errors.OneError())   // returns a random error
 	fmt.Println(v.Errors.Field("Age")) // returns error messages of the field
 }
+
+// https://github.com/gookit/validate/issues/280
+func TestIssues_280(t *testing.T) {
+	type TestData struct {
+		ID mockUUID
+	}
+
+	data := TestData{}
+	v := validate.New(data)
+	assert.Nil(t, v.ValidateErr())
+}

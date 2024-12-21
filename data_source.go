@@ -384,7 +384,11 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 					fValue = removeValuePtr(fValue)
 
 					// Check if the reflect.Value is valid and not a nil pointer
-					if !fValue.IsValid() || fValue.IsNil() {
+					if !fValue.IsValid() || (ft.Kind() == reflect.Slice && fValue.IsNil()) {
+						continue
+					}
+					// perf: skip parse on elements is simple kind
+					if reflects.IsSimpleKind(ft.Elem().Kind()) {
 						continue
 					}
 
