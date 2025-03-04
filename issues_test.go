@@ -200,7 +200,7 @@ func TestIssues_34(t *testing.T) {
 	v := validate.New(validate.M{
 		"age": s1,
 	})
-	v.AddValidator("checkAge", func(val any, ints ...int) bool {
+	v.AddValidator("checkAge", func(_ validate.M, val any, ints ...int) bool {
 		return validate.Enum(int32(val.(STATUS)), ints)
 	})
 	v.StringRule("age", "required|checkAge:1,2,3,4")
