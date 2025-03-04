@@ -259,19 +259,21 @@ func TestValidation_RequiredWithoutAll(t *testing.T) {
 func TestVariadicArgs(t *testing.T) {
 	// use custom validator
 	v := New(M{
-		"age": 2,
+		"age":  2,
+		"name": "inhere",
 	})
-	v.AddValidator("checkAge", func(_ M, val any, ints ...int) bool {
-		return Enum(val, ints)
+	v.AddValidator("checkAge", func(data M, val any, ints ...int) bool {
+		return Enum(val, ints) && data["name"] == "inhere"
 	})
 	v.StringRule("age", "required|checkAge:1,2,3,4")
 	assert.True(t, v.Validate())
 
 	v = New(M{
-		"age": 2,
+		"age":  2,
+		"name": "haozi",
 	})
-	v.AddValidator("checkAge", func(_ M, val any, ints ...any) bool {
-		return Enum(val, ints)
+	v.AddValidator("checkAge", func(data M, val any, ints ...any) bool {
+		return Enum(val, ints) && data["name"] != "inhere"
 	})
 	v.StringRule("age", "required|checkAge:1,2,3,4")
 	ok := v.Validate()

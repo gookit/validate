@@ -222,7 +222,7 @@ func TestStruct(t *testing.T) {
 	is.Equal("User Name min length is 7", v.Errors.FieldOne("Name"))
 	is.Equal("oh! the UpdateAt is required", v.Errors.FieldOne("UpdateAt"))
 	is.Empty(v.SafeData())
-	is.Empty(v.FilteredData())
+	is.NotEmpty(v.FilteredData())
 
 	u.Name = "new name"
 	u.Status = 3
