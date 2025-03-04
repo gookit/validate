@@ -268,12 +268,12 @@ func (r *Rule) valueValidate(field, name string, val any, v *Validation) (ok boo
 
 	// 1. args number check
 	ft := fm.fv.Type() // type of check func
-	arg1Kind := ft.In(0).Kind()
-	// if arg 0 is M, need to add "data" to args.
+	valArgKind := ft.In(0).Kind()
+	// if arg 0 is DataFace, need to add "data" to args.
 	addNum := 1
 	if ft.In(0) == reflect.TypeOf((*DataFace)(nil)).Elem() {
 		addNum += 1
-		arg1Kind = ft.In(1).Kind()
+		valArgKind = ft.In(1).Kind()
 	}
 
 	// some prepare and check.
@@ -316,10 +316,10 @@ func (r *Rule) valueValidate(field, name string, val any, v *Validation) (ok boo
 			subKind := subRv.Kind()
 
 			// 1.1 convert field value type, is func first argument.
-			if r.nameNotRequired && arg1Kind != reflect.Interface && arg1Kind != subKind {
-				subVal, ok = convValAsFuncArg1Type(arg1Kind, subKind, subRv.Interface())
+			if r.nameNotRequired && valArgKind != reflect.Interface && valArgKind != subKind {
+				subVal, ok = convValAsFuncValArgType(valArgKind, subKind, subRv.Interface())
 				if !ok {
-					v.convArgTypeError(field, fm.name, subKind, arg1Kind, 1)
+					v.convArgTypeError(field, fm.name, subKind, valArgKind, 1)
 					return false
 				}
 			} else {
@@ -340,10 +340,10 @@ func (r *Rule) valueValidate(field, name string, val any, v *Validation) (ok boo
 	}
 
 	// 3. convert field value type, is func first argument.
-	if r.nameNotRequired && arg1Kind != reflect.Interface && arg1Kind != valKind {
-		val, ok = convValAsFuncArg1Type(arg1Kind, valKind, val)
+	if r.nameNotRequired && valArgKind != reflect.Interface && valArgKind != valKind {
+		val, ok = convValAsFuncValArgType(valArgKind, valKind, val)
 		if !ok {
-			v.convArgTypeError(field, fm.name, valKind, arg1Kind, 1)
+			v.convArgTypeError(field, fm.name, valKind, valArgKind, 1)
 			return false
 		}
 	}
@@ -353,10 +353,10 @@ func (r *Rule) valueValidate(field, name string, val any, v *Validation) (ok boo
 }
 
 // convert input field value type, is validator func first argument.
-func convValAsFuncArg1Type(arg1Kind, valKind reflect.Kind, val any) (any, bool) {
+func convValAsFuncValArgType(valArgKind, valKind reflect.Kind, val any) (any, bool) {
 	// If the validator function does not expect a pointer, but the value is a pointer,
 	// dereference the value.
-	if arg1Kind != reflect.Ptr && valKind == reflect.Ptr {
+	if valArgKind != reflect.Ptr && valKind == reflect.Ptr {
 		if val == nil {
 			return nil, true
 		}
@@ -372,7 +372,7 @@ func convValAsFuncArg1Type(arg1Kind, valKind reflect.Kind, val any) (any, bool) 
 	}
 
 	// manual converted
-	if nVal, _ := convTypeByBaseKind(val, bk, arg1Kind); nVal != nil {
+	if nVal, _ := convTypeByBaseKind(val, bk, valArgKind); nVal != nil {
 		return nVal, true
 	}
 	// TODO return nil, false

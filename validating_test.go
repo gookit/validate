@@ -261,7 +261,7 @@ func TestVariadicArgs(t *testing.T) {
 	v := New(M{
 		"age": 2,
 	})
-	v.AddValidator("checkAge", func(_ DataFace, val any, ints ...int) bool {
+	v.AddValidator("checkAge", func(val any, ints ...int) bool {
 		return Enum(val, ints)
 	})
 	v.StringRule("age", "required|checkAge:1,2,3,4")
@@ -270,7 +270,7 @@ func TestVariadicArgs(t *testing.T) {
 	v = New(M{
 		"age": 2,
 	})
-	v.AddValidator("checkAge", func(_ DataFace, val any, ints ...any) bool {
+	v.AddValidator("checkAge", func(val any, ints ...any) bool {
 		return Enum(val, ints)
 	})
 	v.StringRule("age", "required|checkAge:1,2,3,4")
