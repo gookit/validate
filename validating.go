@@ -97,19 +97,6 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 	// validator name is not "requiredXXX"
 	isNotRequired := r.nameNotRequired
 
-	// apply filter func
-	for _, field := range r.fields {
-		val, _, _ := v.GetWithDefault(field)
-		if r.filterFunc != nil {
-			if val, err = r.filterFunc(val); err != nil {
-				v.AddError(filterError, filterError, field+": "+err.Error())
-				return true
-			}
-		}
-		// save filtered value
-		v.filteredData[field] = val
-	}
-
 	// validate each field
 	for _, field := range r.fields {
 		if v.isNotNeedToCheck(field) {
@@ -129,13 +116,13 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 			continue
 		}
 
-		// get field value
-		val, _, isDefault := v.GetWithDefault(field)
+		// get field value. val, exist := v.Get(field)
+		val, exist, isDefault := v.GetWithDefault(field)
 
 		// value not exists but has default value
 		if isDefault {
 			// update source data field value and re-set value
-			val, err = v.updateValue(field, val)
+			val, err := v.updateValue(field, val)
 			if err != nil {
 				v.AddErrorf(field, err.Error())
 				if v.StopOnError {
@@ -149,8 +136,34 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 				v.safeData[field] = val // save validated value.
 				continue
 			}
+
+			// go on check custom default value
+			exist = true
 		} else if r.optional { // r.optional=true. skip check.
 			continue
+		}
+
+		// apply filter func.
+		if exist && r.filterFunc != nil {
+			if val, err = r.filterFunc(val); err != nil {
+				v.AddError(filterError, filterError, field+": "+err.Error())
+				return true
+			}
+
+			// update source field value
+			newVal, err := v.updateValue(field, val)
+			if err != nil {
+				v.AddErrorf(field, err.Error())
+				if v.StopOnError {
+					return true
+				}
+				continue
+			}
+
+			// re-set value
+			val = newVal
+			// save filtered value.
+			v.filteredData[field] = val
 		}
 
 		// empty value AND is not required* AND skip on empty.
@@ -258,7 +271,7 @@ func (r *Rule) valueValidate(field, name string, val any, v *Validation) (ok boo
 	arg1Kind := ft.In(0).Kind()
 	// if arg 0 is M, need to add "data" to args.
 	addNum := 1
-	if ft.In(0) == reflect.TypeOf(M{}) {
+	if ft.In(0) == reflect.TypeOf((*DataFace)(nil)).Elem() {
 		addNum += 1
 		arg1Kind = ft.In(1).Kind()
 	}
@@ -531,10 +544,6 @@ func callValidatorValue(v *Validation, fv reflect.Value, val any, args []any, ad
 	argNum := len(args)
 	argIn := make([]reflect.Value, argNum+addNum)
 
-	dataVal := reflect.ValueOf(v.FilteredData())
-	if !dataVal.IsValid() {
-		dataVal = nilRVal
-	}
 	// if val is any(nil): rftVal.IsValid()==false
 	// if val is typed(nil): rftVal.IsValid()==true
 	rftVal := reflect.ValueOf(val)
@@ -548,9 +557,11 @@ func callValidatorValue(v *Validation, fv reflect.Value, val any, args []any, ad
 		rftVal = rftVal.Elem()
 	}
 
+	// if addNum == 1, means the first arg is val
 	argIn[0] = rftVal
+	// if addNum == 2, means the first arg is data and second arg is val
 	if addNum == 2 {
-		argIn[0] = dataVal
+		argIn[0] = reflect.ValueOf(v.data)
 		argIn[1] = rftVal
 	}
 	for i := 0; i < argNum; i++ {

@@ -259,25 +259,45 @@ func TestValidation_RequiredWithoutAll(t *testing.T) {
 func TestVariadicArgs(t *testing.T) {
 	// use custom validator
 	v := New(M{
-		"age":  2,
-		"name": "inhere",
+		"age": 2,
 	})
-	v.AddValidator("checkAge", func(data M, val any, ints ...int) bool {
-		return Enum(val, ints) && data["name"] == "inhere"
+	v.AddValidator("checkAge", func(_ DataFace, val any, ints ...int) bool {
+		return Enum(val, ints)
 	})
 	v.StringRule("age", "required|checkAge:1,2,3,4")
 	assert.True(t, v.Validate())
 
 	v = New(M{
-		"age":  2,
-		"name": "haozi",
+		"age": 2,
 	})
-	v.AddValidator("checkAge", func(data M, val any, ints ...any) bool {
-		return Enum(val, ints) && data["name"] != "inhere"
+	v.AddValidator("checkAge", func(_ DataFace, val any, ints ...any) bool {
+		return Enum(val, ints)
 	})
 	v.StringRule("age", "required|checkAge:1,2,3,4")
 	ok := v.Validate()
 	assert.True(t, ok)
+}
+
+func TestValidation_Validate(t *testing.T) {
+	v := New(M{
+		"name": "haozi",
+	})
+	v.AddValidator("checkName", func(data DataFace, val any) bool {
+		name, exist := data.Get("name")
+		return name == "haozi" && exist
+	})
+	v.StringRule("name", "required|checkName")
+	assert.True(t, v.Validate())
+
+	v = New(M{
+		"age": 2,
+	})
+	v.AddValidator("checkAge", func(data DataFace, val any) bool {
+		age, exist := data.Get("age")
+		return age == 2 && exist
+	})
+	v.StringRule("age", "required|checkAge")
+	assert.True(t, v.Validate())
 }
 
 func TestValidation_Validate_filter(t *testing.T) {
