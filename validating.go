@@ -474,7 +474,7 @@ func convertArgsType(v *Validation, fm *funcMeta, field string, args []any, addN
 	}
 
 	// only one args and type is any
-	if (lastArgIndex == 1 || lastArgIndex == 2) && lastTyp == reflect.Interface {
+	if (lastArgIndex == 1 || (addNum == 2 && lastArgIndex == 2)) && lastTyp == reflect.Interface {
 		return true
 	}
 
