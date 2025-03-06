@@ -266,22 +266,29 @@ func (r *Rule) valueValidate(field, name string, val any, v *Validation) (ok boo
 		}
 	}
 
+	// 1. args number check
+	ft := fm.fv.Type() // type of check func
+	valArgKind := ft.In(0).Kind()
+	// if arg 0 is DataFace, need to add "data" to args.
+	addNum := 1
+	if ft.In(0) == reflect.TypeOf((*DataFace)(nil)).Elem() {
+		addNum += 1
+		valArgKind = ft.In(1).Kind()
+	}
+
 	// some prepare and check.
-	argNum := len(r.arguments) + 1 // "+1" is the "val" position
+	argNum := len(r.arguments) + addNum // "data" and "val" position
 	// check arg num is match, need exclude "requiredXXX"
 	if r.nameNotRequired {
 		//noinspection GoNilness
 		fm.checkArgNum(argNum, r.validator)
 	}
 
-	// 1. args data type convert
+	// 2. args data type convert
 	args := r.arguments
-	if ok = convertArgsType(v, fm, field, args); !ok {
+	if ok = convertArgsType(v, fm, field, args, addNum); !ok {
 		return false
 	}
-
-	ft := fm.fv.Type() // type of check func
-	arg0Kind := ft.In(0).Kind()
 
 	// rftVal := reflect.Indirect(reflect.ValueOf(val))
 	rftVal := reflect.ValueOf(val)
@@ -299,7 +306,7 @@ func (r *Rule) valueValidate(field, name string, val any, v *Validation) (ok boo
 		// check requiredXX validate - flatten multi level slice, count ".*" number.
 		// TIP: if len < cap: not enough elements in the slice. use empty val call validator.
 		if !r.nameNotRequired && sliceLen < sliceCap {
-			return callValidator(v, fm, field, nil, r.arguments)
+			return callValidator(v, fm, field, nil, r.arguments, addNum)
 		}
 
 		var subVal any
@@ -309,10 +316,10 @@ func (r *Rule) valueValidate(field, name string, val any, v *Validation) (ok boo
 			subKind := subRv.Kind()
 
 			// 1.1 convert field value type, is func first argument.
-			if r.nameNotRequired && arg0Kind != reflect.Interface && arg0Kind != subKind {
-				subVal, ok = convValAsFuncArg0Type(arg0Kind, subKind, subRv.Interface())
+			if r.nameNotRequired && valArgKind != reflect.Interface && valArgKind != subKind {
+				subVal, ok = convValAsFuncValArgType(valArgKind, subKind, subRv.Interface())
 				if !ok {
-					v.convArgTypeError(field, fm.name, subKind, arg0Kind, 0)
+					v.convArgTypeError(field, fm.name, subKind, valArgKind, 1)
 					return false
 				}
 			} else {
@@ -324,7 +331,7 @@ func (r *Rule) valueValidate(field, name string, val any, v *Validation) (ok boo
 			}
 
 			// 2. call built in validator
-			if !callValidator(v, fm, field, subVal, r.arguments) {
+			if !callValidator(v, fm, field, subVal, r.arguments, addNum) {
 				return false
 			}
 		}
@@ -332,24 +339,24 @@ func (r *Rule) valueValidate(field, name string, val any, v *Validation) (ok boo
 		return true
 	}
 
-	// 1 convert field value type, is func first argument.
-	if r.nameNotRequired && arg0Kind != reflect.Interface && arg0Kind != valKind {
-		val, ok = convValAsFuncArg0Type(arg0Kind, valKind, val)
+	// 3. convert field value type, is func first argument.
+	if r.nameNotRequired && valArgKind != reflect.Interface && valArgKind != valKind {
+		val, ok = convValAsFuncValArgType(valArgKind, valKind, val)
 		if !ok {
-			v.convArgTypeError(field, fm.name, valKind, arg0Kind, 0)
+			v.convArgTypeError(field, fm.name, valKind, valArgKind, 1)
 			return false
 		}
 	}
 
-	// 2. call built in validator
-	return callValidator(v, fm, field, val, r.arguments)
+	// 4. call built in validator
+	return callValidator(v, fm, field, val, r.arguments, addNum)
 }
 
 // convert input field value type, is validator func first argument.
-func convValAsFuncArg0Type(arg0Kind, valKind reflect.Kind, val any) (any, bool) {
+func convValAsFuncValArgType(valArgKind, valKind reflect.Kind, val any) (any, bool) {
 	// If the validator function does not expect a pointer, but the value is a pointer,
 	// dereference the value.
-	if arg0Kind != reflect.Ptr && valKind == reflect.Ptr {
+	if valArgKind != reflect.Ptr && valKind == reflect.Ptr {
 		if val == nil {
 			return nil, true
 		}
@@ -365,14 +372,14 @@ func convValAsFuncArg0Type(arg0Kind, valKind reflect.Kind, val any) (any, bool) 
 	}
 
 	// manual converted
-	if nVal, _ := convTypeByBaseKind(val, bk, arg0Kind); nVal != nil {
+	if nVal, _ := convTypeByBaseKind(val, bk, valArgKind); nVal != nil {
 		return nVal, true
 	}
 	// TODO return nil, false
 	return val, true
 }
 
-func callValidator(v *Validation, fm *funcMeta, field string, val any, args []any) (ok bool) {
+func callValidator(v *Validation, fm *funcMeta, field string, val any, args []any, addNum int) (ok bool) {
 	// use `switch` can avoid using reflection to call methods and improve speed
 	// fm.name please see pkg var: validatorValues
 	switch fm.name {
@@ -444,13 +451,13 @@ func callValidator(v *Validation, fm *funcMeta, field string, val any, args []an
 		ok = IsSlice(val)
 	default:
 		// 3. call user custom validators, will call by reflect
-		ok = callValidatorValue(fm.fv, val, args)
+		ok = callValidatorValue(v, fm.fv, val, args, addNum)
 	}
 	return
 }
 
 // convert args data type
-func convertArgsType(v *Validation, fm *funcMeta, field string, args []any) (ok bool) {
+func convertArgsType(v *Validation, fm *funcMeta, field string, args []any, addNum int) (ok bool) {
 	if len(args) == 0 {
 		return true
 	}
@@ -467,7 +474,7 @@ func convertArgsType(v *Validation, fm *funcMeta, field string, args []any) (ok 
 	}
 
 	// only one args and type is any
-	if lastArgIndex == 1 && lastTyp == reflect.Interface {
+	if (lastArgIndex == 1 || (addNum == 2 && lastArgIndex == 2)) && lastTyp == reflect.Interface {
 		return true
 	}
 
@@ -477,12 +484,12 @@ func convertArgsType(v *Validation, fm *funcMeta, field string, args []any) (ok 
 	for i, arg := range args {
 		av := reflect.ValueOf(arg)
 		// index in the func
-		// "+1" because func first arg is `val`, need skip it.
-		fcArgIndex := i + 1
+		// "+addNum" because func first arg maybe data or val and second arg maybe val. need skip it.
+		fcArgIndex := i + addNum
 		argVKind := av.Kind()
 
-		// Notice: "+1" because first arg is field-value, need exclude it.
-		if fm.isVariadic && i+1 >= lastArgIndex {
+		// Notice: "+addNum" because first arg maybe data or val and second arg maybe val, need exclude it.
+		if fm.isVariadic && i+addNum >= lastArgIndex {
 			if lastTyp == argVKind { // type is same
 				continue
 			}
@@ -504,7 +511,6 @@ func convertArgsType(v *Validation, fm *funcMeta, field string, args []any) (ok 
 			return
 		}
 
-		// "+1" because func first arg is val, need skip it.
 		argIType := ft.In(fcArgIndex)
 		wantKind = argIType.Kind()
 
@@ -533,10 +539,10 @@ func convertArgsType(v *Validation, fm *funcMeta, field string, args []any) (ok 
 	return true
 }
 
-func callValidatorValue(fv reflect.Value, val any, args []any) bool {
+func callValidatorValue(v *Validation, fv reflect.Value, val any, args []any, addNum int) bool {
 	// build params for the validator func.
 	argNum := len(args)
-	argIn := make([]reflect.Value, argNum+1)
+	argIn := make([]reflect.Value, argNum+addNum)
 
 	// if val is any(nil): rftVal.IsValid()==false
 	// if val is typed(nil): rftVal.IsValid()==true
@@ -551,13 +557,19 @@ func callValidatorValue(fv reflect.Value, val any, args []any) bool {
 		rftVal = rftVal.Elem()
 	}
 
+	// if addNum == 1, means the first arg is val
 	argIn[0] = rftVal
+	// if addNum == 2, means the first arg is data and second arg is val
+	if addNum == 2 {
+		argIn[0] = reflect.ValueOf(v.data)
+		argIn[1] = rftVal
+	}
 	for i := 0; i < argNum; i++ {
 		rftValA := reflect.ValueOf(args[i])
 		if !rftValA.IsValid() {
 			rftValA = nilRVal
 		}
-		argIn[i+1] = rftValA
+		argIn[i+addNum] = rftValA
 	}
 
 	// TODO panic recover, refer the text/template/funcs.go

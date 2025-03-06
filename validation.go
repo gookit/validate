@@ -213,7 +213,7 @@ func (v *Validation) AddValidators(m map[string]any) *Validation {
 //
 // Usage:
 //
-//	v.AddValidator("myFunc", func(val any) bool {
+//	v.AddValidator("myFunc", func(data validate.DataFace, val any) bool {
 //		// do validate val ...
 //		return true
 //	})

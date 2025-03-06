@@ -278,6 +278,28 @@ func TestVariadicArgs(t *testing.T) {
 	assert.True(t, ok)
 }
 
+func TestValidation_Validate(t *testing.T) {
+	v := New(M{
+		"name": "haozi",
+	})
+	v.AddValidator("checkName", func(data DataFace, val any) bool {
+		name, exist := data.Get("name")
+		return name == "haozi" && exist
+	})
+	v.StringRule("name", "required|checkName")
+	assert.True(t, v.Validate())
+
+	v = New(M{
+		"age": 2,
+	})
+	v.AddValidator("checkAge", func(data DataFace, val any) bool {
+		age, exist := data.Get("age")
+		return age == 2 && exist
+	})
+	v.StringRule("age", "required|checkAge")
+	assert.True(t, v.Validate())
+}
+
 func TestValidation_Validate_filter(t *testing.T) {
 	v := Map(M{
 		"age": "abc",
