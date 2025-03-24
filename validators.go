@@ -1198,8 +1198,8 @@ func StringLength(val any, minLen int, maxLen ...int) bool {
  *************************************************************/
 
 // IsDate check value is an date string.
-func IsDate(srcDate string) bool {
-	_, err := strutil.ToTime(srcDate)
+func IsDate(srcDate string, layouts ...string) bool {
+	_, err := strutil.ToTime(srcDate, layouts...)
 	return err == nil
 }
 
