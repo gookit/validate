@@ -841,7 +841,11 @@ func (d FormData) TryGet(key string) (val any, exist, zero bool) {
 // Get value by key
 func (d FormData) Get(key string) (any, bool) {
 	// get form value
+	key, _, _ = strings.Cut(key, ".*")
 	if vs, ok := d.Form[key]; ok && len(vs) > 0 {
+		if len(vs) > 1 {
+			return vs, true
+		}
 		return vs[0], true
 	}
 

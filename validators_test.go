@@ -725,6 +725,7 @@ func TestDateCheck(t *testing.T) {
 	is := assert.New(t)
 	// Date
 	is.True(IsDate("2018-10-25"))
+	is.True(IsDate("2018-10", "2006-01"))
 
 	// DateFormat
 	is.True(DateFormat("2018-10-25", "2006-01-02"))

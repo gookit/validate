@@ -57,6 +57,7 @@ func TestFormData(t *testing.T) {
 		"age":    {"30"},
 		"notify": {"true"},
 		"money":  {"23.4"},
+		"emails": {"some@email.com", "other@email.com"},
 	})
 
 	is.True(d.Has("notify"))
@@ -74,7 +75,8 @@ func TestFormData(t *testing.T) {
 	is.Equal(23.4, d.Float("money"))
 	is.Equal(float64(0), d.Float("not-exist"))
 	is.Equal("inhere", d.String("name"))
-	is.Equal("age=30&money=23.4&name=inhere&notify=true", d.Encode())
+	is.Equal([]string{"some@email.com", "other@email.com"}, d.Strings("emails"))
+	is.Equal("age=30&emails=some%40email.com&emails=other%40email.com&money=23.4&name=inhere&notify=true", d.Encode())
 
 	val, exist, zero := d.TryGet("name")
 	is.True(exist)
@@ -84,6 +86,11 @@ func TestFormData(t *testing.T) {
 	val, exist = d.Get("name")
 	is.True(exist)
 	is.Equal("inhere", val)
+
+	emails, exist := d.Get("emails")
+	is.True(exist)
+	is.Len(emails, 2)
+	is.Equal([]string{"some@email.com", "other@email.com"}, emails)
 
 	nval, err := d.Set("newKey", "strVal")
 	is.NoErr(err)
