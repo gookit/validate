@@ -734,13 +734,13 @@ type FormData struct {
 	// since this is by far the most common use. If you
 	// need to have more than one file per key, parse the
 	// files manually using r.MultipartForm.File.
-	Files map[string]*multipart.FileHeader
+	Files map[string][]*multipart.FileHeader
 }
 
 func newFormData() *FormData {
 	return &FormData{
 		Form:  make(map[string][]string),
-		Files: make(map[string]*multipart.FileHeader),
+		Files: make(map[string][]*multipart.FileHeader),
 	}
 }
 
@@ -788,15 +788,18 @@ func (d *FormData) AddValues(values url.Values) {
 // AddFiles adds the multipart form files to data
 func (d *FormData) AddFiles(filesMap map[string][]*multipart.FileHeader) {
 	for key, files := range filesMap {
-		if len(files) != 0 {
-			d.AddFile(key, files[0])
+		for _, file := range files {
+			d.AddFile(key, file)
 		}
 	}
 }
 
 // AddFile adds the multipart form file to data with the given key.
 func (d *FormData) AddFile(key string, file *multipart.FileHeader) {
-	d.Files[key] = file
+	if _, ok := d.Files[key]; !ok {
+		d.Files[key] = []*multipart.FileHeader{}
+	}
+	d.Files[key] = append(d.Files[key], file)
 }
 
 // Del deletes the values associated with key.
@@ -850,8 +853,11 @@ func (d FormData) Get(key string) (any, bool) {
 	}
 
 	// get uploaded file
-	if fh, ok := d.Files[key]; ok {
-		return fh, true
+	if fh, ok := d.Files[key]; ok && len(fh) > 0 {
+		if len(fh) > 1 {
+			return fh, true
+		}
+		return fh[0], true
 	}
 	return nil, false
 }
@@ -870,6 +876,15 @@ func (d FormData) Strings(key string) []string {
 // If there is no file associated with key, it returns nil. If you just want the body of the
 // file, use GetFileBytes.
 func (d FormData) GetFile(key string) *multipart.FileHeader {
+	if fh, ok := d.Files[key]; ok && len(fh) > 0 {
+		return fh[0]
+	}
+
+	return nil
+}
+
+// GetFiles returns the multipart form files associated with key, if any, as a []*multipart.FileHeader.
+func (d FormData) GetFiles(key string) []*multipart.FileHeader {
 	return d.Files[key]
 }
 
@@ -942,8 +957,8 @@ func (d FormData) Bool(key string) bool {
 // there was a problem reading the file. If you need to know whether or not the file
 // exists (i.e. whether it was provided in the request), use the FileExists method.
 func (d FormData) FileBytes(field string) ([]byte, error) {
-	fh, found := d.Files[field]
-	if !found {
+	fh := d.GetFile(field)
+	if fh == nil {
 		return nil, nil
 	}
 
@@ -957,8 +972,8 @@ func (d FormData) FileBytes(field string) ([]byte, error) {
 
 // FileMimeType get File Mime Type name. eg "image/png"
 func (d FormData) FileMimeType(field string) (mime string) {
-	fh, found := d.Files[field]
-	if !found {
+	fh := d.GetFile(field)
+	if fh == nil {
 		return
 	}
 
