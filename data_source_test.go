@@ -122,6 +122,14 @@ func TestFormData(t *testing.T) {
 	is.NotEmpty(d.GetFile("file"))
 	d.DelFile("file")
 	is.False(d.HasFile("file"))
+
+	// files
+	d.AddFiles(map[string][]*multipart.FileHeader{"files": {&multipart.FileHeader{Filename: "test1.txt"}, &multipart.FileHeader{Filename: "test2.txt"}}})
+	is.True(d.Has("files"))
+	is.True(d.HasFile("files"))
+	is.Len(d.GetFiles("files"), 2)
+	d.DelFile("files")
+	is.False(d.HasFile("files"))
 }
 
 func TestStructData_Create(t *testing.T) {
