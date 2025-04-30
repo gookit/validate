@@ -1776,7 +1776,7 @@ func TestIssues_276(t *testing.T) {
 	fmt.Println(v.Errors.Field("Age")) // returns error messages of the field
 }
 
-// https://github.com/gookit/validate/issues/280
+// https://github.com/gookit/validate/issues/280 can not validate uuid field
 func TestIssues_280(t *testing.T) {
 	type TestData struct {
 		ID mockUUID

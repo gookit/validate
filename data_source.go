@@ -836,13 +836,13 @@ func (d *FormData) Set(field string, val any) (newVal any, err error) {
 }
 
 // TryGet value by key
-func (d FormData) TryGet(key string) (val any, exist, zero bool) {
+func (d *FormData) TryGet(key string) (val any, exist, zero bool) {
 	val, exist = d.Get(key)
 	return
 }
 
 // Get value by key
-func (d FormData) Get(key string) (any, bool) {
+func (d *FormData) Get(key string) (any, bool) {
 	// get form value
 	key, _, expectArray := strings.Cut(key, ".*")
 	if vs, ok := d.Form[key]; ok && len(vs) > 0 {
@@ -863,19 +863,19 @@ func (d FormData) Get(key string) (any, bool) {
 }
 
 // String value get by key
-func (d FormData) String(key string) string {
+func (d *FormData) String(key string) string {
 	return d.Form.Get(key)
 }
 
 // Strings value get by key
-func (d FormData) Strings(key string) []string {
+func (d *FormData) Strings(key string) []string {
 	return d.Form[key]
 }
 
 // GetFile returns the multipart form file associated with key, if any, as a *multipart.FileHeader.
 // If there is no file associated with key, it returns nil. If you just want the body of the
 // file, use GetFileBytes.
-func (d FormData) GetFile(key string) *multipart.FileHeader {
+func (d *FormData) GetFile(key string) *multipart.FileHeader {
 	if fh, ok := d.Files[key]; ok && len(fh) > 0 {
 		return fh[0]
 	}
@@ -884,12 +884,12 @@ func (d FormData) GetFile(key string) *multipart.FileHeader {
 }
 
 // GetFiles returns the multipart form files associated with key, if any, as a []*multipart.FileHeader.
-func (d FormData) GetFiles(key string) []*multipart.FileHeader {
+func (d *FormData) GetFiles(key string) []*multipart.FileHeader {
 	return d.Files[key]
 }
 
 // Has key in the Data
-func (d FormData) Has(key string) bool {
+func (d *FormData) Has(key string) bool {
 	if vs, ok := d.Form[key]; ok && len(vs) > 0 {
 		return true
 	}
@@ -903,7 +903,7 @@ func (d FormData) Has(key string) bool {
 // HasField returns true iff data.Form[key] exists. When parsing a request body, the key
 // is considered to be in existence if it was provided in the request body, even if its value
 // is empty.
-func (d FormData) HasField(key string) bool {
+func (d *FormData) HasField(key string) bool {
 	_, found := d.Form[key]
 	return found
 }
@@ -911,14 +911,14 @@ func (d FormData) HasField(key string) bool {
 // HasFile returns true iff data.Files[key] exists. When parsing a request body, the key
 // is considered to be in existence if it was provided in the request body, even if the file
 // is empty.
-func (d FormData) HasFile(key string) bool {
+func (d *FormData) HasFile(key string) bool {
 	key, _, _ = strings.Cut(key, ".*")
 	_, found := d.Files[key]
 	return found
 }
 
 // Int returns the first element in data[key] converted to an int.
-func (d FormData) Int(key string) int {
+func (d *FormData) Int(key string) int {
 	if val := d.String(key); val != "" {
 		iVal, _ := strconv.Atoi(val)
 		return iVal
@@ -927,7 +927,7 @@ func (d FormData) Int(key string) int {
 }
 
 // Int64 returns the first element in data[key] converted to an int64.
-func (d FormData) Int64(key string) int64 {
+func (d *FormData) Int64(key string) int64 {
 	if val := d.String(key); val != "" {
 		i64, _ := strconv.ParseInt(val, 10, 0)
 		return i64
@@ -936,7 +936,7 @@ func (d FormData) Int64(key string) int64 {
 }
 
 // Float returns the first element in data[key] converted to a float.
-func (d FormData) Float(key string) float64 {
+func (d *FormData) Float(key string) float64 {
 	if val := d.String(key); val != "" {
 		result, _ := strconv.ParseFloat(val, 64)
 		return result
@@ -945,7 +945,7 @@ func (d FormData) Float(key string) float64 {
 }
 
 // Bool returns the first element in data[key] converted to a bool.
-func (d FormData) Bool(key string) bool {
+func (d *FormData) Bool(key string) bool {
 	if val := d.String(key); val != "" {
 		blVal, _ := filter.Bool(val)
 		return blVal
@@ -957,7 +957,7 @@ func (d FormData) Bool(key string) bool {
 // file associated with key, it returns nil (not an error). It may return an error if
 // there was a problem reading the file. If you need to know whether or not the file
 // exists (i.e. whether it was provided in the request), use the FileExists method.
-func (d FormData) FileBytes(field string) ([]byte, error) {
+func (d *FormData) FileBytes(field string) ([]byte, error) {
 	fh := d.GetFile(field)
 	if fh == nil {
 		return nil, nil
@@ -972,12 +972,12 @@ func (d FormData) FileBytes(field string) ([]byte, error) {
 }
 
 // FileMimeType get File Mime Type name. eg "image/png"
-func (d FormData) FileMimeType(field string) (mime string) {
+func (d *FormData) FileMimeType(field string) (mime string) {
 	return d.fileMimeType(d.GetFile(field))
 }
 
 // FilesMimeType get all File Mime Type names by field.
-func (d FormData) FilesMimeType(field string) (mimes []string) {
+func (d *FormData) FilesMimeType(field string) (mimes []string) {
 	for _, file := range d.GetFiles(field) {
 		mimes = append(mimes, d.fileMimeType(file))
 	}

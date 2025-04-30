@@ -270,6 +270,7 @@ func (r *Rule) valueValidate(field, name string, val any, v *Validation) (ok boo
 	}
 
 	// 1. args number check
+	//goland:noinspection GoDfaNilDereference
 	ft := fm.fv.Type() // type of check func
 	valArgKind := ft.In(0).Kind()
 	// if arg 0 is DataFace, need to add "data" to args.

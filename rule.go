@@ -84,8 +84,6 @@ func (r *Rule) SetCheckFunc(checkFunc any) *Rule {
 	var name string
 	if r.validator != "" {
 		name = "rule_" + r.validator
-	} else {
-		name = "rule_" + strings.Join(r.fields, "_")
 	}
 
 	fv := checkValidatorFunc(name, checkFunc)

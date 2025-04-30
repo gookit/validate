@@ -33,7 +33,7 @@ func TestRule_Apply(t *testing.T) {
 		"name": `regex:\w+`,
 	})
 	v.AddRule("name", "stringLength", 3)
-	v.StringRule("code", `required|regex:\d{4,6}`)
+	v.StringRule("code", `required| |regex:\d{4,6}`)
 
 	is.True(v.Validate())
 }
