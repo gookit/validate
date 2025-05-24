@@ -482,10 +482,8 @@ func (v *Validation) GetSafe(key string) any {
 	return val
 }
 
-// BindStruct binding safe data to an struct.
-func (v *Validation) BindStruct(ptr any) error {
-	return v.BindSafeData(ptr)
-}
+// BindStruct binding safe data to a struct. alias of BindSafeData
+func (v *Validation) BindStruct(ptr any) error { return v.BindSafeData(ptr) }
 
 // BindSafeData binding safe data to an struct.
 func (v *Validation) BindSafeData(ptr any) error {
@@ -498,7 +496,6 @@ func (v *Validation) BindSafeData(ptr any) error {
 	if err != nil {
 		return err
 	}
-
 	return Unmarshal(bts, ptr)
 }
 

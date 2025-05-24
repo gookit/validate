@@ -459,6 +459,7 @@ func (v *Validation) isImageMimeTypes(mime string, exts ...string) (ok bool) {
 }
 
 // InMimeTypes check field is uploaded file and mime type is in the mimeTypes.
+//
 // Usage:
 //
 //	v.AddRule("video", "mimeTypes", "video/avi", "video/mpeg", "video/quicktime")

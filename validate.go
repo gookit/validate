@@ -17,10 +17,10 @@ import (
 	"github.com/gookit/goutil/reflects"
 )
 
-// M is short name for map[string]any
+// M is a short name for map[string]any
 type M map[string]any
 
-// MS is short name for map[string]string
+// MS is a short name for map[string]string
 type MS map[string]string
 
 // SValues simple values
@@ -350,7 +350,7 @@ var jsonContent = regexp.MustCompile(`(?i)application/((\w|\.|-)+\+)?json(-seq)?
 
 // FromRequest collect data from request instance
 func FromRequest(r *http.Request, maxMemoryLimit ...int64) (DataFace, error) {
-	// no body. like GET DELETE ....
+	// nobody. like GET DELETE ....
 	if r.Method != "POST" && r.Method != "PUT" && r.Method != "PATCH" {
 		return FromURLValues(r.URL.Query()), nil
 	}
@@ -396,7 +396,6 @@ func FromRequest(r *http.Request, maxMemoryLimit ...int64) (DataFace, error) {
 		if err != nil {
 			return nil, err
 		}
-
 		return FromJSONBytes(bs)
 	}
 

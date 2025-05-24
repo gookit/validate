@@ -90,14 +90,10 @@ type MapData struct {
  *************************************************************/
 
 // Src get
-func (d *MapData) Src() any {
-	return d.Map
-}
+func (d *MapData) Src() any { return d.Map }
 
 // Type get
-func (d *MapData) Type() uint8 {
-	return sourceMap
-}
+func (d *MapData) Type() uint8 { return sourceMap }
 
 // Set value by key
 func (d *MapData) Set(field string, val any) (any, error) {
@@ -110,7 +106,6 @@ func (d *MapData) Get(field string) (any, bool) {
 	// if fv, ok := d.fields[field]; ok {
 	// 	return fv, true
 	// }
-
 	return maputil.GetByPath(field, d.Map)
 }
 
@@ -121,11 +116,9 @@ func (d *MapData) TryGet(field string) (val any, exist, zero bool) {
 }
 
 // Create a Validation from data
-func (d *MapData) Create(err ...error) *Validation {
-	return d.Validation(err...)
-}
+func (d *MapData) Create(err ...error) *Validation { return d.Validation(err...) }
 
-// Validation create from data
+// Validation creates from data
 func (d *MapData) Validation(err ...error) *Validation {
 	if len(err) > 0 {
 		return NewValidation(d).WithError(err[0])
@@ -176,7 +169,7 @@ type FieldTranslatorFace interface {
 //
 //	func (u *User) Messages() map[string]string {
 //		return MS{
-//			"Name.required": "oh! User name is required",
+//			"Name.required": "oh! Username is required",
 //		}
 //	}
 type CustomMessagesFace interface {
@@ -228,19 +221,13 @@ var (
 )
 
 // Src get
-func (d *StructData) Src() any {
-	return d.src
-}
+func (d *StructData) Src() any { return d.src }
 
 // Type get
-func (d *StructData) Type() uint8 {
-	return sourceStruct
-}
+func (d *StructData) Type() uint8 { return sourceStruct }
 
-// Validation create a Validation from the StructData
-func (d *StructData) Validation(err ...error) *Validation {
-	return d.Create(err...)
-}
+// Validation creates a Validation from the StructData
+func (d *StructData) Validation(err ...error) *Validation { return d.Create(err...) }
 
 // Create from the StructData
 //
@@ -507,9 +494,11 @@ func (d *StructData) loadMessagesFromTag(trans *Translator, field, vRule, vMsg s
 	}
 }
 
-/*************************************************************
+/*
+ **************************************************************
  * Struct data operate
- *************************************************************/
+ **************************************************************
+ */
 
 // Get value by field name. support get sub-value by path.
 func (d *StructData) Get(field string) (val any, exist bool) {
@@ -700,7 +689,7 @@ func (d *StructData) Set(field string, val any) (newVal any, err error) {
 
 // FuncValue get func value in the src struct
 func (d *StructData) FuncValue(name string) (reflect.Value, bool) {
-	fv := d.value.MethodByName(filter.UpperFirst(name))
+	fv := d.value.MethodByName(strutil.UpperFirst(name))
 	return fv, fv.IsValid()
 }
 
@@ -744,26 +733,24 @@ func newFormData() *FormData {
 	}
 }
 
+//
 /*************************************************************
  * Form data operate
  *************************************************************/
+//
 
 // Src data get
-func (d *FormData) Src() any {
-	return d.Form
-}
+func (d *FormData) Src() any { return d.Form }
 
 // Type get
-func (d *FormData) Type() uint8 {
-	return sourceForm
-}
+func (d *FormData) Type() uint8 { return sourceForm }
 
 // Create a Validation from data
 func (d *FormData) Create(err ...error) *Validation {
 	return d.Validation(err...)
 }
 
-// Validation create from data
+// Validation creates from data
 func (d *FormData) Validation(err ...error) *Validation {
 	if len(err) > 0 && err[0] != nil {
 		return NewValidation(d).WithError(err[0])
@@ -771,10 +758,8 @@ func (d *FormData) Validation(err ...error) *Validation {
 	return NewValidation(d)
 }
 
-// Add adds the value to key. It appends to any existing values associated with key.
-func (d *FormData) Add(key string, value string) {
-	d.Form.Add(key, value)
-}
+// Add adds the value to key. It appends to any existing values associated with a key.
+func (d *FormData) Add(key, value string) { d.Form.Add(key, value) }
 
 // AddValues to Data.Form
 func (d *FormData) AddValues(values url.Values) {
@@ -802,23 +787,17 @@ func (d *FormData) AddFile(key string, file *multipart.FileHeader) {
 	d.Files[key] = append(d.Files[key], file)
 }
 
-// Del deletes the values associated with key.
-func (d *FormData) Del(key string) {
-	d.Form.Del(key)
-}
+// Del deletes the values associated with a key.
+func (d *FormData) Del(key string) { d.Form.Del(key) }
 
-// DelFile deletes the file associated with key (if any).
-// If there is no file associated with key, it does nothing.
-func (d *FormData) DelFile(key string) {
-	delete(d.Files, key)
-}
+// DelFile deletes the file associated with a key (if any).
+// If there is no file associated with a key, it does nothing.
+func (d *FormData) DelFile(key string) { delete(d.Files, key) }
 
 // Encode encodes the values into “URL encoded” form ("bar=baz&foo=quux") sorted by key.
 // Any files in d will be ignored because there is no direct way to convert a file to a
 // URL encoded value.
-func (d *FormData) Encode() string {
-	return d.Form.Encode()
-}
+func (d *FormData) Encode() string { return d.Form.Encode() }
 
 // Set sets the key to value. It replaces any existing values.
 func (d *FormData) Set(field string, val any) (newVal any, err error) {
@@ -862,31 +841,24 @@ func (d *FormData) Get(key string) (any, bool) {
 	return nil, false
 }
 
-// String value get by key
-func (d *FormData) String(key string) string {
-	return d.Form.Get(key)
-}
+// String value gets by key
+func (d *FormData) String(key string) string { return d.Form.Get(key) }
 
-// Strings value get by key
-func (d *FormData) Strings(key string) []string {
-	return d.Form[key]
-}
+// Strings value gets by key
+func (d *FormData) Strings(key string) []string { return d.Form[key] }
 
-// GetFile returns the multipart form file associated with key, if any, as a *multipart.FileHeader.
-// If there is no file associated with key, it returns nil. If you just want the body of the
+// GetFile returns the multipart form file associated with a key, if any, as a *multipart.FileHeader.
+// If there is no file associated with a key, it returns nil. If you just want the body of the
 // file, use GetFileBytes.
 func (d *FormData) GetFile(key string) *multipart.FileHeader {
 	if fh, ok := d.Files[key]; ok && len(fh) > 0 {
 		return fh[0]
 	}
-
 	return nil
 }
 
-// GetFiles returns the multipart form files associated with key, if any, as a []*multipart.FileHeader.
-func (d *FormData) GetFiles(key string) []*multipart.FileHeader {
-	return d.Files[key]
-}
+// GetFiles returns the multipart form files associated with a key, if any, as a []*multipart.FileHeader.
+func (d *FormData) GetFiles(key string) []*multipart.FileHeader { return d.Files[key] }
 
 // Has key in the Data
 func (d *FormData) Has(key string) bool {
@@ -947,8 +919,7 @@ func (d *FormData) Float(key string) float64 {
 // Bool returns the first element in data[key] converted to a bool.
 func (d *FormData) Bool(key string) bool {
 	if val := d.String(key); val != "" {
-		blVal, _ := filter.Bool(val)
-		return blVal
+		return strutil.SafeBool(val)
 	}
 	return false
 }
