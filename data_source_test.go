@@ -127,6 +127,7 @@ func TestFormData(t *testing.T) {
 	d.AddFiles(map[string][]*multipart.FileHeader{"files": {&multipart.FileHeader{Filename: "test1.txt"}, &multipart.FileHeader{Filename: "test2.txt"}}})
 	is.True(d.Has("files"))
 	is.True(d.HasFile("files"))
+	is.True(d.HasFile("files.*"))
 	is.Len(d.GetFiles("files"), 2)
 	d.DelFile("files")
 	is.False(d.HasFile("files"))

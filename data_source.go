@@ -844,9 +844,9 @@ func (d FormData) TryGet(key string) (val any, exist, zero bool) {
 // Get value by key
 func (d FormData) Get(key string) (any, bool) {
 	// get form value
-	key, _, _ = strings.Cut(key, ".*")
+	key, _, expectArray := strings.Cut(key, ".*")
 	if vs, ok := d.Form[key]; ok && len(vs) > 0 {
-		if len(vs) > 1 {
+		if len(vs) > 1 || expectArray {
 			return vs, true
 		}
 		return vs[0], true
@@ -854,7 +854,7 @@ func (d FormData) Get(key string) (any, bool) {
 
 	// get uploaded file
 	if fh, ok := d.Files[key]; ok && len(fh) > 0 {
-		if len(fh) > 1 {
+		if len(fh) > 1 || expectArray {
 			return fh, true
 		}
 		return fh[0], true
@@ -912,6 +912,7 @@ func (d FormData) HasField(key string) bool {
 // is considered to be in existence if it was provided in the request body, even if the file
 // is empty.
 func (d FormData) HasFile(key string) bool {
+	key, _, _ = strings.Cut(key, ".*")
 	_, found := d.Files[key]
 	return found
 }
@@ -972,7 +973,18 @@ func (d FormData) FileBytes(field string) ([]byte, error) {
 
 // FileMimeType get File Mime Type name. eg "image/png"
 func (d FormData) FileMimeType(field string) (mime string) {
-	fh := d.GetFile(field)
+	return d.fileMimeType(d.GetFile(field))
+}
+
+// FilesMimeType get all File Mime Type names by field.
+func (d FormData) FilesMimeType(field string) (mimes []string) {
+	for _, file := range d.GetFiles(field) {
+		mimes = append(mimes, d.fileMimeType(file))
+	}
+	return
+}
+
+func (d FormData) fileMimeType(fh *multipart.FileHeader) (mime string) {
 	if fh == nil {
 		return
 	}
@@ -981,6 +993,9 @@ func (d FormData) FileMimeType(field string) (mime string) {
 		var buf [sniffLen]byte
 		n, _ := io.ReadFull(file, buf[:])
 		mime = http.DetectContentType(buf[:n])
+		// strip optional parameters (e.g., "charset") from MIME type
+		// "text/plain; charset=utf-8" → "text/plain"
+		mime = strings.TrimSpace(strings.Split(mime, ";")[0])
 	}
 	return
 }
