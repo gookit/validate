@@ -469,6 +469,88 @@ func TestFromRequest_FileForm(t *testing.T) {
 	}, "validate: not enough parameters for validator 'mimes'!")
 }
 
+func TestFromRequest_MultiFileForm(t *testing.T) {
+	is := assert.New(t)
+
+	// =================== POST: files data form ===================
+	buf := new(bytes.Buffer)
+	mw := multipart.NewWriter(buf)
+
+	// single file
+	w, err := mw.CreateFormFile("file", "test.txt")
+	is.NoErr(err)
+	_, _ = w.Write([]byte("hello world"))
+
+	// images file
+	w, err = mw.CreateFormFile("images", "a.jpg")
+	is.NoErr(err)
+	_, _ = w.Write([]byte("\xFF\xD8\xFF"))
+
+	// mixed mime type files
+	mixedFiles := []struct {
+		Name string
+		Data []byte
+	}{
+		{"a.txt", []byte("hello text")},
+		{"b.pdf", []byte("%PDF-1.4")},
+	}
+
+	for _, f := range mixedFiles {
+		w, err := mw.CreateFormFile("docs", f.Name)
+		is.NoErr(err)
+		_, _ = w.Write(f.Data)
+	}
+
+	_ = mw.Close()
+
+	r, _ := http.NewRequest(http.MethodPost, "/upload", buf)
+	r.Header.Set("Content-Type", mw.FormDataContentType())
+
+	d, err := FromRequest(r, defaultMaxMemory)
+	is.NoErr(err)
+	fd, ok := d.(*FormData)
+	is.True(ok)
+
+	// - create validation
+	v := d.Validation()
+	ok = v.IsFormImage(fd, "images")
+	is.True(ok)
+
+	v.AddRule("images.*", "image", "png")
+	v.Validate()
+	is.False(v.IsOK())
+
+	v.Reset()
+	v.AddRule("docs.*", "mime", "text/plain")
+	v.Validate()
+	is.False(v.IsOK())
+
+	// add a non-file rule (e.g. required), otherwise the field won’t be included in safeData and BindSafeData will be ignored.
+	v.Reset()
+	v.AddRule("file", "required")
+	v.AddRule("file", "file")
+	v.AddRule("images.*", "required")
+	v.AddRule("images.*", "image", "jpg", "jpeg")
+	v.AddRule("images.*", "mimeTypes", "image/jpeg")
+	v.AddRule("docs.*", "required")
+	v.AddRule("docs.*", "file")
+	v.AddRule("docs.*", "mime", "text/plain", "application/pdf")
+	v.Validate()
+	is.True(v.IsOK())
+
+	var files struct {
+		File   *multipart.FileHeader   `form:"file"`
+		Images []*multipart.FileHeader `form:"images"`
+		Docs   []*multipart.FileHeader `form:"docs"`
+	}
+	err = v.BindSafeData(&files)
+	is.NoErr(err)
+	is.NotNil(files.File)
+	is.Len(files.Images, 1)
+	is.Len(files.Docs, 2)
+
+}
+
 func TestFromRequest_JSON(t *testing.T) {
 	// =================== POST: JSON body ===================
 	body := `{

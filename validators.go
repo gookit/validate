@@ -402,11 +402,15 @@ func isFileValidator(name string) bool {
 
 // IsFormFile check field is uploaded file
 func (v *Validation) IsFormFile(fd *FormData, field string) (ok bool) {
-	if fh := fd.GetFile(field); fh != nil {
-		_, err := fh.Open()
-		if err == nil {
-			return true
+	field, _, _ = strings.Cut(field, ".*")
+	if files := fd.GetFiles(field); len(files) > 0 {
+		for i := range files {
+			_, err := files[i].Open()
+			if err != nil {
+				return false
+			}
 		}
+		return true
 	}
 	return false
 }
@@ -416,8 +420,23 @@ func (v *Validation) IsFormFile(fd *FormData, field string) (ok bool) {
 //
 //	v.AddRule("avatar", "image")
 //	v.AddRule("avatar", "image", "jpg", "png", "gif") // set ext limit
+//	v.AddRule("images.*", "image")
+//	v.AddRule("images.*", "image", "jpg", "png", "gif") // set ext limit
 func (v *Validation) IsFormImage(fd *FormData, field string, exts ...string) (ok bool) {
-	mime := fd.FileMimeType(field)
+	field, _, expectArray := strings.Cut(field, ".*")
+	if expectArray {
+		for _, mime := range fd.FilesMimeType(field) {
+			if !v.isImageMimeTypes(mime, exts...) {
+				return false
+			}
+		}
+		return true
+	}
+
+	return v.isImageMimeTypes(fd.FileMimeType(field), exts...)
+}
+
+func (v *Validation) isImageMimeTypes(mime string, exts ...string) (ok bool) {
 	if mime == "" {
 		return
 	}
@@ -443,13 +462,28 @@ func (v *Validation) IsFormImage(fd *FormData, field string, exts ...string) (ok
 // Usage:
 //
 //	v.AddRule("video", "mimeTypes", "video/avi", "video/mpeg", "video/quicktime")
+//	v.AddRule("videos.*", "mimeTypes", "video/avi", "video/mpeg", "video/quicktime")
 func (v *Validation) InMimeTypes(fd *FormData, field, mimeType string, moreTypes ...string) bool {
-	mime := fd.FileMimeType(field)
+	field, _, expectArray := strings.Cut(field, ".*")
+	mimeTypes := append(moreTypes, mimeType) //nolint:gocritic
+	if expectArray {
+		for _, mime := range fd.FilesMimeType(field) {
+			if !v.inMimeTypes(mime, mimeTypes) {
+				return false
+			}
+		}
+		return true
+	}
+
+	return v.inMimeTypes(fd.FileMimeType(field), mimeTypes)
+}
+
+func (v *Validation) inMimeTypes(mime string, mimeTypes []string) bool {
+
 	if mime == "" {
 		return false
 	}
 
-	mimeTypes := append(moreTypes, mimeType) //nolint:gocritic
 	return Enum(mime, mimeTypes)
 }
 

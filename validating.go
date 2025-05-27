@@ -173,6 +173,9 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 
 		// validate field value
 		if r.valueValidate(field, name, val, v) {
+			if v.data != nil && v.data.Type() == sourceForm {
+				field, _, _ = strings.Cut(field, ".*")
+			}
 			v.safeData[field] = val
 		} else { // build and collect error message
 			v.AddError(field, r.validator, r.errorMessage(field, r.validator, v))
