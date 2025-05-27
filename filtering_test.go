@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"testing"
 
+	"github.com/gookit/goutil/errorx"
 	"github.com/gookit/goutil/testutil/assert"
 )
 
@@ -140,4 +141,25 @@ func TestFilterRuleNilValue(t *testing.T) {
 	assert.NotPanics(t, func() {
 		v.Validate()
 	})
+}
+
+func TestFilterRule_Apply_error(t *testing.T) {
+	v := New(map[string]any{
+		"testField": "testValue",
+	})
+
+	// 定义一个模拟的过滤器函数，该函数总是返回一个错误
+	mockFilterFunc := func(val any) (any, error) {
+		return nil, errorx.Rawf("mock error, val: %v", val)
+	}
+	v.AddFilter("mockFilter", mockFilterFunc)
+
+	// add filter rule
+	v.FilterRule("testField", "mockFilter")
+
+	// 调用 Apply 方法，并检查是否返回了预期的错误
+	assert.False(t, v.Filtering())
+	err := v.Errors.OneError()
+	assert.Err(t, err)
+	assert.ErrMsg(t, err, "testField: mock error, val: testValue")
 }

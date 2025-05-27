@@ -12,7 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gookit/filter"
 	"github.com/gookit/goutil/maputil"
 	"github.com/gookit/goutil/reflects"
 	"github.com/gookit/goutil/strutil"
@@ -780,11 +779,11 @@ func (d *FormData) AddFiles(filesMap map[string][]*multipart.FileHeader) {
 }
 
 // AddFile adds the multipart form file to data with the given key.
-func (d *FormData) AddFile(key string, file *multipart.FileHeader) {
+func (d *FormData) AddFile(key string, files ...*multipart.FileHeader) {
 	if _, ok := d.Files[key]; !ok {
 		d.Files[key] = []*multipart.FileHeader{}
 	}
-	d.Files[key] = append(d.Files[key], file)
+	d.Files[key] = append(d.Files[key], files...)
 }
 
 // Del deletes the values associated with a key.
@@ -955,7 +954,7 @@ func (d *FormData) FilesMimeType(field string) (mimes []string) {
 	return
 }
 
-func (d FormData) fileMimeType(fh *multipart.FileHeader) (mime string) {
+func (d *FormData) fileMimeType(fh *multipart.FileHeader) (mime string) {
 	if fh == nil {
 		return
 	}

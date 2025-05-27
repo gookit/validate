@@ -72,8 +72,8 @@ var (
 	rxHexadecimal    = regexp.MustCompile(`^[\da-fA-F]+$`)
 	rxPrintableASCII = regexp.MustCompile("^[\x20-\x7E]+$")
 	rxMultiByte      = regexp.MustCompile("[^\x00-\x7F]")
-	// rxFullWidth      = regexp.MustCompile(FullWidth)
-	// rxHalfWidth      = regexp.MustCompile(HalfWidth)
+	// rxFullWidth = regexp.MustCompile(FullWidth)
+	// rxHalfWidth = regexp.MustCompile(HalfWidth)
 	rxBase64    = regexp.MustCompile(Base64)
 	rxDataURI   = regexp.MustCompile(`^data:.+/(.+);base64,(?:.+)`)
 	rxLatitude  = regexp.MustCompile(Latitude)
@@ -100,9 +100,9 @@ type funcMeta struct {
 	// readonly cache
 	numIn  int
 	numOut int
-	// is internal built-in validator
+	// is an internal built-in validator
 	builtin bool
-	// last arg is variadic param. like "... any"
+	// the last arg is variadic param. like "... any"
 	isVariadic bool
 }
 
@@ -300,13 +300,13 @@ func (v *Validation) RequiredWithoutAll(_ string, val any, fields ...string) boo
 	}
 
 	for _, name := range fields {
-		// if any field exist, not continue.
+		// if any field exists, not continue.
 		if _, has, zero := v.tryGet(name); has && !zero {
 			return true
 		}
 	}
 
-	// all fields not exist, required
+	// all fields not exists, required
 	return !IsEmpty(val)
 }
 
@@ -374,10 +374,12 @@ func (v *Validation) LteField(val any, dstField string) bool {
 	return valueCompare(val, dstVal, "<=")
 }
 
-/*************************************************************
+/*
+ ******************************************************************
  * context validators:
  *  - file validators
- *************************************************************/
+ ******************************************************************
+ */
 
 const fileValidators = "|isFile|isImage|inMimeTypes|"
 
@@ -400,7 +402,7 @@ func isFileValidator(name string) bool {
 	return strings.Contains(fileValidators, "|"+name+"|")
 }
 
-// IsFormFile check field is uploaded file
+// IsFormFile check field is uploaded file. validator: isFile
 func (v *Validation) IsFormFile(fd *FormData, field string) (ok bool) {
 	field, _, _ = strings.Cut(field, ".*")
 	if files := fd.GetFiles(field); len(files) > 0 {
@@ -415,7 +417,8 @@ func (v *Validation) IsFormFile(fd *FormData, field string) (ok bool) {
 	return false
 }
 
-// IsFormImage check field is uploaded image file.
+// IsFormImage check field is uploaded image file. validator: isImage
+//
 // Usage:
 //
 //	v.AddRule("avatar", "image")
@@ -454,11 +457,10 @@ func (v *Validation) isImageMimeTypes(mime string, exts ...string) (ok bool) {
 	if len(exts) == 0 {
 		return ok // only check is an image
 	}
-
 	return Enum(fileExt, exts)
 }
 
-// InMimeTypes check field is uploaded file and mime type is in the mimeTypes.
+// InMimeTypes check field is uploaded file and mimetype is in the mimeTypes. validator: inMimeTypes
 //
 // Usage:
 //
@@ -480,11 +482,9 @@ func (v *Validation) InMimeTypes(fd *FormData, field, mimeType string, moreTypes
 }
 
 func (v *Validation) inMimeTypes(mime string, mimeTypes []string) bool {
-
 	if mime == "" {
 		return false
 	}
-
 	return Enum(mime, mimeTypes)
 }
 
