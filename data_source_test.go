@@ -153,6 +153,9 @@ func TestStructData_Create(t *testing.T) {
 		Extra: []ExtraInfo{
 			{"xxx", 2},
 		},
+		CustomString: map[CustomString]string{
+			"custom": "str",
+		},
 	}
 
 	d, err := FromStruct(u)
