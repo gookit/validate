@@ -407,7 +407,7 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 						switch {
 						case kind == reflect.String:
 							format += "%s"
-							val = strings.ReplaceAll(val.(string), "\"", "") //nolint:forcetypeassert
+							val = strings.ReplaceAll(key.String(), "\"", "")
 						case kind >= reflect.Int && kind <= reflect.Uint64:
 							format += "%d"
 						case kind >= reflect.Float32 && kind <= reflect.Complex128:

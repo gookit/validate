@@ -150,15 +150,16 @@ func TestErrorMessages(t *testing.T) {
 
 // UserForm struct
 type UserForm struct {
-	Name      string      `validate:"required|minLen:7"`
-	Email     string      `validate:"email"`
-	CreateAt  int         `validate:"email"`
-	Safe      int         `validate:"-"`
-	UpdateAt  time.Time   `validate:"required"`
-	Code      string      `validate:"customValidator"`
-	Status    int         `validate:"required|gtField:Extra.0.Status1"`
-	Extra     []ExtraInfo `validate:"required"`
-	protected string
+	Name         string                  `validate:"required|minLen:7"`
+	Email        string                  `validate:"email"`
+	CreateAt     int                     `validate:"email"`
+	Safe         int                     `validate:"-"`
+	UpdateAt     time.Time               `validate:"required"`
+	Code         string                  `validate:"customValidator"`
+	Status       int                     `validate:"required|gtField:Extra.0.Status1"`
+	Extra        []ExtraInfo             `validate:"required"`
+	CustomString map[CustomString]string `validate:"-"`
+	protected    string
 }
 
 // ExtraInfo data
@@ -166,6 +167,9 @@ type ExtraInfo struct {
 	Github  string `validate:"required|url"` // tags is invalid
 	Status1 int    `validate:"required|int"`
 }
+
+// CustomString is a named string type
+type CustomString string
 
 // custom validator in the source struct.
 func (f UserForm) CustomValidator(val string) bool {
