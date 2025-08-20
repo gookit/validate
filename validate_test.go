@@ -274,3 +274,69 @@ func TestStruct_json_tag_name_parsing(t *testing.T) {
 	errStr = v.Errors["Field"]["email"]
 	assert.True(t, strings.HasPrefix(errStr, "Field "))
 }
+
+type TestPermission struct {
+	TestUserData `json:",inline" validate:"required_if:Type,give"`
+	Type         string `json:"type" validate:"required|in:give,remove"`
+	Access       string `json:"access" validate:"required_if:Type,remove"`
+}
+
+type TestUserData struct {
+	TestNameField   `json:",inline"`
+	TestBranchField `json:",inline"`
+}
+
+type TestNameField struct {
+	Name string `json:"name" validate:"required|max_len:5000"`
+}
+
+type TestBranchField struct {
+	Branch string `json:"branch" validate:"required|min_len:32|max_len:32"`
+}
+
+func TestEmbeddedStructRequiredIf(t *testing.T) {
+	// Test case 1: Type is "give", should validate UserData fields
+	perm1 := TestPermission{
+		TestUserData: TestUserData{},
+		Type:         "give",
+	}
+
+	v1 := Struct(perm1)
+	v1.StopOnError = false
+	assert.False(t, v1.Validate())
+	fmt.Println("perm1 errors (expected to fail):", v1.Errors.All())
+	
+	// Should have errors for UserData and its nested fields
+	assert.True(t, v1.Errors.HasField("TestUserData"))
+
+	// Test case 2: Type is "remove", should NOT validate UserData fields
+	perm2 := TestPermission{
+		Type:   "remove",
+		Access: "change_types",
+	}
+	v2 := Struct(perm2)
+	v2.StopOnError = false
+	if !v2.Validate() {
+		fmt.Println("perm2 errors (should be empty but currently fails):", v2.Errors.All())
+		// This is the bug - it should validate successfully but doesn't
+	} else {
+		fmt.Println("perm2: No errors (expected)")
+	}
+
+	// Test case 3: Type is "give" with valid UserData, should pass
+	perm3 := TestPermission{
+		TestUserData: TestUserData{
+			TestNameField:   TestNameField{Name: "test"},
+			TestBranchField: TestBranchField{Branch: "12345678901234567890123456789012"},
+		},
+		Type: "give",
+	}
+	v3 := Struct(perm3)
+	v3.StopOnError = false
+	if !v3.Validate() {
+		fmt.Println("perm3 errors (unexpected):", v3.Errors.All())
+	} else {
+		fmt.Println("perm3: No errors (expected)")
+	}
+	assert.True(t, v3.Validate())
+}
