@@ -366,3 +366,56 @@ func TestEmbeddedStructRequiredIfEdgeCases(t *testing.T) {
 	v2 := Struct(test2)
 	assert.False(t, v2.Validate(), "Should fail when Mode=process and UserData2 is empty")
 }
+
+// Test the exact structures from the original issue
+type OriginalPermission struct {
+	UserData `json:",inline" validate:"required_if:Type,give"`
+	Type     string `json:"type" validate:"required|in:give,remove"`
+	Access   string `json:"access" validate:"required_if:Type,remove"`
+}
+
+type UserData struct {
+	NameField   `json:",inline"`
+	BranchField `json:",inline"`
+}
+
+type NameField struct {
+	Name string `json:"name" validate:"required|max_len:5000"`
+}
+
+type BranchField struct {
+	Branch string `json:"branch" validate:"required|min_len:32|max_len:32"`
+}
+
+func TestOriginalIssueExample(t *testing.T) {
+	// This should fail. UserData is required if type is give
+	perm1 := OriginalPermission{
+		UserData: UserData{},
+		Type:     "give",
+	}
+
+	val1 := Struct(perm1)
+	val1.StopOnError = false
+	assert.False(t, val1.Validate(), "perm1 should fail validation when Type=give and UserData is empty")
+
+	// This should not need UserData and should pass
+	perm2 := OriginalPermission{
+		Type:   "remove",
+		Access: "change_types",
+	}
+	val2 := Struct(&perm2)
+	val2.StopOnError = false
+	assert.True(t, val2.Validate(), "perm2 should pass validation when Type=remove")
+
+	// This should pass with valid UserData
+	perm3 := OriginalPermission{
+		UserData: UserData{
+			NameField:   NameField{Name: "test"},
+			BranchField: BranchField{Branch: "12345678901234567890123456789012"},
+		},
+		Type: "give",
+	}
+	val3 := Struct(perm3)
+	val3.StopOnError = false
+	assert.True(t, val3.Validate(), "perm3 should pass validation with valid data")
+}
