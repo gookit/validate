@@ -318,10 +318,13 @@ func TestEmbeddedStructRequiredIf(t *testing.T) {
 	v2.StopOnError = false
 	if !v2.Validate() {
 		fmt.Println("perm2 errors (should be empty but currently fails):", v2.Errors.All())
-		// This is the bug - it should validate successfully but doesn't
+		// This was the bug - it should validate successfully but doesn't
+		t.Errorf("perm2 should validate successfully when Type=remove, but got errors: %v", v2.Errors.All())
 	} else {
 		fmt.Println("perm2: No errors (expected)")
 	}
+	// This should now pass with our fix
+	assert.True(t, v2.Validate())
 
 	// Test case 3: Type is "give" with valid UserData, should pass
 	perm3 := TestPermission{
@@ -339,4 +342,27 @@ func TestEmbeddedStructRequiredIf(t *testing.T) {
 		fmt.Println("perm3: No errors (expected)")
 	}
 	assert.True(t, v3.Validate())
+}
+
+// Test edge cases for embedded struct conditional validation
+func TestEmbeddedStructRequiredIfEdgeCases(t *testing.T) {
+	// Test case: required_unless
+	type TestStruct struct {
+		UserData2 TestUserData `validate:"required_unless:Mode,skip"`
+		Mode      string       `validate:"required"`
+	}
+
+	// Mode is "skip", so UserData2 should not be required
+	test1 := TestStruct{
+		Mode: "skip",
+	}
+	v1 := Struct(test1)
+	assert.True(t, v1.Validate(), "Should pass when Mode=skip")
+
+	// Mode is "process", so UserData2 should be required
+	test2 := TestStruct{
+		Mode: "process",
+	}
+	v2 := Struct(test2)
+	assert.False(t, v2.Validate(), "Should fail when Mode=process and UserData2 is empty")
 }

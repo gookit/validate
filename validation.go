@@ -629,3 +629,126 @@ func (v *Validation) isNotNeedToCheck(field string) bool {
 	_, ok := v.sceneFields[field]
 	return !ok
 }
+
+// shouldSkipEmbeddedFieldValidation checks if a field belongs to an embedded struct
+// with conditional validation (like required_if) and if those conditions are not met
+func (v *Validation) shouldSkipEmbeddedFieldValidation(field string) bool {
+	// Only applies to struct data source
+	if _, ok := v.data.(*StructData); !ok {
+		return false
+	}
+
+	// Check if this field has a parent path (contains dots)
+	parts := strings.Split(field, ".")
+	if len(parts) < 2 {
+		return false
+	}
+
+	// Check each level of the path for conditional validation
+	for i := 1; i < len(parts); i++ {
+		parentPath := strings.Join(parts[:i], ".")
+		
+		// Find rules for this parent path that have conditional validation
+		for _, rule := range v.rules {
+			for _, ruleField := range rule.fields {
+				if ruleField == parentPath {
+					// Check if this rule has conditional validation (required_if, required_unless, etc.)
+					if v.isConditionalValidator(rule.realName) {
+						// Check if the condition is met (different logic for each conditional validator)
+						conditionMet := v.evaluateConditionalValidatorCondition(rule)
+						if !conditionMet {
+							// Condition not met, skip validation of nested field
+							return true
+						}
+						// If condition is met, don't skip - let normal validation proceed
+						return false
+					}
+				}
+			}
+		}
+	}
+
+	return false
+}
+
+// evaluateConditionalValidatorCondition checks if the condition part of a conditional validator is met
+func (v *Validation) evaluateConditionalValidatorCondition(rule *Rule) bool {
+	switch rule.realName {
+	case "requiredIf":
+		return v.evaluateRequiredIfCondition(rule)
+	case "requiredUnless":
+		return v.evaluateRequiredUnlessCondition(rule)
+	// Add other conditional validators as needed
+	default:
+		return true // Safe default - assume condition is met
+	}
+}
+
+// evaluateRequiredIfCondition checks if the required_if condition is met
+func (v *Validation) evaluateRequiredIfCondition(rule *Rule) bool {
+	if len(rule.arguments) < 2 {
+		return false
+	}
+	
+	// Convert arguments to strings (same logic as RequiredIf validator)
+	kvs := make([]string, len(rule.arguments))
+	for i, arg := range rule.arguments {
+		kvs[i] = fmt.Sprintf("%v", arg)
+	}
+	
+	dstField, args := kvs[0], kvs[1:]
+	if dstVal, has := v.Get(dstField); has {
+		// Check if destination field value matches any of the specified values
+		if len(args) == 1 {
+			rftDv := reflect.ValueOf(dstVal)
+			wantVal, err := convTypeByBaseKind(args[0], stringKind, rftDv.Kind())
+			if err == nil && dstVal == wantVal {
+				return true // Condition is met
+			}
+		} else if Enum(dstVal, args) {
+			return true // Condition is met
+		}
+	}
+	
+	return false // Condition is not met
+}
+
+// evaluateRequiredUnlessCondition checks if the required_unless condition is met
+func (v *Validation) evaluateRequiredUnlessCondition(rule *Rule) bool {
+	if len(rule.arguments) < 2 {
+		return false
+	}
+	
+	// Convert arguments to strings
+	kvs := make([]string, len(rule.arguments))
+	for i, arg := range rule.arguments {
+		kvs[i] = fmt.Sprintf("%v", arg)
+	}
+	
+	dstField, values := kvs[0], kvs[1:]
+	if dstVal, has, _ := v.tryGet(dstField); has {
+		// For required_unless, condition is met when field value is NOT in the specified values
+		return !Enum(dstVal, values)
+	}
+	
+	return true // If field doesn't exist, condition is met
+}
+
+// isConditionalValidator checks if a validator is conditional (like required_if)
+func (v *Validation) isConditionalValidator(validatorName string) bool {
+	conditionalValidators := []string{
+		"required_if", "requiredIf",
+		"required_unless", "requiredUnless", 
+		"required_with", "requiredWith",
+		"required_with_all", "requiredWithAll",
+		"required_without", "requiredWithout",
+		"required_without_all", "requiredWithoutAll",
+	}
+	
+	for _, cv := range conditionalValidators {
+		if validatorName == cv {
+			return true
+		}
+	}
+	return false
+}
