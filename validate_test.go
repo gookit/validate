@@ -1,7 +1,10 @@
 package validate
 
 import (
+	"bytes"
 	"fmt"
+	"io"
+	"net/http"
 	"reflect"
 	"strings"
 	"testing"
@@ -273,4 +276,36 @@ func TestStruct_json_tag_name_parsing(t *testing.T) {
 
 	errStr = v.Errors["Field"]["email"]
 	assert.True(t, strings.HasPrefix(errStr, "Field "))
+}
+
+func TestValidation_RestoreRequestBody(t *testing.T) {
+	request, err := http.NewRequest(http.MethodPost, "/", bytes.NewBufferString(`{"test": "data"}`))
+	assert.Nil(t, err)
+	request.Header.Set("Content-Type", "application/json")
+
+	data, err := FromRequest(request)
+	assert.Nil(t, err)
+	assert.NotNil(t, data)
+
+	bs, err := io.ReadAll(request.Body)
+	assert.Nil(t, err)
+	assert.Empty(t, bs)
+
+	// restore body
+	Config(func(opt *GlobalOption) {
+		opt.RestoreRequestBody = true
+	})
+
+	request, err = http.NewRequest(http.MethodPost, "/", bytes.NewBufferString(`{"test": "data"}`))
+	assert.Nil(t, err)
+	request.Header.Set("Content-Type", "application/json")
+
+	data, err = FromRequest(request)
+	assert.Nil(t, err)
+	assert.NotNil(t, data)
+
+	bs, err = io.ReadAll(request.Body)
+	assert.Nil(t, err)
+	assert.Equal(t, `{"test": "data"}`, string(bs))
+
 }
