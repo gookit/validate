@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/gookit/color"
 	"github.com/gookit/goutil"
 	"github.com/gookit/goutil/dump"
+	"github.com/gookit/goutil/x/ccolor"
 	"github.com/gookit/validate"
 )
 
@@ -49,16 +49,16 @@ func main() {
 
 		if v.Validate() { // validate ok
 			dump.P(v.SafeData())
-			w.Write([]byte("hello"))
+			_, _ = w.Write([]byte("hello"))
 		} else {
 			fmt.Println(v.Errors.One()) // returns a random error message text
 			fmt.Println(v.Errors)       // all error messages
-			w.Write([]byte(v.Errors.String()))
+			_, _ = w.Write([]byte(v.Errors.String()))
 		}
 	})
 
 	mux.HandleFunc("/post-json", handler1)
 
-	color.Cyanln("server start on localhost:8090")
+	ccolor.Cyanln("server start on localhost:8090")
 	goutil.PanicIfErr(http.ListenAndServe(":8090", mux))
 }
