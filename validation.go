@@ -418,13 +418,13 @@ func (v *Validation) tryGet(key string) (val any, exist, zero bool) {
 	}
 
 	// find from filtered data.
-	if val, ok := v.filteredData[key]; ok {
-		return val, true, false
+	if val1, ok := v.filteredData[key]; ok {
+		return val1, true, false
 	}
 
 	// find from validated data. (such as has default value)
-	if val, ok := v.safeData[key]; ok {
-		return val, true, false
+	if val2, ok := v.safeData[key]; ok {
+		return val2, true, false
 	}
 
 	// TODO add cache data v.caches[key]

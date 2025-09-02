@@ -656,11 +656,10 @@ func IsMap(val any) (ok bool) {
 
 // IsInt check, and support length check
 func IsInt(val any, minAndMax ...int64) (ok bool) {
-	val = indirectValue(val)
-
 	if val == nil {
 		return false
 	}
+	val = indirectValue(val)
 
 	intVal, err := valueToInt64(val, true)
 	if err != nil {
@@ -731,14 +730,10 @@ func HasWhitespace(s string) bool {
 }
 
 // IsIntString check. eg "10"
-func IsIntString(s string) bool {
-	return s != "" && rxInt.MatchString(s)
-}
+func IsIntString(s string) bool { return s != "" && rxInt.MatchString(s) }
 
 // IsASCII string.
-func IsASCII(s string) bool {
-	return s != "" && rxASCII.MatchString(s)
-}
+func IsASCII(s string) bool { return s != "" && rxASCII.MatchString(s) }
 
 // IsPrintableASCII string.
 func IsPrintableASCII(s string) bool {
@@ -746,34 +741,22 @@ func IsPrintableASCII(s string) bool {
 }
 
 // IsBase64 string.
-func IsBase64(s string) bool {
-	return s != "" && rxBase64.MatchString(s)
-}
+func IsBase64(s string) bool { return s != "" && rxBase64.MatchString(s) }
 
 // IsLatitude string.
-func IsLatitude(s string) bool {
-	return s != "" && rxLatitude.MatchString(s)
-}
+func IsLatitude(s string) bool { return s != "" && rxLatitude.MatchString(s) }
 
 // IsLongitude string.
-func IsLongitude(s string) bool {
-	return s != "" && rxLongitude.MatchString(s)
-}
+func IsLongitude(s string) bool { return s != "" && rxLongitude.MatchString(s) }
 
 // IsDNSName string.
-func IsDNSName(s string) bool {
-	return s != "" && rxDNSName.MatchString(s)
-}
+func IsDNSName(s string) bool { return s != "" && rxDNSName.MatchString(s) }
 
 // HasURLSchema string.
-func HasURLSchema(s string) bool {
-	return s != "" && rxURLSchema.MatchString(s)
-}
+func HasURLSchema(s string) bool { return s != "" && rxURLSchema.MatchString(s) }
 
 // IsFullURL string.
-func IsFullURL(s string) bool {
-	return s != "" && rxFullURL.MatchString(s)
-}
+func IsFullURL(s string) bool { return s != "" && rxFullURL.MatchString(s) }
 
 // IsURL string.
 func IsURL(s string) bool {
@@ -789,59 +772,37 @@ func IsURL(s string) bool {
 //
 // data:[<mime type>] ( [;charset=<charset>] ) [;base64],码内容
 // eg. "data:image/gif;base64,R0lGODlhA..."
-func IsDataURI(s string) bool {
-	return s != "" && rxDataURI.MatchString(s)
-}
+func IsDataURI(s string) bool { return s != "" && rxDataURI.MatchString(s) }
 
 // IsMultiByte string.
-func IsMultiByte(s string) bool {
-	return s != "" && rxMultiByte.MatchString(s)
-}
+func IsMultiByte(s string) bool { return s != "" && rxMultiByte.MatchString(s) }
 
 // IsISBN10 string.
-func IsISBN10(s string) bool {
-	return s != "" && rxISBN10.MatchString(s)
-}
+func IsISBN10(s string) bool { return s != "" && rxISBN10.MatchString(s) }
 
 // IsISBN13 string.
-func IsISBN13(s string) bool {
-	return s != "" && rxISBN13.MatchString(s)
-}
+func IsISBN13(s string) bool { return s != "" && rxISBN13.MatchString(s) }
 
 // IsHexadecimal string.
-func IsHexadecimal(s string) bool {
-	return s != "" && rxHexadecimal.MatchString(s)
-}
+func IsHexadecimal(s string) bool { return s != "" && rxHexadecimal.MatchString(s) }
 
 // IsCnMobile string.
-func IsCnMobile(s string) bool {
-	return s != "" && rxCnMobile.MatchString(s)
-}
+func IsCnMobile(s string) bool { return s != "" && rxCnMobile.MatchString(s) }
 
 // IsHexColor string.
-func IsHexColor(s string) bool {
-	return s != "" && rxHexColor.MatchString(s)
-}
+func IsHexColor(s string) bool { return s != "" && rxHexColor.MatchString(s) }
 
 // IsRGBColor string.
-func IsRGBColor(s string) bool {
-	return s != "" && rxRGBColor.MatchString(s)
-}
+func IsRGBColor(s string) bool { return s != "" && rxRGBColor.MatchString(s) }
 
 // IsAlpha string.
-func IsAlpha(s string) bool {
-	return s != "" && rxAlpha.MatchString(s)
-}
+func IsAlpha(s string) bool { return s != "" && rxAlpha.MatchString(s) }
 
 // IsAlphaNum string.
-func IsAlphaNum(s string) bool {
-	return s != "" && rxAlphaNum.MatchString(s)
-}
+func IsAlphaNum(s string) bool { return s != "" && rxAlphaNum.MatchString(s) }
 
 // IsAlphaDash string.
-func IsAlphaDash(s string) bool {
-	return s != "" && rxAlphaDash.MatchString(s)
-}
+func IsAlphaDash(s string) bool { return s != "" && rxAlphaDash.MatchString(s) }
 
 // IsNumber string. should >= 0
 func IsNumber(v any) bool {
@@ -872,9 +833,7 @@ func IsNumeric(v any) bool {
 }
 
 // IsStringNumber is string number. should >= 0
-func IsStringNumber(s string) bool {
-	return s != "" && rxNumber.MatchString(s)
-}
+func IsStringNumber(s string) bool { return s != "" && rxNumber.MatchString(s) }
 
 // IsEmail check
 func IsEmail(s string) bool { return s != "" && rxEmail.MatchString(s) }
@@ -972,19 +931,13 @@ func HasUpperCase(s string) bool {
 }
 
 // StartsWith check string is starts with sub-string
-func StartsWith(s, sub string) bool {
-	return s != "" && strings.HasPrefix(s, sub)
-}
+func StartsWith(s, sub string) bool { return s != "" && strings.HasPrefix(s, sub) }
 
 // EndsWith check string is ends with sub-string
-func EndsWith(s, sub string) bool {
-	return s != "" && strings.HasSuffix(s, sub)
-}
+func EndsWith(s, sub string) bool { return s != "" && strings.HasSuffix(s, sub) }
 
-// StringContains check string is contains sub-string
-func StringContains(s, sub string) bool {
-	return s != "" && strings.Contains(s, sub)
-}
+// StringContains check string is containing sub-string
+func StringContains(s, sub string) bool { return s != "" && strings.Contains(s, sub) }
 
 // Regexp match value string
 func Regexp(str string, pattern string) bool {
@@ -997,19 +950,13 @@ func Regexp(str string, pattern string) bool {
  *************************************************************/
 
 // PathExists reports whether the named file or directory exists.
-func PathExists(path string) bool {
-	return fsutil.PathExists(path)
-}
+func PathExists(path string) bool { return fsutil.PathExists(path) }
 
 // IsFilePath path is a local filepath
-func IsFilePath(path string) bool {
-	return fsutil.IsFile(path)
-}
+func IsFilePath(path string) bool { return fsutil.IsFile(path) }
 
 // IsDirPath path is a local dir path
-func IsDirPath(path string) bool {
-	return fsutil.IsDir(path)
-}
+func IsDirPath(path string) bool { return fsutil.IsDir(path) }
 
 // IsWinPath string
 func IsWinPath(s string) bool {
@@ -1025,7 +972,7 @@ func IsUnixPath(s string) bool {
  * global: compare validators
  *************************************************************/
 
-// IsEqual check two value is equals.
+// IsEqual check two value is equals. Don't compare func, struct
 //
 // Support:
 //
@@ -1072,9 +1019,7 @@ func IsEqual(val, wantVal any) bool {
 }
 
 // NotEqual check
-func NotEqual(val, wantVal any) bool {
-	return !IsEqual(val, wantVal)
-}
+func NotEqual(val, wantVal any) bool { return !IsEqual(val, wantVal) }
 
 // IntEqual check
 func IntEqual(val any, wantVal int64) bool {
@@ -1165,9 +1110,7 @@ func Enum(val, enum any) bool {
 }
 
 // NotIn value should be not in the given enum(strings, ints, uints).
-func NotIn(val, enum any) bool {
-	return !Enum(val, enum)
-}
+func NotIn(val, enum any) bool { return !Enum(val, enum) }
 
 /*************************************************************
  * global: length validators

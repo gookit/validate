@@ -31,6 +31,7 @@ var (
 	errorType  = reflect.TypeOf((*error)(nil)).Elem()
 	// fmtStringerType  = reflect.TypeOf((*fmt.Stringer)(nil)).Elem()
 	// reflectValueType = reflect.TypeOf((*reflect.Value)(nil)).Elem()
+	dataFaceType = reflect.TypeOf((*DataFace)(nil)).Elem()
 )
 
 // IsNilObj check value is internal NilObject

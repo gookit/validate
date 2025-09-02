@@ -122,7 +122,7 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 		// value not exists but has default value
 		if isDefault {
 			// update source data field value and re-set value
-			val, err := v.updateValue(field, val)
+			val, err = v.updateValue(field, val)
 			if err != nil {
 				v.AddErrorf(field, err.Error())
 				if v.StopOnError {
@@ -275,7 +275,7 @@ func (r *Rule) valueValidate(field, name string, val any, v *Validation) (ok boo
 	valArgKind := ft.In(0).Kind()
 	// if arg 0 is DataFace, need to add "data" to args.
 	addNum := 1
-	if ft.In(0) == reflect.TypeOf((*DataFace)(nil)).Elem() {
+	if ft.In(0) == dataFaceType {
 		addNum += 1
 		valArgKind = ft.In(1).Kind()
 	}
