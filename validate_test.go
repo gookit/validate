@@ -111,11 +111,26 @@ func TestUtil_Func_goodName(t *testing.T) {
 }
 
 func Test_Util_Func_convertType(t *testing.T) {
-	nVal, err := convTypeByBaseKind(23, intKind, reflect.String)
+	nVal, err := convTypeByBaseKind(23, reflect.String)
 	assert.NoError(t, err)
 	assert.Equal(t, "23", nVal)
 
-	nVal, err = convTypeByBaseKind(uint(23), uintKind, reflect.String)
+	nVal, err = convTypeByBaseKind(uint(23), reflect.String)
+	assert.NoError(t, err)
+	assert.Equal(t, "23", nVal)
+
+	nVal, err = convTypeByBaseKind([]byte("23"), reflect.String)
+	assert.NoError(t, err)
+	assert.Equal(t, "23", nVal)
+
+	nVal, err = convTypeByBaseKind("23", reflect.Int)
+	assert.NoError(t, err)
+	assert.Equal(t, 23, nVal)
+
+	// Stringer convert to string
+	var val strings.Builder
+	val.WriteString("23")
+	nVal, err = convTypeByBaseKind(&val, reflect.String)
 	assert.NoError(t, err)
 	assert.Equal(t, "23", nVal)
 }

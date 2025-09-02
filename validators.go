@@ -208,7 +208,7 @@ func (v *Validation) RequiredIf(_ string, val any, kvs ...string) bool {
 		// up: only one check value, direct compare value
 		if len(args) == 1 {
 			rftDv := reflect.ValueOf(dstVal)
-			wantVal, err := convTypeByBaseKind(args[0], stringKind, rftDv.Kind())
+			wantVal, err := convTypeByBaseKind(args[0], rftDv.Kind())
 			if err == nil && dstVal == wantVal {
 				return val != nil && !IsEmpty(val)
 			}
