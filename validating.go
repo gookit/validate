@@ -369,18 +369,12 @@ func convValAsFuncValArgType(valArgKind, valKind reflect.Kind, val any) (any, bo
 		valKind = reflect.TypeOf(val).Kind()
 	}
 
-	// ak, err := basicKind(rftVal)
-	bk, err := basicKindV2(valKind)
-	if err != nil {
-		return nil, false
-	}
-
 	// manual converted
-	if nVal, _ := convTypeByBaseKind(val, bk, valArgKind); nVal != nil {
+	if nVal, err := convTypeByBaseKind(val, valArgKind); err == nil && nVal != nil {
 		return nVal, true
 	}
-	// TODO return nil, false
-	return val, true
+
+	return nil, false
 }
 
 func callValidator(v *Validation, fm *funcMeta, field string, val any, args []any, addNum int) (ok bool) {
@@ -498,14 +492,8 @@ func convertArgsType(v *Validation, fm *funcMeta, field string, args []any, addN
 				continue
 			}
 
-			ak, err := basicKindV2(argVKind)
-			if err != nil {
-				v.convArgTypeError(field, fm.name, argVKind, wantKind, fcArgIndex)
-				return
-			}
-
 			// manual converted
-			if nVal, _ := convTypeByBaseKind(args[i], ak, lastTyp); nVal != nil {
+			if nVal, err := convTypeByBaseKind(args[i], lastTyp); err == nil && nVal != nil {
 				args[i] = nVal
 				continue
 			}
@@ -523,16 +511,10 @@ func convertArgsType(v *Validation, fm *funcMeta, field string, args []any, addN
 			continue
 		}
 
-		ak, err := basicKindV2(argVKind)
-		if err != nil {
-			v.convArgTypeError(field, fm.name, argVKind, wantKind, fcArgIndex)
-			return
-		}
-
 		// can auto convert type.
 		if av.Type().ConvertibleTo(argIType) {
 			args[i] = av.Convert(argIType).Interface()
-		} else if nVal, _ := convTypeByBaseKind(args[i], ak, wantKind); nVal != nil { // manual converted
+		} else if nVal, err := convTypeByBaseKind(args[i], wantKind); err == nil && nVal != nil { // manual converted
 			args[i] = nVal
 		} else { // unable to convert
 			v.convArgTypeError(field, fm.name, argVKind, wantKind, fcArgIndex)
