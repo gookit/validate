@@ -1847,3 +1847,32 @@ func TestIssue_297(t *testing.T) {
 	}
 	assert.Equal(t, "extras.0.github", firstKeyJSON)
 }
+
+// http://github.com/gookit/validate/issues/272 eqField does not correctly validate pointer type data
+func TestIssue_272(t *testing.T) {
+	type Test struct {
+		FieldA *string `validate:"required"`
+		FieldB *string `validate:"eqField:FieldA"`
+	}
+
+	var (
+		fieldA = "A"
+		fieldB = "B"
+	)
+	t.Run("equal", func(t *testing.T) {
+		v := validate.Struct(Test{
+			FieldA: &fieldA,
+			FieldB: &fieldA,
+		})
+		assert.True(t, v.Validate())
+	})
+
+	t.Run("not equal", func(t *testing.T) {
+		v := validate.Struct(Test{
+			FieldA: &fieldA,
+			FieldB: &fieldB,
+		})
+		assert.False(t, v.Validate())
+		assert.Equal(t, "FieldB value must be equal the field FieldA", v.Errors.One())
+	})
+}

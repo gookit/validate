@@ -1036,8 +1036,8 @@ func IsEqual(val, wantVal any) bool {
 		return val == wantVal
 	}
 
-	sv := reflect.ValueOf(val)
-	wv := reflect.ValueOf(wantVal)
+	sv := removeValuePtr(reflect.ValueOf(val))
+	wv := removeValuePtr(reflect.ValueOf(wantVal))
 
 	// don't compare func, struct
 	if sv.Kind() == reflect.Func || sv.Kind() == reflect.Struct {
