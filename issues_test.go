@@ -954,8 +954,8 @@ func TestIssue_135(t *testing.T) {
 	ok := v.Validate()
 	dump.Println(v.Errors)
 	assert.False(t, ok)
-	assert.Equal(t, "score min value is 0.1", v.Errors.One())
-	assert.Equal(t, "score min value is 0.1", v.Errors.OneError().Error())
+	assert.Equal(t, "answer.0.score min value is 0.1", v.Errors.One())
+	assert.Equal(t, "answer.0.score min value is 0.1", v.Errors.OneError().Error())
 }
 
 // https://github.com/gookit/validate/issues/140
@@ -1785,4 +1785,65 @@ func TestIssues_280(t *testing.T) {
 	data := TestData{}
 	v := validate.New(data)
 	assert.Nil(t, v.ValidateErr())
+}
+
+type WithArray struct {
+	Extras []ExtraInfo `validate:"required|minLen:2"`
+}
+
+type WithArrayJSON struct {
+	Extras []ExtraInfoJSON `json:"extras" validate:"required|minLen:2"`
+}
+
+type ExtraInfo struct {
+	Github  string `validate:"required"`
+	Status1 int    `validate:"required|int"`
+}
+
+type ExtraInfoJSON struct {
+	Github  string `json:"github" validate:"required"`
+	Status1 int    `json:"status1" validate:"required|int"`
+}
+
+// http://github.com/gookit/validate/issues/297 Nested JSON tag paths are not respected
+func TestIssue_297(t *testing.T) {
+	v := validate.New(WithArray{
+		Extras: []ExtraInfo{
+			{
+				Github:  "",
+				Status1: 0,
+			},
+			{
+				Github:  "",
+				Status1: 0,
+			},
+		},
+	})
+	assert.False(t, v.Validate())
+	var firstKey string
+	for key := range v.Errors {
+		firstKey = key
+		break
+	}
+	assert.Equal(t, "Extras.0.Github", firstKey)
+
+	v = validate.New(WithArrayJSON{
+		Extras: []ExtraInfoJSON{
+			{
+				Github:  "",
+				Status1: 0,
+			},
+			{
+				Github:  "",
+				Status1: 0,
+			},
+		},
+	})
+	assert.False(t, v.Validate())
+	var firstKeyJSON string
+	for key := range v.Errors {
+		firstKeyJSON = key
+		break
+	}
+	assert.Equal(t, "extras.0.github", firstKeyJSON)
 }
