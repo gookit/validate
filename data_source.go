@@ -383,6 +383,9 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 						elemType := removeTypePtr(elemValue.Type())
 
 						arrayName := fmt.Sprintf("%s.%d", name, j)
+						if outName != "" {
+							fOutMap[arrayName] = fmt.Sprintf("%s.%d", outName, j)
+						}
 						if elemType.Kind() == reflect.Struct {
 							recursiveFunc(elemValue, elemType, arrayName, fv.Anonymous)
 						}
@@ -417,6 +420,9 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 						}
 
 						arrayName := fmt.Sprintf(format, name, val)
+						if outName != "" {
+							fOutMap[arrayName] = fmt.Sprintf(format, outName, val)
+						}
 						if elemType.Kind() == reflect.Struct {
 							recursiveFunc(elemValue, elemType, arrayName, fv.Anonymous)
 						}

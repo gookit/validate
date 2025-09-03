@@ -6,6 +6,7 @@
 package validate
 
 import (
+	"bytes"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -106,6 +107,10 @@ type GlobalOption struct {
 	//
 	// default: false
 	ValidatePrivateFields bool
+
+	// RestoreRequestBody Whether to restore the request body after reading it.
+	// default: false
+	RestoreRequestBody bool
 }
 
 // global options
@@ -395,6 +400,10 @@ func FromRequest(r *http.Request, maxMemoryLimit ...int64) (DataFace, error) {
 		bs, err := io.ReadAll(r.Body)
 		if err != nil {
 			return nil, err
+		}
+		// restore request body
+		if gOpt.RestoreRequestBody {
+			r.Body = io.NopCloser(bytes.NewBuffer(bs))
 		}
 		return FromJSONBytes(bs)
 	}
