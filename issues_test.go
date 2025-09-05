@@ -601,7 +601,7 @@ func TestIssues_I36T2B(t *testing.T) {
 	assert.False(t, ok)
 	assert.Equal(t, "a value should be greater than 100", v.Errors.One())
 
-	v = validate.Map(m)
+	v = validate.Map(make(map[string]any))
 	v.AddRule("a", "required")
 	v.AddRule("a", "gt", 100)
 
@@ -1875,4 +1875,28 @@ func TestIssue_272(t *testing.T) {
 		assert.False(t, v.Validate())
 		assert.Equal(t, "FieldB value must be equal the field FieldA", v.Errors.One())
 	})
+}
+
+// http://github.com/gookit/validate/issues/302 The required rule fails for int/uint values when the value is 0.
+func TestIssue_302(t *testing.T) {
+	v := validate.Map(map[string]any{
+		"required":             0,
+		"required_if":          0,
+		"required_unless":      0,
+		"required_with":        0,
+		"required_with_all":    0,
+		"required_without":     0,
+		"required_without_all": 0,
+	})
+	v.StringRules(map[string]string{
+		"required":             "required|uint|in:0,1,2",
+		"required_if":          "required_if:required,0",
+		"required_unless":      "required_unless:required,1",
+		"required_with":        "required_with:required",
+		"required_with_all":    "required_with_all:required,required_if",
+		"required_without":     "required_without:nonexist",
+		"required_without_all": "required_without_all:nonexist,required",
+	})
+	assert.True(t, v.Validate())
+	assert.Empty(t, v.Errors.One())
 }
