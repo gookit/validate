@@ -188,6 +188,10 @@ func (v *Validation) Required(field string, val any) bool {
 		}
 	}
 
+	if v.isIgnoreableZeroNumeric(field) {
+		return true
+	}
+
 	// check value
 	return !IsEmpty(val)
 }
@@ -198,7 +202,7 @@ func (v *Validation) Required(field string, val any) bool {
 // Usage:
 //
 //	v.AddRule("password", "requiredIf", "username", "tom")
-func (v *Validation) RequiredIf(_ string, val any, kvs ...string) bool {
+func (v *Validation) RequiredIf(sourceField string, val any, kvs ...string) bool {
 	if len(kvs) < 2 {
 		return false
 	}
@@ -210,10 +214,10 @@ func (v *Validation) RequiredIf(_ string, val any, kvs ...string) bool {
 			rftDv := reflect.ValueOf(dstVal)
 			wantVal, err := convTypeByBaseKind(args[0], rftDv.Kind())
 			if err == nil && dstVal == wantVal {
-				return val != nil && !IsEmpty(val)
+				return val != nil && !IsEmpty(val) || v.isIgnoreableZeroNumeric(sourceField)
 			}
 		} else if Enum(dstVal, args) {
-			return val != nil && !IsEmpty(val)
+			return val != nil && !IsEmpty(val) || v.isIgnoreableZeroNumeric(sourceField)
 		}
 	}
 
@@ -225,7 +229,7 @@ func (v *Validation) RequiredIf(_ string, val any, kvs ...string) bool {
 // unless the dstField field is equal to any value.
 //
 //   - kvs format: [dstField, dstVal1, dstVal2 ...]
-func (v *Validation) RequiredUnless(_ string, val any, kvs ...string) bool {
+func (v *Validation) RequiredUnless(sourceField string, val any, kvs ...string) bool {
 	if len(kvs) < 2 {
 		return false
 	}
@@ -233,7 +237,7 @@ func (v *Validation) RequiredUnless(_ string, val any, kvs ...string) bool {
 	dstField, values := kvs[0], kvs[1:]
 	if dstVal, has, _ := v.tryGet(dstField); has {
 		if !Enum(dstVal, values) {
-			return !IsEmpty(val)
+			return !IsEmpty(val) || v.isIgnoreableZeroNumeric(sourceField)
 		}
 	}
 
@@ -245,14 +249,14 @@ func (v *Validation) RequiredUnless(_ string, val any, kvs ...string) bool {
 // if any of the other specified fields are present.
 //
 //   - fields format: [field1, field2 ...]
-func (v *Validation) RequiredWith(_ string, val any, fields ...string) bool {
+func (v *Validation) RequiredWith(sourceField string, val any, fields ...string) bool {
 	if len(fields) == 0 {
 		return false
 	}
 
 	for _, field := range fields {
 		if _, has, zero := v.tryGet(field); has && !zero {
-			return !IsEmpty(val)
+			return !IsEmpty(val) || v.isIgnoreableZeroNumeric(sourceField)
 		}
 	}
 
@@ -261,7 +265,7 @@ func (v *Validation) RequiredWith(_ string, val any, fields ...string) bool {
 }
 
 // RequiredWithAll field under validation must be present and not empty only if all the other specified fields are present.
-func (v *Validation) RequiredWithAll(_ string, val any, fields ...string) bool {
+func (v *Validation) RequiredWithAll(sourceField string, val any, fields ...string) bool {
 	if len(fields) == 0 {
 		return false
 	}
@@ -274,18 +278,18 @@ func (v *Validation) RequiredWithAll(_ string, val any, fields ...string) bool {
 	}
 
 	// all fields exist
-	return !IsEmpty(val)
+	return !IsEmpty(val) || v.isIgnoreableZeroNumeric(sourceField)
 }
 
 // RequiredWithout field under validation must be present and not empty only when any of the other specified fields are not present.
-func (v *Validation) RequiredWithout(_ string, val any, fields ...string) bool {
+func (v *Validation) RequiredWithout(sourceField string, val any, fields ...string) bool {
 	if len(fields) == 0 {
 		return false
 	}
 
 	for _, field := range fields {
 		if _, has, zero := v.tryGet(field); !has || zero {
-			return !IsEmpty(val)
+			return !IsEmpty(val) || v.isIgnoreableZeroNumeric(sourceField)
 		}
 	}
 
@@ -294,7 +298,7 @@ func (v *Validation) RequiredWithout(_ string, val any, fields ...string) bool {
 }
 
 // RequiredWithoutAll field under validation must be present and not empty only when any of the other specified fields are not present.
-func (v *Validation) RequiredWithoutAll(_ string, val any, fields ...string) bool {
+func (v *Validation) RequiredWithoutAll(sourceField string, val any, fields ...string) bool {
 	if len(fields) == 0 {
 		return false
 	}
@@ -307,7 +311,7 @@ func (v *Validation) RequiredWithoutAll(_ string, val any, fields ...string) boo
 	}
 
 	// all fields not exists, required
-	return !IsEmpty(val)
+	return !IsEmpty(val) || v.isIgnoreableZeroNumeric(sourceField)
 }
 
 // EqField value should EQ the dst field value
@@ -486,6 +490,16 @@ func (v *Validation) inMimeTypes(mime string, mimeTypes []string) bool {
 		return false
 	}
 	return Enum(mime, mimeTypes)
+}
+
+func (v *Validation) isIgnoreableZeroNumeric(field string) bool {
+	if v.data != nil && v.data.Type() == sourceMap {
+		if val, ok := v.data.Get(field); ok {
+			k := reflect.ValueOf(val).Kind()
+			return k >= reflect.Int && k <= reflect.Float64
+		}
+	}
+	return false
 }
 
 /*************************************************************
