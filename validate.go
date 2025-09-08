@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"reflect"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/gookit/goutil/reflects"
@@ -47,6 +48,21 @@ func (ms MS) String() string {
 	}
 
 	return strings.Join(ss, "\n")
+}
+
+func (ms MS) OrderedRange(fn func(key, value string)) {
+	if len(ms) == 0 || fn == nil {
+		return
+	}
+
+	keys := make([]string, 0, len(ms))
+	for k := range ms {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		fn(k, ms[k])
+	}
 }
 
 // GlobalOption settings for validate
