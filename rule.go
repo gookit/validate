@@ -220,9 +220,10 @@ func (v *Validation) StringRule(field, rule string, filterRule ...string) *Valid
 //		"age": "required|int|min:12",
 //	})
 func (v *Validation) StringRules(mp MS) *Validation {
-	for name, rule := range mp {
+	mp.OrderedRange(func(name, rule string) {
 		v.StringRule(name, rule)
-	}
+	})
+
 	return v
 }
 
@@ -235,9 +236,7 @@ func (v *Validation) StringRules(mp MS) *Validation {
 //		"age": "required|int|min:12",
 //	})
 func (v *Validation) ConfigRules(mp MS) *Validation {
-	for name, rule := range mp {
-		v.StringRule(name, rule)
-	}
+	v.StringRules(mp)
 	return v
 }
 
