@@ -1880,11 +1880,15 @@ func TestIssue_272(t *testing.T) {
 // http://github.com/gookit/validate/issues/301 Regex pipe escape
 func TestIssue_301(t *testing.T) {
 	v := validate.Map(map[string]any{
-		"field": "abc.json",
-		"other": "123",
+		"field":   "abc.json",
+		"other":   "123",
+		"escape":  "a|b",
+		"escape2": "a\\|b",
 	})
 	v.StringRule("field", "required|regex:^[a-zA-Z0-9_.-]+\\.(yaml\\|yml\\|json)$|maxLen:50")
 	v.StringRule("other", "required|regex:^\\d{3}$")
+	v.StringRule("escape", "in: a\\|b")
+	v.StringRule("escape2", "in: a\\\\|b")
 	assert.True(t, v.Validate())
 }
 
