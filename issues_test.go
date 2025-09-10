@@ -8,14 +8,14 @@ import (
 	"time"
 
 	"github.com/gookit/goutil"
-	"github.com/gookit/goutil/maputil"
-	"github.com/gookit/goutil/timex"
-	"github.com/gookit/validate/locales/zhcn"
-
 	"github.com/gookit/goutil/dump"
 	"github.com/gookit/goutil/jsonutil"
+	"github.com/gookit/goutil/maputil"
 	"github.com/gookit/goutil/testutil/assert"
+	"github.com/gookit/goutil/timex"
+
 	"github.com/gookit/validate"
+	"github.com/gookit/validate/locales/zhcn"
 )
 
 func TestIssue_2(t *testing.T) {
@@ -1875,6 +1875,21 @@ func TestIssue_272(t *testing.T) {
 		assert.False(t, v.Validate())
 		assert.Equal(t, "FieldB value must be equal the field FieldA", v.Errors.One())
 	})
+}
+
+// http://github.com/gookit/validate/issues/301 Regex pipe escape
+func TestIssue_301(t *testing.T) {
+	v := validate.Map(map[string]any{
+		"field":   "abc.json",
+		"other":   "123",
+		"escape":  "a|b",
+		"escape2": "a\\|b",
+	})
+	v.StringRule("field", "required|regex:^[a-zA-Z0-9_.-]+\\.(yaml\\|yml\\|json)$|maxLen:50")
+	v.StringRule("other", "required|regex:^\\d{3}$")
+	v.StringRule("escape", "in: a\\|b")
+	v.StringRule("escape2", "in: a\\\\|b")
+	assert.True(t, v.Validate())
 }
 
 // http://github.com/gookit/validate/issues/302 The required rule fails for int/uint values when the value is 0.

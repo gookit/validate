@@ -173,7 +173,7 @@ func (v *Validation) StringRule(field, rule string, filterRule ...string) *Valid
 		return v
 	}
 
-	rules := stringSplit(strings.Trim(rule, "|:"), "|")
+	rules := splitRules(strings.Trim(rule, "|:"))
 	for _, validator := range rules {
 		validator = strings.Trim(validator, ":")
 		if validator == "" { // empty
