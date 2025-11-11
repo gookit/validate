@@ -427,6 +427,21 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 							recursiveFunc(elemValue, elemType, arrayName, fv.Anonymous)
 						}
 					}
+				case reflect.Ptr:
+					// 如果字段是指针类型且为nil，并且有验证规则，则初始化该指针
+					if fValue.IsNil() && vRule != "" {
+						// 创建指针指向的类型的实例
+						newValue := reflect.New(ft.Elem())
+						// 设置字段值
+						removeValuePtr(vv).Field(i).Set(newValue)
+						// 更新fValue为新创建的值
+						fValue = newValue
+					}
+
+					// 继续处理指针指向的类型
+					if fValue.IsValid() && !fValue.IsNil() && removeTypePtr(ft).Kind() == reflect.Struct {
+						recursiveFunc(removeValuePtr(fValue), removeTypePtr(ft), name, fv.Anonymous)
+					}
 				default:
 					// do nothing
 				}
@@ -629,6 +644,15 @@ func (d *StructData) Set(field string, val any) (newVal any, err error) {
 		switch f {
 		case fieldAtTopStruct:
 			fv = d.value.FieldByName(field)
+			// 如果是空指针，需要初始化它
+			if fv.Kind() == reflect.Ptr && fv.IsNil() {
+				// 创建指针指向的类型的实例
+				newValue := reflect.New(fv.Type().Elem())
+				// 设置字段值
+				d.value.FieldByName(field).Set(newValue)
+				// 更新fv为新创建的值
+				fv = newValue
+			}
 		case fieldAtAnonymous:
 		case fieldAtSubStruct:
 			fieldNodes := strings.Split(field, ".")
@@ -637,9 +661,30 @@ func (d *StructData) Set(field string, val any) (newVal any, err error) {
 			}
 
 			fv = d.value.FieldByName(fieldNodes[0])
+			// 如果是空指针，需要初始化它
+			if fv.Kind() == reflect.Ptr && fv.IsNil() {
+				// 创建指针指向的类型的实例
+				newValue := reflect.New(fv.Type().Elem())
+				// 设置字段值
+				d.value.FieldByName(fieldNodes[0]).Set(newValue)
+				// 更新fv为新创建的值
+				fv = newValue
+			}
 			fieldNodes = fieldNodes[1:]
 
 			for _, fieldNode := range fieldNodes {
+				// 处理指针类型
+				if fv.Kind() == reflect.Ptr {
+					if fv.IsNil() {
+						// 创建指针指向的类型的实例
+						newValue := reflect.New(fv.Type().Elem())
+						// 设置字段值
+						fv.Set(newValue)
+					}
+					// 获取指针指向的值
+					fv = fv.Elem()
+				}
+
 				switch fv.Type().Kind() {
 				case reflect.Array, reflect.Slice:
 					index, err := strconv.Atoi(fieldNode)
