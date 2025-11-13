@@ -1,7 +1,6 @@
 package validate
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"mime/multipart"

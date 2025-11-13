@@ -2,7 +2,6 @@ package validate
 
 import (
 	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
