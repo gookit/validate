@@ -2,7 +2,6 @@ package validate
 
 import (
 	"bytes"
-	"encoding/json"
 	"net"
 	"net/url"
 	"reflect"
@@ -16,6 +15,7 @@ import (
 	"github.com/gookit/goutil/fsutil"
 	"github.com/gookit/goutil/mathutil"
 	"github.com/gookit/goutil/strutil"
+	jsoniter "github.com/json-iterator/go"
 )
 
 // Basic regular expressions for validating strings.
@@ -927,7 +927,7 @@ func IsJSON(s string) bool {
 		return false
 	}
 
-	var js json.RawMessage
+	var js jsoniter.RawMessage
 	return Unmarshal([]byte(s), &js) == nil
 }
 

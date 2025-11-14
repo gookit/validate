@@ -7,7 +7,6 @@ package validate
 
 import (
 	"bytes"
-	"encoding/json"
 	"io"
 	"net/http"
 	"net/url"
@@ -17,6 +16,7 @@ import (
 	"strings"
 
 	"github.com/gookit/goutil/reflects"
+	jsoniter "github.com/json-iterator/go"
 )
 
 // M is a short name for map[string]any
@@ -27,6 +27,14 @@ type MS map[string]string
 
 // SValues simple values
 type SValues map[string][]string
+
+// jsoniter config
+var json = jsoniter.Config{
+	EscapeHTML:             true,
+	SortMapKeys:            true,
+	ValidateJsonRawMessage: false,
+	UseNumber:              true,
+}.Froze()
 
 // One get one item's value string
 func (ms MS) One() string {
