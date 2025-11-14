@@ -426,6 +426,21 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 							recursiveFunc(elemValue, elemType, arrayName, fv.Anonymous)
 						}
 					}
+				case reflect.Ptr:
+					// If the field is a pointer type and is nil, and has validation rules, initialize the pointer
+					if fValue.IsNil() && vRule != "" {
+						// Create an instance of the type pointed to by the pointer
+						newValue := reflect.New(ft.Elem())
+						// Set the field value
+						removeValuePtr(vv).Field(i).Set(newValue)
+						// Update fValue to the newly created value
+						fValue = newValue
+					}
+
+					// Continue processing the type pointed to by the pointer
+					if fValue.IsValid() && !fValue.IsNil() && removeTypePtr(ft).Kind() == reflect.Struct {
+						recursiveFunc(removeValuePtr(fValue), removeTypePtr(ft), name, fv.Anonymous)
+					}
 				default:
 					// do nothing
 				}
@@ -628,6 +643,15 @@ func (d *StructData) Set(field string, val any) (newVal any, err error) {
 		switch f {
 		case fieldAtTopStruct:
 			fv = d.value.FieldByName(field)
+			// If it is a nil pointer, initialize it
+			if fv.Kind() == reflect.Ptr && fv.IsNil() {
+				// Create an instance of the type pointed to by the pointer
+				newValue := reflect.New(fv.Type().Elem())
+				// Set the field value
+				d.value.FieldByName(field).Set(newValue)
+				// Update fv to the newly created value
+				fv = newValue
+			}
 		case fieldAtAnonymous:
 		case fieldAtSubStruct:
 			fieldNodes := strings.Split(field, ".")
@@ -636,9 +660,30 @@ func (d *StructData) Set(field string, val any) (newVal any, err error) {
 			}
 
 			fv = d.value.FieldByName(fieldNodes[0])
+			// If it is a nil pointer, initialize it
+			if fv.Kind() == reflect.Ptr && fv.IsNil() {
+				// Create an instance of the type pointed to by the pointer
+				newValue := reflect.New(fv.Type().Elem())
+				// Set the field value
+				d.value.FieldByName(fieldNodes[0]).Set(newValue)
+				// Update fv to the newly created value
+				fv = newValue
+			}
 			fieldNodes = fieldNodes[1:]
 
 			for _, fieldNode := range fieldNodes {
+				// Handle pointer types
+				if fv.Kind() == reflect.Ptr {
+					if fv.IsNil() {
+						// Create an instance of the type pointed to by the pointer
+						newValue := reflect.New(fv.Type().Elem())
+						// Set the field value
+						fv.Set(newValue)
+					}
+					// Get the value pointed to by the pointer
+					fv = fv.Elem()
+				}
+
 				switch fv.Type().Kind() {
 				case reflect.Array, reflect.Slice:
 					index, err := strconv.Atoi(fieldNode)
