@@ -1096,7 +1096,11 @@ func Enum(val, enum any) bool {
 
 	v, err := convToBasicType(val)
 	if err != nil {
-		return false
+		// attempt to fall back to string conversion
+		v, err = strutil.ToString(val)
+		if err != nil {
+			return false
+		}
 	}
 
 	// if is string value
