@@ -677,21 +677,22 @@ func TestLength(t *testing.T) {
 func TestEnumAndNotIn(t *testing.T) {
 	is := assert.New(t)
 	tests := map[any]any{
-		1:   []int{1, 2, 3},
-		2:   []int8{1, 2, 3},
-		3:   []int16{1, 2, 3},
-		4:   []int32{4, 2, 3},
-		5:   []int64{5, 2, 3},
-		6:   []uint{6, 2, 3},
-		7:   []uint8{7, 2, 3},
-		8:   []uint16{8, 2, 3},
-		9:   []uint32{9, 2, 3},
-		10:  []uint64{10, 3},
-		11:  []string{"11", "3"},
-		'a': []int64{97},
-		'b': []rune{'a', 'b'},
-		'c': []byte{'a', 'b', 'c'}, // byte -> uint8
-		"a": []string{"a", "b", "c"},
+		1:          []int{1, 2, 3},
+		2:          []int8{1, 2, 3},
+		3:          []int16{1, 2, 3},
+		4:          []int32{4, 2, 3},
+		5:          []int64{5, 2, 3},
+		6:          []uint{6, 2, 3},
+		7:          []uint8{7, 2, 3},
+		8:          []uint16{8, 2, 3},
+		9:          []uint32{9, 2, 3},
+		10:         []uint64{10, 3},
+		11:         []string{"11", "3"},
+		'a':        []int64{97},
+		'b':        []rune{'a', 'b'},
+		'c':        []byte{'a', 'b', 'c'}, // byte -> uint8
+		"a":        []string{"a", "b", "c"},
+		float64(2): []string{"2", "3"},
 	}
 
 	for val, list := range tests {
