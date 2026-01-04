@@ -26,6 +26,27 @@ import (
 // 	StdTranslator.Reset()
 // }
 
+func TestNestedStructPtrDefaultValue(t *testing.T) {
+	type SubInfo struct {
+		Status1      int    `validate:"required|int|default:1"`
+		StatusString string `validate:"required|string|default:222"`
+	}
+	type UserForm struct {
+		Name    string `validate:"required|string|minLen:7"`
+		SubInfo *SubInfo
+	}
+
+	u := &UserForm{
+		Name: "inhere11",
+	}
+
+	v := Struct(u)
+	ok := v.Validate()
+
+	fmt.Println(ok)
+	dump.P(v.Errors, u)
+}
+
 func ExampleStruct() {
 	// UserForm struct
 	type UserForm struct {

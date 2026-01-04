@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/gookit/filter v1.2.3
-	github.com/gookit/goutil v0.7.1
+	github.com/gookit/goutil v0.7.3
 )
 
 require (

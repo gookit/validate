@@ -70,6 +70,29 @@ func parseArgString(argStr string) (ss []string) {
 	return stringSplit(argStr, ",")
 }
 
+func splitRules(rules string) (ss []string) {
+	if rules = strings.TrimSpace(rules); len(rules) == 0 {
+		return
+	}
+
+	var (
+		sep = "|"
+		esc = "\\"
+	)
+	for _, val := range strings.Split(rules, sep) {
+		if val = strings.TrimSpace(val); len(val) > 0 {
+			if len(ss) > 0 {
+				if last := ss[len(ss)-1]; strings.HasSuffix(last, esc) {
+					ss[len(ss)-1] = strings.TrimSuffix(last, esc) + sep + val
+					continue
+				}
+			}
+			ss = append(ss, val)
+		}
+	}
+	return
+}
+
 // TODO strutil.Split()
 func stringSplit(str, sep string) (ss []string) {
 	str = strings.TrimSpace(str)
