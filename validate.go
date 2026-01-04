@@ -7,7 +7,6 @@ package validate
 
 import (
 	"bytes"
-	"encoding/json"
 	"io"
 	"net/http"
 	"net/url"
@@ -326,7 +325,7 @@ func FromJSON(s string) (*MapData, error) {
 // FromJSONBytes string build data instance.
 func FromJSONBytes(bs []byte) (*MapData, error) {
 	mp := map[string]any{}
-	if err := json.Unmarshal(bs, &mp); err != nil {
+	if err := Unmarshal(bs, &mp); err != nil {
 		return nil, err
 	}
 
