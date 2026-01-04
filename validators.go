@@ -170,8 +170,7 @@ func Validators() map[string]int8 {
 }
 
 /*************************************************************
- * context validators:
- *  - field value compare
+ * region context: field value check compare
  *  - requiredXXX
  *************************************************************/
 
@@ -380,8 +379,7 @@ func (v *Validation) LteField(val any, dstField string) bool {
 
 /*
  ******************************************************************
- * context validators:
- *  - file validators
+ * region context: file validators
  ******************************************************************
  */
 
@@ -503,7 +501,7 @@ func (v *Validation) isIgnoreableZeroNumeric(field string) bool {
 }
 
 /*************************************************************
- * global: basic validators
+ * region global: basic validators
  *************************************************************/
 
 // IsEmpty of the value
@@ -551,7 +549,7 @@ func NotContains(s, sub any) bool {
 }
 
 /*************************************************************
- * global: type validators
+ * region global: type validators
  *************************************************************/
 
 // IsUint check, allow: intX, uintX, string
@@ -675,6 +673,7 @@ func IsInt(val any, minAndMax ...int64) (ok bool) {
 	}
 	val = indirectValue(val)
 
+	// TODO use mathutil.StrictInt
 	intVal, err := valueToInt64(val, true)
 	if err != nil {
 		return false
@@ -735,7 +734,7 @@ func IsString(val any, minAndMaxLen ...int) (ok bool) {
 }
 
 /*************************************************************
- * global: string validators
+ * region global: string validators
  *************************************************************/
 
 // HasWhitespace check. eg "10"
@@ -960,7 +959,7 @@ func Regexp(str string, pattern string) bool {
 }
 
 /*************************************************************
- * global: filesystem validators
+ * region global: filesystem validators
  *************************************************************/
 
 // PathExists reports whether the named file or directory exists.
@@ -1085,7 +1084,7 @@ func Between(val any, min, max int64) bool {
 }
 
 /*************************************************************
- * global: array, slice, map validators
+ * region global: array, slice, map validators
  *************************************************************/
 
 // Enum value(int(X),string) should be in the given enum(strings, ints, uints).
@@ -1127,7 +1126,7 @@ func Enum(val, enum any) bool {
 func NotIn(val, enum any) bool { return !Enum(val, enum) }
 
 /*************************************************************
- * global: length validators
+ * region global: length validators
  *************************************************************/
 
 // Length equal check for string, array, slice, map

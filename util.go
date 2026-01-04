@@ -171,6 +171,7 @@ func ValueLen(v reflect.Value) int {
 // ErrConvertFail error
 var ErrConvertFail = errors.New("convert value is failure")
 
+// TODO use mathutil.StrictInt
 func valueToInt64(v any, strict bool) (i64 int64, err error) {
 	switch tVal := v.(type) {
 	case string:
