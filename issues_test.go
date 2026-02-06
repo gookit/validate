@@ -1922,7 +1922,7 @@ func TestIssue_328(t *testing.T) {
 		Index   []string `form:"index" json:"index" validate:"required|isSlice"`
 	}
 
-	t.Run("success", func(t *testing.T) {
+	t.Run("success_with_struct", func(t *testing.T) {
 		df, err := validate.FromStruct(&Test{
 			Domains: []string{"example.com", "test.com", "a.com"},
 			Index:   []string{"index.php"},
@@ -1935,7 +1935,7 @@ func TestIssue_328(t *testing.T) {
 		assert.True(t, v.Validate())
 	})
 
-	t.Run("error", func(t *testing.T) {
+	t.Run("success_with_json", func(t *testing.T) {
 		data := `{"domains":["example.com","test.com","a.com"],"index":["index.php"]}`
 		req := new(Test)
 		err := jsonutil.DecodeString(data, req)
