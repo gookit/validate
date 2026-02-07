@@ -14,6 +14,7 @@ import (
 
 	"github.com/gookit/goutil/arrutil"
 	"github.com/gookit/goutil/fsutil"
+	"github.com/gookit/goutil/jsonutil"
 	"github.com/gookit/goutil/mathutil"
 	"github.com/gookit/goutil/strutil"
 )
@@ -923,6 +924,9 @@ func IsCIDR(s string) bool {
 // IsJSON check if the string is valid JSON (note: uses json.Unmarshal).
 func IsJSON(s string) bool {
 	if s == "" {
+		return false
+	}
+	if !jsonutil.IsJSONFast(s) {
 		return false
 	}
 

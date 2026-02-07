@@ -131,6 +131,7 @@ var validatorValues = map[string]reflect.Value{
 var validatorAliases = map[string]string{
 	// alias -> real name
 	"in":     "enum",
+	"oneof": "enum",
 	"not_in": "notIn",
 	"range":  "between",
 	// type

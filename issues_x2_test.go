@@ -37,6 +37,45 @@ func Test_Issue227(t *testing.T) {
 	dump.P(u)
 }
 
+// https://github.com/gookit/validate/issues/259 Embedded structs are not validated properly #259
+
+// https://github.com/gookit/validate/issues/272 eqField对于指针类型数据无法正确校验
+func Test_Issue272(t *testing.T) {
+	type T272 struct {
+		FieldA *string `validate:"required"`
+		FieldB *string `validate:"required|eqField:FieldA"`
+	}
+
+	// test eqField
+	var str = "abc"
+	var str1 = "bcd"
+	v := validate.Struct(&T272{
+		FieldA: &str,
+		FieldB: &str1,
+	})
+	assert.False(t, v.Validate())
+	assert.Len(t, v.Errors, 1)
+	assert.ErrSubMsg(t, v.Errors, "FieldB value must be equal the field FieldA")
+
+	var str2 = "abc"
+	v = validate.Struct(&T272{
+		FieldA: &str,
+		FieldB: &str2,
+	})
+	assert.True(t, v.Validate())
+	assert.Nil(t, v.Errors.ErrOrNil())
+
+	// nil value
+	v = validate.Struct(&T272{
+		FieldA: nil,
+		FieldB: nil,
+	})
+	assert.False(t, v.Validate())
+	assert.Len(t, v.Errors, 1)
+	assert.ErrSubMsg(t, v.Errors, "FieldA is required")
+
+}
+
 // https://github.com/gookit/validate/issues/316
 // The int validator failed to validate a number exceeds the range of int64
 func Test_Issue316(t *testing.T) {
