@@ -299,17 +299,17 @@ func (r *Rule) valueValidate(field, name string, val any, v *Validation) (ok boo
 	valKind := rftVal.Kind()
 
 	if valKind == reflect.Slice && dotStarNum > 0 {
-		sliceLen, sliceCap := rftVal.Len(), rftVal.Cap()
+		sliceLen := rftVal.Len()
 
 		// if dotStarNum > 1, need flatten multi level slice with depth=dotStarNum.
 		if dotStarNum > 1 {
 			rftVal = flatSlice(rftVal, dotStarNum-1)
-			sliceLen, sliceCap = rftVal.Len(), rftVal.Cap()
+			sliceLen = rftVal.Len()
 		}
 
 		// check requiredXX validate - flatten multi level slice, count ".*" number.
-		// TIP: if len < cap: not enough elements in the slice. use empty val call validator.
-		if !r.nameNotRequired && sliceLen < sliceCap {
+		// TIP: if len == 0: no elements in the slice. use empty val call validator.
+		if !r.nameNotRequired && sliceLen == 0 {
 			return callValidator(v, fm, field, nil, r.arguments, addNum)
 		}
 

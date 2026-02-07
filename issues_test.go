@@ -1915,3 +1915,38 @@ func TestIssue_302(t *testing.T) {
 	assert.True(t, v.Validate())
 	assert.Empty(t, v.Errors.One())
 }
+
+func TestIssue_328(t *testing.T) {
+	type Test struct {
+		Domains []string `form:"domains" json:"domains" validate:"required|isSlice"`
+		Index   []string `form:"index" json:"index" validate:"required|isSlice"`
+	}
+
+	t.Run("success_with_struct", func(t *testing.T) {
+		df, err := validate.FromStruct(&Test{
+			Domains: []string{"example.com", "test.com", "a.com"},
+			Index:   []string{"index.php"},
+		})
+		assert.NoError(t, err)
+		v := df.Create()
+		v.StringRule("Domains.*", "required")
+		v.StringRule("Index.*", "required")
+
+		assert.True(t, v.Validate())
+	})
+
+	t.Run("success_with_json", func(t *testing.T) {
+		data := `{"domains":["example.com","test.com","a.com"],"index":["index.php"]}`
+		req := new(Test)
+		err := jsonutil.DecodeString(data, req)
+		assert.NoError(t, err)
+
+		df, err := validate.FromStruct(req)
+		assert.NoError(t, err)
+		v := df.Create()
+		v.StringRule("Domains.*", "required")
+		v.StringRule("Index.*", "required")
+
+		assert.True(t, v.Validate())
+	})
+}
