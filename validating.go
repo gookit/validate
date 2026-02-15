@@ -103,6 +103,11 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 			continue
 		}
 
+		// check if field belongs to an embedded struct with conditional validation
+		if v.shouldSkipEmbeddedFieldValidation(field) {
+			continue
+		}
+
 		// uploaded file validate
 		if isFileValidator(name) {
 			status := r.fileValidate(field, name, v)
