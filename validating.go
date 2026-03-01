@@ -3,6 +3,8 @@ package validate
 import (
 	"reflect"
 	"strings"
+
+	"github.com/gookit/goutil/maputil"
 )
 
 // const requiredValidator = "required"
@@ -309,8 +311,20 @@ func (r *Rule) valueValidate(field, name string, val any, v *Validation) (ok boo
 
 		// check requiredXX validate - flatten multi level slice, count ".*" number.
 		// TIP: if len == 0: no elements in the slice. use empty val call validator.
+		// for map validation with wildcard, we need to compare with parent slice length.
 		if !r.nameNotRequired && sliceLen == 0 {
 			return callValidator(v, fm, field, nil, r.arguments, addNum)
+		}
+
+		// for map validation with wildcard: check if some slice elements are missing fields
+		// get the parent slice (before last .*) to compare lengths
+		if !r.nameNotRequired && dotStarNum > 0 && v.data != nil && v.data.Type() == sourceMap {
+			parentSliceLen := getParentSliceLen(field, v)
+			if parentSliceLen > 0 && parentSliceLen > sliceLen {
+				// parent slice has more elements than the returned values
+				// means some elements are missing the field
+				return callValidator(v, fm, field, nil, r.arguments, addNum)
+			}
 		}
 
 		var subVal any
@@ -572,4 +586,71 @@ func callValidatorValue(v *Validation, fv reflect.Value, val any, args []any, ad
 	// NOTICE: f.CallSlice()与Call() 不一样的是，CallSlice参数的最后一个会被展开
 	// vs := fv.Call(argIn)
 	return fv.Call(argIn)[0].Bool()
+}
+
+// getParentSliceLen get the length of parent slice before the last .*
+// for path like "coding.*.details.cpt.*.encounter_uid", it will get the slice at "coding.*.details.cpt"
+func getParentSliceLen(field string, v *Validation) int {
+	// find the last .* position
+	lastDotStarIdx := strings.LastIndex(field, ".*")
+	if lastDotStarIdx == -1 {
+		return 0
+	}
+
+	// get the parent path (before last .*)
+	parentPath := field[:lastDotStarIdx]
+
+	// get parent value - GetByPath returns different types depending on the path
+	val, ok := maputil.GetByPath(parentPath, v.data.(*MapData).Map)
+	if !ok || val == nil {
+		return 0
+	}
+
+	// GetByPath can return different slice types:
+	// - []any (for some paths)
+	// - []map[string]any (for other paths)
+	// - Nested []any containing inner slices (for wildcard paths)
+
+	// Try []map[string]any first (common case for nested paths)
+	if flatSlice, ok := val.([]map[string]any); ok {
+		return len(flatSlice)
+	}
+
+	// Try []any
+	outerSlice, ok := val.([]any)
+	if !ok {
+		return 0
+	}
+
+	// Check if it's a flat slice (elements are maps, not slices)
+	if len(outerSlice) > 0 {
+		_, isSlice := outerSlice[0].([]any)
+		if !isSlice {
+			// Flat slice - each element is a map
+			if _, ok := outerSlice[0].(map[string]any); ok {
+				return len(outerSlice)
+			}
+		}
+	}
+
+	// Handle nested slice case (parent path has wildcard)
+	// Count total elements across all inner slices
+	total := 0
+	for _, item := range outerSlice {
+		// Handle different slice types
+		switch inner := item.(type) {
+		case []any:
+			total += len(inner)
+		case []map[string]any:
+			total += len(inner)
+		default:
+			// Try reflection for other types
+			rv := reflect.ValueOf(item)
+			if rv.Kind() == reflect.Slice {
+				total += rv.Len()
+			}
+		}
+	}
+
+	return total
 }
