@@ -261,7 +261,7 @@ func valueCompare(srcVal, dstVal any, op string) (ok bool) {
 			return false
 		}
 
-		return strutil.VersionCompare(str1, str2, op)
+		return strutil.Compare(str1, str2, op)
 	}
 
 	// as int or float to compare
