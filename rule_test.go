@@ -38,6 +38,7 @@ func TestRule_basic(t *testing.T) {
 	// validate. will skip validate field "name"
 	v.Validate()
 	is.True(v.IsOK())
+	is.Empty(v.Errors)
 	is.Equal("val0", v.SafeVal("key0"))
 	is.Equal(nil, v.SafeVal("not-exist"))
 
