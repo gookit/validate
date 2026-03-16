@@ -1052,31 +1052,31 @@ func IntEqual(val any, wantVal int64) bool {
 // Gt check value greater dst value.
 //
 // only check for: int(X), uint(X), float(X), string.
-func Gt(val, min any) bool { return valueCompare(val, min, ">") }
+func Gt(val, minVal any) bool { return valueCompare(val, minVal, ">") }
 
 // Gte check value greater or equal dst value
 // only check for: int(X), uint(X), float(X), string.
-func Gte(val, min any) bool { return valueCompare(val, min, ">=") }
+func Gte(val, minVal any) bool { return valueCompare(val, minVal, ">=") }
 
 // Min check value greater or equal dst value, alias Gte()
 // only check for: int(X), uint(X), float(X), string.
-func Min(val, min any) bool { return valueCompare(val, min, ">=") }
+func Min(val, minVal any) bool { return valueCompare(val, minVal, ">=") }
 
 // Lt less than dst value.
 // only check for: int(X), uint(X), float(X).
-func Lt(val, max any) bool { return valueCompare(val, max, "<") }
+func Lt(val, maxVal any) bool { return valueCompare(val, maxVal, "<") }
 
 // Lte less than or equal dst value.
 // only check for: int(X), uint(X), float(X).
-func Lte(val, max any) bool { return valueCompare(val, max, "<=") }
+func Lte(val, maxVal any) bool { return valueCompare(val, maxVal, "<=") }
 
 // Max less than or equal dst value, alias Lte()
 // only check for: int(X), uint(X), float(X).
-func Max(val, max any) bool { return valueCompare(val, max, "<=") }
+func Max(val, maxVal any) bool { return valueCompare(val, maxVal, "<=") }
 
 // Between int value in the given range.
 // only check for: int(X), uint(X).
-func Between(val any, min, max int64) bool {
+func Between(val any, minVal, maxVal int64) bool {
 	val = indirectValue(val)
 
 	intVal, err := mathutil.Int64(val)
@@ -1084,7 +1084,7 @@ func Between(val any, min, max int64) bool {
 		return false
 	}
 
-	return intVal >= min && intVal <= max
+	return intVal >= minVal && intVal <= maxVal
 }
 
 /*************************************************************

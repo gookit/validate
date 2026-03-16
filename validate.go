@@ -371,7 +371,7 @@ var jsonContent = regexp.MustCompile(`(?i)application/((\w|\.|-)+\+)?json(-seq)?
 // FromRequest collect data from request instance
 func FromRequest(r *http.Request, maxMemoryLimit ...int64) (DataFace, error) {
 	// nobody. like GET DELETE ....
-	if r.Method != "POST" && r.Method != "PUT" && r.Method != "PATCH" {
+	if r.Method != http.MethodPost && r.Method != http.MethodPut && r.Method != http.MethodPatch {
 		return FromURLValues(r.URL.Query()), nil
 	}
 

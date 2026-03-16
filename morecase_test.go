@@ -64,7 +64,7 @@ func TestValidation_custom_required2(t *testing.T) {
 	buf := new(bytes.Buffer)
 	v.AddValidator("required_custom", func(val any) bool {
 		buf.WriteString("value:")
-		buf.WriteString(fmt.Sprint(val))
+		fmt.Fprint(buf, val)
 		return false
 	})
 

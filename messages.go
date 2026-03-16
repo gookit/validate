@@ -120,7 +120,7 @@ func (es Errors) String() string {
 			}
 		}
 
-		buf.WriteString(fmt.Sprintf("%s:\n%s\n", field, fe.String()))
+		fmt.Fprintf(buf, "%s:\n%s\n", field, fe.String())
 	}
 
 	return strings.TrimSpace(buf.String())

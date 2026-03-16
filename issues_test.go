@@ -511,7 +511,7 @@ func TestStructNested_gt2level(t *testing.T) {
 	assert.Equal(t, "In2.Org.Company value must be in the enum [A B C D]", v.Errors.Random())
 	fmt.Println(v.Errors)
 
-	u.In2.Org.Company = "A"
+	u.In2.Company = "A"
 	v = validate.Struct(u)
 	ok = v.Validate()
 	assert.True(t, ok)
@@ -771,7 +771,7 @@ func TestIssues_104(t *testing.T) {
 	assert.Equal(t, "id is required to not be empty", v.Errors.One())
 
 	// right
-	d.Issue104A.ID = 34
+	d.ID = 34
 	v = validate.Struct(d)
 	ok = v.Validate()
 	assert.True(t, ok)
@@ -903,7 +903,7 @@ func TestIssue_125(t *testing.T) {
 	validate.Config(func(opt *validate.GlobalOption) {
 		opt.SkipOnEmpty = false
 	})
-	validate.AddValidator("custom", func(value any) bool {
+	validate.AddValidator("custom", func(_ any) bool {
 		// validation...
 		return true
 	})
@@ -1345,7 +1345,7 @@ func TestIssues_209(t *testing.T) {
     "em": {
         "code": "001",
         "encounter_uid": 1,
-        "work_item_uid": 2, 
+        "work_item_uid": 2,
         "billing_provider": "Test provider",
         "resident_provider": "Test Resident Provider"
     },

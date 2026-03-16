@@ -48,16 +48,16 @@ func TestAddFilter(t *testing.T) {
 		AddFilter("", func() {})
 	})
 	is.Panics(func() {
-		AddFilter("myFilter", func(v string) (bool, int) { return false, 0 })
+		AddFilter("myFilter", func(_ string) (bool, int) { return false, 0 })
 	})
 	is.Panics(func() {
 		AddFilter("myFilter", func() any { return nil })
 	})
 
 	AddFilters(M{
-		"myFilter0": func(val any) string { return "myFilter0" },
+		"myFilter0": func(_ any) string { return "myFilter0" },
 	})
-	AddFilter("myFilter1", func(val any) string { return "myFilter1" })
+	AddFilter("myFilter1", func(_ any) string { return "myFilter1" })
 
 	v := New(map[string]any{
 		"name": " inhere ",
@@ -67,7 +67,7 @@ func TestAddFilter(t *testing.T) {
 		"tags": "go,php",
 	})
 	v.AddFilters(M{
-		"myFilter2": func(val any, a, b string) (string, error) { return "myFilter2:" + a + b, nil },
+		"myFilter2": func(_ any, a, b string) (string, error) { return "myFilter2:" + a + b, nil },
 	})
 	v.FilterRule("key0", "myFilter0")
 	v.FilterRules(MS{
