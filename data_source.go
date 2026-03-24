@@ -528,7 +528,12 @@ func (d *StructData) Get(field string) (val any, exist bool) {
 
 // TryGet value by field name. support get sub-value by path.
 func (d *StructData) TryGet(field string) (val any, exist, zero bool) {
-	field = strutil.UpperFirst(field)
+	// Only uppercase if the field is not already registered with its original casing.
+	// This allows private/unexported embedded struct fields to be accessed correctly
+	// when ValidatePrivateFields is enabled (e.g., "foo.Field1" must not become "Foo.Field1").
+	if _, ok := d.fieldNames[field]; !ok {
+		field = strutil.UpperFirst(field)
+	}
 	// try read from cache
 	if fv, ok := d.fieldValues[field]; ok {
 		return fv.Interface(), true, fv.IsZero()
@@ -632,7 +637,11 @@ func (d *StructData) TryGet(field string) (val any, exist, zero bool) {
 //
 // Notice: `StructData.src` the incoming struct must be a pointer to set the value
 func (d *StructData) Set(field string, val any) (newVal any, err error) {
-	field = strutil.UpperFirst(field)
+	// Only uppercase if the field is not already registered with its original casing.
+	// This mirrors the same fix in TryGet for private embedded struct fields.
+	if _, ok := d.fieldNames[field]; !ok {
+		field = strutil.UpperFirst(field)
+	}
 	if !d.HasField(field) { // field not found
 		return nil, ErrNoField
 	}
