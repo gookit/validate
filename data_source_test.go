@@ -270,23 +270,24 @@ func TestValidatePrivateFieldsWhenTrue(t *testing.T) {
 		Field2 int `validate:"required|int" message:"Field2 outside of range"`
 	}
 
-	fooInt := 4
-	barInt := 25
-
-	myFoo := foo{Field1: fooInt}
-	barz := &bar{
-		foo:    myFoo,
-		Field2: barInt,
-	}
-
 	Config(func(opt *GlobalOption) {
 		opt.ValidatePrivateFields = true
 	})
 
+	// Field1 = 4 violates min:5 — validation must fail for the right reason (rule violation)
+	barz := &bar{
+		foo:    foo{Field1: 4},
+		Field2: 25,
+	}
 	v := Struct(barz)
 	v.Validate()
-
 	assert.Equal(t, v.hasError, true)
+
+	// Field1 = 5 satisfies all rules — validation must pass
+	barz.foo.Field1 = 5
+	v = Struct(barz)
+	v.Validate()
+	assert.Equal(t, v.hasError, false)
 }
 
 func TestValidatePrivateFieldsWhenFalse(t *testing.T) {
