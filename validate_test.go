@@ -314,6 +314,151 @@ func TestStruct_json_tag_name_parsing(t *testing.T) {
 	assert.True(t, strings.HasPrefix(errStr, "Field "))
 }
 
+type TestPermission struct {
+	TestUserData `json:",inline" validate:"required_if:Type,give"`
+	Type         string `json:"type" validate:"required|in:give,remove"`
+	Access       string `json:"access" validate:"required_if:Type,remove"`
+}
+
+type TestUserData struct {
+	TestNameField   `json:",inline"`
+	TestBranchField `json:",inline"`
+}
+
+type TestNameField struct {
+	Name string `json:"name" validate:"required|max_len:5000"`
+}
+
+type TestBranchField struct {
+	Branch string `json:"branch" validate:"required|min_len:32|max_len:32"`
+}
+
+func TestEmbeddedStructRequiredIf(t *testing.T) {
+	// Test case 1: Type is "give", should validate UserData fields
+	perm1 := TestPermission{
+		TestUserData: TestUserData{},
+		Type:         "give",
+	}
+
+	v1 := Struct(perm1)
+	v1.StopOnError = false
+	assert.False(t, v1.Validate())
+	fmt.Println("perm1 errors (expected to fail):", v1.Errors.All())
+	
+	// Should have errors for UserData and its nested fields
+	assert.True(t, v1.Errors.HasField("TestUserData"))
+
+	// Test case 2: Type is "remove", should NOT validate UserData fields
+	perm2 := TestPermission{
+		Type:   "remove",
+		Access: "change_types",
+	}
+	v2 := Struct(perm2)
+	v2.StopOnError = false
+	if !v2.Validate() {
+		fmt.Println("perm2 errors (should be empty but currently fails):", v2.Errors.All())
+		// This was the bug - it should validate successfully but doesn't
+		t.Errorf("perm2 should validate successfully when Type=remove, but got errors: %v", v2.Errors.All())
+	} else {
+		fmt.Println("perm2: No errors (expected)")
+	}
+	// This should now pass with our fix
+	assert.True(t, v2.Validate())
+
+	// Test case 3: Type is "give" with valid UserData, should pass
+	perm3 := TestPermission{
+		TestUserData: TestUserData{
+			TestNameField:   TestNameField{Name: "test"},
+			TestBranchField: TestBranchField{Branch: "12345678901234567890123456789012"},
+		},
+		Type: "give",
+	}
+	v3 := Struct(perm3)
+	v3.StopOnError = false
+	if !v3.Validate() {
+		fmt.Println("perm3 errors (unexpected):", v3.Errors.All())
+	} else {
+		fmt.Println("perm3: No errors (expected)")
+	}
+	assert.True(t, v3.Validate())
+}
+
+// Test edge cases for embedded struct conditional validation
+func TestEmbeddedStructRequiredIfEdgeCases(t *testing.T) {
+	// Test case: required_unless
+	type TestStruct struct {
+		UserData2 TestUserData `validate:"required_unless:Mode,skip"`
+		Mode      string       `validate:"required"`
+	}
+
+	// Mode is "skip", so UserData2 should not be required
+	test1 := TestStruct{
+		Mode: "skip",
+	}
+	v1 := Struct(test1)
+	assert.True(t, v1.Validate(), "Should pass when Mode=skip")
+
+	// Mode is "process", so UserData2 should be required
+	test2 := TestStruct{
+		Mode: "process",
+	}
+	v2 := Struct(test2)
+	assert.False(t, v2.Validate(), "Should fail when Mode=process and UserData2 is empty")
+}
+
+// Test the exact structures from the original issue
+type OriginalPermission struct {
+	UserData `json:",inline" validate:"required_if:Type,give"`
+	Type     string `json:"type" validate:"required|in:give,remove"`
+	Access   string `json:"access" validate:"required_if:Type,remove"`
+}
+
+type UserData struct {
+	NameField   `json:",inline"`
+	BranchField `json:",inline"`
+}
+
+type NameField struct {
+	Name string `json:"name" validate:"required|max_len:5000"`
+}
+
+type BranchField struct {
+	Branch string `json:"branch" validate:"required|min_len:32|max_len:32"`
+}
+
+func TestOriginalIssueExample(t *testing.T) {
+	// This should fail. UserData is required if type is give
+	perm1 := OriginalPermission{
+		UserData: UserData{},
+		Type:     "give",
+	}
+
+	val1 := Struct(perm1)
+	val1.StopOnError = false
+	assert.False(t, val1.Validate(), "perm1 should fail validation when Type=give and UserData is empty")
+
+	// This should not need UserData and should pass
+	perm2 := OriginalPermission{
+		Type:   "remove",
+		Access: "change_types",
+	}
+	val2 := Struct(&perm2)
+	val2.StopOnError = false
+	assert.True(t, val2.Validate(), "perm2 should pass validation when Type=remove")
+
+	// This should pass with valid UserData
+	perm3 := OriginalPermission{
+		UserData: UserData{
+			NameField:   NameField{Name: "test"},
+			BranchField: BranchField{Branch: "12345678901234567890123456789012"},
+		},
+		Type: "give",
+	}
+	val3 := Struct(perm3)
+	val3.StopOnError = false
+	assert.True(t, val3.Validate(), "perm3 should pass validation with valid data")
+}
+
 func TestValidation_RestoreRequestBody(t *testing.T) {
 	request, err := http.NewRequest(http.MethodPost, "/", bytes.NewBufferString(`{"test": "data"}`))
 	assert.Nil(t, err)
