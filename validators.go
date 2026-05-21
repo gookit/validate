@@ -209,20 +209,53 @@ func (v *Validation) RequiredIf(sourceField string, val any, kvs ...string) bool
 
 	dstField, args := kvs[0], kvs[1:]
 	if dstVal, has := v.Get(dstField); has {
+		// Unwrap pointers in the dst-field value so a *T field is
+		// compared against the literal rule argument by its underlying
+		// kind, not by the reflect.Pointer kind (which has no
+		// string-to-pointer conversion and would silently skip the
+		// rule). A nil pointer is treated as "field absent" so the
+		// optional value is not required.
+		rftDv := reflect.ValueOf(dstVal)
+		for rftDv.Kind() == reflect.Pointer {
+			if rftDv.IsNil() {
+				return true
+			}
+			rftDv = rftDv.Elem()
+			dstVal = rftDv.Interface()
+		}
+
 		// up: only one check value, direct compare value
 		if len(args) == 1 {
-			rftDv := reflect.ValueOf(dstVal)
 			wantVal, err := convTypeByBaseKind(args[0], rftDv.Kind())
 			if err == nil && dstVal == wantVal {
-				return val != nil && !IsEmpty(val) || v.isIgnoreableZeroNumeric(sourceField)
+				return requiredIfValIsPresent(val) || v.isIgnoreableZeroNumeric(sourceField)
 			}
 		} else if Enum(dstVal, args) {
-			return val != nil && !IsEmpty(val) || v.isIgnoreableZeroNumeric(sourceField)
+			return requiredIfValIsPresent(val) || v.isIgnoreableZeroNumeric(sourceField)
 		}
 	}
 
 	// default as True, skip check
 	return true
+}
+
+// requiredIfValIsPresent reports whether the source-field value
+// satisfies a required-style check. A nil pointer counts as absent and
+// a pointer to a zero value (e.g. *string("")) is treated the same as
+// the zero value itself, so requiredIf does not silently pass for
+// pointer-typed empty values.
+func requiredIfValIsPresent(val any) bool {
+	if val == nil {
+		return false
+	}
+	rv := reflect.ValueOf(val)
+	for rv.Kind() == reflect.Pointer {
+		if rv.IsNil() {
+			return false
+		}
+		rv = rv.Elem()
+	}
+	return !ValueIsEmpty(rv)
 }
 
 // RequiredUnless field under validation must be present and not empty

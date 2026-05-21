@@ -1950,3 +1950,62 @@ func TestIssue_328(t *testing.T) {
 		assert.True(t, v.Validate())
 	})
 }
+
+// https://github.com/gookit/validate/issues/334
+//
+// requiredIf used to skip the check whenever the rule's destination
+// field was a pointer: reflect.ValueOf(*bool).Kind() == reflect.Pointer
+// has no string-to-pointer conversion, so convTypeByBaseKind returned
+// an error, dstVal == wantVal was skipped and the function fell through
+// to "default as True, skip check" -- silently passing validation.
+//
+// And even after the dst-field issue, a *string pointing at "" was
+// counted as present, so the dependent field still validated as set
+// when its underlying string was actually empty.
+func TestIssues_334(t *testing.T) {
+	type Person struct {
+		IsOld      *bool
+		Experience *string `validate:"requiredIf:IsOld,true"`
+	}
+
+	t.Run("pointer to empty string is not present", func(t *testing.T) {
+		isOld := true
+		empty := ""
+		v := validate.Struct(&Person{
+			IsOld:      &isOld,
+			Experience: &empty,
+		})
+		assert.False(t, v.Validate())
+	})
+
+	t.Run("nil pointer is not present", func(t *testing.T) {
+		isOld := true
+		v := validate.Struct(&Person{
+			IsOld: &isOld,
+		})
+		assert.False(t, v.Validate())
+	})
+
+	t.Run("trigger false leaves field optional", func(t *testing.T) {
+		isOld := false
+		v := validate.Struct(&Person{
+			IsOld: &isOld,
+		})
+		assert.True(t, v.Validate())
+	})
+
+	t.Run("nil trigger pointer leaves field optional", func(t *testing.T) {
+		v := validate.Struct(&Person{})
+		assert.True(t, v.Validate())
+	})
+
+	t.Run("pointer to non-empty value satisfies the rule", func(t *testing.T) {
+		isOld := true
+		exp := "10y"
+		v := validate.Struct(&Person{
+			IsOld:      &isOld,
+			Experience: &exp,
+		})
+		assert.True(t, v.Validate())
+	})
+}
