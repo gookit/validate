@@ -52,12 +52,6 @@ func (v *Validation) Validate(scene ...string) bool {
 		return v.IsSuccess()
 	}
 
-	// release instance to pool TODO
-	// defer func() {
-	// 	v.resetRules()
-	// 	vPool.Put(v)
-	// }()
-
 	// init scene info
 	v.SetScene(scene...)
 	v.sceneFields = v.sceneFieldMap()

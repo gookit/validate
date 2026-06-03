@@ -168,19 +168,7 @@ func newGlobalOption() *GlobalOption {
 	}
 }
 
-// pool for validation instance
-// var vPool = &sync.Pool{
-// 	New: func() any {
-// 		return newEmpty()
-// 	},
-// }
-
 func newValidation(data DataFace) *Validation {
-	// v := vPool.Get().(*Validation)
-	// // reset some runtime data
-	// v.ResetResult()
-	// v.trans = NewTranslator()
-
 	v := newEmpty()
 	v.data = data
 	return v

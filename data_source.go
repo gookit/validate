@@ -196,8 +196,6 @@ type StructData struct {
 	fieldNames map[string]int8
 	// cache field reflect value info. key is path. eg: top.sub
 	fieldValues map[string]reflect.Value
-	// TODO field reflect values cache
-	// fieldRftValues map[string]any
 	// FilterTag name in the struct tags.
 	//
 	// see GlobalOption.FilterTag
