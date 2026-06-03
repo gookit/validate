@@ -3,13 +3,17 @@ package validate
 import (
 	"reflect"
 	"strings"
+	"sync"
 )
 
 var (
 	// DefaultFieldName for value validate.
 	DefaultFieldName = "input"
-	// provide value validate
-	emptyV = newValValidation()
+	// valPool provides a per-call validation instance for Val/Var so concurrent
+	// calls never share mutable state. The previous shared instance was written
+	// concurrently (Errors on arg-type errors, lazily-built validatorMetas),
+	// which is a data race / potential "concurrent map writes" fatal.
+	valPool = &sync.Pool{New: func() any { return newValValidation() }}
 )
 
 // apply validator to each sub-element of the val(slice, map)
@@ -40,6 +44,19 @@ func Val(val any, rule string) error {
 	rules := stringSplit(strings.Trim(rule, "|:"), "|")
 
 	es := make(Errors)
+
+	// per-call validation instance (pooled) — never shared across goroutines.
+	v := valPool.Get().(*Validation)
+	defer func() {
+		// reset only what valueValidate may have dirtied; lazily-built
+		// validatorMetas stay bound to this instance and are reused.
+		if v.hasError {
+			v.Errors = make(Errors)
+			v.hasError = false
+		}
+		valPool.Put(v)
+	}()
+
 	var r *Rule
 	var realName string
 	for _, validator := range rules {
@@ -74,8 +91,8 @@ func Val(val any, rule string) error {
 		}
 
 		// validate value use validator.
-		if !r.valueValidate(field, realName, val, emptyV) {
-			es.Add(field, validator, r.errorMessage(field, r.validator, emptyV))
+		if !r.valueValidate(field, realName, val, v) {
+			es.Add(field, validator, r.errorMessage(field, r.validator, v))
 			break
 		}
 	}

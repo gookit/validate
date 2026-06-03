@@ -154,3 +154,29 @@ func TestVal_indirect(t *testing.T) {
 	err = validate.Val(&emptyStr, "required|empty")
 	assert.NoError(t, err)
 }
+
+// TestVal_concurrent locks the fix for the shared-instance data race: Val/Var
+// must be safe under concurrent use. Pre-fix, the shared emptyV's Errors and
+// lazily-built validatorMetas were written concurrently (DATA RACE / possible
+// "concurrent map writes" fatal). Run with -race to verify.
+func TestVal_concurrent(t *testing.T) {
+	const n = 64
+	done := make(chan bool, n)
+	for i := 0; i < n; i++ {
+		go func(k int) {
+			// mix happy-path, error-path and a context validator (eqField),
+			// each of which exercised a shared-write path before the fix.
+			if err := validate.Val("xyz@mail.com", "required|email"); err != nil {
+				t.Errorf("g%d: email should pass: %v", k, err)
+			}
+			if err := validate.Val(22, "required|min:23"); err == nil {
+				t.Errorf("g%d: min:23 on 22 should fail", k)
+			}
+			_ = validate.Val("x", "eqField:other") // context validator: lazy-built
+			done <- true
+		}(i)
+	}
+	for i := 0; i < n; i++ {
+		<-done
+	}
+}
