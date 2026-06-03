@@ -1,0 +1,70 @@
+goos: linux
+goarch: amd64
+pkg: github.com/gookit/validate
+cpu: Intel(R) Core(TM) i7-14700KF
+BenchmarkStructFlat-28             	  282219	      4092 ns/op	    7809 B/op	      75 allocs/op
+BenchmarkStructFlat-28             	  291158	      4098 ns/op	    7810 B/op	      75 allocs/op
+BenchmarkStructFlat-28             	  283326	      4108 ns/op	    7809 B/op	      75 allocs/op
+BenchmarkStructNested-28           	  304742	      3889 ns/op	    7632 B/op	      75 allocs/op
+BenchmarkStructNested-28           	  306387	      3871 ns/op	    7632 B/op	      75 allocs/op
+BenchmarkStructNested-28           	  310898	      3901 ns/op	    7632 B/op	      75 allocs/op
+BenchmarkStructSliceOfStruct-28    	   94536	     12652 ns/op	   14677 B/op	     249 allocs/op
+BenchmarkStructSliceOfStruct-28    	   95227	     12890 ns/op	   14677 B/op	     249 allocs/op
+BenchmarkStructSliceOfStruct-28    	   94032	     12644 ns/op	   14676 B/op	     249 allocs/op
+BenchmarkMapValidate-28            	  233358	      5103 ns/op	    8396 B/op	     113 allocs/op
+BenchmarkMapValidate-28            	  232706	      5135 ns/op	    8408 B/op	     113 allocs/op
+BenchmarkMapValidate-28            	  233265	      5120 ns/op	    8410 B/op	     113 allocs/op
+BenchmarkValValue-28               	 1668420	       716.7 ns/op	     493 B/op	      11 allocs/op
+BenchmarkValValue-28               	 1689238	       712.8 ns/op	     493 B/op	      11 allocs/op
+BenchmarkValValue-28               	 1675587	       722.2 ns/op	     494 B/op	      11 allocs/op
+BenchmarkStructFirstParse-28       	  485478	      2408 ns/op	    7008 B/op	      68 allocs/op
+BenchmarkStructFirstParse-28       	  499744	      2398 ns/op	    7008 B/op	      68 allocs/op
+BenchmarkStructFirstParse-28       	  493575	      2415 ns/op	    7008 B/op	      68 allocs/op
+PASS
+ok  	github.com/gookit/validate	24.522s
+
+# ============================================================
+# P3 -> P5a comparison (count=3 representative values)
+# ============================================================
+# P5a: Translator shares the global builtinMessages instead of copying ~150
+# entries into every instance. Reset() sets t.messages = nil (lazy); lookups
+# fall back to global builtinMessages; AddMessage(s) lazily allocate the map.
+#
+# Bench                  | path       | P3 ns  | P5a ns | dns    | P3 alloc | P5a alloc | dalloc
+# StructFlat             | static     | 8355   | 4099   | -50.9% | 86       | 75        | -11
+# StructNested           | static     | 8030   | 3887   | -51.6% | 86       | 75        | -11
+# StructSliceOfStruct    | dynamic    | 17136  | 12729  | -25.7% | 260      | 249       | -11
+# MapValidate            | non-struct | 9446   | 5119   | -45.8% | 124      | 113       | -11
+# ValValue               | non-struct | 726    | 717    | -1.2%  | 11       | 11        |   0
+# StructFirstParse       | static     | 6489   | 2407   | -62.9% | 79       | 68        | -11
+#
+# NewTranslator() allocs/op (testing.AllocsPerRun, TestAllocsTranslator):
+#   before P5a: copied ~150 builtin entries -> high (NewTranslator ~13 allocs/op
+#               per profiling); after P5a: <=3 (Translator struct + labelMap +
+#               fieldMap make()). Test asserts avg <= 3.
+#
+# Notes:
+# - Every path that goes through newEmpty()/NewTranslator drops ~11 allocs/op
+#   (the per-instance builtin-message map copy is gone). This includes the
+#   non-struct MapValidate path, which P3 left flat (P3 only optimized static
+#   struct rule parsing; P5a optimizes the shared construction cost).
+# - ValValue is unchanged: it validates a single value with no message lookup
+#   table churn beyond the already-minimal path; its 11 allocs do not include
+#   the builtin copy (different construction shape).
+# - The large ns drops (beyond the expected ~10-13 alloc reduction) come from
+#   eliminating the map-grow + 150 hash inserts that the per-instance copy did
+#   on every construction. allocs/op counts only allocations, not the CPU work
+#   of populating the map; removing that work cuts ns substantially.
+# - Message resolution is byte-for-byte identical: lookup order is custom
+#   (t.messages, if non-nil) -> global builtinMessages, preserving the original
+#   "custom overrides builtin" semantics. field-specific keys (field.validator)
+#   never existed in builtin, so the fallback is a no-op for them; only the
+#   bare validator-name key (e.g. "required") hits the builtin fallback.
+# - Semantic difference (edge case): pre-P5a a Translator snapshotted builtin
+#   messages at construction; post-P5a it reads the global at lookup time. So a
+#   SetBuiltinMessages/AddGlobalMessages call made AFTER a Translator exists is
+#   now visible to that existing instance (previously it was not). All locales
+#   subpackages set the global in init / before use, so the 3 locales tests
+#   (zhcn, zhtw, ruru) stay green. Single Validation is not used across
+#   goroutines; global builtin reads match prior behavior (Reset read it too),
+#   so no new data race (confirmed with go test -race).

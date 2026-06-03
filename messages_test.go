@@ -235,3 +235,25 @@ func TestMessageOnStruct_withNested(t *testing.T) {
 	dump.V(v.Errors)
 	is.Equal("birth day 出生日期有误", v.Errors.One())
 }
+
+// TestAllocsTranslator locks in the P5a optimization: NewTranslator no longer
+// copies the ~150 builtinMessages into every instance, so allocations stay low.
+// Before P5a, Reset() copied builtin messages = many allocs per construction.
+func TestAllocsTranslator(t *testing.T) {
+	avg := testing.AllocsPerRun(200, func() {
+		tr := NewTranslator()
+		_ = tr
+	})
+	// labelMap + fieldMap make() + Translator struct itself; well under the
+	// pre-P5a count (which included the ~150-entry builtin message copy).
+	assert.True(t, avg <= 3, "NewTranslator allocs/op should be <=3, got %v", avg)
+
+	// builtin fallback still works (no per-instance copy needed).
+	tr := NewTranslator()
+	assert.True(t, tr.HasMessage("required"))
+	assert.Equal(t, "name is required to not be empty", tr.Message("required", "name"))
+
+	// custom message overrides builtin via the lazy instance map.
+	tr.AddMessage("required", "{field} custom required")
+	assert.Equal(t, "name custom required", tr.Message("required", "name"))
+}

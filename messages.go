@@ -319,14 +319,26 @@ func NewTranslator() *Translator {
 
 // Reset translator to default
 func (t *Translator) Reset() {
-	newMessages := make(map[string]string)
-	for k, v := range builtinMessages {
-		newMessages[k] = v
-	}
-
-	t.messages = newMessages
+	// P5a: no longer eagerly copy the ~150 builtinMessages into every instance.
+	// t.messages only holds user custom messages now (lazily allocated on first
+	// AddMessage/AddMessages); lookups fall back to the global builtinMessages.
+	t.messages = nil
 	t.labelMap = make(map[string]string)
 	t.fieldMap = make(map[string]string)
+}
+
+// lookupMessage finds a message by key: first the instance custom messages
+// (if any), then fall back to the global builtinMessages. This preserves the
+// original "custom overrides builtin" resolution order while sharing the
+// builtin map instead of copying it per instance.
+func (t *Translator) lookupMessage(key string) (string, bool) {
+	if t.messages != nil {
+		if msg, ok := t.messages[key]; ok {
+			return msg, true
+		}
+	}
+	msg, ok := builtinMessages[key]
+	return msg, ok
 }
 
 // FieldMap data get
@@ -403,6 +415,9 @@ func (t *Translator) LookupLabel(field string) (string, bool) {
 
 // AddMessages data to translator
 func (t *Translator) AddMessages(data map[string]string) {
+	if t.messages == nil {
+		t.messages = make(map[string]string, len(data))
+	}
 	for n, m := range data {
 		t.messages[n] = m
 	}
@@ -410,12 +425,15 @@ func (t *Translator) AddMessages(data map[string]string) {
 
 // AddMessage to translator
 func (t *Translator) AddMessage(key, msg string) {
+	if t.messages == nil {
+		t.messages = make(map[string]string)
+	}
 	t.messages[key] = msg
 }
 
-// HasMessage key in the t.messages
+// HasMessage key in the t.messages, fallback to global builtinMessages.
 func (t *Translator) HasMessage(key string) bool {
-	_, ok := t.messages[key]
+	_, ok := t.lookupMessage(key)
 	return ok
 }
 
@@ -500,24 +518,24 @@ func (t *Translator) findMessage(validator, field string, argLen int) string {
 
 		// eg: "age.isInt1" "age.isInt2"
 		newFullKey := fullKey + lenStr
-		if msg, ok := t.messages[newFullKey]; ok {
+		if msg, ok := t.lookupMessage(newFullKey); ok {
 			return msg
 		}
 
 		// eg: "isInt1" "isInt2"
 		newNameKey := validator + lenStr
-		if msg, ok := t.messages[newNameKey]; ok {
+		if msg, ok := t.lookupMessage(newNameKey); ok {
 			return msg
 		}
 	}
 
 	// use fullKey find
-	if msg, ok := t.messages[fullKey]; ok {
+	if msg, ok := t.lookupMessage(fullKey); ok {
 		return msg
 	}
 
 	// only validator name. "required"
-	if msg, ok := t.messages[validator]; ok {
+	if msg, ok := t.lookupMessage(validator); ok {
 		return msg
 	}
 	return ""
