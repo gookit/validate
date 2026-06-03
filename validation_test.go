@@ -790,6 +790,47 @@ func TestAddValidator(t *testing.T) {
 	is.Contains(v.Validators(true), "min")
 }
 
+// TestAllocsNewEmpty locks in the P5b optimization: newEmpty no longer eagerly
+// builds the 16 build-in context validators (16 bound-method reflect.Value +
+// 16 funcMeta). They are bound lazily on first lookup instead. Before P5b
+// newEmpty was ~51 allocs/op (profiling); after, it is a couple of allocs.
+func TestAllocsNewEmpty(t *testing.T) {
+	avg := testing.AllocsPerRun(500, func() {
+		v := newEmpty()
+		_ = v
+	})
+	assert.True(t, avg <= 8, "newEmpty allocs/op should be low (<=8), got %v", avg)
+}
+
+// TestCtxValidatorLazyBuild verifies the lazily-bound context validators bind
+// the real receiver and behave identically to the previous eager construction:
+//   - HasValidator returns true even before any lookup;
+//   - the reflect-Call family (eqField) works with the bound receiver;
+//   - the switch-direct family (requiredIf) still works.
+func TestCtxValidatorLazyBuild(t *testing.T) {
+	is := assert.New(t)
+
+	v := newEmpty()
+	// not yet built, but always reported as available
+	is.True(v.HasValidator("eqField"))
+	is.True(v.HasValidator("requiredIf"))
+	is.True(v.HasValidator("isImage"))
+
+	// eqField uses the reflect Call path -> needs the bound receiver v
+	v1 := Map(M{"foo": "abc", "bar": "abc"})
+	v1.StringRule("foo", "eqField:bar")
+	is.True(v1.Validate())
+
+	v2 := Map(M{"foo": "abc", "bar": "xyz"})
+	v2.StringRule("foo", "eqField:bar")
+	is.False(v2.Validate())
+
+	// requiredIf uses the switch-direct path
+	v3 := Map(M{"foo": "", "bar": "yes"})
+	v3.StringRule("foo", "requiredIf:bar,yes")
+	is.False(v3.Validate())
+}
+
 func TestValidation_ValidateData(t *testing.T) {
 	d := FromMap(M{
 		"name": "inhere",

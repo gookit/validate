@@ -1,0 +1,87 @@
+BenchmarkStructFlat-28             	  501970	      2315 ns/op	    3156 B/op	      34 allocs/op
+BenchmarkStructFlat-28             	  515338	      2324 ns/op	    3153 B/op	      34 allocs/op
+BenchmarkStructFlat-28             	  506908	      2314 ns/op	    3154 B/op	      34 allocs/op
+BenchmarkStructNested-28           	  546237	      2146 ns/op	    3032 B/op	      34 allocs/op
+BenchmarkStructNested-28           	  544675	      2163 ns/op	    3032 B/op	      34 allocs/op
+BenchmarkStructNested-28           	  552042	      2151 ns/op	    3032 B/op	      34 allocs/op
+BenchmarkStructSliceOfStruct-28    	  109291	     10887 ns/op	   10070 B/op	     208 allocs/op
+BenchmarkStructSliceOfStruct-28    	  110168	     10920 ns/op	   10070 B/op	     208 allocs/op
+BenchmarkStructSliceOfStruct-28    	  109525	     10907 ns/op	   10070 B/op	     208 allocs/op
+BenchmarkMapValidate-28            	  353614	      3350 ns/op	    3748 B/op	      72 allocs/op
+BenchmarkMapValidate-28            	  351306	      3337 ns/op	    3746 B/op	      72 allocs/op
+BenchmarkMapValidate-28            	  349765	      3355 ns/op	    3748 B/op	      72 allocs/op
+BenchmarkValValue-28               	 1636857	       724.0 ns/op	     493 B/op	      11 allocs/op
+BenchmarkValValue-28               	 1652732	       725.8 ns/op	     493 B/op	      11 allocs/op
+BenchmarkValValue-28               	 1667078	       723.9 ns/op	     493 B/op	      11 allocs/op
+BenchmarkStructFirstParse-28       	 1571770	       768.9 ns/op	    2408 B/op	      27 allocs/op
+BenchmarkStructFirstParse-28       	 1575126	       763.9 ns/op	    2408 B/op	      27 allocs/op
+BenchmarkStructFirstParse-28       	 1551542	       761.9 ns/op	    2408 B/op	      27 allocs/op
+PASS
+ok  	github.com/gookit/validate	26.508s
+
+# ============================================================
+# P5a -> P5b comparison (count=3 representative values)
+# ============================================================
+# P5b: newEmpty() no longer eagerly builds the 16 build-in CONTEXT validators
+# (16 reflect.ValueOf(bound-method) + 16 newFuncMeta + filling validators /
+# validatorMetas maps) for every instance. A package-level static binder table
+# (ctxValidatorBuilders, validate.go) holds tiny per-name closures built once;
+# each context validator's funcMeta is now bound LAZILY on first lookup in
+# validatorMeta(name), binding the real receiver v.
+#
+# Why the common path needs none of them:
+#   - "required" (no ".*") takes the fast path in valueValidate and returns
+#     v.Required(...) BEFORE any funcMeta lookup;
+#   - minLen/email/int/min/max/length ... are GLOBAL shared free-function
+#     validators (register.go), not per-instance.
+# So typical struct/map validation never builds a single per-instance ctx meta.
+#
+# Bench                  | path       | P5a ns | P5b ns | dns    | P5a alloc | P5b alloc | dalloc
+# StructFlat             | static     | 4099   | 2318   | -43.4% | 75        | 34        | -41
+# StructNested           | static     | 3887   | 2153   | -44.6% | 75        | 34        | -41
+# StructSliceOfStruct    | dynamic    | 12729  | 10905  | -14.3% | 249       | 208       | -41
+# MapValidate            | non-struct | 5119   | 3347   | -34.6% | 113       | 72        | -41
+# ValValue               | non-struct | 717    | 724    |  +1.0% | 11        | 11        |   0
+# StructFirstParse       | static     | 2407   | 765    | -68.2% | 68        | 27        | -41
+#
+# Every newEmpty()-based path drops a flat -41 allocs/op (16 bound-method
+# reflect.Value + 16 funcMeta + the two map fills of 16 entries each, minus the
+# now-empty maps). ValValue is unchanged: it uses emptyV (newValValidation in
+# value.go), which is intentionally LEFT AS-IS (still eagerly builds only the
+# single "required" meta) and out of scope for P5b.
+#
+# newEmpty() allocs/op (testing.AllocsPerRun, TestAllocsNewEmpty):
+#   before P5b: ~51 allocs/op (P5a profiling: largest block was the eager
+#               16 ctx-validator construction in newEmpty).
+#   after  P5b: 2 allocs/op (measured) -- the Validation struct + escaped maps;
+#               the 16 bound-method reflect.Value and 16 funcMeta allocs are
+#               gone from the construction path. Test asserts avg <= 8.
+#
+# Behavior: ZERO regression. Lazy binding uses the real v, so:
+#   - required-family (7: required/requiredIf/requiredUnless/requiredWith/
+#     requiredWithAll/requiredWithout/requiredWithoutAll) are direct-called in
+#     the callValidator switch (validating.go:419-432), using only fm.Type()/
+#     argNum from the bound meta -> identical;
+#   - eqField/neField/gtField/gteField/ltField/lteField + isFile/isImage/
+#     inMimeTypes fall to the switch default -> callValidatorValue reflect Call
+#     on fm.fv, which is the method bound to the real v -> identical.
+#   HasValidator(name) still returns true for all 16 even before they are built
+#   (checks ctxValidatorBuilders). Validators(withGlobal) always includes the
+#   16 ctx names as validatorTypeBuiltin (merged from the binder table), so the
+#   existing TestAddValidator assertion `Validators(false)` contains "gtField"
+#   stays satisfied without eager construction.
+#
+# Race: go test -race ./... green. A single Validation is not shared across
+# goroutines, so lazy-writing its own validators/validatorMetas maps on first
+# lookup is safe. emptyV (the only shared instance, used by Val/Var) is
+# untouched and still eager, so no concurrent lazy-write of a shared map.
+#
+# ============================================================
+# Cumulative P0 -> P5b (StructFlat, the representative static path)
+# ============================================================
+#   P0 baseline : 8355 ns/op, 86 allocs/op  (pre-optimization)
+#   P3          : 8355 ns/op, 86 allocs/op  (static rule-parse cache; ns same
+#                                            at this measure point, alloc 86)
+#   P5a         : 4099 ns/op, 75 allocs/op  (-11 alloc: shared builtinMessages)
+#   P5b         : 2318 ns/op, 34 allocs/op  (-41 alloc: lazy ctx validators)
+#   total       : -72.3% ns, -52 allocs/op (86 -> 34) on StructFlat

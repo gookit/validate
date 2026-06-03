@@ -239,6 +239,17 @@ func (v *Validation) validatorMeta(name string) *funcMeta {
 		return fm
 	}
 
+	// lazy-build a build-in context validator on first lookup (perf P5b).
+	// binds the real v so both the switch-direct path (required-family, uses
+	// only fm.Type()) and the reflect Call path (eqField/file..., needs the
+	// receiver) behave identically to the previous eager construction.
+	if builder, ok := ctxValidatorBuilders[name]; ok {
+		fm := newFuncMeta(name, true, builder(v))
+		v.validators[name] = validatorTypeBuiltin
+		v.validatorMetas[name] = fm
+		return fm
+	}
+
 	// if v.data is StructData instance.
 	if v.data.Type() == sourceStruct {
 		fv, ok := v.data.(*StructData).FuncValue(name)
@@ -263,6 +274,11 @@ func (v *Validation) HasValidator(name string) bool {
 		return true
 	}
 
+	// build-in context validators are always available (bound lazily).
+	if _, ok := ctxValidatorBuilders[name]; ok {
+		return true
+	}
+
 	// global validators
 	_, ok := validatorMetas[name]
 	return ok
@@ -270,19 +286,25 @@ func (v *Validation) HasValidator(name string) bool {
 
 // Validators get all validator names
 func (v *Validation) Validators(withGlobal bool) map[string]int8 {
+	mp := make(map[string]int8, len(v.validators)+len(ctxValidatorBuilders))
+
 	if withGlobal {
-		mp := make(map[string]int8)
 		for name, typ := range validators {
 			mp[name] = typ
 		}
-
-		for name, typ := range v.validators {
-			mp[name] = typ
-		}
-		return mp
 	}
 
-	return v.validators
+	// include the build-in context validators (always available, bound
+	// lazily so they may not yet be present in v.validators after P5b).
+	for name := range ctxValidatorBuilders {
+		mp[name] = validatorTypeBuiltin
+	}
+
+	// instance validators last: already-built ctx + custom override above.
+	for name, typ := range v.validators {
+		mp[name] = typ
+	}
+	return mp
 }
 
 /*************************************************************

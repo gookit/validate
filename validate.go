@@ -186,6 +186,40 @@ func newValidation(data DataFace) *Validation {
 	return v
 }
 
+// ctxValidatorBuilders is the package-level static binder table for the 16
+// build-in context validators. Each entry returns the bound-method's
+// reflect.Value for a specific Validation instance.
+//
+// perf (P5b): previously newEmpty() eagerly built all 16 funcMeta (16 bound
+// methods + 16 newFuncMeta + 2 map fills) for EVERY instance, but the common
+// struct/map validation never needs any per-instance context meta:
+//   - "required" (no ".*") takes the fast path in valueValidate and returns
+//     before looking up a funcMeta;
+//   - minLen/email/int/min/max ... are global shared free-function validators.
+//
+// So they are now built lazily on first lookup (see validatorMeta). The table
+// itself is built once; each value is a tiny closure with no per-instance cost.
+var ctxValidatorBuilders = map[string]func(v *Validation) reflect.Value{
+	"required":           func(v *Validation) reflect.Value { return reflect.ValueOf(v.Required) },
+	"requiredIf":         func(v *Validation) reflect.Value { return reflect.ValueOf(v.RequiredIf) },
+	"requiredUnless":     func(v *Validation) reflect.Value { return reflect.ValueOf(v.RequiredUnless) },
+	"requiredWith":       func(v *Validation) reflect.Value { return reflect.ValueOf(v.RequiredWith) },
+	"requiredWithAll":    func(v *Validation) reflect.Value { return reflect.ValueOf(v.RequiredWithAll) },
+	"requiredWithout":    func(v *Validation) reflect.Value { return reflect.ValueOf(v.RequiredWithout) },
+	"requiredWithoutAll": func(v *Validation) reflect.Value { return reflect.ValueOf(v.RequiredWithoutAll) },
+	// field compare
+	"eqField":  func(v *Validation) reflect.Value { return reflect.ValueOf(v.EqField) },
+	"neField":  func(v *Validation) reflect.Value { return reflect.ValueOf(v.NeField) },
+	"gtField":  func(v *Validation) reflect.Value { return reflect.ValueOf(v.GtField) },
+	"gteField": func(v *Validation) reflect.Value { return reflect.ValueOf(v.GteField) },
+	"ltField":  func(v *Validation) reflect.Value { return reflect.ValueOf(v.LtField) },
+	"lteField": func(v *Validation) reflect.Value { return reflect.ValueOf(v.LteField) },
+	// file upload check. NOTE: method names differ from the validator names.
+	"isFile":      func(v *Validation) reflect.Value { return reflect.ValueOf(v.IsFormFile) },
+	"isImage":     func(v *Validation) reflect.Value { return reflect.ValueOf(v.IsFormImage) },
+	"inMimeTypes": func(v *Validation) reflect.Value { return reflect.ValueOf(v.InMimeTypes) },
+}
+
 func newEmpty() *Validation {
 	v := &Validation{
 		Errors: make(Errors),
@@ -195,43 +229,15 @@ func newEmpty() *Validation {
 		// validated data
 		safeData:  make(map[string]any),
 		optionals: make(map[string]int8),
-		// validator names
-		validators: make(map[string]int8, 16),
+		// validator names. context validators are bound lazily, see validatorMeta.
+		validators: make(map[string]int8),
+		// validator func meta info. context validators are bound lazily.
+		validatorMetas: make(map[string]*funcMeta),
 		// filtered data
 		filteredData: make(map[string]any),
 		// default config
 		StopOnError: gOpt.StopOnError,
 		SkipOnEmpty: gOpt.SkipOnEmpty,
-	}
-
-	// init build in context validator
-	ctxValidatorMap := map[string]reflect.Value{
-		"required":           reflect.ValueOf(v.Required),
-		"requiredIf":         reflect.ValueOf(v.RequiredIf),
-		"requiredUnless":     reflect.ValueOf(v.RequiredUnless),
-		"requiredWith":       reflect.ValueOf(v.RequiredWith),
-		"requiredWithAll":    reflect.ValueOf(v.RequiredWithAll),
-		"requiredWithout":    reflect.ValueOf(v.RequiredWithout),
-		"requiredWithoutAll": reflect.ValueOf(v.RequiredWithoutAll),
-		// field compare
-		"eqField":  reflect.ValueOf(v.EqField),
-		"neField":  reflect.ValueOf(v.NeField),
-		"gtField":  reflect.ValueOf(v.GtField),
-		"gteField": reflect.ValueOf(v.GteField),
-		"ltField":  reflect.ValueOf(v.LtField),
-		"lteField": reflect.ValueOf(v.LteField),
-		// file upload check
-		"isFile":      reflect.ValueOf(v.IsFormFile),
-		"isImage":     reflect.ValueOf(v.IsFormImage),
-		"inMimeTypes": reflect.ValueOf(v.InMimeTypes),
-	}
-
-	v.validatorMetas = make(map[string]*funcMeta, len(ctxValidatorMap))
-
-	// make and collect meta info
-	for n, fv := range ctxValidatorMap {
-		v.validators[n] = validatorTypeBuiltin
-		v.validatorMetas[n] = newFuncMeta(n, true, fv)
 	}
 
 	return v
