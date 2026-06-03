@@ -273,6 +273,7 @@ func TestValidatePrivateFieldsWhenTrue(t *testing.T) {
 	Config(func(opt *GlobalOption) {
 		opt.ValidatePrivateFields = true
 	})
+	defer ResetOption()
 
 	// Field1 = 4 violates min:5 — validation must fail for the right reason (rule violation)
 	barz := &bar{
@@ -311,9 +312,11 @@ func TestValidatePrivateFieldsWhenFalse(t *testing.T) {
 	Config(func(opt *GlobalOption) {
 		opt.ValidatePrivateFields = false
 	})
+	defer ResetOption()
 
 	v := Struct(barz)
 	v.Validate()
 
 	assert.Equal(t, v.hasError, false)
+	dump.P(v.Errors, v.SafeData())
 }
