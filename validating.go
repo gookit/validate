@@ -93,101 +93,111 @@ func (r *Rule) Apply(v *Validation) (stop bool) {
 		return
 	}
 
-	var err error
 	// get real validator name
 	name := r.realName
-	// validator name is not "requiredXXX"
-	isNotRequired := r.nameNotRequired
 
 	// validate each field
 	for _, field := range r.fields {
-		if v.isNotNeedToCheck(field) {
-			continue
-		}
-
-		// uploaded file validate
-		if isFileValidator(name) {
-			status := r.fileValidate(field, name, v)
-			if status == statusFail {
-				// build and collect error message
-				v.AddError(field, r.validator, r.errorMessage(field, r.validator, v))
-				if v.StopOnError {
-					return true
-				}
-			}
-			continue
-		}
-
-		// get field value. val, exist := v.Get(field)
-		val, exist, isDefault := v.GetWithDefault(field)
-
-		// value not exists but has default value
-		if isDefault {
-			// update source data field value and re-set value
-			val, err = v.updateValue(field, val)
-			if err != nil {
-				v.AddErrorf(field, err.Error())
-				if v.StopOnError {
-					return true
-				}
-				continue
-			}
-
-			// dont need check default value
-			if !v.CheckDefault {
-				v.safeData[field] = val // save validated value.
-				continue
-			}
-
-			// go on check custom default value
-			exist = true
-		} else if r.optional { // r.optional=true. skip check.
-			continue
-		}
-
-		// apply filter func.
-		if exist && r.filterFunc != nil {
-			if val, err = r.filterFunc(val); err != nil {
-				v.AddError(filterError, filterError, field+": "+err.Error())
-				return true
-			}
-
-			// update source field value
-			newVal, err := v.updateValue(field, val)
-			if err != nil {
-				v.AddErrorf(field, err.Error())
-				if v.StopOnError {
-					return true
-				}
-				continue
-			}
-
-			// re-set value
-			val = newVal
-			// save filtered value.
-			v.filteredData[field] = val
-		}
-
-		// empty value AND is not required* AND skip on empty.
-		if r.skipEmpty && isNotRequired && IsEmpty(val) {
-			continue
-		}
-
-		// validate field value
-		if r.valueValidate(field, name, val, v) {
-			if v.data != nil && v.data.Type() == sourceForm {
-				field, _, _ = strings.Cut(field, ".*")
-			}
-			v.safeData[field] = val
-		} else { // build and collect error message
-			v.AddError(field, r.validator, r.errorMessage(field, r.validator, v))
-		}
-
-		if v.shouldStop() {
+		if r.applyField(field, name, v) {
 			return true
 		}
 	}
 
+	return false
+}
+
+// applyField runs the per-field validation steps in order, returning true when
+// the whole rule should stop. The step order and side effects are identical to
+// the original single-loop body of Rule.Apply; it is split out only so Apply
+// itself is a thin scene/beforeFunc guard plus the per-field loop.
+func (r *Rule) applyField(field, name string, v *Validation) (stop bool) {
+	if v.isNotNeedToCheck(field) {
+		return false
+	}
+
+	// uploaded file validate
+	if isFileValidator(name) {
+		status := r.fileValidate(field, name, v)
+		if status == statusFail {
+			// build and collect error message
+			v.AddError(field, r.validator, r.errorMessage(field, r.validator, v))
+			if v.StopOnError {
+				return true
+			}
+		}
+		return false
+	}
+
+	var err error
+
+	// get field value. val, exist := v.Get(field)
+	val, exist, isDefault := v.GetWithDefault(field)
+
+	// value not exists but has default value
+	if isDefault {
+		// update source data field value and re-set value
+		val, err = v.updateValue(field, val)
+		if err != nil {
+			v.AddErrorf(field, err.Error())
+			if v.StopOnError {
+				return true
+			}
+			return false
+		}
+
+		// dont need check default value
+		if !v.CheckDefault {
+			v.safeData[field] = val // save validated value.
+			return false
+		}
+
+		// go on check custom default value
+		exist = true
+	} else if r.optional { // r.optional=true. skip check.
+		return false
+	}
+
+	// apply filter func.
+	if exist && r.filterFunc != nil {
+		if val, err = r.filterFunc(val); err != nil {
+			v.AddError(filterError, filterError, field+": "+err.Error())
+			return true
+		}
+
+		// update source field value
+		newVal, err := v.updateValue(field, val)
+		if err != nil {
+			v.AddErrorf(field, err.Error())
+			if v.StopOnError {
+				return true
+			}
+			return false
+		}
+
+		// re-set value
+		val = newVal
+		// save filtered value.
+		v.filteredData[field] = val
+	}
+
+	// empty value AND is not required* AND skip on empty.
+	if r.skipEmpty && r.nameNotRequired && IsEmpty(val) {
+		return false
+	}
+
+	// validate field value
+	if r.valueValidate(field, name, val, v) {
+		if v.data != nil && v.data.Type() == sourceForm {
+			field, _, _ = strings.Cut(field, ".*")
+		}
+		v.safeData[field] = val
+	} else { // build and collect error message
+		v.AddError(field, r.validator, r.errorMessage(field, r.validator, v))
+	}
+
+	if v.shouldStop() {
+		return true
+	}
 	return false
 }
 
@@ -247,6 +257,11 @@ type value struct {
 //
 //   - field: the field name. eg: "name", "details.sub.*.field"
 //   - name: the validator name. eg: "required", "min"
+//
+// This is the validation hot path. The large, tangled ".*" wildcard-slice
+// branch is extracted into validateWildcardSlice for readability (it only runs
+// for ".*" fields, off the common path); the rest is kept inline so the hot
+// path's call-frame count and behavior are identical to before the split.
 func (r *Rule) valueValidate(field, name string, val any, v *Validation) (ok bool) {
 	// "-" OR "safe" mark field value always is safe.
 	if name == RuleSafe1 || name == RuleSafe {
@@ -311,62 +326,9 @@ func (r *Rule) valueValidate(field, name string, val any, v *Validation) (ok boo
 		valKind = reflect.Invalid
 	}
 
+	// ".*" wildcard slice branch: validate each element in the slice.
 	if valKind == reflect.Slice && dotStarNum > 0 {
-		sliceLen := rftVal.Len()
-
-		// if dotStarNum > 1, need flatten multi level slice with depth=dotStarNum.
-		if dotStarNum > 1 {
-			rftVal = flatSlice(rftVal, dotStarNum-1)
-			sliceLen = rftVal.Len()
-		}
-
-		// check requiredXX validate - flatten multi level slice, count ".*" number.
-		// TIP: if len == 0: no elements in the slice. use empty val call validator.
-		// for map validation with wildcard, we need to compare with parent slice length.
-		if !r.nameNotRequired && sliceLen == 0 {
-			return callValidator(v, fm, field, nil, r.arguments, addNum, nil)
-		}
-
-		// for map validation with wildcard: check if some slice elements are missing fields
-		// get the parent slice (before last .*) to compare lengths
-		if !r.nameNotRequired && dotStarNum > 0 && v.data != nil && v.data.Type() == sourceMap {
-			parentSliceLen := getParentSliceLen(field, v)
-			if parentSliceLen > 0 && parentSliceLen > sliceLen {
-				// parent slice has more elements than the returned values
-				// means some elements are missing the field
-				return callValidator(v, fm, field, nil, r.arguments, addNum, nil)
-			}
-		}
-
-		var subVal any
-		// check each element in the slice.
-		for i := 0; i < sliceLen; i++ {
-			subRv := indirectInterface(rftVal.Index(i))
-			subKind := subRv.Kind()
-
-			// 1.1 convert field value type, is func first argument.
-			if r.nameNotRequired && valArgKind != reflect.Interface && valArgKind != subKind {
-				subVal, ok = convValAsFuncValArgType(valArgKind, subKind, subRv.Interface())
-				if !ok {
-					v.convArgTypeError(field, fm.name, subKind, valArgKind, 1)
-					return false
-				}
-			} else {
-				if subRv.IsValid() {
-					subVal = subRv.Interface()
-				} else {
-					subVal = nil
-				}
-			}
-
-			// 2. call built in validator. subVal is a slice element, not the
-			// top-level value, so it gets no carrier (vfv=nil).
-			if !callValidator(v, fm, field, subVal, r.arguments, addNum, nil) {
-				return false
-			}
-		}
-
-		return true
+		return r.validateWildcardSlice(fm, field, rftVal, dotStarNum, valArgKind, addNum, v)
 	}
 
 	// 3. convert field value type, is func first argument.
@@ -384,6 +346,71 @@ func (r *Rule) valueValidate(field, name string, val any, v *Validation) (ok boo
 
 	// 4. call built in validator
 	return callValidator(v, fm, field, val, r.arguments, addNum, vfv)
+}
+
+// validateWildcardSlice validates the ".*" wildcard slice branch: it flattens
+// multi-level slices, handles the requiredXX empty-slice / map parent-length
+// cases, then converts and validates each element. Logic is平移 unchanged from
+// the original inline branch.
+//
+// rftVal is the slice reflect.Value (fv.rV()); slice sub-elements never match
+// the top-level carrier, so callValidator is always invoked with vfv=nil.
+func (r *Rule) validateWildcardSlice(fm *funcMeta, field string, rftVal reflect.Value, dotStarNum int, valArgKind reflect.Kind, addNum int, v *Validation) (ok bool) {
+	sliceLen := rftVal.Len()
+
+	// if dotStarNum > 1, need flatten multi level slice with depth=dotStarNum.
+	if dotStarNum > 1 {
+		rftVal = flatSlice(rftVal, dotStarNum-1)
+		sliceLen = rftVal.Len()
+	}
+
+	// check requiredXX validate - flatten multi level slice, count ".*" number.
+	// TIP: if len == 0: no elements in the slice. use empty val call validator.
+	// for map validation with wildcard, we need to compare with parent slice length.
+	if !r.nameNotRequired && sliceLen == 0 {
+		return callValidator(v, fm, field, nil, r.arguments, addNum, nil)
+	}
+
+	// for map validation with wildcard: check if some slice elements are missing fields
+	// get the parent slice (before last .*) to compare lengths
+	if !r.nameNotRequired && dotStarNum > 0 && v.data != nil && v.data.Type() == sourceMap {
+		parentSliceLen := getParentSliceLen(field, v)
+		if parentSliceLen > 0 && parentSliceLen > sliceLen {
+			// parent slice has more elements than the returned values
+			// means some elements are missing the field
+			return callValidator(v, fm, field, nil, r.arguments, addNum, nil)
+		}
+	}
+
+	var subVal any
+	// check each element in the slice.
+	for i := 0; i < sliceLen; i++ {
+		subRv := indirectInterface(rftVal.Index(i))
+		subKind := subRv.Kind()
+
+		// 1.1 convert field value type, is func first argument.
+		if r.nameNotRequired && valArgKind != reflect.Interface && valArgKind != subKind {
+			subVal, ok = convValAsFuncValArgType(valArgKind, subKind, subRv.Interface())
+			if !ok {
+				v.convArgTypeError(field, fm.name, subKind, valArgKind, 1)
+				return false
+			}
+		} else {
+			if subRv.IsValid() {
+				subVal = subRv.Interface()
+			} else {
+				subVal = nil
+			}
+		}
+
+		// 2. call built in validator. subVal is a slice element, not the
+		// top-level value, so it gets no carrier (vfv=nil).
+		if !callValidator(v, fm, field, subVal, r.arguments, addNum, nil) {
+			return false
+		}
+	}
+
+	return true
 }
 
 // convert input field value type, is validator func first argument.

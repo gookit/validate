@@ -1,0 +1,42 @@
+goos: linux
+goarch: amd64
+pkg: github.com/gookit/validate
+cpu: Intel(R) Core(TM) i7-14700KF
+BenchmarkStructFlat-28             	  503060	      2303 ns/op	    3156 B/op	      34 allocs/op
+BenchmarkStructFlat-28             	  507259	      2318 ns/op	    3153 B/op	      34 allocs/op
+BenchmarkStructFlat-28             	  512067	      2311 ns/op	    3154 B/op	      34 allocs/op
+BenchmarkStructFlat-28             	  504860	      2322 ns/op	    3153 B/op	      34 allocs/op
+BenchmarkStructFlat-28             	  505570	      2323 ns/op	    3155 B/op	      34 allocs/op
+BenchmarkStructFlat-28             	  509767	      2315 ns/op	    3156 B/op	      34 allocs/op
+BenchmarkStructNested-28           	  541926	      2146 ns/op	    3032 B/op	      34 allocs/op
+BenchmarkStructNested-28           	  540357	      2150 ns/op	    3032 B/op	      34 allocs/op
+BenchmarkStructNested-28           	  554684	      2148 ns/op	    3032 B/op	      34 allocs/op
+BenchmarkStructNested-28           	  540470	      2152 ns/op	    3032 B/op	      34 allocs/op
+BenchmarkStructNested-28           	  544358	      2153 ns/op	    3032 B/op	      34 allocs/op
+BenchmarkStructNested-28           	  542535	      2148 ns/op	    3032 B/op	      34 allocs/op
+BenchmarkStructSliceOfStruct-28    	  110126	     10882 ns/op	   10070 B/op	     208 allocs/op
+BenchmarkStructSliceOfStruct-28    	  110516	     10811 ns/op	   10070 B/op	     208 allocs/op
+BenchmarkStructSliceOfStruct-28    	  111195	     10844 ns/op	   10070 B/op	     208 allocs/op
+BenchmarkStructSliceOfStruct-28    	  110956	     10838 ns/op	   10070 B/op	     208 allocs/op
+BenchmarkStructSliceOfStruct-28    	  110364	     10803 ns/op	   10070 B/op	     208 allocs/op
+BenchmarkStructSliceOfStruct-28    	  110590	     10818 ns/op	   10070 B/op	     208 allocs/op
+BenchmarkMapValidate-28            	  357000	      3328 ns/op	    3748 B/op	      72 allocs/op
+BenchmarkMapValidate-28            	  357890	      3344 ns/op	    3747 B/op	      72 allocs/op
+BenchmarkMapValidate-28            	  358815	      3353 ns/op	    3749 B/op	      72 allocs/op
+BenchmarkMapValidate-28            	  355131	      3327 ns/op	    3748 B/op	      72 allocs/op
+BenchmarkMapValidate-28            	  356673	      3330 ns/op	    3746 B/op	      72 allocs/op
+BenchmarkMapValidate-28            	  359457	      3321 ns/op	    3747 B/op	      72 allocs/op
+BenchmarkValValue-28               	 1641270	       733.8 ns/op	     494 B/op	      11 allocs/op
+BenchmarkValValue-28               	 1654724	       725.9 ns/op	     494 B/op	      11 allocs/op
+BenchmarkValValue-28               	 1657760	       726.0 ns/op	     494 B/op	      11 allocs/op
+BenchmarkValValue-28               	 1628031	       727.7 ns/op	     494 B/op	      11 allocs/op
+BenchmarkValValue-28               	 1644351	       729.2 ns/op	     494 B/op	      11 allocs/op
+BenchmarkValValue-28               	 1650994	       729.5 ns/op	     494 B/op	      11 allocs/op
+BenchmarkStructFirstParse-28       	 1603922	       753.3 ns/op	    2408 B/op	      27 allocs/op
+BenchmarkStructFirstParse-28       	 1605984	       750.5 ns/op	    2408 B/op	      27 allocs/op
+BenchmarkStructFirstParse-28       	 1577884	       751.6 ns/op	    2408 B/op	      27 allocs/op
+BenchmarkStructFirstParse-28       	 1590709	       749.9 ns/op	    2408 B/op	      27 allocs/op
+BenchmarkStructFirstParse-28       	 1595271	       749.4 ns/op	    2408 B/op	      27 allocs/op
+BenchmarkStructFirstParse-28       	 1595514	       757.9 ns/op	    2408 B/op	      27 allocs/op
+PASS
+ok  	github.com/gookit/validate	52.986s
