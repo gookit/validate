@@ -296,9 +296,20 @@ func (r *Rule) valueValidate(field, name string, val any, v *Validation) (ok boo
 		return false
 	}
 
-	// rftVal := reflect.Indirect(reflect.ValueOf(val))
-	rftVal := reflect.ValueOf(val)
+	// build the value carrier once; its rV() is computed lazily and reused
+	// here and in the downstream callValidatorValue, removing the repeated
+	// reflect.ValueOf(val) (痛点 A, design §4.3).
+	//
+	// NOTE: rV() substitutes nilRVal for an any(nil) src so the Call path won't
+	// panic (#125). But valueValidate's original logic relied on valKind being
+	// Invalid for nil; restore that so behavior is unchanged. rftVal itself is
+	// only consumed in the Slice branch below, which nil never enters.
+	fv := newFieldValue(field, val)
+	rftVal := fv.rV()
 	valKind := rftVal.Kind()
+	if fv.src == nil {
+		valKind = reflect.Invalid
+	}
 
 	if valKind == reflect.Slice && dotStarNum > 0 {
 		sliceLen := rftVal.Len()
@@ -313,7 +324,7 @@ func (r *Rule) valueValidate(field, name string, val any, v *Validation) (ok boo
 		// TIP: if len == 0: no elements in the slice. use empty val call validator.
 		// for map validation with wildcard, we need to compare with parent slice length.
 		if !r.nameNotRequired && sliceLen == 0 {
-			return callValidator(v, fm, field, nil, r.arguments, addNum)
+			return callValidator(v, fm, field, nil, r.arguments, addNum, nil)
 		}
 
 		// for map validation with wildcard: check if some slice elements are missing fields
@@ -323,7 +334,7 @@ func (r *Rule) valueValidate(field, name string, val any, v *Validation) (ok boo
 			if parentSliceLen > 0 && parentSliceLen > sliceLen {
 				// parent slice has more elements than the returned values
 				// means some elements are missing the field
-				return callValidator(v, fm, field, nil, r.arguments, addNum)
+				return callValidator(v, fm, field, nil, r.arguments, addNum, nil)
 			}
 		}
 
@@ -348,8 +359,9 @@ func (r *Rule) valueValidate(field, name string, val any, v *Validation) (ok boo
 				}
 			}
 
-			// 2. call built in validator
-			if !callValidator(v, fm, field, subVal, r.arguments, addNum) {
+			// 2. call built in validator. subVal is a slice element, not the
+			// top-level value, so it gets no carrier (vfv=nil).
+			if !callValidator(v, fm, field, subVal, r.arguments, addNum, nil) {
 				return false
 			}
 		}
@@ -358,16 +370,20 @@ func (r *Rule) valueValidate(field, name string, val any, v *Validation) (ok boo
 	}
 
 	// 3. convert field value type, is func first argument.
+	// vfv carries the original value; if a conversion happens below, val no
+	// longer matches the carrier, so drop it (vfv=nil) to keep reflect correct.
+	vfv := fv
 	if r.nameNotRequired && valArgKind != reflect.Interface && valArgKind != valKind {
 		val, ok = convValAsFuncValArgType(valArgKind, valKind, val)
 		if !ok {
 			v.convArgTypeError(field, fm.name, valKind, valArgKind, 1)
 			return false
 		}
+		vfv = nil
 	}
 
 	// 4. call built in validator
-	return callValidator(v, fm, field, val, r.arguments, addNum)
+	return callValidator(v, fm, field, val, r.arguments, addNum, vfv)
 }
 
 // convert input field value type, is validator func first argument.
@@ -391,7 +407,12 @@ func convValAsFuncValArgType(valArgKind, valKind reflect.Kind, val any) (any, bo
 	return nil, false
 }
 
-func callValidator(v *Validation, fm *funcMeta, field string, val any, args []any, addNum int) (ok bool) {
+// callValidator dispatches to the matching validator. The built-in switch
+// avoids reflection; the default branch calls custom validators by reflection.
+//
+// vfv is the optional value carrier matching `val` (nil if val was transformed
+// or is a slice sub-element); it is only forwarded to the reflective path.
+func callValidator(v *Validation, fm *funcMeta, field string, val any, args []any, addNum int, vfv *fieldValue) (ok bool) {
 	// use `switch` can avoid using reflection to call methods and improve speed
 	// fm.name please see pkg var: validatorValues
 	switch fm.name {
@@ -463,7 +484,7 @@ func callValidator(v *Validation, fm *funcMeta, field string, val any, args []an
 		ok = IsSlice(val)
 	default:
 		// 3. call user custom validators, will call by reflect
-		ok = callValidatorValue(v, fm.fv, val, args, addNum)
+		ok = callValidatorValue(v, fm.fv, val, args, addNum, vfv)
 	}
 	return
 }
@@ -539,22 +560,36 @@ func convertArgsType(v *Validation, fm *funcMeta, field string, args []any, addN
 	return true
 }
 
-func callValidatorValue(v *Validation, fv reflect.Value, val any, args []any, addNum int) bool {
+// callValidatorValue calls a custom validator by reflection.
+//
+// vfv is the optional value carrier matching `val`; when non-nil its cached
+// reflect.Value is reused (rV/realV) to avoid re-doing reflect.ValueOf(val)
+// and the pointer-deref here (痛点 A, design §4.3). It MUST be nil whenever
+// `val` differs from the carrier's source (e.g. after type conversion or for
+// slice sub-elements), so the reflect.Value stays consistent with `val`.
+func callValidatorValue(v *Validation, fv reflect.Value, val any, args []any, addNum int, vfv *fieldValue) bool {
 	// build params for the validator func.
 	argNum := len(args)
 	argIn := make([]reflect.Value, argNum+addNum)
 
-	// if val is any(nil): rftVal.IsValid()==false
-	// if val is typed(nil): rftVal.IsValid()==true
-	rftVal := reflect.ValueOf(val)
-	// fix: #125 fv.Call() will panic on rftVal.Kind() is Invalid
-	if !rftVal.IsValid() {
-		rftVal = nilRVal
-	}
+	var rftVal reflect.Value
+	if vfv != nil {
+		// reuse the carrier: rV() already substitutes nilRVal for any(nil)
+		// (#125) and realV() applies the same non-nil pointer deref as below.
+		rftVal = vfv.realV()
+	} else {
+		// if val is any(nil): rftVal.IsValid()==false
+		// if val is typed(nil): rftVal.IsValid()==true
+		rftVal = reflect.ValueOf(val)
+		// fix: #125 fv.Call() will panic on rftVal.Kind() is Invalid
+		if !rftVal.IsValid() {
+			rftVal = nilRVal
+		}
 
-	// Add this check to handle pointer values
-	if rftVal.Kind() == reflect.Ptr && !rftVal.IsNil() {
-		rftVal = rftVal.Elem()
+		// Add this check to handle pointer values
+		if rftVal.Kind() == reflect.Ptr && !rftVal.IsNil() {
+			rftVal = rftVal.Elem()
+		}
 	}
 
 	// if addNum == 1, means the first arg is val

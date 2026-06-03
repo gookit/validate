@@ -1,0 +1,41 @@
+goos: linux
+goarch: amd64
+pkg: github.com/gookit/validate
+cpu: Intel(R) Core(TM) i7-14700KF
+BenchmarkStructFlat-28             	  117915	     10198 ns/op	   18312 B/op	     132 allocs/op
+BenchmarkStructFlat-28             	  119130	     10180 ns/op	   18324 B/op	     132 allocs/op
+BenchmarkStructFlat-28             	  117742	     10117 ns/op	   18326 B/op	     132 allocs/op
+BenchmarkStructNested-28           	  120992	      9849 ns/op	   17936 B/op	     132 allocs/op
+BenchmarkStructNested-28           	  120332	      9865 ns/op	   17936 B/op	     132 allocs/op
+BenchmarkStructNested-28           	  122758	      9898 ns/op	   17936 B/op	     132 allocs/op
+BenchmarkStructSliceOfStruct-28    	   71000	     17016 ns/op	   24059 B/op	     260 allocs/op
+BenchmarkStructSliceOfStruct-28    	   70903	     17094 ns/op	   24059 B/op	     260 allocs/op
+BenchmarkStructSliceOfStruct-28    	   70825	     17007 ns/op	   24059 B/op	     260 allocs/op
+BenchmarkMapValidate-28            	  126262	      9347 ns/op	   17894 B/op	     124 allocs/op
+BenchmarkMapValidate-28            	  127671	      9355 ns/op	   17878 B/op	     124 allocs/op
+BenchmarkMapValidate-28            	  128197	      9404 ns/op	   17901 B/op	     124 allocs/op
+BenchmarkValValue-28               	 1661610	       725.4 ns/op	     494 B/op	      11 allocs/op
+BenchmarkValValue-28               	 1661678	       722.3 ns/op	     494 B/op	      11 allocs/op
+BenchmarkValValue-28               	 1672390	       726.5 ns/op	     494 B/op	      11 allocs/op
+BenchmarkStructFirstParse-28       	  142748	      8280 ns/op	   17392 B/op	     125 allocs/op
+BenchmarkStructFirstParse-28       	  145442	      8311 ns/op	   17392 B/op	     125 allocs/op
+BenchmarkStructFirstParse-28       	  144480	      8255 ns/op	   17392 B/op	     125 allocs/op
+PASS
+ok  	github.com/gookit/validate	25.487s
+
+# ===== P0 -> P1 对比 (count=3 代表值) =====
+# 基准                         | P0 ns/op | P1 ns/op | Δns/op   | P0 allocs | P1 allocs
+# BenchmarkStructFlat          |   10403  |  ~10165  | -2.3%    |   132     |   132
+# BenchmarkStructNested        |   10128  |   ~9870  | -2.5%    |   132     |   132
+# BenchmarkStructSliceOfStruct |   17249  |  ~17039  | -1.2%    |   260     |   260
+# BenchmarkMapValidate         |    9606  |   ~9369  | -2.5%    |   124     |   124
+# BenchmarkValValue            |   716.7  |   ~724   | +1.0%(噪声内) |  11   |   11
+# BenchmarkStructFirstParse    |    8580  |   ~8282  | -3.5%    |   125     |   125
+#
+# 结论: 所有基准 ns/op 持平或小幅下降, 无回退; allocs/op 全部持平.
+# allocs 未下降的原因: 这些基准只用内置验证器(required/email/minLen/int/min/max),
+# 全部命中 callValidator 的 switch 快路径, 不经过反射的 callValidatorValue,
+# 因此 P1 消除的第 2 次 reflect.ValueOf(validating.go:549, 仅自定义验证器路径)
+# 不被这些基准触发. valueValidate 原本只有 1 次 reflect.ValueOf(:300),
+# 改用 fv.rV() 后仍是 1 次, 故 allocs 不变(行为等价).
+# 自定义验证器路径已由全量回归用例(issues_test.go 等)覆盖并保持全绿.
