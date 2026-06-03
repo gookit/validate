@@ -1,0 +1,43 @@
+goos: linux
+goarch: amd64
+pkg: github.com/gookit/validate
+cpu: Intel(R) Core(TM) i7-14700KF
+BenchmarkStructFlat-28             	  118719	     10015 ns/op	   18321 B/op	     132 allocs/op
+BenchmarkStructFlat-28             	  119089	     10033 ns/op	   18340 B/op	     132 allocs/op
+BenchmarkStructFlat-28             	  119703	     10016 ns/op	   18324 B/op	     132 allocs/op
+BenchmarkStructNested-28           	  121536	      9813 ns/op	   17936 B/op	     132 allocs/op
+BenchmarkStructNested-28           	  114592	      9822 ns/op	   17936 B/op	     132 allocs/op
+BenchmarkStructNested-28           	  121012	      9800 ns/op	   17936 B/op	     132 allocs/op
+BenchmarkStructSliceOfStruct-28    	   70916	     16962 ns/op	   24059 B/op	     260 allocs/op
+BenchmarkStructSliceOfStruct-28    	   71181	     16995 ns/op	   24059 B/op	     260 allocs/op
+BenchmarkStructSliceOfStruct-28    	   71396	     17020 ns/op	   24059 B/op	     260 allocs/op
+BenchmarkMapValidate-28            	  128006	      9327 ns/op	   17893 B/op	     124 allocs/op
+BenchmarkMapValidate-28            	  128911	      9371 ns/op	   17901 B/op	     124 allocs/op
+BenchmarkMapValidate-28            	  129350	      9443 ns/op	   17895 B/op	     124 allocs/op
+BenchmarkValValue-28               	 1623753	       735.3 ns/op	     494 B/op	      11 allocs/op
+BenchmarkValValue-28               	 1635858	       732.5 ns/op	     494 B/op	      11 allocs/op
+BenchmarkValValue-28               	 1630998	       736.8 ns/op	     494 B/op	      11 allocs/op
+BenchmarkStructFirstParse-28       	  144499	      8294 ns/op	   17392 B/op	     125 allocs/op
+BenchmarkStructFirstParse-28       	  145461	      8265 ns/op	   17392 B/op	     125 allocs/op
+BenchmarkStructFirstParse-28       	  144501	      8338 ns/op	   17392 B/op	     125 allocs/op
+PASS
+ok  	github.com/gookit/validate	25.461s
+
+================================================================
+P0 -> P2 对比 (count=3 代表值; go1.25.10, i7-14700KF)
+================================================================
+基准                          | ns/op (P0 -> P2)      | B/op (P0->P2)     | allocs/op
+------------------------------|-----------------------|-------------------|----------
+BenchmarkStructFlat           | 10403 -> 10016 (-3.7%)| 18353 -> 18324    | 132 -> 132
+BenchmarkStructNested         | 10128 ->  9812 (-3.1%)| 17936 -> 17936    | 132 -> 132
+BenchmarkStructSliceOfStruct  | 17249 -> 16992 (-1.5%)| 24062 -> 24059    | 260 -> 260
+BenchmarkMapValidate          |  9606 ->  9380 (-2.4%)| 17918 -> 17896    | 124 -> 124
+BenchmarkValValue             |   717 ->   735 (+2.5%)|   495 ->   494    |  11 -> 11
+BenchmarkStructFirstParse     |  8580 ->  8299 (-3.3%)| 17392 -> 17392    | 125 -> 125
+
+结论:
+- Struct 路径 ns/op 全部小幅下降 (FieldByIndex O(1) + 省去每实例 3 次 Implements)。
+- allocs/op 全部持平 (parseRulesFromTag 规则解析未动，allocs 仍集中在解析阶段，符合预期)。
+- MapValidate 略降/持平 (±5% 内)，Val 在噪声范围内 (+2.5%，allocs 不变)。
+- StructFirstParse 未升反降，说明 getTypeMeta 的额外 build 成本被缓存后均摊掉/被省 Implements 抵消。
+- 无显著回退，符合 P2 验收门禁。

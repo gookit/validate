@@ -14,6 +14,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"sync/atomic"
 
 	"github.com/gookit/goutil/reflects"
 )
@@ -134,11 +135,16 @@ var gOpt = newGlobalOption()
 // Config global options
 func Config(fn func(opt *GlobalOption)) {
 	fn(gOpt)
+	// bump tag-config version so any type meta cached under the previous tag
+	// names is invalidated (see cache.go typeKey).
+	atomic.AddUint32(&tagVer, 1)
 }
 
 // ResetOption reset global option
 func ResetOption() {
 	*gOpt = *newGlobalOption()
+	// invalidate type meta cache built under the previous tag config.
+	atomic.AddUint32(&tagVer, 1)
 }
 
 // Option get global options
@@ -362,6 +368,8 @@ func FromStruct(s any) (*StructData, error) {
 	data.src = s
 	data.value = val
 	data.valueTyp = typ
+	// build/fetch cached type-level metadata (field index, tags, Implements...).
+	data.meta = getTypeMeta(typ)
 
 	return data, nil
 }

@@ -188,6 +188,9 @@ type StructData struct {
 	value reflect.Value
 	// reflect.Type of the source struct
 	valueTyp reflect.Type
+	// cached type-level metadata (field index/tags/Implements). Built once per
+	// type via getTypeMeta; nil only when FromStruct failed (invalid data).
+	meta *typeMeta
 	// field names in the src struct
 	// 0:common field 1:anonymous field 2:nonAnonymous field
 	fieldNames map[string]int8
@@ -240,22 +243,26 @@ func (d *StructData) Create(err ...error) *Validation {
 	// collect field filter/validate rules from struct tags
 	d.parseRulesFromTag(v)
 
+	// reuse one-shot Implements results from cached type meta (avoids three
+	// per-instance reflect Implements calls). Fall back to live checks if meta
+	// is absent (e.g. a manually-built StructData).
+	implConfig, implTranslates, implMessages := d.implFaces()
+
 	// has custom config func
-	if d.valueTyp.Implements(cvFaceType) {
+	if implConfig {
 		fv := d.value.MethodByName("ConfigValidation")
 		fv.Call([]reflect.Value{reflect.ValueOf(v)})
 	}
 
 	// collect custom field translates config
-	if d.valueTyp.Implements(ftFaceType) {
+	if implTranslates {
 		fv := d.value.MethodByName("Translates")
 		vs := fv.Call(nil)
 		v.WithTranslates(vs[0].Interface().(map[string]string))
 	}
 
 	// collect custom error messages config
-	// if reflect.PtrTo(d.valueTyp).Implements(cmFaceType) {
-	if d.valueTyp.Implements(cmFaceType) {
+	if implMessages {
 		fv := d.value.MethodByName("Messages")
 		vs := fv.Call(nil)
 		v.WithMessages(vs[0].Interface().(map[string]string))
@@ -264,6 +271,37 @@ func (d *StructData) Create(err ...error) *Validation {
 	// for struct, default update source value
 	v.UpdateSource = true
 	return v
+}
+
+// implFaces returns the one-shot optional-interface implements results. Uses
+// the cached type meta when available; otherwise falls back to live checks on
+// valueTyp (kept identical to the original per-instance behavior).
+func (d *StructData) implFaces() (implConfig, implTranslates, implMessages bool) {
+	if d.meta != nil {
+		return d.meta.implConfig, d.meta.implTranslates, d.meta.implMessages
+	}
+	return d.valueTyp.Implements(cvFaceType),
+		d.valueTyp.Implements(ftFaceType),
+		d.valueTyp.Implements(cmFaceType)
+}
+
+// topFieldMeta returns the cached meta for a top-level field that can be safely
+// accessed via reflect.Value.FieldByIndex. It returns nil (caller falls back to
+// FieldByName) when: meta is absent, the field is unknown, it is not a direct
+// top-level field (multi-segment Index), or it is unexported — FieldByIndex
+// panics on unexported fields while FieldByName handles them.
+func (d *StructData) topFieldMeta(field string) *fieldMeta {
+	if d.meta == nil {
+		return nil
+	}
+	fm, ok := d.meta.byName[field]
+	if !ok || len(fm.Index) != 1 {
+		return nil
+	}
+	if c := fm.Name[0]; c >= 'a' && c <= 'z' {
+		return nil
+	}
+	return fm
 }
 
 // parse and collect rules from struct tags.
@@ -597,8 +635,17 @@ func (d *StructData) TryGet(field string) (val any, exist, zero bool) {
 
 		d.fieldNames[field] = fieldAtSubStruct
 	} else {
-		// field at top struct
-		fv = d.value.FieldByName(field)
+		// field at top struct.
+		// perf: use cached FieldByIndex (O(1)) when the field is a known
+		// exported top-level field; otherwise fall back to FieldByName.
+		// Restrict FieldByIndex to exported fields — it panics on unexported
+		// ones, whereas FieldByName returns them safely (relevant under
+		// ValidatePrivateFields).
+		if fm := d.topFieldMeta(field); fm != nil {
+			fv = d.value.FieldByIndex(fm.Index)
+		} else {
+			fv = d.value.FieldByName(field)
+		}
 		if !fv.IsValid() { // field not exists
 			return
 		}
