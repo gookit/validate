@@ -67,6 +67,16 @@ type typeMeta struct {
 	// (slice/map-of-struct). Reserved for P3; populated as a marker only.
 	dynamicFields []*fieldMeta
 
+	// isStatic reports whether this type's collected rule set is fully
+	// value-independent (no ptr-to-struct, slice-of-struct or map-of-struct in
+	// its field graph). STATIC types use a cached rule template (instantiateStatic);
+	// DYNAMIC types keep the original per-value parse path (parseRulesFromTag).
+	isStatic bool
+	// tpl is the lazily-built, immutable rule template for a STATIC type. Guarded
+	// by tplOnce so concurrent first-time validators build it exactly once.
+	tplOnce sync.Once
+	tpl     *ruleTemplate
+
 	// One-shot Implements results, computed at build time so each instance does
 	// not pay three reflect Implements calls in StructData.Create.
 	implConfig     bool // implements ConfigValidationFace
@@ -237,6 +247,11 @@ func buildTypeMeta(rt reflect.Type) *typeMeta {
 	tm.implConfig = rt.Implements(cvFaceType)
 	tm.implTranslates = rt.Implements(ftFaceType)
 	tm.implMessages = rt.Implements(cmFaceType)
+
+	// classify static vs dynamic for rule-template caching (P3b). Computed via a
+	// dedicated type scan (see computeIsStatic) so the criteria are explicit and
+	// independent of the dynamicFields markers above.
+	tm.isStatic = computeIsStatic(rt)
 
 	return tm
 }

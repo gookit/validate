@@ -1,0 +1,46 @@
+goos: linux
+goarch: amd64
+pkg: github.com/gookit/validate
+cpu: Intel(R) Core(TM) i7-14700KF
+BenchmarkStructFlat-28             	  141313	      8346 ns/op	   17300 B/op	      86 allocs/op
+BenchmarkStructFlat-28             	  144433	      8355 ns/op	   17313 B/op	      86 allocs/op
+BenchmarkStructFlat-28             	  140967	      8366 ns/op	   17299 B/op	      86 allocs/op
+BenchmarkStructNested-28           	  143104	      8000 ns/op	   17000 B/op	      86 allocs/op
+BenchmarkStructNested-28           	  148836	      8028 ns/op	   17000 B/op	      86 allocs/op
+BenchmarkStructNested-28           	  146841	      8063 ns/op	   17000 B/op	      86 allocs/op
+BenchmarkStructSliceOfStruct-28    	   70155	     17139 ns/op	   24059 B/op	     260 allocs/op
+BenchmarkStructSliceOfStruct-28    	   70339	     17130 ns/op	   24059 B/op	     260 allocs/op
+BenchmarkStructSliceOfStruct-28    	   69661	     17140 ns/op	   24059 B/op	     260 allocs/op
+BenchmarkMapValidate-28            	  125462	      9423 ns/op	   17896 B/op	     124 allocs/op
+BenchmarkMapValidate-28            	  127094	      9491 ns/op	   17912 B/op	     124 allocs/op
+BenchmarkMapValidate-28            	  123342	      9425 ns/op	   17900 B/op	     124 allocs/op
+BenchmarkValValue-28               	 1651998	       728.8 ns/op	     494 B/op	      11 allocs/op
+BenchmarkValValue-28               	 1663179	       725.4 ns/op	     494 B/op	      11 allocs/op
+BenchmarkValValue-28               	 1660947	       724.6 ns/op	     494 B/op	      11 allocs/op
+BenchmarkStructFirstParse-28       	  186247	      6467 ns/op	   16376 B/op	      79 allocs/op
+BenchmarkStructFirstParse-28       	  184506	      6485 ns/op	   16376 B/op	      79 allocs/op
+BenchmarkStructFirstParse-28       	  183177	      6516 ns/op	   16376 B/op	      79 allocs/op
+PASS
+ok  	github.com/gookit/validate	25.191s
+
+# ============================================================
+# P0 -> P3b comparison (count=3 representative values)
+# ============================================================
+# Bench                  | path       | P0 ns  | P3 ns  | dns    | P0 alloc | P3 alloc | dalloc
+# StructFlat             | static     | 10403  | 8355   | -19.7% | 132      | 86       | -34.8%
+# StructNested           | static     | 10128  | 8030   | -20.7% | 132      | 86       | -34.8%
+# StructSliceOfStruct    | dynamic    | 17249  | 17136  | -0.7%  | 260      | 260      |  0%
+# MapValidate            | non-struct | 9606   | 9446   | -1.7%  | 124      | 124      |  0%
+# ValValue               | non-struct | 716.7  | 726    | +1.3%  | 11       | 11       |  0%
+# StructFirstParse       | static     | 8580   | 6489   | -24.4% | 125      | 79       | -36.8%
+#
+# Notes:
+# - Static rule parsing is now fully cached: parseRulesFromTag no longer runs
+#   per-instance for STATIC types. Residual allocs are dominated by per-instance
+#   newEmpty() (NewTranslator copies ~150 builtin messages + ~17 context-validator
+#   funcMetas), which P3b deliberately does NOT touch (P5 Factory/pool target).
+# - Dynamic (slice-of-struct) and non-struct (map/Val) paths are unchanged (flat),
+#   confirming the static fast-path is correctly scoped.
+# - The < 40% targets were predicated on parsing being the dominant cost; the P0
+#   "95% allocs in construct+parse" figure conflated newEmpty (construct) with the
+#   parse step. P3b removed the parse half; the construct half (newEmpty) remains.

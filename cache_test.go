@@ -1,9 +1,11 @@
 package validate
 
 import (
+	"fmt"
 	"reflect"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/gookit/goutil/x/assert"
 )
@@ -224,4 +226,106 @@ func TestGetTypeMeta_concurrent(t *testing.T) {
 	// after the storm, all callers must observe the single stored instance
 	final := getTypeMeta(rt)
 	assert.Same(t, final, getTypeMeta(rt))
+}
+
+// ---- P3b: static/dynamic classification + static-template caching ----
+
+type scStaticTime struct {
+	Name string    `validate:"required"`
+	At   time.Time `validate:"required"`
+}
+
+type scLeafContainers struct {
+	Name  string         `validate:"required"`
+	Tags  []string       `validate:"required"`
+	Nums  [3]int         `validate:"required"`
+	Attrs map[string]int `validate:"required"`
+	Ptr   *int           `validate:"required"`
+}
+
+type scNested2 struct {
+	Name string `validate:"required"`
+	Sub  cacheUserSub
+}
+
+func TestComputeIsStatic(t *testing.T) {
+	defer ResetTypeCache()
+
+	t.Run("static forms", func(t *testing.T) {
+		assert.True(t, computeIsStatic(reflect.TypeOf(rcFlat{})))           // flat leaves
+		assert.True(t, computeIsStatic(reflect.TypeOf(rcNested{})))         // non-ptr struct
+		assert.True(t, computeIsStatic(reflect.TypeOf(scNested2{})))        // non-ptr struct
+		assert.True(t, computeIsStatic(reflect.TypeOf(rcEmbed{})))          // exported embed (non-ptr struct)
+		assert.True(t, computeIsStatic(reflect.TypeOf(scStaticTime{})))     // time.Time is a leaf
+		assert.True(t, computeIsStatic(reflect.TypeOf(scLeafContainers{}))) // slice/array/map/ptr of LEAF
+	})
+
+	t.Run("dynamic forms", func(t *testing.T) {
+		assert.False(t, computeIsStatic(reflect.TypeOf(rcPtrNested{})))     // *Sub
+		assert.False(t, computeIsStatic(reflect.TypeOf(rcSliceOfStruct{}))) // []Sub
+		assert.False(t, computeIsStatic(reflect.TypeOf(rcMapOfStruct{})))   // map[k]Sub
+		assert.False(t, computeIsStatic(reflect.TypeOf(recNode{})))         // *recNode (ptr cycle)
+		assert.False(t, computeIsStatic(reflect.TypeOf(recA{})))            // mutual ptr cycle
+	})
+
+	t.Run("meta carries isStatic", func(t *testing.T) {
+		assert.True(t, getTypeMeta(reflect.TypeOf(rcFlat{})).isStatic)
+		assert.False(t, getTypeMeta(reflect.TypeOf(rcPtrNested{})).isStatic)
+	})
+}
+
+// TestStaticTemplate_concurrent stresses the lazy template build under -race:
+// many goroutines validate the same STATIC type at once, all racing on the
+// sync.Once-guarded staticTemplate build and on the immutable template clone.
+func TestStaticTemplate_concurrent(t *testing.T) {
+	defer ResetTypeCache()
+	ResetTypeCache()
+
+	var wg sync.WaitGroup
+	for i := 0; i < 50; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			v := Struct(&rcFlat{Name: "tom", Email: "a@b.com", Age: 5})
+			_ = v.Validate()
+		}()
+	}
+	wg.Wait()
+
+	// the cached template must be a single shared instance after the storm.
+	m := getTypeMeta(reflect.TypeOf(rcFlat{}))
+	assert.NotNil(t, m.staticTemplate())
+	assert.Same(t, m.staticTemplate(), m.staticTemplate())
+}
+
+// TestStaticTemplate_isolation verifies two validations of the same STATIC type
+// get INDEPENDENT rule arg slices, so validate-time in-place arg conversion in
+// one does not leak into the other or into the shared template.
+func TestStaticTemplate_isolation(t *testing.T) {
+	defer ResetTypeCache()
+	ResetTypeCache()
+
+	v1 := Struct(&rcArgSingle{A: 6, B: 5})
+	v2 := Struct(&rcArgSingle{A: 6, B: 5})
+
+	// rules slices must be distinct, and each rule's args must be distinct
+	// backing arrays (or both nil).
+	assert.NotEq(t, fmt.Sprintf("%p", v1.rules), fmt.Sprintf("%p", v2.rules))
+	for i := range v1.rules {
+		a1, a2 := v1.rules[i].arguments, v2.rules[i].arguments
+		if len(a1) > 0 {
+			assert.NotEq(t, fmt.Sprintf("%p", a1), fmt.Sprintf("%p", a2))
+		}
+	}
+
+	// validating mutates v1's args in place; v2 + template must be untouched.
+	_ = v1.Validate()
+	tpl := getTypeMeta(reflect.TypeOf(rcArgSingle{})).staticTemplate()
+	for _, r := range tpl.rules {
+		for _, a := range r.arguments {
+			// template args remain the originally-collected STRING form.
+			_, isStr := a.(string)
+			assert.True(t, isStr)
+		}
+	}
 }
