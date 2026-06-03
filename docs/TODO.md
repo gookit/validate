@@ -1,8 +1,9 @@
 # TODO
 
-- use pool for Validation
-- cache struct reflect type, tags
-- field value struct:
+- [x] cache struct reflect type, tags — done in v1.6.0 (`cache.go` typeMeta + static rule templates)
+- [x] field value struct — done in v1.6.0 (unexported `fieldValue`, `fieldvalue.go`)
+- [~] use pool for Validation — `Val`/`Var` now use a pooled instance (v1.6.0); an opt-in `Factory`/pool for `Struct`/`Map` is still open
+- field value struct (original sketch, realized as unexported `fieldValue`):
 
 ```go
 type FieldValue struct {
