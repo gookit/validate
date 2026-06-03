@@ -1,0 +1,30 @@
+goos: linux
+goarch: amd64
+pkg: github.com/gookit/validate
+cpu: Intel(R) Core(TM) i7-14700KF
+BenchmarkFieldSuccess-28            	1000000000	         0.8345 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFieldSuccess-28            	1000000000	         0.8324 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFieldSuccess-28            	1000000000	         0.8311 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFieldSuccessParallel-28    	1000000000	         0.07188 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFieldSuccessParallel-28    	1000000000	         0.1461 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFieldSuccessParallel-28    	1000000000	         0.1170 ns/op	       0 B/op	       0 allocs/op
+BenchmarkStructFlat-28              	  113479	     10403 ns/op	   18358 B/op	     132 allocs/op
+BenchmarkStructFlat-28              	  115060	     10399 ns/op	   18353 B/op	     132 allocs/op
+BenchmarkStructFlat-28              	  113595	     10412 ns/op	   18349 B/op	     132 allocs/op
+BenchmarkStructNested-28            	  118668	     10117 ns/op	   17936 B/op	     132 allocs/op
+BenchmarkStructNested-28            	  117390	     10128 ns/op	   17936 B/op	     132 allocs/op
+BenchmarkStructNested-28            	  119188	     10186 ns/op	   17936 B/op	     132 allocs/op
+BenchmarkStructSliceOfStruct-28     	   70142	     17220 ns/op	   24062 B/op	     260 allocs/op
+BenchmarkStructSliceOfStruct-28     	   69429	     17386 ns/op	   24062 B/op	     260 allocs/op
+BenchmarkStructSliceOfStruct-28     	   69682	     17249 ns/op	   24062 B/op	     260 allocs/op
+BenchmarkMapValidate-28             	  125296	      9597 ns/op	   17917 B/op	     124 allocs/op
+BenchmarkMapValidate-28             	  123519	      9617 ns/op	   17919 B/op	     124 allocs/op
+BenchmarkMapValidate-28             	  125666	      9606 ns/op	   17918 B/op	     124 allocs/op
+BenchmarkValValue-28                	 1669726	       715.6 ns/op	     495 B/op	      11 allocs/op
+BenchmarkValValue-28                	 1671850	       716.7 ns/op	     494 B/op	      11 allocs/op
+BenchmarkValValue-28                	 1642174	       720.9 ns/op	     495 B/op	      11 allocs/op
+BenchmarkStructFirstParse-28        	  140164	      8537 ns/op	   17392 B/op	     125 allocs/op
+BenchmarkStructFirstParse-28        	  140924	      8614 ns/op	   17392 B/op	     125 allocs/op
+BenchmarkStructFirstParse-28        	  140282	      8580 ns/op	   17392 B/op	     125 allocs/op
+PASS
+ok  	github.com/gookit/validate	28.620s
