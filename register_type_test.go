@@ -238,6 +238,19 @@ func TestAddCustomType_NilGuards(t *testing.T) {
 	// no types -> no-op, gate stays off
 	AddCustomType(func(reflect.Value) any { return nil })
 	assert.False(t, hasCustomTypes.Load())
+
+	// nil sample mixed with a valid one: nil is skipped, valid type still registered.
+	AddCustomType(func(field reflect.Value) any {
+		return field.Interface().(sql.NullString).String
+	}, nil, sql.NullString{})
+	assert.True(t, hasCustomTypes.Load())
+	// the nil sample must not have been stored under the nil/invalid type.
+	_, niStored := customTypes.Load(reflect.TypeOf(nil))
+	assert.False(t, niStored)
+	// the valid sample IS stored and drives extraction.
+	got, ok := resolveCustomType(sql.NullString{Valid: true, String: "hi"})
+	assert.True(t, ok)
+	assert.Eq(t, "hi", got)
 }
 
 // TestAddCustomType_WildcardSlice verifies that custom-type extraction also
