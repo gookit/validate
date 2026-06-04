@@ -348,8 +348,9 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 				}
 			}
 
-			// validate rule
-			vRule := fv.Tag.Get(d.ValidateTag)
+			// validate rule. use Lookup to distinguish "no tag" from "empty tag":
+			// an empty `validate:""` still marks the field for sub-struct cascade.
+			vRule, hasVRuleTag := fv.Tag.Lookup(d.ValidateTag)
 			if vRule != "" {
 				v.StringRule(name, vRule)
 			}
@@ -399,8 +400,9 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 			// collect rules from sub-struct and from arrays/slices elements
 			if ft != timeType && reflectx.RemoveValuePtr(vv).IsValid() {
 
-				// feat: only collect sub-struct rule on current field has rule.
-				if vRule == "" && gOpt.CheckSubOnParentMarked {
+				// feat: only descend into sub-structs when the parent field carries a
+				// `validate` tag (value may be empty); fields with no tag are skipped.
+				if !hasVRuleTag && gOpt.CheckSubOnParentMarked {
 					continue
 				}
 

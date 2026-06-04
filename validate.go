@@ -109,7 +109,11 @@ type GlobalOption struct {
 	// - 0 use struct field name as key. (for compatible)
 	// - 1 use FieldTag defined name as key.
 	ErrKeyFmt int8
-	// CheckSubOnParentMarked True: only collect sub-struct rule on current field has rule.
+	// CheckSubOnParentMarked controls sub-struct (struct / *struct / slice-of-struct /
+	// map-of-struct) cascade validation.
+	//
+	// 默认 true: 仅当父字段带有 `validate` tag(值可为空, 如 `validate:""`)时才级联验证
+	// 其子结构体; 完全没有 `validate` tag 的字段不会下探。设为 false 则无条件级联(v1 行为)。
 	CheckSubOnParentMarked bool
 	// ValidatePrivateFields Whether to validate private fields or not, especially when inheriting other other structs.
 	//
@@ -165,6 +169,8 @@ func newGlobalOption() *GlobalOption {
 		MessageTag: messageTag,
 		// tag name in struct tags
 		ValidateTag: validateTag,
+		// 默认仅在父字段带有 validate tag 时才级联验证子结构体 (Java @Valid 风格的简化版)
+		CheckSubOnParentMarked: true,
 	}
 }
 
