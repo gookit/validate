@@ -301,10 +301,13 @@ func (r *Rule) valueValidate(field, name string, val any, v *Validation) (ok boo
 		fm.checkArgNum(argNum, r.validator)
 	}
 
-	// 2. args data type convert
+	// 2. args data type convert. Skip when the static template already
+	// pre-converted these args at build time (P3a: r.argsReady).
 	args := r.arguments
-	if ok = convertArgsType(v, fm, field, args, addNum); !ok {
-		return false
+	if !r.argsReady {
+		if ok = convertArgsType(v, fm, field, args, addNum); !ok {
+			return false
+		}
 	}
 
 	// build the value carrier once; its rV() is computed lazily and reused

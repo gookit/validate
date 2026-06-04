@@ -300,7 +300,9 @@ type rcArgRegexp struct {
 	B string `validate:"regex:^a,b$"`
 }
 
-// length / minLen / maxLen: single int param collected as STRING via default branch.
+// length / minLen / maxLen: single int param collected as STRING via default
+// branch, then PRE-CONVERTED to int by the STATIC template build (P3a), since
+// the validators take a concrete `int` arg. The golden args are typed ints.
 type rcArgLen struct {
 	A string `validate:"length:6"`
 	B string `validate:"minLen:3"`
@@ -331,7 +333,7 @@ Age | real=isInt | validator=int | notRequired=true | optional=false | skipEmpty
 Age | real=max | validator=max | notRequired=true | optional=false | skipEmpty=true | args=[]interface {}{"120"}
 Age | real=min | validator=min | notRequired=true | optional=false | skipEmpty=true | args=[]interface {}{"1"}
 Email | real=isEmail | validator=email | notRequired=true | optional=false | skipEmpty=true | args=[]interface {}(nil)
-Name | real=minLength | validator=minLen | notRequired=true | optional=false | skipEmpty=true | args=[]interface {}{"3"}
+Name | real=minLength | validator=minLen | notRequired=true | optional=false | skipEmpty=true | args=[]interface {}{3}
 Name | real=required | validator=required | notRequired=false | optional=false | skipEmpty=true | args=[]interface {}(nil)
 == filters ==
 == optionals ==
@@ -348,7 +350,7 @@ Name | real=required | validator=required | notRequired=false | optional=false |
 		want := `== rules ==
 Addr | real=required | validator=required | notRequired=false | optional=false | skipEmpty=true | args=[]interface {}(nil)
 Addr.City | real=required | validator=required | notRequired=false | optional=false | skipEmpty=true | args=[]interface {}(nil)
-Addr.Zip | real=minLength | validator=minLen | notRequired=true | optional=false | skipEmpty=true | args=[]interface {}{"3"}
+Addr.Zip | real=minLength | validator=minLen | notRequired=true | optional=false | skipEmpty=true | args=[]interface {}{3}
 Addr.Zip | real=required | validator=required | notRequired=false | optional=false | skipEmpty=true | args=[]interface {}(nil)
 Name | real=required | validator=required | notRequired=false | optional=false | skipEmpty=true | args=[]interface {}(nil)
 == filters ==
@@ -532,7 +534,7 @@ Name.required=name is required
 	t.Run("message_named", func(t *testing.T) {
 		v := Struct(&rcMsgNamed{})
 		want := `== rules ==
-Name | real=minLength | validator=minLen | notRequired=true | optional=false | skipEmpty=true | args=[]interface {}{"3"}
+Name | real=minLength | validator=minLen | notRequired=true | optional=false | skipEmpty=true | args=[]interface {}{3}
 Name | real=required | validator=required | notRequired=false | optional=false | skipEmpty=true | args=[]interface {}(nil)
 == filters ==
 == optionals ==
@@ -548,7 +550,7 @@ Name.required=name must not be empty
 	t.Run("message_multi", func(t *testing.T) {
 		v := Struct(&rcMsgMulti{})
 		want := `== rules ==
-Name | real=minLength | validator=minLen | notRequired=true | optional=false | skipEmpty=true | args=[]interface {}{"3"}
+Name | real=minLength | validator=minLen | notRequired=true | optional=false | skipEmpty=true | args=[]interface {}{3}
 Name | real=required | validator=required | notRequired=false | optional=false | skipEmpty=true | args=[]interface {}(nil)
 == filters ==
 == optionals ==
@@ -751,12 +753,13 @@ B | real=regexp | validator=regex | notRequired=true | optional=false | skipEmpt
 	})
 
 	t.Run("length_variants", func(t *testing.T) {
-		// length:6 / minLen:3 / maxLen:20 — default branch: single STRING arg.
+		// length:6 / minLen:3 / maxLen:20 — default branch collects STRING args,
+		// then the STATIC template build pre-converts them to typed int (P3a).
 		v := Struct(&rcArgLen{})
 		want := `== rules ==
-A | real=length | validator=length | notRequired=true | optional=false | skipEmpty=true | args=[]interface {}{"6"}
-B | real=minLength | validator=minLen | notRequired=true | optional=false | skipEmpty=true | args=[]interface {}{"3"}
-C | real=maxLength | validator=maxLen | notRequired=true | optional=false | skipEmpty=true | args=[]interface {}{"20"}
+A | real=length | validator=length | notRequired=true | optional=false | skipEmpty=true | args=[]interface {}{6}
+B | real=minLength | validator=minLen | notRequired=true | optional=false | skipEmpty=true | args=[]interface {}{3}
+C | real=maxLength | validator=maxLen | notRequired=true | optional=false | skipEmpty=true | args=[]interface {}{20}
 == filters ==
 == optionals ==
 == labels ==

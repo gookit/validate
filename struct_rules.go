@@ -156,7 +156,51 @@ func buildRuleTemplate(rt reflect.Type) *ruleTemplate {
 			tpl.messages = custom
 		}
 	}
+
+	// P3a: pre-convert each rule's string args to the validator-signature types
+	// once per STATIC type. This moves the per-validate convertArgsType cost to
+	// build time. tv reuses the same validatorMeta lookup the runtime path uses.
+	preConvertTemplateArgs(tpl.rules, tv)
+
 	return tpl
+}
+
+// preConvertTemplateArgs walks the static template rules and, for each rule
+// backed by a BUILTIN validator, converts its string args to the validator's
+// signature types via convertRuleArgs. On success the rule is marked argsReady
+// so valueValidate skips the runtime conversion; on failure (or for
+// non-builtin / unknown validators) the args are left untouched for the runtime
+// path to handle. Only builtin validators are pre-converted so a later
+// AddValidator override (different signature) can never use a stale typed arg.
+func preConvertTemplateArgs(rules []*Rule, tv *Validation) {
+	for _, r := range rules {
+		// resolve funcMeta exactly as the runtime does (valueValidate uses the
+		// rule's realName as the validator name; template rules have no
+		// checkFuncMeta, so this falls through to validatorMeta lookup).
+		name := r.realName
+		fm := r.checkFuncMeta
+		if fm == nil {
+			fm = tv.validatorMeta(name)
+		}
+		// only pre-convert builtin validators (design §4.6).
+		if fm == nil || !fm.builtin {
+			continue
+		}
+
+		// compute addNum the same way valueValidate does: +1 for the value arg,
+		// +1 more when the validator's first arg is DataFace.
+		ft := fm.fv.Type()
+		addNum := 1
+		if ft.In(0) == dataFaceType {
+			addNum++
+		}
+
+		// convertRuleArgs converts in place; only mark argsReady on success so a
+		// failed conversion stays string and is retried (and reported) at runtime.
+		if err := convertRuleArgs(fm, "", r.arguments, addNum); err == nil {
+			r.argsReady = true
+		}
+	}
 }
 
 // instantiateStatic clones the cached STATIC template into the real Validation

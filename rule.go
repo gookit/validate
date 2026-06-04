@@ -37,6 +37,10 @@ type Rule struct {
 	nameNotRequired bool
 	// arguments for the validator
 	arguments []any
+	// argsReady marks that arguments have already been converted to the
+	// validator-signature types at build time (static template pre-conversion),
+	// so valueValidate can skip the runtime convertArgsType for this rule.
+	argsReady bool
 	// --- some hooks function
 	// has beforeFunc. if return false, skip validate current rule
 	beforeFunc func(v *Validation) bool // func (val any) bool
