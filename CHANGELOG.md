@@ -52,7 +52,7 @@ Measured on Go 1.25 (count=6) against the v1.6.0 final:
 | SliceOfStruct | — | 10900 ns / 208 allocs (dynamic, flat) |
 | **FactoryStructReuse** (new) | — | 1633 ns / **11 allocs** (-52% allocs vs non-factory) |
 
-Coverage 95.6% (v1.6.0 was 95.6%).
+Coverage 95.7% (v1.6.0 was 95.6%).
 
 ### Internal
 
