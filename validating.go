@@ -8,6 +8,7 @@ import (
 
 	"github.com/gookit/goutil/maputil"
 	"github.com/gookit/goutil/strutil"
+	"github.com/gookit/validate/internal/fieldval"
 	"github.com/gookit/validate/internal/reflectx"
 )
 
@@ -351,10 +352,10 @@ func (r *Rule) valueValidate(field, name string, val any, v *Validation) (ok boo
 	// panic (#125). But valueValidate's original logic relied on valKind being
 	// Invalid for nil; restore that so behavior is unchanged. rftVal itself is
 	// only consumed in the Slice branch below, which nil never enters.
-	fv := newFieldValue(field, val)
-	rftVal := fv.rV()
+	fv := fieldval.New(field, val)
+	rftVal := fv.RV()
 	valKind := rftVal.Kind()
-	if fv.src == nil {
+	if fv.Src == nil {
 		valKind = reflect.Invalid
 	}
 
@@ -385,7 +386,7 @@ func (r *Rule) valueValidate(field, name string, val any, v *Validation) (ok boo
 // cases, then converts and validates each element. Logic is平移 unchanged from
 // the original inline branch.
 //
-// rftVal is the slice reflect.Value (fv.rV()); slice sub-elements never match
+// rftVal is the slice reflect.Value (fv.RV()); slice sub-elements never match
 // the top-level carrier, so callValidator is always invoked with vfv=nil.
 func (r *Rule) validateWildcardSlice(fm *funcMeta, field string, rftVal reflect.Value, dotStarNum int, valArgKind reflect.Kind, addNum int, v *Validation) (ok bool) {
 	sliceLen := rftVal.Len()
@@ -489,7 +490,7 @@ func convValAsFuncValArgType(valArgKind, valKind reflect.Kind, val any) (any, bo
 //
 // vfv is the optional value carrier matching `val` (nil if val was transformed
 // or is a slice sub-element); it is only forwarded to the reflective path.
-func callValidator(v *Validation, fm *funcMeta, field string, val any, args []any, addNum int, vfv *fieldValue) (ok bool) {
+func callValidator(v *Validation, fm *funcMeta, field string, val any, args []any, addNum int, vfv *fieldval.FieldValue) (ok bool) {
 	// use `switch` can avoid using reflection to call methods and improve speed
 	// fm.name please see pkg var: validatorValues
 	switch fm.name {
@@ -676,7 +677,7 @@ func convertRuleArgs(fm *funcMeta, field string, args []any, addNum int) error {
 // and the pointer-deref here (痛点 A, design §4.3). It MUST be nil whenever
 // `val` differs from the carrier's source (e.g. after type conversion or for
 // slice sub-elements), so the reflect.Value stays consistent with `val`.
-func callValidatorValue(v *Validation, fv reflect.Value, val any, args []any, addNum int, vfv *fieldValue) bool {
+func callValidatorValue(v *Validation, fv reflect.Value, val any, args []any, addNum int, vfv *fieldval.FieldValue) bool {
 	// build params for the validator func.
 	argNum := len(args)
 	argIn := make([]reflect.Value, argNum+addNum)
@@ -685,7 +686,7 @@ func callValidatorValue(v *Validation, fv reflect.Value, val any, args []any, ad
 	if vfv != nil {
 		// reuse the carrier: rV() already substitutes nilRVal for any(nil)
 		// (#125) and realV() applies the same non-nil pointer deref as below.
-		rftVal = vfv.realV()
+		rftVal = vfv.RealV()
 	} else {
 		// if val is any(nil): rftVal.IsValid()==false
 		// if val is typed(nil): rftVal.IsValid()==true

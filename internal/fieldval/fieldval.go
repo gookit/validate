@@ -1,8 +1,18 @@
-package validate
+// Package fieldval holds the internal value carrier (FieldValue) that flows
+// through the validating pipeline. It depends only on goutil and the sibling
+// internal/reflectx package, never on the validate root package, keeping the
+// dependency direction one-way (root -> internal/fieldval).
+package fieldval
 
-import "reflect"
+import (
+	"reflect"
 
-// fieldValue is an internal value carrier that flows through the validating
+	"github.com/gookit/goutil/reflects"
+
+	"github.com/gookit/validate/internal/reflectx"
+)
+
+// FieldValue is an internal value carrier that flows through the validating
 // pipeline. It holds the raw value together with its lazily-built reflect.Value,
 // so the same underlying value is not repeatedly re-reflected (reflect.ValueOf)
 // at each pipeline stage (痛点 A / B in docs/validate-v2-design.md §4.3).
@@ -10,9 +20,9 @@ import "reflect"
 // All computation is lazy and cached: rv/rt/real and the zero/empty tri-state
 // flags are only computed on first access. Designed for single-goroutine use
 // within one validation pass (a *Validation is not shared concurrently).
-type fieldValue struct {
+type FieldValue struct {
 	name string        // field name/path. eg: "name", "details.sub.*.field"
-	src  any           // original value from the data source
+	Src  any           // original value from the data source
 	rv   reflect.Value // = reflect.ValueOf(src), lazy. (nilRVal when src is invalid)
 	rt   reflect.Type  // = rv.Type(), lazy
 	real reflect.Value // de-pointered rv, lazy
@@ -24,41 +34,41 @@ type fieldValue struct {
 	empty int8
 }
 
-// newFieldValue builds a fieldValue from a plain any value (map/form sources).
+// New builds a FieldValue from a plain any value (map/form sources).
 // The reflect.Value is built lazily on first need.
-func newFieldValue(name string, src any) *fieldValue {
-	return &fieldValue{name: name, src: src}
+func New(name string, src any) *FieldValue {
+	return &FieldValue{name: name, Src: src}
 }
 
-// newFieldValueRV builds a fieldValue from an already-available reflect.Value
+// NewRV builds a FieldValue from an already-available reflect.Value
 // (struct source). It avoids an Interface()->ValueOf round-trip. The `src` is
 // kept as the boxed value for callers/validators that still consume `any`.
 //
 // NOTE: reserved for P2 (struct path will pass the cached reflect.Value here);
 // defined now so the carrier API is complete.
-func newFieldValueRV(name string, rv reflect.Value) *fieldValue {
-	f := &fieldValue{name: name, rv: rv, rvInit: true}
+func NewRV(name string, rv reflect.Value) *FieldValue {
+	f := &FieldValue{name: name, rv: rv, rvInit: true}
 	if rv.IsValid() {
 		f.rt = rv.Type()
-		f.src = rv.Interface()
+		f.Src = rv.Interface()
 	} else {
 		// keep behavior consistent with rV(): invalid -> nilRVal
-		f.rv = nilRVal
-		f.rt = nilRVal.Type()
+		f.rv = reflectx.NilRVal
+		f.rt = reflectx.NilRVal.Type()
 	}
 	return f
 }
 
-// rV returns reflect.ValueOf(src), lazily built and cached.
+// RV returns reflect.ValueOf(src), lazily built and cached.
 //
 // If src is any(nil) the resulting reflect.Value is invalid; in that case it
 // returns nilRVal — identical to the fix at callValidatorValue (validating.go),
 // so fv.Call() won't panic on an Invalid kind (#125).
-func (f *fieldValue) rV() reflect.Value {
+func (f *FieldValue) RV() reflect.Value {
 	if !f.rvInit {
-		rv := reflect.ValueOf(f.src)
+		rv := reflect.ValueOf(f.Src)
 		if !rv.IsValid() {
-			rv = nilRVal
+			rv = reflectx.NilRVal
 		}
 		f.rv = rv
 		f.rt = rv.Type()
@@ -67,24 +77,24 @@ func (f *fieldValue) rV() reflect.Value {
 	return f.rv
 }
 
-// rT returns the reflect.Type of rV(), lazily built and cached.
-func (f *fieldValue) rT() reflect.Type {
+// RT returns the reflect.Type of RV(), lazily built and cached.
+func (f *FieldValue) RT() reflect.Type {
 	if !f.rvInit {
-		f.rV()
+		f.RV()
 	}
 	return f.rt
 }
 
-// realV returns the de-pointered reflect.Value.
+// RealV returns the de-pointered reflect.Value.
 //
 // Semantics are kept byte-for-byte identical to the previous inline handling in
 // callValidatorValue (its only P1 consumer): a single non-nil pointer level is
 // dereferenced; a nil pointer is left as-is (so typed-nil keeps its pointer
 // type). Deeper pointer levels are intentionally NOT unwrapped here to preserve
 // 100% behavior equivalence with the pre-refactor code.
-func (f *fieldValue) realV() reflect.Value {
+func (f *FieldValue) RealV() reflect.Value {
 	if !f.realInit {
-		rv := f.rV()
+		rv := f.RV()
 		if rv.Kind() == reflect.Ptr && !rv.IsNil() {
 			rv = rv.Elem()
 		}
@@ -94,11 +104,11 @@ func (f *fieldValue) realV() reflect.Value {
 	return f.real
 }
 
-// isZero reports whether the value is the zero value for its type, matching the
+// IsZero reports whether the value is the zero value for its type, matching the
 // reflect.Value.IsZero() semantics used by StructData.TryGet. Lazy + cached.
-func (f *fieldValue) isZero() bool {
+func (f *FieldValue) IsZero() bool {
 	if f.zero == 0 {
-		rv := f.rV()
+		rv := f.RV()
 		// IsZero panics on an invalid Value; rV() never returns invalid
 		// (nilRVal substituted), so this is safe.
 		if rv.IsZero() {
@@ -110,19 +120,19 @@ func (f *fieldValue) isZero() bool {
 	return f.zero == 1
 }
 
-// isEmpty reports whether the value is empty, giving results identical to the
+// IsEmpty reports whether the value is empty, giving results identical to the
 // public IsEmpty(any) for the same input — including the untyped-nil and string
 // fast paths — but reusing rV() so the value is reflected at most once.
-func (f *fieldValue) isEmpty() bool {
+func (f *FieldValue) IsEmpty() bool {
 	if f.empty == 0 {
 		var emp bool
 		switch {
-		case f.src == nil: // untyped nil. same as IsEmpty(nil)
+		case f.Src == nil: // untyped nil. same as IsEmpty(nil)
 			emp = true
-		case isStrSrc(f.src): // string fast path. same as IsEmpty(string)
-			emp = f.src.(string) == ""
+		case isStrSrc(f.Src): // string fast path. same as IsEmpty(string)
+			emp = f.Src.(string) == ""
 		default:
-			emp = ValueIsEmpty(f.rV())
+			emp = reflects.IsEmpty(f.RV())
 		}
 		if emp {
 			f.empty = 1

@@ -11,15 +11,18 @@ import (
 	"github.com/gookit/filter"
 	"github.com/gookit/goutil/reflects"
 	"github.com/gookit/goutil/strutil"
+	"github.com/gookit/validate/internal/reflectx"
 )
 
 // NilObject represent nil value for calling functions and should be reflected at custom filters as nil variable.
-type NilObject struct{}
-
-var nilObj = NilObject{}
+//
+// Alias of reflectx.NilObject: keeps the public type identity so that any
+// val.(NilObject) assertion and IsNilObj keep working unchanged after the type
+// was moved into internal/reflectx.
+type NilObject = reflectx.NilObject
 
 // init a reflect nil value
-var nilRVal = reflect.ValueOf(nilObj)
+var nilRVal = reflectx.NilRVal
 
 // NilValue TODO a reflect nil value, use for instead of nilRVal
 var NilValue = reflect.Zero(reflect.TypeOf((*any)(nil)).Elem())

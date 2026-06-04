@@ -16,6 +16,24 @@ import (
 // value because consumers only test err != nil, never the identity.
 var ErrConvertFail = errors.New("convert value is failure")
 
+// NilObject represent nil value for calling functions and should be reflected at custom filters as nil variable.
+//
+// NOTE: validate.NilObject is a type alias of this type, so the public API and
+// any val.(NilObject) assertion in user code keep working unchanged.
+type NilObject struct{}
+
+// nilObj zero value of NilObject.
+var nilObj = NilObject{}
+
+// NilRVal a reflect nil value (= reflect.ValueOf(NilObject{})).
+var NilRVal = reflect.ValueOf(nilObj)
+
+// IsNilObj check value is internal NilObject
+func IsNilObj(val any) bool {
+	_, ok := val.(NilObject)
+	return ok
+}
+
 // ValueCompare value compare.
 //
 // only check for: int(X), uint(X), float(X), string.
