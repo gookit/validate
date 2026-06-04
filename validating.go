@@ -1,6 +1,8 @@
 package validate
 
 import (
+	"errors"
+	"fmt"
 	"reflect"
 	"strings"
 
@@ -510,10 +512,38 @@ func callValidator(v *Validation, fm *funcMeta, field string, val any, args []an
 	return
 }
 
-// convert args data type
+// argConvError 携带 args 转换失败时上报错误所需的全部字段，
+// 由纯函数 convertRuleArgs 返回，调用方据此决定如何上报。
+type argConvError struct {
+	field    string
+	got      reflect.Kind // argVKind: 实参当前的 kind
+	want     reflect.Kind // wantKind: 目标参数 kind
+	argIndex int          // fcArgIndex: 在验证器函数签名中的参数下标
+}
+
+func (e *argConvError) Error() string {
+	return fmt.Sprintf("cannot convert %s to arg#%d(%s)", e.got, e.argIndex, e.want)
+}
+
+// convertArgsType convert args data type. 薄封装：调用纯函数 convertRuleArgs，
+// 失败时用 v.convArgTypeError 上报错误（字段/参数与原逻辑逐字一致）。
 func convertArgsType(v *Validation, fm *funcMeta, field string, args []any, addNum int) (ok bool) {
+	if err := convertRuleArgs(fm, field, args, addNum); err != nil {
+		var ce *argConvError
+		if errors.As(err, &ce) {
+			v.convArgTypeError(ce.field, fm.name, ce.got, ce.want, ce.argIndex)
+		}
+		return false
+	}
+	return true
+}
+
+// convertRuleArgs 在不依赖 *Validation 的前提下，按验证器签名把 args 原地转换为目标类型。
+// 成功返回 nil；失败返回携带 argVKind/wantKind/fcArgIndex 的 *argConvError，由调用方决定如何上报。
+// 逻辑与原 convertArgsType 逐分支等价（含 isVariadic、单 any 早退、ConvertibleTo / convTypeByBaseKind、nil 保留）。
+func convertRuleArgs(fm *funcMeta, field string, args []any, addNum int) error {
 	if len(args) == 0 {
-		return true
+		return nil
 	}
 
 	ft := fm.fv.Type()
@@ -529,7 +559,7 @@ func convertArgsType(v *Validation, fm *funcMeta, field string, args []any, addN
 
 	// only one args and type is any
 	if (lastArgIndex == 1 || (addNum == 2 && lastArgIndex == 2)) && lastTyp == reflect.Interface {
-		return true
+		return nil
 	}
 
 	var wantKind reflect.Kind
@@ -554,9 +584,8 @@ func convertArgsType(v *Validation, fm *funcMeta, field string, args []any, addN
 				continue
 			}
 
-			// unable to convert
-			v.convArgTypeError(field, fm.name, argVKind, wantKind, fcArgIndex)
-			return
+			// unable to convert. 注意：此分支沿用上一轮的 wantKind（与原逻辑一致）
+			return &argConvError{field: field, got: argVKind, want: wantKind, argIndex: fcArgIndex}
 		}
 
 		argIType := ft.In(fcArgIndex)
@@ -573,12 +602,11 @@ func convertArgsType(v *Validation, fm *funcMeta, field string, args []any, addN
 		} else if nVal, err := convTypeByBaseKind(args[i], wantKind); err == nil && nVal != nil { // manual converted
 			args[i] = nVal
 		} else { // unable to convert
-			v.convArgTypeError(field, fm.name, argVKind, wantKind, fcArgIndex)
-			return
+			return &argConvError{field: field, got: argVKind, want: wantKind, argIndex: fcArgIndex}
 		}
 	}
 
-	return true
+	return nil
 }
 
 // callValidatorValue calls a custom validator by reflection.
