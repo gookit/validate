@@ -185,12 +185,6 @@ func ValueIsEmpty(v reflect.Value) bool {
 	return reflects.IsEmpty(v)
 }
 
-// ValueLen get value length.
-// Deprecated: please use reflects.Len()
-func ValueLen(v reflect.Value) int {
-	return reflects.Len(v)
-}
-
 // ErrConvertFail error
 var ErrConvertFail = errors.New("convert value is failure")
 
@@ -244,7 +238,6 @@ func CalcLength(val any) int {
 		return -1
 	}
 
-	// return ValueLen(reflect.ValueOf(val))
 	return reflects.Len(reflect.ValueOf(val))
 }
 

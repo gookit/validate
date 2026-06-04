@@ -8,29 +8,6 @@ import (
 	"github.com/gookit/goutil/testutil/assert"
 )
 
-func TestValueLen(t *testing.T) {
-	is := assert.New(t)
-	tests := []any{
-		"abc",
-		123,
-		int8(123), int16(123), int32(123), int64(123),
-		uint8(123), uint16(123), uint32(123), uint64(123),
-		float32(123), float64(123),
-		[]int{1, 2, 3}, []string{"a", "b", "c"},
-		map[string]string{"k0": "v0", "k1": "v1", "k2": "v2"},
-	}
-
-	for _, sample := range tests {
-		is.Equal(3, ValueLen(reflect.ValueOf(sample)))
-	}
-
-	ptrArr := &[]string{"a", "b"}
-	is.Equal(2, ValueLen(reflect.ValueOf(ptrArr)))
-	is.Equal(4, ValueLen(reflect.ValueOf("ab你好")))
-
-	is.Equal(-1, ValueLen(reflect.ValueOf(nil)))
-}
-
 func TestFlatSlice(t *testing.T) {
 	sl := []any{
 		[]string{"a", "b"},
