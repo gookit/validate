@@ -400,9 +400,11 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 			// collect rules from sub-struct and from arrays/slices elements
 			if ft != timeType && reflectx.RemoveValuePtr(vv).IsValid() {
 
-				// feat: only descend into sub-structs when the parent field carries a
-				// `validate` tag (value may be empty); fields with no tag are skipped.
-				if !hasVRuleTag && gOpt.CheckSubOnParentMarked {
+				// feat: only descend into NAMED sub-struct fields when the parent field
+				// carries a `validate` tag (value may be empty); named fields with no tag
+				// are skipped. Anonymous embedded fields (promoted composition, is-a) are
+				// part of the parent and always cascade regardless of tag.
+				if !hasVRuleTag && !fv.Anonymous && gOpt.CheckSubOnParentMarked {
 					continue
 				}
 

@@ -202,8 +202,8 @@ type RcEmbedBase struct {
 }
 
 type rcEmbed struct {
-	RcEmbedBase `validate:""`
-	Name        string `validate:"required"`
+	RcEmbedBase
+	Name string `validate:"required"`
 }
 
 // rcEmbedUnexported embeds an UNEXPORTED-named type; its embed field name starts

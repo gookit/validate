@@ -266,7 +266,7 @@ func TestValidatePrivateFieldsWhenTrue(t *testing.T) {
 		Field1 int `validate:"required|min:5|max:20" message:"Field1 outside of range"`
 	}
 	type bar struct {
-		foo    `validate:""`
+		foo
 		Field2 int `validate:"required|int" message:"Field2 outside of range"`
 	}
 

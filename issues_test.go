@@ -309,8 +309,8 @@ type Human struct {
 	Name string `json:"name" validate:"min_len:3"`
 }
 type Settings struct {
-	*Pet   `json:",omitempty" validate:""`
-	*Human `json:",omitempty" validate:""`
+	*Pet   `json:",omitempty"`
+	*Human `json:",omitempty"`
 }
 
 type Entity struct {
@@ -423,7 +423,7 @@ type User2 struct {
 }
 
 type Info2 struct {
-	Org `validate:""`
+	Org
 	Sub *Info `validate:""`
 }
 
@@ -727,8 +727,8 @@ type Issue104A struct {
 }
 
 type Issue104Demo struct {
-	Issue104A `validate:""`
-	Title     string `json:"title" form:"title" validate:"required" example:"123456"` // 任务id
+	Issue104A
+	Title string `json:"title" form:"title" validate:"required" example:"123456"` // 任务id
 }
 
 // GetScene 定义验证场景
@@ -1100,7 +1100,7 @@ func TestIssues_148(t *testing.T) {
 	assert.Equal(t, "T1 is required to not be empty", v.Errors.One())
 
 	type B struct {
-		A  `validate:""`
+		A
 		T1 string `json:"T1,omitempty"` // is not required
 	}
 
