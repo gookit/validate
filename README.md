@@ -32,6 +32,10 @@
 - [godoc for gopkg](https://pkg.go.dev/gopkg.in/gookit/validate.v1)
 - [godoc for github](https://pkg.go.dev/github.com/gookit/validate)
 
+> **v2.0**: the module path is now `github.com/gookit/validate/v2` (requires Go 1.21+).
+> Install via `go get github.com/gookit/validate/v2`. See the
+> [upgrade guide](docs/UPGRADE-v2.md) for migrating from v1.x.
+
 ## Validate Struct
 
 Use the `validate` tag of the structure, you can quickly config a structure.
@@ -51,7 +55,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/gookit/validate"
+	"github.com/gookit/validate/v2"
 )
 
 // UserForm struct
@@ -93,7 +97,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/gookit/validate"
+	"github.com/gookit/validate/v2"
 )
 
 // UserForm struct
@@ -158,7 +162,7 @@ package main
 import (
   "fmt"
 
-  "github.com/gookit/validate"
+  "github.com/gookit/validate/v2"
 )
 
 func main() {
@@ -190,7 +194,7 @@ package main
 import (
 "fmt"
 
-"github.com/gookit/validate"
+"github.com/gookit/validate/v2"
 )
 
 func main()  {
@@ -246,7 +250,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gookit/validate"
+	"github.com/gookit/validate/v2"
 )
 
 // UserForm struct
@@ -470,7 +474,7 @@ validate.Config(func(opt *validate.GlobalOption) {
 - Register language messages
 
 ```go
-import "github.com/gookit/validate/locales/zhcn"
+import "github.com/gookit/validate/v2/locales/zhcn"
 
 // for all Validation.
 // NOTICE: must be registered before on validate.New(), it only need call at once.
@@ -589,7 +593,7 @@ You can add one or more custom validators at once.
 ```go
 package main
 
-import "github.com/gookit/validate"
+import "github.com/gookit/validate/v2"
 
 func init() {
 	validate.AddFilter("myToIntFilter0", func(val any) int {
@@ -612,7 +616,7 @@ Again, you can add one or more custom filters at once.
 ```go
 package main
 
-import "github.com/gookit/validate"
+import "github.com/gookit/validate/v2"
 
 func main() {
 	v := validate.New(&someStrcut{})
@@ -667,7 +671,7 @@ Can use `validate` in any frameworks, such as Gin, Echo, Chi and more.
 package main
 import (
     "github.com/gin-gonic/gin/binding"
-    "github.com/gookit/validate"
+    "github.com/gookit/validate/v2"
 )
 
 // implements the binding.StructValidator

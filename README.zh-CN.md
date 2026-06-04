@@ -35,6 +35,10 @@ Please see the English introduction **[README](README.md)**
 - [godoc for gopkg](https://pkg.go.dev/gopkg.in/gookit/validate.v1)
 - [godoc for github](https://pkg.go.dev/github.com/gookit/validate)
 
+> **v2.0**：模块路径已变更为 `github.com/gookit/validate/v2`（要求 Go 1.21+）。
+> 安装：`go get github.com/gookit/validate/v2`。从 v1.x 升级请参阅
+> [升级指南](docs/UPGRADE-v2.md)。
+
 ## 验证结构体(Struct)
 
 在结构体上添加 `validate`标签，可以快速对一个结构体进行验证设置。
@@ -56,7 +60,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/gookit/validate"
+	"github.com/gookit/validate/v2"
 )
 
 // UserForm struct
@@ -98,7 +102,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/gookit/validate"
+	"github.com/gookit/validate/v2"
 )
 
 // UserForm struct
@@ -181,7 +185,7 @@ func main() {
 package main
 
 import "fmt"
-import "github.com/gookit/validate"
+import "github.com/gookit/validate/v2"
 
 func main()  {
 	m := map[string]any{
@@ -237,7 +241,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/gookit/validate"
+	"github.com/gookit/validate/v2"
 )
 
 func main()  {
@@ -408,7 +412,7 @@ type GlobalOption struct {
 - 注册内置的语言消息
 
 ```go
-import "github.com/gookit/validate/locales/zhcn"
+import "github.com/gookit/validate/v2/locales/zhcn"
 
 // for all Validation.
 // NOTICE: 必须在调用 validate.New() 前注册, 它只需要一次调用。
@@ -526,7 +530,7 @@ func (f UserForm) Messages() map[string]string {
 ```go
 package main
 
-import "github.com/gookit/validate"
+import "github.com/gookit/validate/v2"
 
 func init() {
 	validate.AddFilter("myToIntFilter0", func(val any) int {
@@ -549,7 +553,7 @@ func init() {
 ```go
 package main
 
-import "github.com/gookit/validate"
+import "github.com/gookit/validate/v2"
 
 func main() {
 	v := validate.New(&someStrcut{})
@@ -599,7 +603,7 @@ func main() {
 package main
 import (
     "github.com/gin-gonic/gin/binding"
-    "github.com/gookit/validate"
+    "github.com/gookit/validate/v2"
 )
 
 // implements the binding.StructValidator
