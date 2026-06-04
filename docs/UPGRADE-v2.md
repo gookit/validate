@@ -45,7 +45,7 @@ import "github.com/gookit/validate/v2/locales/zhcn"
 
 ---
 
-## 破坏性变更 / Breaking Changes（共 4 项 / 4 total）
+## 破坏性变更 / Breaking Changes（共 5 项 / 5 total）
 
 ### 1. 模块路径加 `/v2`（Module path）
 
@@ -116,6 +116,61 @@ validate.Between(2.9, 1, 2) // => false
 > **未变更提示**：v2.0 设计期曾计划调整 `DataFace` 接口，profile 后否决——
 > `DataFace` 接口**保持不变**，自定义 `DataFace` 实现者**不受影响**。
 > Note: the `DataFace` interface is **unchanged** in v2.0; custom implementers are unaffected.
+
+### 5. 子结构体级联默认需父字段带 `validate` tag（Sub-struct cascade opt-in）
+
+v1.x 对子结构体字段（`struct` / `*struct` / slice-of-struct / map-of-struct）**无条件递归**
+收集其内部字段规则。v2.0 改为 Java `@Valid` 风格的「按需下探」：仅当父字段带有
+`validate` tag（值可为空）时才级联验证其子结构；完全没有 `validate` tag 的字段
+**不再**下探。该行为由 `CheckSubOnParentMarked` 控制，v2 默认 **true**。
+
+In v1.x a sub-struct field was **always** descended into to collect its inner
+rules. v2.0 makes this opt-in (Java `@Valid` style): cascade happens **only** when
+the parent field carries a `validate` tag. An **empty** tag (`validate:""`) is
+enough to mark it; a field with **no** `validate` tag is no longer descended into.
+Controlled by `CheckSubOnParentMarked`, which defaults to **true** in v2.
+
+```go
+type Address struct {
+	City string `validate:"required"`
+	Zip  string `validate:"required|minLen:3"`
+}
+
+type User struct {
+	Name string `validate:"required"`
+
+	// v1.x: Address 内部的 City/Zip 规则会被自动收集并校验
+	// v2.0: Addr 无 validate tag -> 不再下探，City/Zip 不校验
+	Addr Address
+}
+```
+
+**迁移方法 / Migration**——二选一：
+
+1. **给需要级联的无 tag 嵌套字段补一个 `validate` tag**（推荐，按字段精确控制）。
+   空 tag `validate:""` 即可恢复级联，无需任何规则：
+
+   ```diff
+   type User struct {
+   	Name string `validate:"required"`
+   -	Addr Address
+   +	Addr Address `validate:""`     // 空 tag 即可重新开启下探
+   	// 或者给父字段本身加规则，如 `validate:"required"`，同样会下探
+   }
+   ```
+
+   > 注意：匿名嵌入字段（`User { Address }`）同样适用——需在嵌入行加 `validate:""` 才会下探。
+
+2. **全局恢复 v1「永远级联」行为**（一处改动覆盖全部类型，适合不想逐字段标注的大型工程）：
+
+   ```go
+   validate.Config(func(o *validate.GlobalOption) {
+   	o.CheckSubOnParentMarked = false
+   })
+   ```
+
+**Why**：v1 的无条件递归会在你只想校验顶层字段时，意外地把深层子结构体的规则也
+一并收集执行，且无法关闭。v2 改为显式标记后下探，行为更可预期，同时保留全局逃生舱。
 
 ---
 
@@ -212,4 +267,7 @@ go vet ./...
 go test ./...
 ```
 
-若以上全部通过，且你没有直接调用 `Between(float, ...)` 或 `ValueLen`，则升级完成。
+若以上全部通过，且你没有直接调用 `Between(float, ...)` 或 `ValueLen`、也没有依赖
+子结构体的「无 tag 自动级联」（见破坏性变更第 5 项），则升级完成。若你的嵌套字段
+校验在升级后「不生效」了，多半是命中了第 5 项：给该嵌套字段补 `validate:""`，或全局
+设 `CheckSubOnParentMarked = false`。

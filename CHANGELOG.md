@@ -2,7 +2,7 @@
 
 ## v2.0.0
 
-v2.0 keeps breaking changes **intentionally minimal** (4 items). Core API,
+v2.0 keeps breaking changes **intentionally minimal** (5 items). Core API,
 validator names, tag semantics and the `DataFace` interface are unchanged — most
 projects upgrade by bumping the import path to `/v2`. See
 [docs/UPGRADE-v2.md](docs/UPGRADE-v2.md) for the full migration guide.
@@ -19,6 +19,16 @@ projects upgrade by bumping the import path to `/v2`. See
   `Between(2.9, 1, 2)` was `true` (int64 truncation) and is now `false` (no more
   truncation). Tag/`StringRule` usage like `between:1,2` is unaffected.
 - **Removed deprecated `ValueLen(v)`** — use goutil's `reflects.Len(v)` instead.
+- **Sub-struct cascade now requires the parent field to carry a `validate` tag.**
+  Previously a sub-struct field (struct / `*struct` / slice-of-struct /
+  map-of-struct) was **always** descended into to collect its inner rules. Now
+  (`CheckSubOnParentMarked` defaults to **true**) cascade only happens when the
+  parent field has a `validate` tag — the value may be **empty** (`validate:""`
+  is enough to mark it); a field with **no** `validate` tag is no longer
+  descended into (Java `@Valid`-style opt-in). To restore the v1 "always
+  cascade" behavior globally:
+  `validate.Config(func(o *validate.GlobalOption){ o.CheckSubOnParentMarked = false })`.
+  See [docs/UPGRADE-v2.md](docs/UPGRADE-v2.md) for migration details.
 
 > Note: the `DataFace` interface is **unchanged** (a redesign was planned during
 > v2.0 but rejected after profiling); custom `DataFace` implementers are unaffected.
