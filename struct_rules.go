@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/gookit/goutil/reflects"
+	"github.com/gookit/validate/internal/reflectx"
 )
 
 /*************************************************************
@@ -396,21 +397,21 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 			ft := removeTypePtr(vt.Field(i).Type)
 
 			// collect rules from sub-struct and from arrays/slices elements
-			if ft != timeType && removeValuePtr(vv).IsValid() {
+			if ft != timeType && reflectx.RemoveValuePtr(vv).IsValid() {
 
 				// feat: only collect sub-struct rule on current field has rule.
 				if vRule == "" && gOpt.CheckSubOnParentMarked {
 					continue
 				}
 
-				fValue := removeValuePtr(vv).Field(i)
+				fValue := reflectx.RemoveValuePtr(vv).Field(i)
 
 				switch ft.Kind() {
 				case reflect.Struct:
 					recursiveFunc(fValue, ft, name, fv.Anonymous)
 
 				case reflect.Array, reflect.Slice:
-					fValue = removeValuePtr(fValue)
+					fValue = reflectx.RemoveValuePtr(fValue)
 
 					// Check if the reflect.Value is valid and not a nil pointer
 					if !fValue.IsValid() || (ft.Kind() == reflect.Slice && fValue.IsNil()) {
@@ -422,7 +423,7 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 					}
 
 					for j := 0; j < fValue.Len(); j++ {
-						elemValue := removeValuePtr(fValue.Index(j))
+						elemValue := reflectx.RemoveValuePtr(fValue.Index(j))
 						elemType := removeTypePtr(elemValue.Type())
 
 						arrayName := fmt.Sprintf("%s.%d", name, j)
@@ -435,7 +436,7 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 					}
 
 				case reflect.Map:
-					fValue = removeValuePtr(fValue)
+					fValue = reflectx.RemoveValuePtr(fValue)
 
 					// Check if the reflect.Value is valid and not a nil pointer
 					if !fValue.IsValid() || fValue.IsNil() {
@@ -443,8 +444,8 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 					}
 
 					for _, key := range fValue.MapKeys() {
-						key = removeValuePtr(key)
-						elemValue := removeValuePtr(fValue.MapIndex(key))
+						key = reflectx.RemoveValuePtr(key)
+						elemValue := reflectx.RemoveValuePtr(fValue.MapIndex(key))
 						elemType := removeTypePtr(elemValue.Type())
 
 						format := "%s."
@@ -476,14 +477,14 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 						// Create an instance of the type pointed to by the pointer
 						newValue := reflect.New(ft.Elem())
 						// Set the field value
-						removeValuePtr(vv).Field(i).Set(newValue)
+						reflectx.RemoveValuePtr(vv).Field(i).Set(newValue)
 						// Update fValue to the newly created value
 						fValue = newValue
 					}
 
 					// Continue processing the type pointed to by the pointer
 					if fValue.IsValid() && !fValue.IsNil() && removeTypePtr(ft).Kind() == reflect.Struct {
-						recursiveFunc(removeValuePtr(fValue), removeTypePtr(ft), name, fv.Anonymous)
+						recursiveFunc(reflectx.RemoveValuePtr(fValue), removeTypePtr(ft), name, fv.Anonymous)
 					}
 				default:
 					// do nothing
@@ -492,7 +493,7 @@ func (d *StructData) parseRulesFromTag(v *Validation) {
 		}
 	}
 
-	recursiveFunc(removeValuePtr(vv), vt, "", false)
+	recursiveFunc(reflectx.RemoveValuePtr(vv), vt, "", false)
 
 	if len(fOutMap) > 0 {
 		v.Trans().AddFieldMap(fOutMap)

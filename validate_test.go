@@ -12,6 +12,7 @@ import (
 
 	"github.com/gookit/goutil/dump"
 	"github.com/gookit/goutil/testutil/assert"
+	"github.com/gookit/validate/internal/reflectx"
 )
 
 // func TestMain(m *testing.M) {
@@ -110,7 +111,7 @@ func TestUtil_Func_getVariadicKind(t *testing.T) {
 	}
 
 	for _, item := range noErrTests {
-		eleType := getVariadicKind(reflect.TypeOf(item.val))
+		eleType := reflectx.GetVariadicKind(reflect.TypeOf(item.val))
 		assert.Equal(t, item.want, eleType)
 	}
 }
@@ -132,26 +133,26 @@ func TestUtil_Func_goodName(t *testing.T) {
 }
 
 func Test_Util_Func_convertType(t *testing.T) {
-	nVal, err := convTypeByBaseKind(23, reflect.String)
+	nVal, err := reflectx.ConvTypeByBaseKind(23, reflect.String)
 	assert.NoError(t, err)
 	assert.Equal(t, "23", nVal)
 
-	nVal, err = convTypeByBaseKind(uint(23), reflect.String)
+	nVal, err = reflectx.ConvTypeByBaseKind(uint(23), reflect.String)
 	assert.NoError(t, err)
 	assert.Equal(t, "23", nVal)
 
-	nVal, err = convTypeByBaseKind([]byte("23"), reflect.String)
+	nVal, err = reflectx.ConvTypeByBaseKind([]byte("23"), reflect.String)
 	assert.NoError(t, err)
 	assert.Equal(t, "23", nVal)
 
-	nVal, err = convTypeByBaseKind("23", reflect.Int)
+	nVal, err = reflectx.ConvTypeByBaseKind("23", reflect.Int)
 	assert.NoError(t, err)
 	assert.Equal(t, 23, nVal)
 
 	// Stringer convert to string
 	var val strings.Builder
 	val.WriteString("23")
-	nVal, err = convTypeByBaseKind(&val, reflect.String)
+	nVal, err = reflectx.ConvTypeByBaseKind(&val, reflect.String)
 	assert.NoError(t, err)
 	assert.Equal(t, "23", nVal)
 }

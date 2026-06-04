@@ -15,6 +15,7 @@ import (
 	"github.com/gookit/goutil/maputil"
 	"github.com/gookit/goutil/reflects"
 	"github.com/gookit/goutil/strutil"
+	"github.com/gookit/validate/internal/reflectx"
 )
 
 const (
@@ -359,7 +360,7 @@ func (d *StructData) TryGet(field string) (val any, exist, zero bool) {
 			return
 		}
 
-		fv = removeValuePtr(d.value.FieldByName(fieldNodes[0]))
+		fv = reflectx.RemoveValuePtr(d.value.FieldByName(fieldNodes[0]))
 		if !fv.IsValid() {
 			return
 		}
@@ -388,7 +389,7 @@ func (d *StructData) TryGet(field string) (val any, exist, zero bool) {
 			}
 
 			// isPtr = fv.Kind() == reflect.Pointer
-			fv = removeValuePtr(fv)
+			fv = reflectx.RemoveValuePtr(fv)
 			if !fv.IsValid() {
 				return
 			}
@@ -422,7 +423,7 @@ func (d *StructData) TryGet(field string) (val any, exist, zero bool) {
 			if fv.IsNil() { // fix: top-field is nil
 				return
 			}
-			// fv = removeValuePtr(fv)
+			// fv = reflectx.RemoveValuePtr(fv)
 		}
 	}
 
@@ -531,14 +532,14 @@ func (d *StructData) Set(field string, val any) (newVal any, err error) {
 	}
 
 	// check whether the value of v can be changed.
-	fv = removeValuePtr(fv)
+	fv = reflectx.RemoveValuePtr(fv)
 	if !fv.CanSet() {
 		return nil, ErrUnaddressableField
 	}
 
 	// Notice: need convert value type
 	// - check whether you can direct convert type
-	rftVal := removeValuePtr(reflect.ValueOf(val))
+	rftVal := reflectx.RemoveValuePtr(reflect.ValueOf(val))
 	if rftVal.Type().ConvertibleTo(fv.Type()) {
 		fv.Set(rftVal.Convert(fv.Type()))
 		return val, nil

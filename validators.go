@@ -4,6 +4,8 @@ import (
 	"reflect"
 	"regexp"
 	"strings"
+
+	"github.com/gookit/validate/internal/reflectx"
 )
 
 // Basic regular expressions for validating strings.
@@ -213,7 +215,7 @@ func (v *Validation) RequiredIf(sourceField string, val any, kvs ...string) bool
 
 		// up: only one check value, direct compare value
 		if len(args) == 1 {
-			wantVal, err := convTypeByBaseKind(args[0], rftDv.Kind())
+			wantVal, err := reflectx.ConvTypeByBaseKind(args[0], rftDv.Kind())
 			if err == nil && dstVal == wantVal {
 				return requiredIfValIsPresent(val) || v.isIgnoreableZeroNumeric(sourceField)
 			}
@@ -363,7 +365,7 @@ func (v *Validation) GtField(val any, dstField string) bool {
 		return false
 	}
 
-	return valueCompare(val, dstVal, ">")
+	return reflectx.ValueCompare(val, dstVal, ">")
 }
 
 // GteField value should GTE the dst field value
@@ -373,7 +375,7 @@ func (v *Validation) GteField(val any, dstField string) bool {
 		return false
 	}
 
-	return valueCompare(val, dstVal, ">=")
+	return reflectx.ValueCompare(val, dstVal, ">=")
 }
 
 // LtField value should LT the dst field value
@@ -384,7 +386,7 @@ func (v *Validation) LtField(val any, dstField string) bool {
 		return false
 	}
 
-	return valueCompare(val, dstVal, "<")
+	return reflectx.ValueCompare(val, dstVal, "<")
 }
 
 // LteField value should LTE the dst field value(for int, string)
@@ -395,7 +397,7 @@ func (v *Validation) LteField(val any, dstField string) bool {
 		return false
 	}
 
-	return valueCompare(val, dstVal, "<=")
+	return reflectx.ValueCompare(val, dstVal, "<=")
 }
 
 /*

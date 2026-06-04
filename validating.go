@@ -8,6 +8,7 @@ import (
 
 	"github.com/gookit/goutil/maputil"
 	"github.com/gookit/goutil/strutil"
+	"github.com/gookit/validate/internal/reflectx"
 )
 
 // valToString coerces a field value to string for the string validators in the
@@ -476,7 +477,7 @@ func convValAsFuncValArgType(valArgKind, valKind reflect.Kind, val any) (any, bo
 	}
 
 	// manual converted
-	if nVal, err := convTypeByBaseKind(val, valArgKind); err == nil && nVal != nil {
+	if nVal, err := reflectx.ConvTypeByBaseKind(val, valArgKind); err == nil && nVal != nil {
 		return nVal, true
 	}
 
@@ -599,7 +600,7 @@ func convertArgsType(v *Validation, fm *funcMeta, field string, args []any, addN
 
 // convertRuleArgs 在不依赖 *Validation 的前提下，按验证器签名把 args 原地转换为目标类型。
 // 成功返回 nil；失败返回携带 argVKind/wantKind/fcArgIndex 的 *argConvError，由调用方决定如何上报。
-// 逻辑与原 convertArgsType 逐分支等价（含 isVariadic、单 any 早退、ConvertibleTo / convTypeByBaseKind、nil 保留）。
+// 逻辑与原 convertArgsType 逐分支等价（含 isVariadic、单 any 早退、ConvertibleTo / reflectx.ConvTypeByBaseKind、nil 保留）。
 func convertRuleArgs(fm *funcMeta, field string, args []any, addNum int) error {
 	if len(args) == 0 {
 		return nil
@@ -613,7 +614,7 @@ func convertRuleArgs(fm *funcMeta, field string, args []any, addNum int) error {
 	// eg: "...int64" -> slice "[]int64"
 	if fm.isVariadic {
 		// get variadic kind. "[]int64" -> reflect.Int64
-		lastTyp = getVariadicKind(ft.In(lastArgIndex))
+		lastTyp = reflectx.GetVariadicKind(ft.In(lastArgIndex))
 	}
 
 	// only one args and type is any
@@ -638,7 +639,7 @@ func convertRuleArgs(fm *funcMeta, field string, args []any, addNum int) error {
 			}
 
 			// manual converted
-			if nVal, err := convTypeByBaseKind(args[i], lastTyp); err == nil && nVal != nil {
+			if nVal, err := reflectx.ConvTypeByBaseKind(args[i], lastTyp); err == nil && nVal != nil {
 				args[i] = nVal
 				continue
 			}
@@ -658,7 +659,7 @@ func convertRuleArgs(fm *funcMeta, field string, args []any, addNum int) error {
 		// can auto convert type.
 		if av.Type().ConvertibleTo(argIType) {
 			args[i] = av.Convert(argIType).Interface()
-		} else if nVal, err := convTypeByBaseKind(args[i], wantKind); err == nil && nVal != nil { // manual converted
+		} else if nVal, err := reflectx.ConvTypeByBaseKind(args[i], wantKind); err == nil && nVal != nil { // manual converted
 			args[i] = nVal
 		} else { // unable to convert
 			return &argConvError{field: field, got: argVKind, want: wantKind, argIndex: fcArgIndex}

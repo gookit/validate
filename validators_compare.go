@@ -10,6 +10,7 @@ import (
 	"github.com/gookit/goutil/fsutil"
 	"github.com/gookit/goutil/mathutil"
 	"github.com/gookit/goutil/strutil"
+	"github.com/gookit/validate/internal/reflectx"
 )
 
 /*************************************************************
@@ -50,8 +51,8 @@ func IsEqual(val, wantVal any) bool {
 		return val == wantVal
 	}
 
-	sv := removeValuePtr(reflect.ValueOf(val))
-	wv := removeValuePtr(reflect.ValueOf(wantVal))
+	sv := reflectx.RemoveValuePtr(reflect.ValueOf(val))
+	wv := reflectx.RemoveValuePtr(reflect.ValueOf(wantVal))
 
 	// don't compare func, struct
 	if sv.Kind() == reflect.Func || sv.Kind() == reflect.Struct {
@@ -102,32 +103,32 @@ func IntEqual(val any, wantVal int64) bool {
 // Gt check value greater dst value.
 //
 // only check for: int(X), uint(X), float(X), string.
-func Gt(val, minVal any) bool { return valueCompare(val, minVal, ">") }
+func Gt(val, minVal any) bool { return reflectx.ValueCompare(val, minVal, ">") }
 
 // Gte check value greater or equal dst value
 // only check for: int(X), uint(X), float(X), string.
-func Gte(val, minVal any) bool { return valueCompare(val, minVal, ">=") }
+func Gte(val, minVal any) bool { return reflectx.ValueCompare(val, minVal, ">=") }
 
 // Min check value greater or equal dst value, alias Gte()
 // only check for: int(X), uint(X), float(X), string.
-func Min(val, minVal any) bool { return valueCompare(val, minVal, ">=") }
+func Min(val, minVal any) bool { return reflectx.ValueCompare(val, minVal, ">=") }
 
 // Lt less than dst value.
 // only check for: int(X), uint(X), float(X).
-func Lt(val, maxVal any) bool { return valueCompare(val, maxVal, "<") }
+func Lt(val, maxVal any) bool { return reflectx.ValueCompare(val, maxVal, "<") }
 
 // Lte less than or equal dst value.
 // only check for: int(X), uint(X), float(X).
-func Lte(val, maxVal any) bool { return valueCompare(val, maxVal, "<=") }
+func Lte(val, maxVal any) bool { return reflectx.ValueCompare(val, maxVal, "<=") }
 
 // Max less than or equal dst value, alias Lte()
 // only check for: int(X), uint(X), float(X).
-func Max(val, maxVal any) bool { return valueCompare(val, maxVal, "<=") }
+func Max(val, maxVal any) bool { return reflectx.ValueCompare(val, maxVal, "<=") }
 
 // Between value in the given range (inclusive).
 // only check for: int(X), uint(X), float(X), string.
 func Between(val, minVal, maxVal any) bool {
-	return valueCompare(val, minVal, ">=") && valueCompare(val, maxVal, "<=")
+	return reflectx.ValueCompare(val, minVal, ">=") && reflectx.ValueCompare(val, maxVal, "<=")
 }
 
 /*************************************************************
@@ -140,7 +141,7 @@ func Enum(val, enum any) bool {
 		return false
 	}
 
-	v, err := convToBasicType(val)
+	v, err := reflectx.ConvToBasicType(val)
 	if err != nil {
 		return false
 	}

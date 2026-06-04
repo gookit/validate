@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/gookit/goutil/strutil"
+	"github.com/gookit/validate/internal/reflectx"
 )
 
 /*************************************************************
@@ -35,7 +36,7 @@ func IsUint(val any) bool {
 
 // IsBool check. allow: bool, string.
 func IsBool(val any) bool {
-	val = indirectValue(val)
+	val = reflectx.IndirectValue(val)
 
 	if _, ok := val.(bool); ok {
 		return true
@@ -50,7 +51,7 @@ func IsBool(val any) bool {
 
 // IsFloat check. allow: floatX, string
 func IsFloat(val any) bool {
-	val = indirectValue(val)
+	val = reflectx.IndirectValue(val)
 
 	if val == nil {
 		return false
@@ -130,7 +131,7 @@ func IsInt(val any, minAndMax ...int64) (ok bool) {
 	if val == nil {
 		return false
 	}
-	val = indirectValue(val)
+	val = reflectx.IndirectValue(val)
 
 	// TODO use mathutil.StrictInt
 	intVal, err := valueToInt64(val, true)
@@ -161,7 +162,7 @@ func IsInt(val any, minAndMax ...int64) (ok bool) {
 //	ok := IsString(val, 5) // with min len check
 //	ok := IsString(val, 5, 12) // with min and max len check
 func IsString(val any, minAndMaxLen ...int) (ok bool) {
-	val = indirectValue(val)
+	val = reflectx.IndirectValue(val)
 
 	if val == nil {
 		return false

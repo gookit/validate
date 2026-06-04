@@ -9,6 +9,7 @@ import (
 
 	"github.com/gookit/goutil/jsonutil"
 	"github.com/gookit/goutil/strutil"
+	"github.com/gookit/validate/internal/reflectx"
 )
 
 /*************************************************************
@@ -97,7 +98,7 @@ func IsAlphaDash(s string) bool { return s != "" && rxAlphaDash.MatchString(s) }
 
 // IsNumber string. should >= 0
 func IsNumber(v any) bool {
-	v = indirectValue(v)
+	v = reflectx.IndirectValue(v)
 
 	if v == nil {
 		return false
@@ -111,7 +112,7 @@ func IsNumber(v any) bool {
 
 // IsNumeric is string/int number. should >= 0
 func IsNumeric(v any) bool {
-	v = indirectValue(v)
+	v = reflectx.IndirectValue(v)
 
 	if v == nil {
 		return false
