@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"sync"
 )
 
 // some default value settings.
@@ -30,9 +31,10 @@ const (
 
 // Validation definition
 type Validation struct {
-	// for optimize create instance. refer go-playground/validator
-	// v *Validation
-	// pool *sync.Pool
+	// pool is the owning sync.Pool when this instance was obtained from an
+	// opt-in Factory (see factory.go). nil for the default New/Struct/Map path,
+	// so Release() is a no-op there. Set by Factory.* and cleared on Release().
+	pool *sync.Pool
 
 	// source input data
 	data DataFace
@@ -143,6 +145,66 @@ func (v *Validation) resetRules() {
 	v.rules = v.rules[:0]
 	v.optionals = make(map[string]int8)
 	v.filterRules = v.filterRules[:0]
+}
+
+// resetForReuse fully resets ALL per-validation state back to the newEmpty()
+// initial values, so a pooled instance can be safely reused for a different
+// data source/type without any cross-validation data leak.
+//
+// This is intentionally a separate method from Reset()/ResetResult() (which only
+// clear the result + rules and are part of the public, default-path API). It is
+// only used by the opt-in Factory (factory.go) and Release(). Every field set in
+// newEmpty()/NewValidation()/Create() that can be mutated during a validation is
+// restored here. The pool field itself is NOT touched (Release manages it).
+func (v *Validation) resetForReuse() {
+	// --- source input ---
+	v.data = nil
+
+	// --- result data + flags (mirrors ResetResult, but clears maps in place to
+	// reuse the already-allocated buckets — this is the whole point of pooling) ---
+	clear(v.Errors)
+	v.hasError = false
+	v.hasFiltered = false
+	v.hasValidated = false
+	clear(v.safeData)
+	clear(v.filteredData)
+	// user custom default values (lazily allocated, see SetDefValue)
+	clear(v.defValues)
+
+	// --- config flags: restore to global defaults (newEmpty uses gOpt) ---
+	// NOTE: Struct() sets UpdateSource=true after Create; CheckDefault may be
+	// toggled by callers. All must go back to the New-time initial values.
+	v.StopOnError = gOpt.StopOnError
+	v.SkipOnEmpty = gOpt.SkipOnEmpty
+	v.UpdateSource = false
+	v.CheckDefault = false
+
+	// --- rules / filter rules / optionals (mirrors resetRules; keep cap) ---
+	v.rules = v.rules[:0]
+	v.filterRules = v.filterRules[:0]
+	clear(v.optionals)
+
+	// --- validators: drop per-type custom validators + lazily-bound ctx metas.
+	// newEmpty() starts with empty maps; ctx validators rebind lazily to this
+	// same v on next lookup (validatorMeta), so clearing is correct & required
+	// (a struct's own FuncValue / AddValidator entries are type-specific). ---
+	clear(v.validators)
+	clear(v.validatorMetas)
+	// instance-level custom filter funcs (lazily allocated, see AddFilter)
+	clear(v.filterValues)
+
+	// --- scene state ---
+	v.scene = ""
+	v.scenes = nil
+	v.sceneFields = nil
+
+	// --- translator: reset custom messages/labels/field-map back to empty.
+	// Clear in place (matches Translator.Reset semantics: messages=nil custom
+	// only, label/field maps emptied) to avoid 2 map allocs per reuse. ---
+	clear(v.trans.messages)
+	v.trans.messages = nil
+	clear(v.trans.labelMap)
+	clear(v.trans.fieldMap)
 }
 
 // TODO Config(opt *Options) *Validation
