@@ -160,8 +160,8 @@ func TestGetTypeMeta_privateFields(t *testing.T) {
 // recNode is self-referential; recA/recB are mutually recursive. buildTypeMeta
 // walks the TYPE tree, so these must not recurse forever.
 type recNode struct {
-	Name string `validate:"required"`
-	Next *recNode
+	Name string   `validate:"required"`
+	Next *recNode `validate:""`
 }
 type recA struct {
 	Name string `validate:"required"`

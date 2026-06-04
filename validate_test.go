@@ -222,7 +222,7 @@ func TestStruct_nexted_anonymity_struct(t *testing.T) {
 		ExtInfo struct {
 			Homepage string `validate:"required"`
 			CityName string
-		}
+		} `validate:""`
 	}
 
 	sex := true
@@ -250,7 +250,7 @@ func TestStruct_nexted_field_name_tag(t *testing.T) {
 		ExtInfo struct {
 			Homepage string `validate:"required" json:"home_page"`
 			CityName string
-		} `json:"ext_info" label:"info"`
+		} `validate:"" json:"ext_info" label:"info"`
 	}
 
 	sex := true

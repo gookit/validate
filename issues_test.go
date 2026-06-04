@@ -309,14 +309,14 @@ type Human struct {
 	Name string `json:"name" validate:"min_len:3"`
 }
 type Settings struct {
-	*Pet   `json:",omitempty"`
-	*Human `json:",omitempty"`
+	*Pet   `json:",omitempty" validate:""`
+	*Human `json:",omitempty" validate:""`
 }
 
 type Entity struct {
 	ID       string   `json:"id" validate:"uuid4"`
 	Kind     string   `json:"kind" validate:"in:pet,human"`
-	Settings Settings `json:"settings"`
+	Settings Settings `json:"settings" validate:""`
 }
 
 func (Entity) ConfigValidation(v *validate.Validation) {
@@ -417,14 +417,14 @@ type User struct {
 // non-anonymous struct nested
 type User2 struct {
 	Name string `validate:"required|string" filter:"trim|lower"`
-	In   Info
+	In   Info   `validate:""`
 	Sex  string `validate:"string"`
 	Time time.Time
 }
 
 type Info2 struct {
-	Org
-	Sub *Info
+	Org `validate:""`
+	Sub *Info `validate:""`
 }
 
 // gt 2 level struct nested
@@ -727,8 +727,8 @@ type Issue104A struct {
 }
 
 type Issue104Demo struct {
-	Issue104A
-	Title string `json:"title" form:"title" validate:"required" example:"123456"` // 任务id
+	Issue104A `validate:""`
+	Title     string `json:"title" form:"title" validate:"required" example:"123456"` // 任务id
 }
 
 // GetScene 定义验证场景
@@ -930,7 +930,7 @@ func TestIssue_135(t *testing.T) {
 		Answer      []struct {
 			Score float64 `json:"score" validate:"required|min:0.1"`  // 得分
 			Metas string  `json:"metas" validate:"required|minLen:2"` // 元信息
-		} `json:"answer"` // 答案
+		} `json:"answer" validate:""` // 答案
 	}
 
 	s := `
@@ -1100,7 +1100,7 @@ func TestIssues_148(t *testing.T) {
 	assert.Equal(t, "T1 is required to not be empty", v.Errors.One())
 
 	type B struct {
-		A
+		A  `validate:""`
 		T1 string `json:"T1,omitempty"` // is not required
 	}
 

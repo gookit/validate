@@ -210,7 +210,7 @@ func TestMessageOnStruct_withNested(t *testing.T) {
 	s1 := &struct {
 		Name     string `validate:"string" json:"name"`
 		BirthDay string `validate:"date|maxlen:20" json:"birth_day" label:"birth day" message:"{field} 出生日期有误"`
-		SubSt    subSt
+		SubSt    subSt  `validate:""`
 	}{
 		"tom",
 		"invalid",

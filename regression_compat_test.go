@@ -16,23 +16,23 @@ import (
 //
 // Captured dimensions:
 //   - rules:     each *Rule as "path | realName | validator | nameNotRequired |
-//                optional | skipEmpty | args(%#v)"; sorted for stable output.
-//                NOTE: args use the Go-syntax verb %#v (not %v) so that argument
-//                element TYPES are part of the snapshot. This is load-bearing for
-//                P3b (rule-parse refactor): the collection phase stores rule args
-//                as STRINGS (e.g. "5" not int 5), and the enum/notIn branch stores
-//                a single []string element, while regexp stores one raw string.
-//                %v would print string "5" and int 5 identically; %#v makes the
-//                difference visible so an accidental type change is caught.
+//     optional | skipEmpty | args(%#v)"; sorted for stable output.
+//     NOTE: args use the Go-syntax verb %#v (not %v) so that argument
+//     element TYPES are part of the snapshot. This is load-bearing for
+//     P3b (rule-parse refactor): the collection phase stores rule args
+//     as STRINGS (e.g. "5" not int 5), and the enum/notIn branch stores
+//     a single []string element, while regexp stores one raw string.
+//     %v would print string "5" and int 5 identically; %#v makes the
+//     difference visible so an accidental type change is caught.
 //   - filters:   each *FilterRule as "fields | filters | filterArgs"; sorted.
 //   - optionals: field -> flag (v.optionals), sorted by field.
 //   - labels:    v.trans.labelMap (field -> label), sorted by field.
 //   - fieldMap:  v.trans.fieldMap (field -> output name), sorted by field.
 //   - messages:  ONLY the entries that differ from the builtin defaults (i.e.
-//                custom messages added during rule collection), sorted by key.
-//                The builtin baseline (~150 entries copied by Translator.Reset)
-//                is intentionally excluded so the snapshot focuses on what rule
-//                collection produced.
+//     custom messages added during rule collection), sorted by key.
+//     The builtin baseline (~150 entries copied by Translator.Reset)
+//     is intentionally excluded so the snapshot focuses on what rule
+//     collection produced.
 //   - defValues: v.defValues (field -> default), sorted by field.
 //
 // All collections are sorted before emission; map iteration order, map-of-struct
@@ -202,8 +202,8 @@ type RcEmbedBase struct {
 }
 
 type rcEmbed struct {
-	RcEmbedBase
-	Name string `validate:"required"`
+	RcEmbedBase `validate:""`
+	Name        string `validate:"required"`
 }
 
 // rcEmbedUnexported embeds an UNEXPORTED-named type; its embed field name starts
