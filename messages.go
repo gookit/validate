@@ -183,7 +183,7 @@ var builtinMessages = map[string]string{
 	"isImage": "{field} must be an uploaded image file",
 
 	"enum":  "{field} value must be in the enum %v",
-	"range": "{field} value must be in the range %d - %d",
+	"range": "{field} value must be in the range %v - %v",
 	// int compare
 	"lt": "{field} value should be less than %v",
 	"gt": "{field} value should be greater than %v",

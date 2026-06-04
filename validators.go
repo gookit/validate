@@ -1107,17 +1107,10 @@ func Lte(val, maxVal any) bool { return valueCompare(val, maxVal, "<=") }
 // only check for: int(X), uint(X), float(X).
 func Max(val, maxVal any) bool { return valueCompare(val, maxVal, "<=") }
 
-// Between int value in the given range.
-// only check for: int(X), uint(X).
-func Between(val any, minVal, maxVal int64) bool {
-	val = indirectValue(val)
-
-	intVal, err := mathutil.Int64(val)
-	if err != nil {
-		return false
-	}
-
-	return intVal >= minVal && intVal <= maxVal
+// Between value in the given range (inclusive).
+// only check for: int(X), uint(X), float(X), string.
+func Between(val, minVal, maxVal any) bool {
+	return valueCompare(val, minVal, ">=") && valueCompare(val, maxVal, "<=")
 }
 
 /*************************************************************

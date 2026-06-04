@@ -28,7 +28,7 @@ var Data = map[string]string{
 	"maxLength": "{field} 的最大長度是 %d",
 	// range
 	"enum":  "{field} 值必須在下列枚舉中 %v",
-	"range": "{field} 值必須在此範圍內 %d - %d",
+	"range": "{field} 值必須在此範圍內 %v - %v",
 	// required
 	"required":           "{field} 是必填項",
 	"requiredIf":         "當 %v 為 {args} 時 {field} 不能為空。",

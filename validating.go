@@ -500,7 +500,7 @@ func callValidator(v *Validation, fm *funcMeta, field string, val any, args []an
 	case "regexp":
 		ok = Regexp(val.(string), args[0].(string))
 	case "between":
-		ok = Between(val, args[0].(int64), args[1].(int64))
+		ok = Between(val, args[0], args[1])
 	case "isJSON":
 		ok = IsJSON(val.(string))
 	case "isSlice":
