@@ -12,7 +12,7 @@ import (
 	"net/url"
 	"reflect"
 	"regexp"
-	"sort"
+	"slices"
 	"strings"
 	"sync/atomic"
 
@@ -59,7 +59,7 @@ func (ms MS) OrderedRange(fn func(key, value string)) {
 	for k := range ms {
 		keys = append(keys, k)
 	}
-	sort.Strings(keys)
+	slices.Sort(keys)
 	for _, k := range keys {
 		fn(k, ms[k])
 	}
