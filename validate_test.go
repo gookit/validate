@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/gookit/goutil/dump"
-	"github.com/gookit/goutil/testutil/assert"
+	"github.com/gookit/goutil/x/assert"
 	"github.com/gookit/validate/v2/internal/reflectx"
 )
 

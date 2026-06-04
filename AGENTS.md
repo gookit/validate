@@ -130,7 +130,7 @@ func TestValidatorName(t *testing.T) {
     }
 }
 ```
-- Use `github.com/gookit/goutil/testutil/assert` for assertions
+- Use `github.com/gookit/goutil/x/assert` for assertions
 
 ### Performance Considerations
 - Library is optimized for sub-nanosecond validation
