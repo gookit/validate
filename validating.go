@@ -287,6 +287,15 @@ func (r *Rule) valueValidate(field, name string, val any, v *Validation) (ok boo
 		return true
 	}
 
+	// T5: 自定义类型 → 提取底层值,使 required/empty/compare 都作用于提取值。
+	// 门控 hasCustomTypes 内联在此:未注册时仅一次 atomic load 即短路,不进入
+	// resolveCustomType 函数调用,保证热路径零开销。
+	if hasCustomTypes.Load() {
+		if ev, ok := resolveCustomType(val); ok {
+			val = ev
+		}
+	}
+
 	// support check sub element in a slice list. eg: field=top.user.*.name
 	dotStarNum := strings.Count(field, ".*")
 
@@ -409,6 +418,24 @@ func (r *Rule) validateWildcardSlice(fm *funcMeta, field string, rftVal reflect.
 	for i := 0; i < sliceLen; i++ {
 		subRv := indirectInterface(rftVal.Index(i))
 		subKind := subRv.Kind()
+
+		// T5: 自定义类型 → 提取每个元素的底层值,再走下面的类型转换/校验逻辑。
+		// 门控内联:未注册时不进入提取分支,保证元素循环零开销。提取后用提取值的
+		// reflect.Value 重置 subRv/subKind;提取为 nil 时 subRv 变为 invalid,直接
+		// 当作 nil 处理,避免对 invalid Value 调用 Interface() 触发 panic。
+		if hasCustomTypes.Load() && subRv.IsValid() {
+			if ev, ok := resolveCustomType(subRv.Interface()); ok {
+				if ev == nil {
+					subVal = nil
+					if !callValidator(v, fm, field, subVal, r.arguments, addNum, nil) {
+						return false
+					}
+					continue
+				}
+				subRv = reflect.ValueOf(ev)
+				subKind = subRv.Kind()
+			}
+		}
 
 		// 1.1 convert field value type, is func first argument.
 		if r.nameNotRequired && valArgKind != reflect.Interface && valArgKind != subKind {
