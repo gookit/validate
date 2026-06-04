@@ -159,3 +159,34 @@ func TestSharedArgs_concurrentErrorFormat(t *testing.T) {
 	}
 	wg.Wait()
 }
+
+// TestSharedRules_concurrentValidate verifies that sharing the immutable
+// argsReady template *Rule pointer across instances (instantiateStatic no longer
+// clones them) is race-free and produces consistent results: many goroutines
+// validate the SAME static type concurrently. Run with -race.
+func TestSharedRules_concurrentValidate(t *testing.T) {
+	defer ResetTypeCache()
+	ResetTypeCache()
+
+	const n = 100
+	results := make([]bool, n)
+
+	var wg sync.WaitGroup
+	for i := 0; i < n; i++ {
+		wg.Add(1)
+		go func(idx int) {
+			defer wg.Done()
+			// Name="abcd" (minLen:3 OK), Age=5 (min OK) -> all rules pass.
+			results[idx] = Struct(&raStatic{Name: "abcd", Age: 5}).Validate()
+		}(i)
+	}
+	wg.Wait()
+
+	// all goroutines must agree the value is valid; shared template rules stay clean.
+	for i := 0; i < n; i++ {
+		assert.True(t, results[i], "goroutine %d must report valid", i)
+	}
+
+	// a fresh validation of an invalid value still fails -> template not polluted.
+	assert.False(t, Struct(&raStatic{Name: "ab", Age: 0}).Validate())
+}

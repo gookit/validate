@@ -221,9 +221,19 @@ func (d *StructData) instantiateStatic(v *Validation) {
 	// time (string->typed). Sharing the template's args slice would corrupt the
 	// template / race across instances, so each instance gets a fresh copy.
 	if len(tpl.rules) > 0 {
+		// keep this instance's OWN backing array (cap=len) so Reset/复用 + AddRule
+		// re-append never overwrites the shared template backing array.
 		v.rules = make([]*Rule, 0, len(tpl.rules))
 		for _, tr := range tpl.rules {
-			v.rules = append(v.rules, cloneRule(tr))
+			if tr.argsReady {
+				// argsReady 模板规则在校验期完全只读(valueValidate 跳过 convertArgsType,
+				// 全仓库无任何校验期对 Rule 字段的写入),直接共享模板 *Rule 指针,免每实例
+				// cloneRule 分配;跨实例/跨 goroutine 共享安全。
+				v.rules = append(v.rules, tr)
+			} else {
+				// 非 argsReady 规则运行期仍会原地转换 args,每实例必须独立拷贝。
+				v.rules = append(v.rules, cloneRule(tr))
+			}
 		}
 	}
 
