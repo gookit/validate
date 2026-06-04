@@ -11,7 +11,7 @@ import (
 	"github.com/gookit/filter"
 	"github.com/gookit/goutil/reflects"
 	"github.com/gookit/goutil/strutil"
-	"github.com/gookit/validate/internal/reflectx"
+	"github.com/gookit/validate/v2/internal/reflectx"
 )
 
 // NilObject represent nil value for calling functions and should be reflected at custom filters as nil variable.

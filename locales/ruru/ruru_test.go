@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/gookit/goutil/testutil/assert"
-	"github.com/gookit/validate"
+	"github.com/gookit/validate/v2"
 )
 
 func TestRegister(t *testing.T) {

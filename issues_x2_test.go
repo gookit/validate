@@ -7,10 +7,10 @@ import (
 
 	"github.com/gookit/goutil/dump"
 	"github.com/gookit/goutil/testutil/assert"
-	"github.com/gookit/validate"
+	"github.com/gookit/validate/v2"
 )
 
-// https://github.com/gookit/validate/issues/227
+// https://github.com/gookit/validate/v2/issues/227
 // 一个 key 包含多个上传文件时，除了第一个文件，其他文件被丢弃，导致 BindSafeData 行为非预期
 func Test_Issue227(t *testing.T) {
 	type UserForm struct {
@@ -37,9 +37,9 @@ func Test_Issue227(t *testing.T) {
 	dump.P(u)
 }
 
-// https://github.com/gookit/validate/issues/259 Embedded structs are not validated properly #259
+// https://github.com/gookit/validate/v2/issues/259 Embedded structs are not validated properly #259
 
-// https://github.com/gookit/validate/issues/272 eqField对于指针类型数据无法正确校验
+// https://github.com/gookit/validate/v2/issues/272 eqField对于指针类型数据无法正确校验
 func Test_Issue272(t *testing.T) {
 	type T272 struct {
 		FieldA *string `validate:"required"`
@@ -76,7 +76,7 @@ func Test_Issue272(t *testing.T) {
 
 }
 
-// https://github.com/gookit/validate/issues/316
+// https://github.com/gookit/validate/v2/issues/316
 // The int validator failed to validate a number exceeds the range of int64
 func Test_Issue316(t *testing.T) {
 	data := []byte(`{"value": 9223372036854775807}`)

@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/gookit/validate/internal/reflectx"
+	"github.com/gookit/validate/v2/internal/reflectx"
 )
 
 // Basic regular expressions for validating strings.

@@ -1,6 +1,6 @@
 package zhcn
 
-import "github.com/gookit/validate"
+import "github.com/gookit/validate/v2"
 
 // Name language name
 const Name = "zh-CN"

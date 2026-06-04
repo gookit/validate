@@ -2,7 +2,7 @@
 //
 // Source code and other details for the project are available at GitHub:
 //
-//	https://github.com/gookit/validate
+//	https://github.com/gookit/validate/v2
 package validate
 
 import (

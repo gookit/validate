@@ -14,8 +14,8 @@ import (
 	"github.com/gookit/goutil/testutil/assert"
 	"github.com/gookit/goutil/timex"
 
-	"github.com/gookit/validate"
-	"github.com/gookit/validate/locales/zhcn"
+	"github.com/gookit/validate/v2"
+	"github.com/gookit/validate/v2/locales/zhcn"
 )
 
 func TestIssue_2(t *testing.T) {
@@ -59,7 +59,7 @@ func TestIssue_2(t *testing.T) {
 	assert.ErrMsg(t, err, `strconv.ParseFloat: parsing "abc": invalid syntax`)
 }
 
-// https://github.com/gookit/validate/issues/19
+// https://github.com/gookit/validate/v2/issues/19
 func TestIssues_19(t *testing.T) {
 	is := assert.New(t)
 
@@ -107,7 +107,7 @@ func TestIssues_19(t *testing.T) {
 	is.Equal("13677778888", req1.Phone)
 }
 
-// https://github.com/gookit/validate/issues/20
+// https://github.com/gookit/validate/v2/issues/20
 func TestIssues_20(t *testing.T) {
 	is := assert.New(t)
 	type setProfileReq struct {
@@ -140,7 +140,7 @@ func TestIssues_20(t *testing.T) {
 	is.Equal("avatar must be a valid full URL address", v.Errors.One())
 }
 
-// https://github.com/gookit/validate/issues/22
+// https://github.com/gookit/validate/v2/issues/22
 func TestIssues_22(t *testing.T) {
 	type userInfo0 struct {
 		Nickname string `validate:"minLen:6" message:"OO! nickname min len is 6"`
@@ -150,7 +150,7 @@ func TestIssues_22(t *testing.T) {
 	is := assert.New(t)
 	u0 := &userInfo0{
 		Nickname: "tom",
-		Avatar:   "https://github.com/gookit/validate/issues/22",
+		Avatar:   "https://github.com/gookit/validate/v2/issues/22",
 	}
 	v := validate.Struct(u0)
 	is.False(v.Validate())
@@ -179,7 +179,7 @@ func TestIssues_22(t *testing.T) {
 	is.Equal("OO! nickname min len is 6", v.Errors.FieldOne("Nickname"))
 }
 
-// https://github.com/gookit/validate/issues/30
+// https://github.com/gookit/validate/v2/issues/30
 func TestIssues_30(t *testing.T) {
 	v := validate.JSON(`{
    "cost_type": 10
@@ -191,7 +191,7 @@ func TestIssues_30(t *testing.T) {
 	assert.Len(t, v.Errors, 0)
 }
 
-// https://github.com/gookit/validate/issues/34
+// https://github.com/gookit/validate/v2/issues/34
 func TestIssues_34(t *testing.T) {
 	type STATUS int32
 	var s1 STATUS = 1
@@ -255,7 +255,7 @@ func (f issues36Form) Translates() map[string]string {
 	}
 }
 
-// https://github.com/gookit/validate/issues/36
+// https://github.com/gookit/validate/v2/issues/36
 func TestIssues36(t *testing.T) {
 	f := issues36Form{Age: 10, Name: "i am tom", Email: "adc@xx.com"}
 
@@ -267,7 +267,7 @@ func TestIssues36(t *testing.T) {
 	assert.Contains(t, v.Errors.String(), "年龄最少18岁")
 }
 
-// https://github.com/gookit/validate/issues/60
+// https://github.com/gookit/validate/v2/issues/60
 func TestIssues_60(t *testing.T) {
 	is := assert.New(t)
 	m := map[string]any{
@@ -284,7 +284,7 @@ func TestIssues_60(t *testing.T) {
 	is.Equal("自定义错误", v.Errors.One())
 }
 
-// https://github.com/gookit/validate/issues/64
+// https://github.com/gookit/validate/v2/issues/64
 // see validate.Enum()
 func TestPtrFieldValidation(t *testing.T) {
 	type Foo struct {
@@ -432,7 +432,7 @@ type User3 struct {
 	In2 *Info2 `validate:"required"`
 }
 
-// https://github.com/gookit/validate/issues/58
+// https://github.com/gookit/validate/v2/issues/58
 func TestStructNested(t *testing.T) {
 	// anonymous field test
 	age := 3
@@ -518,7 +518,7 @@ func TestStructNested_gt2level(t *testing.T) {
 	assert.Equal(t, "some@163.com", u.In2.Sub.Email)
 }
 
-// https://github.com/gookit/validate/issues/76
+// https://github.com/gookit/validate/v2/issues/76
 func TestIssues_76(t *testing.T) {
 	type CategoryReq struct {
 		Name string
@@ -551,7 +551,7 @@ func TestIssues_76(t *testing.T) {
 	assert.True(t, ok)
 }
 
-// https://github.com/gookit/validate/issues/78
+// https://github.com/gookit/validate/v2/issues/78
 func TestIssue_78(t *testing.T) {
 	type UserDto struct {
 		Name string `validate:"required"`
@@ -624,7 +624,7 @@ func TestIssues_I3B3AV(t *testing.T) {
 	assert.True(t, v.Validate())
 }
 
-// https://github.com/gookit/validate/issues/92
+// https://github.com/gookit/validate/v2/issues/92
 func TestIssues_92(t *testing.T) {
 	m := map[string]any{
 		"t": 1.1,
@@ -637,7 +637,7 @@ func TestIssues_92(t *testing.T) {
 	assert.True(t, ok)
 }
 
-// https://github.com/gookit/validate/issues/98
+// https://github.com/gookit/validate/v2/issues/98
 func TestIssues_98(t *testing.T) {
 	// MenuActionResource 菜单动作关联资源对象
 	type MenuActionResource struct {
@@ -694,7 +694,7 @@ func TestIssues_98(t *testing.T) {
 	assert.True(t, ok)
 }
 
-// https://github.com/gookit/validate/issues/103
+// https://github.com/gookit/validate/v2/issues/103
 func TestIssues_103(t *testing.T) {
 	type Example struct {
 		SomeID string `validate:"required"`
@@ -748,7 +748,7 @@ func (d Issue104Demo) ConfigValidation(v *validate.Validation) {
 	})
 }
 
-// https://github.com/gookit/validate/issues/104
+// https://github.com/gookit/validate/v2/issues/104
 func TestIssues_104(t *testing.T) {
 	d := &Issue104Demo{
 		Issue104A: Issue104A{
@@ -777,7 +777,7 @@ func TestIssues_104(t *testing.T) {
 	assert.True(t, ok)
 }
 
-// https://github.com/gookit/validate/issues/107
+// https://github.com/gookit/validate/v2/issues/107
 func TestIssues_107(t *testing.T) {
 	taFilter := func(val any) int64 {
 		if val != nil {
@@ -809,7 +809,7 @@ func TestIssues_107(t *testing.T) {
 	assert.Equal(t, int64(12), v.SafeVal("tip_amount"))
 }
 
-// https://github.com/gookit/validate/issues/111
+// https://github.com/gookit/validate/v2/issues/111
 func TestIssues_111(t *testing.T) {
 	v := validate.New(map[string]any{
 		"username":  "inhere",
@@ -830,7 +830,7 @@ func TestIssues_111(t *testing.T) {
 	assert.Contains(t, v.Errors.String(), " 重复密码")
 }
 
-// https://github.com/gookit/validate/issues/120
+// https://github.com/gookit/validate/v2/issues/120
 func TestIssues_120(t *testing.T) {
 	type ThirdStruct struct {
 		Val string `json:"val" validate:"required"`
@@ -859,7 +859,7 @@ func TestIssues_120(t *testing.T) {
 	// dump.Println(v.Errors)
 }
 
-// https://github.com/gookit/validate/issues/124
+// https://github.com/gookit/validate/v2/issues/124
 // Validate array/slice items #124
 func TestIssue_124(t *testing.T) {
 	m := map[string]any{
@@ -896,7 +896,7 @@ func TestIssue_124(t *testing.T) {
 	// }
 }
 
-// https://github.com/gookit/validate/issues/125
+// https://github.com/gookit/validate/v2/issues/125
 func TestIssue_125(t *testing.T) {
 	defer validate.ResetOption()
 
@@ -922,7 +922,7 @@ func TestIssue_125(t *testing.T) {
 	assert.True(t, v2.Validate())
 }
 
-// https://github.com/gookit/validate/issues/135
+// https://github.com/gookit/validate/v2/issues/135
 func TestIssue_135(t *testing.T) {
 	type SubjectCreateReq struct {
 		Title       string `json:"title" validate:"required|minLen:2|maxLen:512"`           // 题目名称
@@ -958,7 +958,7 @@ func TestIssue_135(t *testing.T) {
 	assert.Equal(t, "answer.0.score min value is 0.1", v.Errors.OneError().Error())
 }
 
-// https://github.com/gookit/validate/issues/140
+// https://github.com/gookit/validate/v2/issues/140
 func TestIssue_140(t *testing.T) {
 	type Test struct {
 		Field1 string
@@ -979,7 +979,7 @@ func TestIssue_140(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-// https://github.com/gookit/validate/issues/143
+// https://github.com/gookit/validate/v2/issues/143
 func TestIssue_143(t *testing.T) {
 	type Data struct {
 		Name string `validate:"required"`
@@ -1082,7 +1082,7 @@ func TestIssue_143(t *testing.T) {
 	assert.Equal(t, "", v.Errors.One())
 }
 
-// https://github.com/gookit/validate/issues/148
+// https://github.com/gookit/validate/v2/issues/148
 func TestIssues_148(t *testing.T) {
 	type A struct {
 		T1 string `validate:"required"`
@@ -1114,7 +1114,7 @@ func TestIssues_148(t *testing.T) {
 	assert.False(t, v.IsOK())
 }
 
-// https://github.com/gookit/validate/issues/152
+// https://github.com/gookit/validate/v2/issues/152
 func TestIssue_152(t *testing.T) {
 	old := validate.CopyGlobalMessages()
 	defer func() {
@@ -1152,13 +1152,13 @@ func TestIssue_152(t *testing.T) {
 	assert.Equal(t, `当 类型 不为 [1] 时 数据 不能为空。`, v.Errors.One())
 }
 
-// https://github.com/gookit/validate/issues/156
+// https://github.com/gookit/validate/v2/issues/156
 func TestIssues_156(t *testing.T) {
 	assert.True(t, validate.IsEmail("abc.88@qq.com"))
 	assert.True(t, validate.IsEmail("xxxx.88@qq.com"))
 }
 
-// https://github.com/gookit/validate/issues/157
+// https://github.com/gookit/validate/v2/issues/157
 func TestIssues_157(t *testing.T) {
 	type SubsrcSubmitReq struct {
 		StockCode string `json:"stock_code" validate:"required|maxLen:20" filter:"trim"`
@@ -1180,7 +1180,7 @@ func TestIssues_157(t *testing.T) {
 	// dump.Println(req, v.Errors)
 }
 
-// https://github.com/gookit/validate/issues/159
+// https://github.com/gookit/validate/v2/issues/159
 func TestIssues_159(t *testing.T) {
 	type TestStruct struct {
 		Start string `json:"start" validate:"date|minLen:10"`
@@ -1199,7 +1199,7 @@ func TestIssues_159(t *testing.T) {
 	assert.Equal(t, "end value should be greater or equal to the field start", v.Errors.One())
 }
 
-// https://github.com/gookit/validate/issues/160
+// https://github.com/gookit/validate/v2/issues/160
 func TestIssues_160(t *testing.T) {
 	type User struct {
 		Email string `json:"email" validate:"required|email" message:"required:eamil必填的信息|email:邮箱验证失败的信息"`
@@ -1247,7 +1247,7 @@ func (gs Foo172) ConfigValidation(v *validate.Validation) {
 	v.StringRule("Domains.*", "", "trimStrings")
 }
 
-// https://github.com/gookit/validate/issues/172
+// https://github.com/gookit/validate/v2/issues/172
 func TestIssues_172(t *testing.T) {
 	f := Foo172{
 		Domains: []string{"   test.com   ", "oof.com", " foobar.com"},
@@ -1262,7 +1262,7 @@ func TestIssues_172(t *testing.T) {
 	assert.Equal(t, []string{"test.com", "oof.com", "foobar.com"}, f.Domains)
 }
 
-// https://github.com/gookit/validate/issues/192
+// https://github.com/gookit/validate/v2/issues/192
 // v1.4.6 change has broken existing behaviour #192
 func TestIssues_192(t *testing.T) {
 	type Request struct {
@@ -1305,7 +1305,7 @@ func TestIssues_192(t *testing.T) {
 	})
 }
 
-// https://github.com/gookit/validate/issues/206
+// https://github.com/gookit/validate/v2/issues/206
 func TestIssues_206(t *testing.T) {
 	m := map[string]any{
 		"name":  "inhere",
@@ -1338,7 +1338,7 @@ func TestIssues_206(t *testing.T) {
 	assert.StrContains(t, v.Errors.String(), "origins.*.name must be a valid full URL address")
 }
 
-// https://github.com/gookit/validate/issues/209
+// https://github.com/gookit/validate/v2/issues/209
 func TestIssues_209(t *testing.T) {
 	mp := make(map[string]any)
 	err := jsonutil.DecodeString(`{
@@ -1379,7 +1379,7 @@ func TestIssues_209(t *testing.T) {
 	assert.StrContains(t, v.Errors.String(), "cpt.*.billing_provider is required to not be empty")
 }
 
-// https://github.com/gookit/validate/issues/213
+// https://github.com/gookit/validate/v2/issues/213
 func TestIssues_213(t *testing.T) {
 	type Person struct {
 		Name string `json:"name" validate:"required"`
@@ -1406,7 +1406,7 @@ func TestIssues_213(t *testing.T) {
 	assert.StrContains(t, v.Errors.String(), "age is required to not be empty")
 }
 
-// https://github.com/gookit/validate/issues/217
+// https://github.com/gookit/validate/v2/issues/217
 func TestIssues_217(t *testing.T) {
 	type Sample struct {
 		Val *bool `validate:"required"`
@@ -1441,7 +1441,7 @@ func TestIssues_217(t *testing.T) {
 
 }
 
-// https://github.com/gookit/validate/issues/221
+// https://github.com/gookit/validate/v2/issues/221
 func TestIssues_221(t *testing.T) {
 	m := map[string]any{
 		"clinics": []map[string]any{
@@ -1483,7 +1483,7 @@ func TestIssues_221(t *testing.T) {
 	}
 }
 
-// https://github.com/gookit/validate/issues/223
+// https://github.com/gookit/validate/v2/issues/223
 func TestIssues_223(t *testing.T) {
 	m := map[string]any{
 		"clinics": []map[string]any{
@@ -1523,7 +1523,7 @@ func TestIssues_223(t *testing.T) {
 	assert.StrContains(t, s, "clinics.*.doctors.*.duration value must be an integer")
 }
 
-// https://github.com/gookit/validate/issues/242
+// https://github.com/gookit/validate/v2/issues/242
 // requiredWithoutAll tag is not work with struct validation
 func TestIssues_242(t *testing.T) {
 	type RequiredWithoutAll struct {
@@ -1540,7 +1540,7 @@ func TestIssues_242(t *testing.T) {
 	assert.StrContains(t, s, "ID field is required when none of [NewID] are present")
 }
 
-// https://github.com/gookit/validate/issues/245
+// https://github.com/gookit/validate/v2/issues/245
 // required_if 中，当指定的 anotherField 为 uint8 类型时，校验失效
 func TestIssues_245(t *testing.T) {
 	type MyStruct struct {
@@ -1578,7 +1578,7 @@ func (r *CertStore) Rules() map[string]string {
 	}
 }
 
-// https://github.com/gookit/validate/issues/246
+// https://github.com/gookit/validate/v2/issues/246
 // 使用 uint filter时，传 null 值会报错 convert value type error
 func TestIssues_246(t *testing.T) {
 	jsonStr := `{
@@ -1609,7 +1609,7 @@ type TestUser struct {
 	TestOptionalUUID *mockUUID // **Problem LINE**
 }
 
-// https://github.com/gookit/validate/issues/247
+// https://github.com/gookit/validate/v2/issues/247
 // Pointer of UUID will break the Validate() function
 func TestIssues_247(t *testing.T) {
 	str := "    Optional String   "
@@ -1641,7 +1641,7 @@ func TestIssues_247(t *testing.T) {
 	fmt.Println(v.Errors)
 }
 
-// https://github.com/gookit/validate/issues/250
+// https://github.com/gookit/validate/v2/issues/250
 // Does not work with *int ?
 func TestIssues_250(t *testing.T) {
 	type Salary struct {
@@ -1702,7 +1702,7 @@ type DataIssues252 struct {
 	PtrStrings *[]string `validate:"strings"`
 }
 
-// https://github.com/gookit/validate/issues/252
+// https://github.com/gookit/validate/v2/issues/252
 // Panic when validating struct with nil pointer to a slice field
 func TestIssues_252(t *testing.T) {
 	v := validate.New(&DataIssues252{})
@@ -1711,7 +1711,7 @@ func TestIssues_252(t *testing.T) {
 	assert.True(t, ok)
 }
 
-// https://github.com/gookit/validate/issues/255
+// https://github.com/gookit/validate/v2/issues/255
 // Error when using custom filter with pointer to slice of strings #255
 func TestIssues_255(t *testing.T) {
 	type Request struct {
@@ -1758,7 +1758,7 @@ func TestIssues_255(t *testing.T) {
 	})
 }
 
-// https://github.com/gookit/validate/issues/276
+// https://github.com/gookit/validate/v2/issues/276
 // Struct validation: invalid memory address or nil pointer dereference #276
 func TestIssues_276(t *testing.T) {
 	type user struct {
@@ -1776,7 +1776,7 @@ func TestIssues_276(t *testing.T) {
 	fmt.Println(v.Errors.Field("Age")) // returns error messages of the field
 }
 
-// https://github.com/gookit/validate/issues/280 can not validate uuid field
+// https://github.com/gookit/validate/v2/issues/280 can not validate uuid field
 func TestIssues_280(t *testing.T) {
 	type TestData struct {
 		ID mockUUID
@@ -1805,7 +1805,7 @@ type ExtraInfoJSON struct {
 	Status1 int    `json:"status1" validate:"required|int"`
 }
 
-// http://github.com/gookit/validate/issues/297 Nested JSON tag paths are not respected
+// http://github.com/gookit/validate/v2/issues/297 Nested JSON tag paths are not respected
 func TestIssue_297(t *testing.T) {
 	v := validate.New(WithArray{
 		Extras: []ExtraInfo{
@@ -1848,7 +1848,7 @@ func TestIssue_297(t *testing.T) {
 	assert.Equal(t, "extras.0.github", firstKeyJSON)
 }
 
-// http://github.com/gookit/validate/issues/272 eqField does not correctly validate pointer type data
+// http://github.com/gookit/validate/v2/issues/272 eqField does not correctly validate pointer type data
 func TestIssue_272(t *testing.T) {
 	type Test struct {
 		FieldA *string `validate:"required"`
@@ -1877,7 +1877,7 @@ func TestIssue_272(t *testing.T) {
 	})
 }
 
-// http://github.com/gookit/validate/issues/301 Regex pipe escape
+// http://github.com/gookit/validate/v2/issues/301 Regex pipe escape
 func TestIssue_301(t *testing.T) {
 	v := validate.Map(map[string]any{
 		"field":   "abc.json",
@@ -1892,7 +1892,7 @@ func TestIssue_301(t *testing.T) {
 	assert.True(t, v.Validate())
 }
 
-// http://github.com/gookit/validate/issues/302 The required rule fails for int/uint values when the value is 0.
+// http://github.com/gookit/validate/v2/issues/302 The required rule fails for int/uint values when the value is 0.
 func TestIssue_302(t *testing.T) {
 	v := validate.Map(map[string]any{
 		"required":             0,
@@ -1951,7 +1951,7 @@ func TestIssue_328(t *testing.T) {
 	})
 }
 
-// https://github.com/gookit/validate/issues/334
+// https://github.com/gookit/validate/v2/issues/334
 //
 // requiredIf used to skip the check whenever the rule's destination
 // field was a pointer: reflect.ValueOf(*bool).Kind() == reflect.Pointer

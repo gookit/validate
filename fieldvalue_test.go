@@ -6,7 +6,7 @@ import (
 
 	"github.com/gookit/goutil/x/assert"
 
-	"github.com/gookit/validate/internal/fieldval"
+	"github.com/gookit/validate/v2/internal/fieldval"
 )
 
 func ptrOf[T any](v T) *T { return &v }

@@ -12,7 +12,7 @@ import (
 
 	"github.com/gookit/goutil/dump"
 	"github.com/gookit/goutil/testutil/assert"
-	"github.com/gookit/validate/internal/reflectx"
+	"github.com/gookit/validate/v2/internal/reflectx"
 )
 
 // func TestMain(m *testing.M) {

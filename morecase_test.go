@@ -8,7 +8,7 @@ import (
 
 	"github.com/gookit/goutil/dump"
 	"github.com/gookit/goutil/testutil/assert"
-	"github.com/gookit/validate"
+	"github.com/gookit/validate/v2"
 )
 
 func TestValidation_custom_type(t *testing.T) {

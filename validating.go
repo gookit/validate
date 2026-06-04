@@ -8,8 +8,8 @@ import (
 
 	"github.com/gookit/goutil/maputil"
 	"github.com/gookit/goutil/strutil"
-	"github.com/gookit/validate/internal/fieldval"
-	"github.com/gookit/validate/internal/reflectx"
+	"github.com/gookit/validate/v2/internal/fieldval"
+	"github.com/gookit/validate/v2/internal/reflectx"
 )
 
 // valToString coerces a field value to string for the string validators in the
