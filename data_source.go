@@ -233,7 +233,16 @@ func (d *StructData) Validation(err ...error) *Validation { return d.Create(err.
 //
 //nolint:forcetypeassert
 func (d *StructData) Create(err ...error) *Validation {
-	v := NewValidation(d)
+	return d.createInto(NewValidation(d), err...)
+}
+
+// createInto assembles the StructData rules/config onto the GIVEN Validation
+// instance (which must already have v.data == d). Split out from Create so the
+// opt-in Factory can assemble onto a pooled instance, while the default path
+// (Create -> NewValidation) stays byte-for-byte identical.
+//
+//nolint:forcetypeassert
+func (d *StructData) createInto(v *Validation, err ...error) *Validation {
 	if len(err) > 0 && err[0] != nil {
 		return v.WithError(err[0])
 	}
