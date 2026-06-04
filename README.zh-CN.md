@@ -179,6 +179,38 @@ func main() {
 }
 ```
 
+### 子结构体(嵌套)验证
+
+默认情况下(`CheckSubOnParentMarked=true`),**具名**子结构体字段
+(`struct` / `*struct` / slice-of-struct / map-of-struct)**只有带 `validate` tag 时才会被下探**收集其内部规则。
+tag 的**值可为空** —— `validate:""` 即可作为标记;完全没有 `validate` tag 的具名字段**不会被下探**。
+这是 Java `@Valid` 风格的「按需级联」,避免无意义地递归整棵结构体。
+
+**匿名嵌入结构体豁免**:`type Bar struct { Foo }` 这种匿名嵌入(字段被提升、属父结构体的一部分)
+**始终级联**,无需 tag;只有**具名**嵌套字段需要标记。
+
+```go
+type Address struct {
+    City string `validate:"required"`
+}
+type User struct {
+    Name string  `validate:"required"`
+    Home Address `validate:"required"` // 有 tag → 下探,校验 Home.City
+    Work Address `validate:""`         // 空 tag 也算标记 → 下探
+    Temp Address                       // 无 tag → 不下探,Temp.City 被忽略
+}
+```
+
+如需全局恢复 v1 的「无条件级联」行为:
+
+```go
+validate.Config(func(o *validate.GlobalOption) {
+	o.CheckSubOnParentMarked = false
+})
+```
+
+> 关于此行为变更的更多说明,请参阅[升级指南](docs/UPGRADE-v2.md)。
+
 ## 验证`Map`数据
 
 ```go
@@ -593,6 +625,64 @@ func main() {
 
 	ok := v.Validate()
 	assert.False(t, ok)
+```
+
+### 注册自定义类型(`AddCustomType`)
+
+对于自定义/包装类型(如 `sql.NullString`),可以注册一个「底层值提取器」。提取后的值会
+照常走现有的 `required` / 数值比较 / 长度 / 字符串校验路径,如同它本来就是个普通值。
+对标 go-playground/validator 的 `RegisterCustomTypeFunc`。
+
+- 签名 `AddCustomType(fn CustomTypeFunc, types ...any)`,其中
+  `type CustomTypeFunc func(field reflect.Value) any`。
+- 提取器返回 `nil` 表示「空/未设置」(此时 `required` 会失败)。
+- 按样例的精确 `reflect.Type` 匹配,**不自动解指针**:传 `sql.NullString{}` 只匹配值类型;
+  若要同时匹配 `*sql.NullString`,需再传入 `&sql.NullString{}` 样例。
+- `ResetCustomTypes()` 清空注册表(测试/清理用)。
+- 未注册任何自定义类型时,校验热路径零额外开销。
+
+```go
+import (
+	"database/sql"
+	"reflect"
+
+	"github.com/gookit/validate/v2"
+)
+
+// 从 sql.NullString 提取底层字符串;无效则返回 nil(视为空)
+validate.AddCustomType(func(field reflect.Value) any {
+	ns := field.Interface().(sql.NullString)
+	if !ns.Valid {
+		return nil
+	}
+	return ns.String
+}, sql.NullString{})
+
+type Form struct {
+	Name sql.NullString `validate:"required|minLen:3"`
+}
+
+v := validate.Struct(&Form{Name: sql.NullString{Valid: true, String: "inhere"}})
+_ = v.Validate() // true:提取出 "inhere" 后按 required|minLen:3 校验
+```
+
+### 池化工厂(`NewFactory`)
+
+当你需要大批量校验**同类型**数据时,可以用 opt-in 的 `Factory` 从池中复用 `*Validation`
+实例,摊销构造成本(复用场景 allocs 约减半:11 vs 23)。`Struct` / `Map` / `New` 的默认
+行为与生命周期**完全不变** —— 只有显式使用 `Factory` 的调用方才会走池化路径。
+
+> **必须**调用 `v.Release()` 把实例归还到池,且 `Release()` 之后**不要**再使用该实例。
+> `Release()` 对非工厂来源的实例是安全的 no-op。
+
+```go
+f := validate.NewFactory()
+for i := range users {
+	v := f.Struct(&users[i]) // 从池中取复用实例 + 复用类型元数据
+	v.Validate()
+	// ... 使用 v.Errors / v.SafeData() ...
+	v.Release() // Reset 后归还到池
+}
 ```
 
 ## 在gin框架中使用

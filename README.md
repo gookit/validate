@@ -184,6 +184,42 @@ func main() {
 }
 ```
 
+### Sub-struct (nested) validation
+
+By default (`CheckSubOnParentMarked=true`), a **named** sub-struct field
+(`struct` / `*struct` / slice-of-struct / map-of-struct) is descended into to
+collect its inner rules **only when it carries a `validate` tag**. The tag
+**value may be empty** — `validate:""` is enough to mark the field. A named field
+with **no** `validate` tag at all is **not** descended into. This is the Java
+`@Valid` style of on-demand cascade, avoiding pointless recursion through the
+whole struct tree.
+
+**Anonymous embedded structs are exempt**: `type Bar struct { Foo }` (the field
+is promoted and is part of the parent) **always cascades**, no tag needed. Only
+**named** nested fields need the marker.
+
+```go
+type Address struct {
+    City string `validate:"required"`
+}
+type User struct {
+    Name string  `validate:"required"`
+    Home Address `validate:"required"` // has tag -> descend, validates Home.City
+    Work Address `validate:""`         // empty tag is also a marker -> descend
+    Temp Address                       // no tag -> not descended, Temp.City ignored
+}
+```
+
+To restore v1's unconditional cascade behaviour globally:
+
+```go
+validate.Config(func(o *validate.GlobalOption) {
+	o.CheckSubOnParentMarked = false
+})
+```
+
+> See the [upgrade guide](docs/UPGRADE-v2.md) for more on this behaviour change.
+
 ## Validate Map
 
 You can also validate a MAP data directly.
@@ -659,6 +695,70 @@ However, note that the validator name must start with `required`, e.g. `required
 
 	ok := v.Validate()
 	assert.False(t, ok)
+```
+
+### Register Custom Type (`AddCustomType`)
+
+For wrapper / custom types (such as `sql.NullString`) you can register an
+"underlying value extractor". After extraction the value goes through the
+existing `required` / comparison / length / string validation paths, exactly as
+if it were a plain value. This is the counterpart of go-playground/validator's
+`RegisterCustomTypeFunc`.
+
+- `AddCustomType(fn CustomTypeFunc, types ...any)`, where
+  `type CustomTypeFunc func(field reflect.Value) any`.
+- Returning `nil` from the extractor means "empty / unset" (so `required` fails).
+- Matching is by the sample's exact `reflect.Type` and does **not** auto-deref
+  pointers: pass `sql.NullString{}` to match the value type; pass
+  `&sql.NullString{}` too if you also want to match the pointer.
+- `ResetCustomTypes()` clears the registry (for tests / cleanup).
+- Zero overhead on the validation hot path when no custom type is registered.
+
+```go
+import (
+	"database/sql"
+	"reflect"
+
+	"github.com/gookit/validate/v2"
+)
+
+// extract the underlying string from sql.NullString; nil when invalid (= empty)
+validate.AddCustomType(func(field reflect.Value) any {
+	ns := field.Interface().(sql.NullString)
+	if !ns.Valid {
+		return nil
+	}
+	return ns.String
+}, sql.NullString{})
+
+type Form struct {
+	Name sql.NullString `validate:"required|minLen:3"`
+}
+
+v := validate.Struct(&Form{Name: sql.NullString{Valid: true, String: "inhere"}})
+_ = v.Validate() // true: extracted "inhere" then checked by required|minLen:3
+```
+
+### Pooled Factory (`NewFactory`)
+
+When you validate large batches of the **same type**, an opt-in `Factory` reuses
+`*Validation` instances from a pool to amortize the construction cost (about half
+the allocs in the reuse path: 11 vs 23). The default behaviour and lifecycle of
+`Struct` / `Map` / `New` are **unchanged** — only callers who explicitly use a
+`Factory` get pooling.
+
+> You **must** call `v.Release()` to return the instance to the pool, and must
+> **not** use it after `Release()`. `Release()` is a safe no-op for non-factory
+> instances.
+
+```go
+f := validate.NewFactory()
+for i := range users {
+	v := f.Struct(&users[i]) // pooled instance + cached type meta
+	v.Validate()
+	// ... use v.Errors / v.SafeData() ...
+	v.Release() // reset + return to the pool
+}
 ```
 
 ## Use on gin framework
