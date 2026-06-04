@@ -1,0 +1,60 @@
+goos: linux
+goarch: amd64
+pkg: github.com/gookit/validate/v2
+cpu: Intel(R) Core(TM) i7-14700KF
+BenchmarkFieldSuccess-28            	1000000000	         0.8271 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFieldSuccess-28            	1000000000	         0.8254 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFieldSuccess-28            	1000000000	         0.8261 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFieldSuccess-28            	1000000000	         0.8239 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFieldSuccess-28            	1000000000	         0.8244 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFieldSuccess-28            	1000000000	         0.8233 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFieldSuccessParallel-28    	1000000000	         0.08792 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFieldSuccessParallel-28    	1000000000	         0.1084 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFieldSuccessParallel-28    	1000000000	         0.1098 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFieldSuccessParallel-28    	1000000000	         0.1167 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFieldSuccessParallel-28    	1000000000	         0.1098 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFieldSuccessParallel-28    	1000000000	         0.1528 ns/op	       0 B/op	       0 allocs/op
+BenchmarkStructFlat-28              	  588056	      1900 ns/op	    1830 B/op	      23 allocs/op
+BenchmarkStructFlat-28              	  605982	      1911 ns/op	    1833 B/op	      23 allocs/op
+BenchmarkStructFlat-28              	  612069	      1903 ns/op	    1832 B/op	      23 allocs/op
+BenchmarkStructFlat-28              	  614859	      1910 ns/op	    1830 B/op	      23 allocs/op
+BenchmarkStructFlat-28              	  613196	      1898 ns/op	    1831 B/op	      23 allocs/op
+BenchmarkStructFlat-28              	  614571	      1902 ns/op	    1831 B/op	      23 allocs/op
+BenchmarkStructNested-28            	  669710	      1756 ns/op	    1880 B/op	      24 allocs/op
+BenchmarkStructNested-28            	  653460	      1755 ns/op	    1880 B/op	      24 allocs/op
+BenchmarkStructNested-28            	  663940	      1760 ns/op	    1880 B/op	      24 allocs/op
+BenchmarkStructNested-28            	  677652	      1762 ns/op	    1880 B/op	      24 allocs/op
+BenchmarkStructNested-28            	  658690	      1755 ns/op	    1880 B/op	      24 allocs/op
+BenchmarkStructNested-28            	  645495	      1757 ns/op	    1880 B/op	      24 allocs/op
+BenchmarkStructSliceOfStruct-28     	  108073	     11051 ns/op	   10424 B/op	     208 allocs/op
+BenchmarkStructSliceOfStruct-28     	  107360	     11105 ns/op	   10424 B/op	     208 allocs/op
+BenchmarkStructSliceOfStruct-28     	  108487	     11097 ns/op	   10424 B/op	     208 allocs/op
+BenchmarkStructSliceOfStruct-28     	  108232	     11113 ns/op	   10424 B/op	     208 allocs/op
+BenchmarkStructSliceOfStruct-28     	  108535	     11075 ns/op	   10424 B/op	     208 allocs/op
+BenchmarkStructSliceOfStruct-28     	  108732	     11113 ns/op	   10424 B/op	     208 allocs/op
+BenchmarkMapValidate-28             	  348820	      3423 ns/op	    3902 B/op	      72 allocs/op
+BenchmarkMapValidate-28             	  341440	      3437 ns/op	    3902 B/op	      72 allocs/op
+BenchmarkMapValidate-28             	  349377	      3419 ns/op	    3899 B/op	      72 allocs/op
+BenchmarkMapValidate-28             	  333190	      3423 ns/op	    3902 B/op	      72 allocs/op
+BenchmarkMapValidate-28             	  349778	      3426 ns/op	    3896 B/op	      72 allocs/op
+BenchmarkMapValidate-28             	  343510	      3430 ns/op	    3903 B/op	      72 allocs/op
+BenchmarkValValue-28                	 1599019	       744.6 ns/op	     528 B/op	      11 allocs/op
+BenchmarkValValue-28                	 1598065	       747.5 ns/op	     528 B/op	      11 allocs/op
+BenchmarkValValue-28                	 1615143	       741.6 ns/op	     527 B/op	      11 allocs/op
+BenchmarkValValue-28                	 1618610	       739.9 ns/op	     527 B/op	      11 allocs/op
+BenchmarkValValue-28                	 1620378	       742.5 ns/op	     527 B/op	      11 allocs/op
+BenchmarkValValue-28                	 1619092	       744.9 ns/op	     527 B/op	      11 allocs/op
+BenchmarkStructFirstParse-28        	 2519061	       480.2 ns/op	    1096 B/op	      16 allocs/op
+BenchmarkStructFirstParse-28        	 2509426	       479.3 ns/op	    1096 B/op	      16 allocs/op
+BenchmarkStructFirstParse-28        	 2445318	       485.1 ns/op	    1096 B/op	      16 allocs/op
+BenchmarkStructFirstParse-28        	 2523897	       480.7 ns/op	    1096 B/op	      16 allocs/op
+BenchmarkStructFirstParse-28        	 2516102	       480.2 ns/op	    1096 B/op	      16 allocs/op
+BenchmarkStructFirstParse-28        	 2524209	       477.4 ns/op	    1096 B/op	      16 allocs/op
+BenchmarkFactoryStructReuse-28      	  677205	      1661 ns/op	     917 B/op	      11 allocs/op
+BenchmarkFactoryStructReuse-28      	  704014	      1656 ns/op	     916 B/op	      11 allocs/op
+BenchmarkFactoryStructReuse-28      	  692926	      1657 ns/op	     917 B/op	      11 allocs/op
+BenchmarkFactoryStructReuse-28      	  701516	      1647 ns/op	     915 B/op	      11 allocs/op
+BenchmarkFactoryStructReuse-28      	  710694	      1653 ns/op	     917 B/op	      11 allocs/op
+BenchmarkFactoryStructReuse-28      	  700792	      1654 ns/op	     916 B/op	      11 allocs/op
+PASS
+ok  	github.com/gookit/validate/v2	64.545s
