@@ -7,7 +7,30 @@ import (
 	"strings"
 
 	"github.com/gookit/goutil/maputil"
+	"github.com/gookit/goutil/strutil"
 )
+
+// valToString coerces a field value to string for the string validators in the
+// callValidator switch (regexp/isJSON/isStringNumber). It must NOT panic: when
+// val is already a Go string it is returned byte-for-byte unchanged (fast path),
+// and named string types (Kind == String, e.g. `type MyStr string`) are read via
+// reflect so they no longer panic on the old val.(string) assertion. Other types
+// are coerced via strutil.ToString. The bool reports whether a usable string was
+// produced — false means the value can't be stringified, so the caller treats the
+// validation as failed instead of asserting val.(string) (which would panic).
+func valToString(val any) (string, bool) {
+	if s, ok := val.(string); ok {
+		return s, true
+	}
+	if val == nil {
+		return "", false
+	}
+	if rv := reflect.ValueOf(val); rv.Kind() == reflect.String {
+		return rv.String(), true
+	}
+	s, err := strutil.ToString(val)
+	return s, err == nil
+}
 
 // const requiredValidator = "required"
 
@@ -487,7 +510,9 @@ func callValidator(v *Validation, fm *funcMeta, field string, val any, args []an
 	case "isNumber":
 		ok = IsNumber(val)
 	case "isStringNumber":
-		ok = IsStringNumber(val.(string))
+		if s, sok := valToString(val); sok {
+			ok = IsStringNumber(s)
+		}
 	case "length":
 		ok = Length(val, args[0].(int))
 	case "minLength":
@@ -501,11 +526,15 @@ func callValidator(v *Validation, fm *funcMeta, field string, val any, args []an
 			ok = RuneLength(val, args[0].(int), args[1].(int))
 		}
 	case "regexp":
-		ok = Regexp(val.(string), args[0].(string))
+		if s, sok := valToString(val); sok {
+			ok = Regexp(s, args[0].(string))
+		}
 	case "between":
 		ok = Between(val, args[0], args[1])
 	case "isJSON":
-		ok = IsJSON(val.(string))
+		if s, sok := valToString(val); sok {
+			ok = IsJSON(s)
+		}
 	case "isSlice":
 		ok = IsSlice(val)
 	default:
