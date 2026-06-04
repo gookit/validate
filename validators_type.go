@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"strconv"
 
+	"github.com/gookit/goutil/mathutil"
 	"github.com/gookit/goutil/strutil"
 	"github.com/gookit/validate/v2/internal/reflectx"
 )
@@ -133,9 +134,8 @@ func IsInt(val any, minAndMax ...int64) (ok bool) {
 	}
 	val = reflectx.IndirectValue(val)
 
-	// TODO use mathutil.StrictInt
-	intVal, err := valueToInt64(val, true)
-	if err != nil {
+	intVal, valid := mathutil.StrictInt(val)
+	if !valid {
 		return false
 	}
 

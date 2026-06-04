@@ -73,24 +73,6 @@ func ExampleStruct() {
 	dump.P(v.Errors, u)
 }
 
-func TestUtil_Func_valueToInt64(t *testing.T) {
-	noErrTests := []struct {
-		val    any
-		strict bool
-		want   int64
-	}{
-		{" 12", false, 12},
-		{float32(12.23), false, 12},
-		{12.23, false, 12},
-	}
-
-	for _, item := range noErrTests {
-		i64, err := valueToInt64(item.val, item.strict)
-		assert.NoError(t, err)
-		assert.Equal(t, item.want, i64)
-	}
-}
-
 func TestUtil_Func_getVariadicKind(t *testing.T) {
 	noErrTests := []struct {
 		val  any

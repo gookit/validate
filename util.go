@@ -4,11 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"strconv"
 	"strings"
 	"unicode"
 
-	"github.com/gookit/filter"
+	"github.com/gookit/goutil/arrutil"
 	"github.com/gookit/goutil/reflects"
 	"github.com/gookit/goutil/strutil"
 	"github.com/gookit/validate/v2/internal/reflectx"
@@ -95,37 +94,16 @@ func splitRules(rules string) (ss []string) {
 	return
 }
 
-// TODO strutil.Split()
-func stringSplit(str, sep string) (ss []string) {
-	str = strings.TrimSpace(str)
-	if str == "" {
-		return
-	}
-
-	for _, val := range strings.Split(str, sep) {
-		if val = strings.TrimSpace(val); val != "" {
-			ss = append(ss, val)
-		}
-	}
-	return
+func stringSplit(str, sep string) []string {
+	return strutil.Split(str, sep)
 }
 
-// TODO use arrutil.StringsToAnys()
-func strings2Args(strings []string) []any {
-	args := make([]any, len(strings))
-	for i, s := range strings {
-		args[i] = s
-	}
-	return args
+func strings2Args(ss []string) []any {
+	return arrutil.StringsToAnys(ss)
 }
 
-// TODO use arrutil.SliceToStrings()
 func args2strings(args []any) []string {
-	strSlice := make([]string, len(args))
-	for i, a := range args {
-		strSlice[i] = strutil.QuietString(a)
-	}
-	return strSlice
+	return arrutil.SliceToStrings(args)
 }
 
 func buildArgs(val any, args []any) []any {
@@ -189,50 +167,6 @@ func ValueIsEmpty(v reflect.Value) bool {
 
 // ErrConvertFail error
 var ErrConvertFail = errors.New("convert value is failure")
-
-// TODO use mathutil.StrictInt
-func valueToInt64(v any, strict bool) (i64 int64, err error) {
-	switch tVal := v.(type) {
-	case string:
-		if strict {
-			return 0, ErrConvertFail
-		}
-		i64, err = strconv.ParseInt(filter.Trim(tVal), 10, 0)
-	case int:
-		i64 = int64(tVal)
-	case int8:
-		i64 = int64(tVal)
-	case int16:
-		i64 = int64(tVal)
-	case int32:
-		i64 = int64(tVal)
-	case int64:
-		i64 = tVal
-	case uint:
-		i64 = int64(tVal)
-	case uint8:
-		i64 = int64(tVal)
-	case uint16:
-		i64 = int64(tVal)
-	case uint32:
-		i64 = int64(tVal)
-	case uint64:
-		i64 = int64(tVal)
-	case float32:
-		if strict {
-			return 0, ErrConvertFail
-		}
-		i64 = int64(tVal)
-	case float64:
-		if strict {
-			return 0, ErrConvertFail
-		}
-		i64 = int64(tVal)
-	default:
-		err = ErrConvertFail
-	}
-	return
-}
 
 // CalcLength for input value
 func CalcLength(val any) int {
