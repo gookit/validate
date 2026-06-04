@@ -1,6 +1,6 @@
 module github.com/gookit/validate
 
-go 1.19
+go 1.21
 
 require (
 	github.com/gookit/filter v1.2.3
