@@ -121,14 +121,17 @@ validate.Between(2.9, 1, 2) // => false
 
 v1.x 对子结构体字段（`struct` / `*struct` / slice-of-struct / map-of-struct）**无条件递归**
 收集其内部字段规则。v2.0 改为 Java `@Valid` 风格的「按需下探」：仅当父字段带有
-`validate` tag（值可为空）时才级联验证其子结构；完全没有 `validate` tag 的字段
-**不再**下探。该行为由 `CheckSubOnParentMarked` 控制，v2 默认 **true**。
+`validate` tag（值可为空）时才级联验证其**具名**子结构；具名字段完全没有 `validate`
+tag 时**不再**下探。该行为由 `CheckSubOnParentMarked` 控制，v2 默认 **true**。
+**匿名嵌入结构体**（`type Bar struct { Foo }`，字段被提升、属父结构体一部分）**豁免**——
+始终级联，无需 tag；只有**具名**嵌套字段需要标记。
 
 In v1.x a sub-struct field was **always** descended into to collect its inner
 rules. v2.0 makes this opt-in (Java `@Valid` style): cascade happens **only** when
 the parent field carries a `validate` tag. An **empty** tag (`validate:""`) is
-enough to mark it; a field with **no** `validate` tag is no longer descended into.
-Controlled by `CheckSubOnParentMarked`, which defaults to **true** in v2.
+enough to mark it; a **named** field with **no** `validate` tag is no longer
+descended into. **Anonymous embedded structs are exempt** (they are part of the
+parent and always cascade). Controlled by `CheckSubOnParentMarked`, default **true** in v2.
 
 ```go
 type Address struct {

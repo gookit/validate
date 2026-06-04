@@ -24,9 +24,11 @@ projects upgrade by bumping the import path to `/v2`. See
   map-of-struct) was **always** descended into to collect its inner rules. Now
   (`CheckSubOnParentMarked` defaults to **true**) cascade only happens when the
   parent field has a `validate` tag — the value may be **empty** (`validate:""`
-  is enough to mark it); a field with **no** `validate` tag is no longer
-  descended into (Java `@Valid`-style opt-in). To restore the v1 "always
-  cascade" behavior globally:
+  is enough to mark it); a **named** field with **no** `validate` tag is no
+  longer descended into (Java `@Valid`-style opt-in). **Anonymous embedded
+  structs** (e.g. `type Bar struct { Foo }`) are **exempt** — they are part of
+  the parent and always cascade regardless of tag; only **named** sub-struct
+  fields require the tag. To restore the v1 "always cascade" behavior globally:
   `validate.Config(func(o *validate.GlobalOption){ o.CheckSubOnParentMarked = false })`.
   See [docs/UPGRADE-v2.md](docs/UPGRADE-v2.md) for migration details.
 
