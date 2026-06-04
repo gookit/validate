@@ -1,5 +1,68 @@
 # CHANGE LOG
 
+## v2.0.0
+
+v2.0 keeps breaking changes **intentionally minimal** (4 items). Core API,
+validator names, tag semantics and the `DataFace` interface are unchanged — most
+projects upgrade by bumping the import path to `/v2`. See
+[docs/UPGRADE-v2.md](docs/UPGRADE-v2.md) for the full migration guide.
+
+### Breaking Changes
+
+- **Module path** `github.com/gookit/validate` → `github.com/gookit/validate/v2`
+  (per Go Modules semantic import versioning). Update both `go get` and all
+  `import` lines.
+- **Minimum Go version** 1.19 → **1.21** (`go.mod`).
+- **`Between` signature** `Between(val any, min, max int64)` →
+  `Between(val, min, max any)`, now consistent with `Gt`/`Lt` via `valueCompare`
+  (supports int / uint / float / string). Semantic change for fractional bounds:
+  `Between(2.9, 1, 2)` was `true` (int64 truncation) and is now `false` (no more
+  truncation). Tag/`StringRule` usage like `between:1,2` is unaffected.
+- **Removed deprecated `ValueLen(v)`** — use goutil's `reflects.Len(v)` instead.
+
+> Note: the `DataFace` interface is **unchanged** (a redesign was planned during
+> v2.0 but rejected after profiling); custom `DataFace` implementers are unaffected.
+
+### New Features
+
+- **`AddCustomType(fn CustomTypeFunc, types ...any)`** — register an underlying
+  value extractor for custom/wrapped types (e.g. `sql.NullString`, money types).
+  The extracted value flows through the existing validation paths (`required` /
+  numeric compare / length / string rules). `CustomTypeFunc func(field
+  reflect.Value) any`; returning `nil` is treated as empty. Mirrors
+  go-playground/validator's `RegisterCustomTypeFunc`. `ResetCustomTypes()` clears
+  the registry. Zero overhead on the hot path when nothing is registered (atomic
+  gate short-circuit).
+- **`NewFactory()` + `Factory.Struct` / `Factory.Map` + `(*Validation).Release()`**
+  — opt-in pooled factory that reuses `*Validation` instances across many
+  same-type validations, amortizing construction cost (allocs roughly halved in
+  reuse scenarios). Non-default: `Struct` / `Map` / `New` behavior and lifecycle
+  are unchanged.
+
+### Performance
+
+Measured on Go 1.25 (count=6) against the v1.6.0 final:
+
+| Benchmark | v1.6.0 | v2.0 default |
+|---|---|---|
+| StructFlat | 2295 ns / 34 allocs | 1870 ns / 23 allocs (-18% / -32%) |
+| StructNested | 2137 ns / 34 allocs | 1722 ns / 24 allocs (-19% / -29%) |
+| MapValidate | 3314 ns / 72 allocs | 3350 ns / 72 allocs (flat) |
+| ValValue | 725 ns / 11 allocs | 737 ns / 11 allocs (flat) |
+| SliceOfStruct | — | 10900 ns / 208 allocs (dynamic, flat) |
+| **FactoryStructReuse** (new) | — | 1633 ns / **11 allocs** (-52% allocs vs non-factory) |
+
+Coverage 95.6% (v1.6.0 was 95.6%).
+
+### Internal
+
+- Pre-convert rule args at build time (drop the runtime `convertArgsType`).
+- Share immutable static template rules instead of cloning per instance.
+- Fix string validators panicking on non-string fields.
+- Split `validators.go` by category (compare / string / type files).
+- Sink pure-reflect helpers and `fieldValue` into `internal/` (`reflectx`,
+  `fieldval`).
+
 ## v1.6.0
 
 Internal performance refactor. **No public API changes** — drop-in upgrade.
