@@ -2,6 +2,7 @@ package validate
 
 import (
 	"errors"
+	"sync"
 	"testing"
 
 	"github.com/gookit/goutil/x/assert"
@@ -133,4 +134,28 @@ func TestArgsReadyBehavior(t *testing.T) {
 		assert.True(t, Struct(&raStatic{Name: "abcd", Age: 5}).Validate())
 		assert.False(t, Struct(&raStatic{Name: "ab", Age: 5}).Validate()) // minLen:3 fails
 	})
+}
+
+// TestSharedArgs_concurrentErrorFormat stress-tests the P3b shared-args path:
+// many goroutines validate the SAME static type and all FAIL, forcing error
+// message formatting (which reads the shared args). With the format() copy-on-
+// write fix this must be race-free (run with -race). Use a struct whose minLen
+// arg ("3") collides with a registered field label name to also exercise the
+// label-substitution branch in Translator.format against shared args.
+func TestSharedArgs_concurrentErrorFormat(t *testing.T) {
+	defer ResetTypeCache()
+	ResetTypeCache()
+
+	var wg sync.WaitGroup
+	for i := 0; i < 100; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			v := Struct(&raStatic{Name: "x", Age: 0}) // both rules fail
+			ok := v.Validate()
+			_ = v.Errors.String()
+			assert.False(t, ok)
+		}()
+	}
+	wg.Wait()
 }

@@ -298,9 +298,12 @@ func TestStaticTemplate_concurrent(t *testing.T) {
 	assert.Same(t, m.staticTemplate(), m.staticTemplate())
 }
 
-// TestStaticTemplate_isolation verifies two validations of the same STATIC type
-// get INDEPENDENT rule arg slices, so validate-time in-place arg conversion in
-// one does not leak into the other or into the shared template.
+// TestStaticTemplate_isolation verifies the per-instance arg-slice contract:
+//   - the per-instance rules slice itself is always distinct;
+//   - argsReady rules (P3a pre-converted, immutable, never mutated at runtime)
+//     SHARE the template's args slice (P3b: no per-instance copy);
+//   - non-argsReady rules get an INDEPENDENT copy (runtime still converts in
+//     place), so one validation never corrupts another or the template.
 func TestStaticTemplate_isolation(t *testing.T) {
 	defer ResetTypeCache()
 	ResetTypeCache()
@@ -308,22 +311,33 @@ func TestStaticTemplate_isolation(t *testing.T) {
 	v1 := Struct(&rcArgSingle{A: 6, B: 5})
 	v2 := Struct(&rcArgSingle{A: 6, B: 5})
 
-	// rules slices must be distinct, and each rule's args must be distinct
-	// backing arrays (or both nil).
+	// the rules slices themselves must be distinct per instance.
 	assert.NotEq(t, fmt.Sprintf("%p", v1.rules), fmt.Sprintf("%p", v2.rules))
+
+	tpl := getTypeMeta(reflect.TypeOf(rcArgSingle{})).staticTemplate()
 	for i := range v1.rules {
-		a1, a2 := v1.rules[i].arguments, v2.rules[i].arguments
-		if len(a1) > 0 {
+		r1, r2 := v1.rules[i], v2.rules[i]
+		a1, a2 := r1.arguments, r2.arguments
+		if len(a1) == 0 {
+			continue
+		}
+		if r1.argsReady {
+			// argsReady: both instances share the SAME immutable template args.
+			assert.True(t, r1.argsReady && r2.argsReady)
+			assert.Eq(t, fmt.Sprintf("%p", a1), fmt.Sprintf("%p", a2))
+			assert.Eq(t, fmt.Sprintf("%p", a1), fmt.Sprintf("%p", tpl.rules[i].arguments))
+		} else {
+			// non-argsReady: each instance has its own backing array.
 			assert.NotEq(t, fmt.Sprintf("%p", a1), fmt.Sprintf("%p", a2))
 		}
 	}
 
-	// validating mutates v1's args in place; v2 + template must be untouched.
+	// rcArgSingle uses min/max (any params): argsReady but args stay STRING; the
+	// shared template args must remain the originally-collected STRING form even
+	// after validating an instance (immutability check).
 	_ = v1.Validate()
-	tpl := getTypeMeta(reflect.TypeOf(rcArgSingle{})).staticTemplate()
 	for _, r := range tpl.rules {
 		for _, a := range r.arguments {
-			// template args remain the originally-collected STRING form.
 			_, isStr := a.(string)
 			assert.True(t, isStr)
 		}

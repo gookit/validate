@@ -262,17 +262,20 @@ func (d *StructData) instantiateStatic(v *Validation) {
 	}
 }
 
-// cloneRule makes a shallow copy of an immutable template Rule, but allocates a
-// fresh arguments slice (preserving nil semantics: a nil template args slice
-// clones to nil, NOT an empty slice). Read-only fields such as the messages map
-// are shared.
+// cloneRule makes a shallow copy of an immutable template Rule.
+//
+// For an argsReady rule (P3a pre-converted), its args are already typed AND the
+// runtime no longer mutates them (valueValidate skips convertArgsType), so the
+// template's args slice is immutable and can be SHARED directly — saving a
+// per-instance copy. For a non-argsReady rule the runtime still converts args in
+// place, so each instance needs its own copy. nil args stay nil in both cases.
 func cloneRule(tr *Rule) *Rule {
 	r := *tr // shallow copy of all scalar/ref fields
-	if tr.arguments != nil {
+	if tr.arguments != nil && !tr.argsReady {
 		args := make([]any, len(tr.arguments))
 		copy(args, tr.arguments)
 		r.arguments = args
-	} // else: keep nil (matches collection output for no-arg rules)
+	} // else: argsReady (share immutable template args) OR nil (keep nil)
 	return &r
 }
 

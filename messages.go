@@ -460,11 +460,26 @@ func (t *Translator) Message(validator, field string, args ...any) (msg string) 
 func (t *Translator) format(errMsg, field string, args []any) string {
 	argLen := len(args)
 
-	// fix: #111 argN maybe is a field name
+	// fix: #111 argN maybe is a field name.
+	// NOTE: args may be a Rule's shared/immutable arguments slice (static
+	// template pre-conversion shares it across instances, P3b). Substitute into
+	// a COPY, never in place, so error formatting can't corrupt the shared args
+	// or race with concurrent validations of the same type.
 	for i, arg := range args {
 		if name, ok := arg.(string); ok {
 			if lName, ok := t.LookupLabel(name); ok {
-				args[i] = lName
+				cp := make([]any, len(args))
+				copy(cp, args)
+				cp[i] = lName
+				for j := i + 1; j < len(cp); j++ {
+					if s, ok := cp[j].(string); ok {
+						if ln, ok := t.LookupLabel(s); ok {
+							cp[j] = ln
+						}
+					}
+				}
+				args = cp
+				break
 			}
 		}
 	}
