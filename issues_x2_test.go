@@ -408,24 +408,21 @@ func (issue314Struct) ConfigValidation(v *validate.Validation) {
 
 // https://github.com/gookit/validate/v2/issues/314 Scene with empty validation rules now fails
 //
-// still-broken in v2.0(行为回退): 场景 "None": []string{""} 期望"不校验任何字段",
-// v1.4.5 下可正常通过, 但现在仍会报 "SubStruct is required"。
+// FIXED: 场景 "None": []string{""} 表示"不校验任何字段", 现已恢复 v1.4.5 行为, 不再误报
+// "SubStruct is required"。
 //
-// 根因: sceneFieldMap() 把空字符串 "" 当作一个普通场景字段键, 得到 sceneFields={"":1}。
-// 随后 isNotNeedToCheck("SubStruct") 里 `strings.Join(fields[0:0], ".")` 得到 ""——
-// 恰好命中 sceneFields[""], 于是判定"需要校验", required 仍被触发。即空字符串场景项
-// 反而把所有字段都纳入校验, 与"什么都不校验"语义相反。
+// 根因: sceneFieldMap() 曾把空字符串 "" 当作普通场景字段键, 得到 sceneFields={"":1}; 随后
+// isNotNeedToCheck("SubStruct") 里 `strings.Join(fields[0:0], ".")` 得到 "" 恰好命中,
+// 于是所有字段反而都被纳入校验。
 //
-// 修复需改业务代码(sceneFieldMap 跳过空字段 / isNotNeedToCheck 不让空前缀命中),
-// 本任务不改业务代码, 故断言当前真实(仍回退)行为并标注。
+// 修复: sceneFieldMap() 跳过空字段(但保留非 nil map 以区分"无场景"); isNotNeedToCheck()
+// 用 nil/非nil 区分"未设场景(校验全部)"与"场景已激活但无字段(什么都不校验)"。
 func TestIssue_314_v2(t *testing.T) {
-	t.Run("empty-rule scene 'None' still triggers validation (still-broken)", func(t *testing.T) {
+	t.Run("empty-rule scene 'None' validates nothing (fixed)", func(t *testing.T) {
 		foo := issue314Struct{}
 		err := validate.Struct(&foo).ValidateE("None")
-		t.Logf("v2.0 still-broken #314: None scene err=%v", err)
-		// 期望: err 为空。实际: 仍报 SubStruct required。
-		assert.NotEmpty(t, err)
-		assert.StrContains(t, err.String(), "SubStruct is required")
+		// 期望: err 为空(此场景什么都不校验)。
+		assert.Empty(t, err)
 	})
 
 	t.Run("scene 'SubStruct' validates SubStruct (correct)", func(t *testing.T) {

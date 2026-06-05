@@ -631,8 +631,16 @@ func (v *Validation) sceneFieldMap() (m map[string]uint8) {
 	}
 
 	if fields, ok := v.scenes[v.scene]; ok {
+		// keep the map non-nil even when every field is skipped: a defined scene
+		// that yields no fields (eg: scenes{"None": {""}}) must be distinguishable
+		// from "no scene set" (nil map) in isNotNeedToCheck().
 		m = make(map[string]uint8, len(fields))
 		for _, field := range fields {
+			// skip empty scene field. otherwise the "" key would match the empty
+			// prefix fields[0:0] for every field and force-check everything (#314).
+			if field == "" {
+				continue
+			}
 			m[field] = 1
 		}
 	}
@@ -698,14 +706,21 @@ func (v *Validation) isInOptional(field string) bool {
 }
 
 func (v *Validation) isNotNeedToCheck(field string) bool {
-	if len(v.sceneFields) == 0 {
+	// nil map: no scene set (or scene not defined) -> check all fields.
+	if v.sceneFields == nil {
 		return false
 	}
+	// non-nil but empty: scene is active yet lists no field
+	// (eg: scenes{"None": {""}}) -> check nothing (#314).
+	if len(v.sceneFields) == 0 {
+		return true
+	}
 
+	// match when an ancestor prefix of a nested field is listed in the scene.
+	// start at i=1: fields[0:0] is the empty prefix and never a valid scene key.
 	fields := strings.Split(field, ".")
-	for i := 0; i < len(fields); i++ {
-		_, ok := v.sceneFields[strings.Join(fields[0:i], ".")]
-		if ok {
+	for i := 1; i < len(fields); i++ {
+		if _, ok := v.sceneFields[strings.Join(fields[0:i], ".")]; ok {
 			return false
 		}
 	}
