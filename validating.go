@@ -524,6 +524,8 @@ func callValidator(v *Validation, fm *funcMeta, field string, val any, args []an
 		ok = Max(val, args[0])
 	case "enum":
 		ok = Enum(val, args[0])
+	case "rule_one_of": // #292: 列表参数同 enum, args[0] 为子校验器名 []string
+		ok = v.RuleOneOf(val, args[0])
 	case "notIn":
 		ok = NotIn(val, args[0])
 	case "isInt":

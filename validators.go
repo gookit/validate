@@ -190,6 +190,34 @@ func (v *Validation) Required(field string, val any) bool {
 	return !IsEmpty(val)
 }
 
+// RuleOneOf 规则级"逻辑或"(#292): val 满足列出的任一子校验器即通过, 全部不满足才失败。
+//
+//   - rules 为子校验器名列表 (来自 rule.go 的 parseArgString, 即 args[0] 的 []string)。
+//   - 子项名支持别名 (ip->isIP, cidr->isCIDR), 经 ValidatorName 解析后取 funcMeta。
+//   - phase1 仅支持无参子校验器, 故在原 val 上以 addNum=1 直接调用, 不传 field/args。
+//   - 未知子校验器名 → 直接 panic, 与现有"未知 validator"行为一致, 提前暴露拼写错误。
+func (v *Validation) RuleOneOf(val any, rules any) bool {
+	names, ok := rules.([]string)
+	if !ok || len(names) == 0 {
+		panicf("the validator 'rule_one_of' requires a non-empty list of validator names")
+	}
+
+	for _, name := range names {
+		realName := ValidatorName(strings.TrimSpace(name))
+		fm := v.validatorMeta(realName)
+		if fm == nil {
+			// fail-fast: 子校验器不存在(含拼写错误), 立即 panic。
+			panicf("the validator '%s' for 'rule_one_of' does not exist", name)
+		}
+
+		// 在同一个值上调用子校验器, 任一返回 true 即整体通过。
+		if callValidator(v, fm, "", val, nil, 1, nil) {
+			return true
+		}
+	}
+	return false
+}
+
 // RequiredIf field under validation must be present and not empty,
 // if the anotherField field is equal to any value.
 //

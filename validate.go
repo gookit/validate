@@ -225,6 +225,16 @@ var ctxValidatorBuilders = map[string]func(v *Validation) reflect.Value{
 	"inMimeTypes": func(v *Validation) reflect.Value { return reflect.ValueOf(v.InMimeTypes) },
 }
 
+func init() {
+	// rule-level logical OR (#292). registered in init() rather than the map
+	// literal to avoid a static initialization cycle: RuleOneOf -> validatorMeta
+	// -> ctxValidatorBuilders. the bound method shape mirrors Enum(val, list):
+	// numIn=2 so checkArgNum(1 list arg + addNum=1 = 2) passes, same as enum.
+	ctxValidatorBuilders["rule_one_of"] = func(v *Validation) reflect.Value {
+		return reflect.ValueOf(v.RuleOneOf)
+	}
+}
+
 func newEmpty() *Validation {
 	v := &Validation{
 		Errors: make(Errors),

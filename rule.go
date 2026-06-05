@@ -198,7 +198,8 @@ func (v *Validation) StringRule(field, rule string, filterRule ...string) *Valid
 			case RuleRegexp:
 				v.AddRule(field, validator, list[1])
 			// some special validator. need merge args to one.
-			case "enum", "notIn":
+			// "rule_one_of" (#292) also收集为单个 []string 列表参数, 子项为校验器名。
+			case "enum", "notIn", "rule_one_of":
 				v.AddRule(field, validator, parseArgString(list[1]))
 			default:
 				args := parseArgString(list[1])

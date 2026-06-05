@@ -184,6 +184,8 @@ var builtinMessages = map[string]string{
 
 	"enum":  "{field} value must be in the enum %v",
 	"range": "{field} value must be in the range %v - %v",
+	// rule-level logical OR (#292): %v renders the sub-validator name list
+	"rule_one_of": "{field} did not satisfy any of: %v",
 	// int compare
 	"lt": "{field} value should be less than %v",
 	"gt": "{field} value should be greater than %v",
