@@ -156,19 +156,17 @@ func Test_Issue316(t *testing.T) {
 
 // https://github.com/gookit/validate/v2/issues/217 Nested resources are evaluated differently
 //
-// still-broken in v2.0(注: 已有 TestIssues_217, 此为补充复现, 故用 _v2 后缀):
-// Nested.Samples 是 []Sample, Sample.Val 是 *bool 且带 required。当某个元素的 Val
-// 指向 false(非 nil 指针)时, 切片内子结构体的 required 仍把它判为"空"而报错;
-// 而 Val 指向 true 的元素不报错。
+// FIXED: Nested.Samples 是 []Sample, Sample.Val 是 *bool 且带 required。某元素的 Val
+// 指向 false(非 nil 指针)时, 切片内子结构体的 required 曾把它误判为"空"而报错; 现已与
+// 顶层路径一致, *bool->false 视为存在、正确通过。
 //
-// 根因: data_source.go 的子结构体取值路径(GetByPath/tryGet 的 fieldAtSubStruct
-// 分支)对解引用后的 *bool 直接返回 fv.IsZero() 作为"是否为空"标志 —— bool(false)
-// 的 IsZero()==true, 于是被 required 误判为空。而顶层字段路径专门把 bool 视为存在
-// (见 data_source.go 注释 "bool as exists"), 两条路径行为不一致, 这正是 issue 标题
-// "Nested resources are evaluated differently" 所指。
+// 根因: data_source.go 子结构体取值路径(tryGet 的 fieldAtSubStruct 分支)在导航循环里
+// 把叶子 *bool 一并解引用成 bool(false), required 的 IsEmpty(bool(false))==true 误判为
+// 空; 而顶层路径保留非 nil 指针(IsEmpty(非nil指针)==false), 两路径不一致 —— 这正是
+// issue 标题 "Nested resources are evaluated differently" 所指。
 //
-// 修复需改业务代码(data_source.go 子结构体路径对 bool 做 as-exists 处理), 本任务
-// 只做核查不改业务代码, 故此处断言 v2.0 的真实(仍有缺陷)行为, 留待后续修复。
+// 修复: 子结构体导航循环对**叶子节点**保留非 nil 指针(不再解引用), 与顶层路径对齐;
+// 中间节点仍解引用以便继续导航; nil 叶子指针仍按"不存在"处理。
 func TestIssue_217_v2(t *testing.T) {
 	type Sample struct {
 		Val *bool `validate:"required"`
@@ -189,18 +187,25 @@ func TestIssue_217_v2(t *testing.T) {
 		assert.False(t, v.Validate())
 	})
 
-	t.Run("slice element *bool->false WRONGLY fails required (v2.0 still-broken)", func(t *testing.T) {
+	t.Run("slice element *bool->false passes required (fixed)", func(t *testing.T) {
 		val, val2 := false, true
 		data := Nested{Samples: []Sample{{Val: &val}, {Val: &val2}}}
 		v := validate.Struct(data)
 		v.StopOnError = false
-		// 期望: 应通过(两个元素的 Val 都非 nil)。实际: 仍失败, 只有指向 false 的
-		// Samples.0.Val 被误报为空。下面断言当前真实行为, 并标注仍未解决。
+		// 两个元素的 Val 都非 nil, 应全部通过, 不再误报 Samples.0.Val 为空。
 		ok := v.Validate()
-		t.Logf("v2.0 still-broken #217: ok=%v errors=%v", ok, v.Errors)
+		assert.True(t, ok)
+		assert.Empty(t, v.Errors)
+	})
+
+	t.Run("slice element nil *bool still fails required (correct)", func(t *testing.T) {
+		val := true
+		data := Nested{Samples: []Sample{{Val: nil}, {Val: &val}}}
+		v := validate.Struct(data)
+		v.StopOnError = false
+		ok := v.Validate()
 		assert.False(t, ok)
 		assert.ErrSubMsg(t, v.Errors, "Samples.0.Val is required")
-		// 指向 true 的元素不会被误报
 		assert.NotContains(t, v.Errors.String(), "Samples.1.Val")
 	})
 }

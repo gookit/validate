@@ -374,7 +374,8 @@ func (d *StructData) TryGet(field string) (val any, exist, zero bool) {
 		}
 
 		kind = fv.Type().Kind()
-		for _, fieldNode := range fieldNodes {
+		lastIdx := len(fieldNodes) - 1
+		for i, fieldNode := range fieldNodes {
 			// fieldNode = strings.ReplaceAll(fieldNode, "\"", "") // for strings as keys
 			switch kind {
 			case reflect.Array, reflect.Slice:
@@ -388,7 +389,23 @@ func (d *StructData) TryGet(field string) (val any, exist, zero bool) {
 				return
 			}
 
-			// isPtr = fv.Kind() == reflect.Pointer
+			if !fv.IsValid() {
+				return
+			}
+
+			// leaf node: keep a non-nil pointer as-is, mirroring the top-level path.
+			// dereferencing here turned a *bool->false (or any *T pointing to a zero
+			// value) into its zero value, which `required` then wrongly flagged as
+			// empty — so nested fields were "evaluated differently" from top-level
+			// ones (#217). a nil leaf pointer still counts as not-exist.
+			if i == lastIdx {
+				if fv.Kind() == reflect.Ptr && fv.IsNil() {
+					return
+				}
+				break
+			}
+
+			// intermediate node: dereference to navigate into the next node.
 			fv = reflectx.RemoveValuePtr(fv)
 			if !fv.IsValid() {
 				return
