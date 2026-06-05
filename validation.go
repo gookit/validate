@@ -62,6 +62,9 @@ type Validation struct {
 	UpdateSource bool
 	// CheckDefault Whether to validate the default value set by the user
 	CheckDefault bool
+	// ErrShowValue Whether to append the failing value to the error message.
+	// opt-in, copied from gOpt. see GitHub issue #184.
+	ErrShowValue bool
 	// CachingRules switch. default is False
 	// CachingRules bool
 
@@ -181,6 +184,7 @@ func (v *Validation) resetForReuse() {
 	// toggled by callers. All must go back to the New-time initial values.
 	v.StopOnError = gOpt.StopOnError
 	v.SkipOnEmpty = gOpt.SkipOnEmpty
+	v.ErrShowValue = gOpt.ErrShowValue
 	v.UpdateSource = false
 	v.CheckDefault = false
 

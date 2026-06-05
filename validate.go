@@ -101,6 +101,11 @@ type GlobalOption struct {
 	UpdateSource bool
 	// CheckDefault Whether to validate the default value set by the user
 	CheckDefault bool
+	// ErrShowValue Whether to append the original value that triggered the error
+	// to the error message. opt-in, default is false (keeps error messages
+	// byte-for-byte unchanged). When true, the failing value is appended in the
+	// form " (value: <val>)". see GitHub issue #184.
+	ErrShowValue bool
 	// CheckZero whether to validate the zero value. (intX,uintX: 0, string: "")
 	//
 	// Deprecated: this flag is a no-op — it was declared but never wired into the
@@ -236,8 +241,9 @@ func newEmpty() *Validation {
 		// filtered data
 		filteredData: make(map[string]any),
 		// default config
-		StopOnError: gOpt.StopOnError,
-		SkipOnEmpty: gOpt.SkipOnEmpty,
+		StopOnError:  gOpt.StopOnError,
+		SkipOnEmpty:  gOpt.SkipOnEmpty,
+		ErrShowValue: gOpt.ErrShowValue,
 	}
 
 	return v

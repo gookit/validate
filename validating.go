@@ -213,7 +213,13 @@ func (r *Rule) applyField(field, name string, v *Validation) (stop bool) {
 		}
 		v.safeData[field] = val
 	} else { // build and collect error message
-		v.AddError(field, r.validator, r.errorMessage(field, r.validator, v))
+		msg := r.errorMessage(field, r.validator, v)
+		// opt-in: append the failing value to the message (issue #184). default
+		// off keeps the message byte-for-byte unchanged.
+		if v.ErrShowValue {
+			msg = fmt.Sprintf("%s (value: %v)", msg, val)
+		}
+		v.AddError(field, r.validator, msg)
 	}
 
 	if v.shouldStop() {
