@@ -556,3 +556,101 @@ func TestIssue_262_v2(t *testing.T) {
 		assert.Eq(t, []any{90, 100}, vv.SafeData()["ports.*.container_start"])
 	})
 }
+
+// https://github.com/gookit/validate/v2/issues/138 FullUrl regex needs improvement
+//
+// still-broken in v2.0(enhancement 未做): fullUrl 的正则
+//
+//	^(?:ftp|tcp|udp|wss?|https?):\/\/[\w\.\/#=?&-_%]+$
+//
+// 字符类过于宽松, 把一批非法 URL 判为合法。issue 给的三个反例当前都通过 IsFullURL:
+//   - "https://www.googl_?e.com/testme"(含 _ 与 ? 等)
+//   - "https://www"(无 TLD)
+//   - "https://not%23"
+//
+// 此外 IsURL 基于 url.Parse(err==nil), 更宽松(连 "not a url" 都判为合法)。
+//
+// 修复方向(改业务代码, 本任务只核查): 参考 asaskevich/govalidator 的 URL 正则收紧
+// host/TLD/字符集校验。故此处断言 v2.0 真实(仍宽松)行为并标注。
+func TestIssue_138_v2(t *testing.T) {
+	t.Run("fullUrl regex too permissive, accepts invalid URLs (still-broken)", func(t *testing.T) {
+		invalidButAccepted := []string{
+			"https://www.googl_?e.com/testme",
+			"https://www",
+			"https://not%23",
+		}
+		for _, s := range invalidButAccepted {
+			// 期望: 应为 false(非法)。实际: 仍 true。断言现状。
+			assert.True(t, validate.IsFullURL(s), "expected v2.0 to (wrongly) accept %q", s)
+		}
+
+		// 合法基线仍应通过
+		for _, s := range []string{"http://example.com", "https://www.google.com/testme", "ftp://files.example.com/a"} {
+			assert.True(t, validate.IsFullURL(s))
+		}
+	})
+
+	t.Run("IsURL (url.Parse based) even more permissive (still-broken)", func(t *testing.T) {
+		// url.Parse 几乎不报错, 连明显非 URL 的串也判为合法
+		assert.True(t, validate.IsURL("not a url"))
+	})
+}
+
+// --- #324 support types (nested form-data binding) ---
+
+type issue324Address struct {
+	Street string `form:"street" json:"street"`
+	City   string `form:"city" json:"city"`
+}
+
+type issue324Member struct {
+	Name    string          `form:"name" json:"name"`
+	Address issue324Address `form:"address" json:"address"`
+}
+
+// https://github.com/gookit/validate/v2/issues/324 Nested Form Data Binding Fails for multipart/form-data
+//
+// still-broken in v2.0(未支持的特性): multipart/form-data 的嵌套字段(无论 bracket 写法
+// "address[street]" 还是 dot 写法 "address.street")都不能绑定到嵌套 struct。
+//
+// 根因: FromURLValues 把表单键**原样平铺**进 d.Form(url.Values); BindSafeData 把
+// safeData(平铺 map)json.Marshal 再 Unmarshal —— 平铺键 "address[street]"/"address.street"
+// 在 JSON 里只是顶层扁平键, 不会变成嵌套对象, 故 Address 子字段始终为空。validate 没有
+// 对 bracket/dot 嵌套键做解析或展开。
+//
+// 修复方向(改业务代码, 本任务只核查): 绑定前把 bracket "a[b]" 归一为路径 "a.b", 并按点
+// 路径把平铺键展开成嵌套 map 再绑定。此处断言 v2.0 真实(嵌套不绑定)行为并标注。
+func TestIssue_324_v2(t *testing.T) {
+	run := func(t *testing.T, street, city string) issue324Member {
+		t.Helper()
+		form := url.Values{}
+		form.Set("name", "John")
+		form.Set(street, "Main St")
+		form.Set(city, "New York")
+
+		data := validate.FromURLValues(form)
+		v := data.Create()
+		v.StringRule("name", "required")
+		assert.True(t, v.Validate())
+
+		var req issue324Member
+		assert.NoErr(t, v.BindSafeData(&req))
+		return req
+	}
+
+	t.Run("bracket notation address[street] does NOT bind nested (still-broken)", func(t *testing.T) {
+		req := run(t, "address[street]", "address[city]")
+		// 简单字段正常绑定
+		assert.Eq(t, "John", req.Name)
+		// 嵌套字段未绑定(期望 Main St / New York)
+		assert.Eq(t, "", req.Address.Street)
+		assert.Eq(t, "", req.Address.City)
+	})
+
+	t.Run("dot notation address.street also does NOT bind nested (still-broken)", func(t *testing.T) {
+		req := run(t, "address.street", "address.city")
+		assert.Eq(t, "John", req.Name)
+		assert.Eq(t, "", req.Address.Street)
+		assert.Eq(t, "", req.Address.City)
+	})
+}
