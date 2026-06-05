@@ -202,6 +202,29 @@ func isAllDigits(s string) bool {
 	return true
 }
 
+// bracketKeyReplacer turns bracket form keys into dot paths. (#324)
+var bracketKeyReplacer = strings.NewReplacer("[", ".", "]", "")
+
+// normalizeFormKey converts bracket-style form keys into the library's dot-path
+// model so nested form fields can be validated and bound. eg:
+//
+//	"address[street]"     -> "address.street"
+//	"address[street][no]" -> "address.street.no"
+//
+// Keys without "[" are returned unchanged (fast path). The array-append form
+// "name[]" is left untouched — array-of-struct binding via numeric brackets is
+// not handled yet (see docs/issues/v2.0-324-nested-form-binding-design.md §4),
+// and numeric segments here bind as object keys, not slice indices.
+func normalizeFormKey(key string) string {
+	if !strings.ContainsRune(key, '[') {
+		return key
+	}
+	if strings.Contains(key, "[]") {
+		return key
+	}
+	return bracketKeyReplacer.Replace(key)
+}
+
 // ErrConvertFail error
 var ErrConvertFail = errors.New("convert value is failure")
 

@@ -441,9 +441,13 @@ func FromRequest(r *http.Request, maxMemoryLimit ...int64) (DataFace, error) {
 }
 
 // FromURLValues build data instance.
+//
+// Bracket-style nested keys are normalized to dot paths so nested form fields
+// can be validated and bound, eg "address[street]" -> "address.street" (#324).
 func FromURLValues(values url.Values) *FormData {
 	data := newFormData()
 	for key, vals := range values {
+		key = normalizeFormKey(key)
 		for _, val := range vals {
 			data.Add(key, val)
 		}
