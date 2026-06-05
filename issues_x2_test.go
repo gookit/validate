@@ -813,3 +813,58 @@ func TestIssue_162_v2(t *testing.T) {
 		assert.ErrSubMsg(t, v.Errors, "UUID4")
 	})
 }
+
+// --- #203 support types ---
+
+type issue203Foo struct {
+	Name int `validate:"required|int|between:1,999" label:"name"`
+}
+
+type issue203Bar struct {
+	Code string `validate:"customCheck" filter:"upper"`
+}
+
+// CustomCheck 仅接受 "OK"(经 upper filter 后)。
+func (issue203Bar) CustomCheck(val string) bool { return val == "OK" }
+
+// https://github.com/gookit/validate/v2/issues/203 An explanation of how `required` works.
+//
+// 核查结论(评论楼最后一条担忧"去掉 required 后 filter/validator 不跑、非法数据被放过"):
+// v2.0 下**无问题**, 属对 SkipOnEmpty 语义的误解。
+//   - 非 required 字段对**非空**值, filter/validator **照常运行**, 非法值被拒;
+//   - 仅当值为**空(零值/"")**时, 非 required 规则按 SkipOnEmpty 跳过(视为"可选未填");
+//   - 若空也要拒, 加 required(或 Rule.SetSkipEmpty(false) / 关 SkipOnEmpty)。
+// 另: 楼主原始 bug(required|int|between 对 Name=4 误报 "required to not be empty")在 v2.0
+// 已修复 —— Name=4 正常通过。
+func TestIssue_203_v2(t *testing.T) {
+	t.Run("required on non-zero int passes (original report's bug is fixed)", func(t *testing.T) {
+		// v1.4.6 曾对 Name=4 误报 required; v2.0 正常通过
+		assert.True(t, validate.Struct(&issue203Foo{Name: 4}).Validate())
+	})
+
+	t.Run("non-required + NON-empty invalid value IS validated and rejected", func(t *testing.T) {
+		// Code="bad" -> upper -> "BAD" -> customCheck 失败 -> 被拒(validator 确实跑了)
+		v := validate.Struct(&issue203Bar{Code: "bad"})
+		assert.False(t, v.Validate())
+		assert.StrContains(t, v.Errors.String(), "Code")
+	})
+
+	t.Run("non-required + custom filter runs for non-empty value", func(t *testing.T) {
+		// Code="ok" -> upper -> "OK" -> customCheck 通过; filter 确实跑了
+		v := validate.Struct(&issue203Bar{Code: "ok"})
+		assert.True(t, v.Validate())
+		assert.Eq(t, "OK", v.SafeData()["Code"])
+	})
+
+	t.Run("non-required + EMPTY value is skipped (SkipOnEmpty: optional, by design)", func(t *testing.T) {
+		// Code="" -> 空值被跳过, customCheck 不运行 -> 通过(这正是楼主当年遇到的"放过")
+		assert.True(t, validate.Struct(&issue203Bar{Code: ""}).Validate())
+	})
+
+	t.Run("add 'required' to reject empty (the resolution)", func(t *testing.T) {
+		// 若空也要拒: 加 required, 空值不再被跳过
+		v := validate.Map(map[string]any{"code": ""})
+		v.StringRule("code", "required")
+		assert.False(t, v.Validate())
+	})
+}
