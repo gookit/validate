@@ -87,6 +87,9 @@ type Validation struct {
 	scenes SValues
 	// should check fields in current scene.
 	sceneFields map[string]uint8
+	// scene fields that carry a ".*" wildcard (eg "Tags.*.Id"); matched against the
+	// indexed rule names generated for slice elements (eg "Tags.0.Id"). (#283)
+	sceneWildcards map[string]uint8
 
 	// filtering rules for the validation
 	filterRules []*FilterRule
@@ -197,6 +200,7 @@ func (v *Validation) resetForReuse() {
 	v.scene = ""
 	v.scenes = nil
 	v.sceneFields = nil
+	v.sceneWildcards = nil
 
 	// --- translator: reset custom messages/labels/field-map back to empty.
 	// Clear in place (matches Translator.Reset semantics: messages=nil custom
@@ -624,8 +628,9 @@ func (v *Validation) SceneFields() []string {
 	return v.scenes[v.scene]
 }
 
-// scene field name map build
+// scene field name map build. also (re)builds v.sceneWildcards for ".*" entries.
 func (v *Validation) sceneFieldMap() (m map[string]uint8) {
+	v.sceneWildcards = nil
 	if v.scene == "" {
 		return
 	}
@@ -639,6 +644,16 @@ func (v *Validation) sceneFieldMap() (m map[string]uint8) {
 			// skip empty scene field. otherwise the "" key would match the empty
 			// prefix fields[0:0] for every field and force-check everything (#314).
 			if field == "" {
+				continue
+			}
+			// ".*" wildcard entry (eg "Tags.*.Id"): kept apart so isNotNeedToCheck
+			// can match it against indexed slice-element rule names like "Tags.0.Id"
+			// (the scene field list otherwise matches by exact string only). (#283)
+			if strings.Contains(field, ".*") {
+				if v.sceneWildcards == nil {
+					v.sceneWildcards = make(map[string]uint8)
+				}
+				v.sceneWildcards[field] = 1
 				continue
 			}
 			m[field] = 1
@@ -706,25 +721,35 @@ func (v *Validation) isInOptional(field string) bool {
 }
 
 func (v *Validation) isNotNeedToCheck(field string) bool {
-	// nil map: no scene set (or scene not defined) -> check all fields.
-	if v.sceneFields == nil {
+	// nil sceneFields AND no wildcard entries: no scene set (or scene not defined)
+	// -> check all fields.
+	if v.sceneFields == nil && len(v.sceneWildcards) == 0 {
 		return false
 	}
-	// non-nil but empty: scene is active yet lists no field
-	// (eg: scenes{"None": {""}}) -> check nothing (#314).
-	if len(v.sceneFields) == 0 {
-		return true
-	}
 
-	// match when an ancestor prefix of a nested field is listed in the scene.
+	// exact / ancestor-prefix match against the plain scene field list.
 	// start at i=1: fields[0:0] is the empty prefix and never a valid scene key.
-	fields := strings.Split(field, ".")
-	for i := 1; i < len(fields); i++ {
-		if _, ok := v.sceneFields[strings.Join(fields[0:i], ".")]; ok {
+	if len(v.sceneFields) > 0 {
+		fields := strings.Split(field, ".")
+		for i := 1; i < len(fields); i++ {
+			if _, ok := v.sceneFields[strings.Join(fields[0:i], ".")]; ok {
+				return false
+			}
+		}
+		if _, ok := v.sceneFields[field]; ok {
 			return false
 		}
 	}
 
-	_, ok := v.sceneFields[field]
-	return !ok
+	// wildcard match: normalize numeric index segments to "*" and look up.
+	// eg field "Tags.0.Id" -> "Tags.*.Id" matches scene entry "Tags.*.Id". (#283)
+	if len(v.sceneWildcards) > 0 {
+		if pat, hasIdx := indexPathToWildcard(field); hasIdx {
+			if _, ok := v.sceneWildcards[pat]; ok {
+				return false
+			}
+		}
+	}
+
+	return true
 }

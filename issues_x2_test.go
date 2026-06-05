@@ -350,14 +350,12 @@ func (f issue283Form) ConfigValidation(v *validate.Validation) {
 
 // https://github.com/gookit/validate/v2/issues/283 Scenes does not work in slices
 //
-// still-broken in v2.0(部分): 场景(scene)字段列表无法用 "Tags.Id"(不带索引)或
-// "Tags.*.Id"(通配)来命中切片元素生成的规则 —— 级联会生成 "Tags.0.Id" 这样带索引
-// 的规则名, 而场景按字符串精确匹配, "Tags.Id" / "Tags.*.Id" 都匹配不上, 于是切片内
-// 字段在该场景下根本不被校验。只有写显式数字索引 "Tags.0.Id" 才能命中。
+// FIXED(通配 .*): 级联为切片元素生成带索引的规则名 "Tags.0.Id", 场景现支持用通配
+// "Tags.*.Id" 命中它 —— 把字段名的数字索引段规范化为 "*" 后与场景通配项比对。这正是
+// issue 标题 "Scenes does not work in slices" 的核心诉求(选择性校验切片元素的某个字段)。
 //
-// 这是 issue 标题 "Scenes does not work in slices" 的核心: 场景无法用通配/无索引方式
-// 选中切片元素字段。修复需改业务代码(场景匹配支持通配/前缀), 本任务不改业务代码,
-// 故断言当前真实行为并标注。
+// 范围: 仅支持 ".*" 通配写法。**无索引** "Tags.Id" 仍不命中(与真实嵌套字段 "Tags.Id"
+// 有语义歧义, 按设计不做), 推荐统一用 "Tags.*.Id"。显式索引 "Tags.0.Id" 仍可用。
 func TestIssue_283_v2(t *testing.T) {
 	newForm := func() *issue283Form {
 		return &issue283Form{
@@ -366,26 +364,29 @@ func TestIssue_283_v2(t *testing.T) {
 		}
 	}
 
-	t.Run("scene 'Tags.Id' does NOT validate slice element (still-broken)", func(t *testing.T) {
+	t.Run("scene 'Tags.Id' index-less still does NOT match (by design, use .*)", func(t *testing.T) {
 		v := validate.Struct(newForm(), "update")
 		v.StopOnError = false
 		ok := v.Validate("update")
-		t.Logf("v2.0 #283 scene 'Tags.Id': ok=%v errors=%v", ok, v.Errors)
-		// Name(太短)与 Test 报错, 但 Tags.0.Id 完全未被校验(无 Tags 相关错误)
+		// Name(太短)与 Test 报错, 但 Tags.0.Id 不被无索引 "Tags.Id" 命中(无 Tags 错误)
 		assert.False(t, ok)
 		assert.NotContains(t, v.Errors.String(), "Tags")
 	})
 
-	t.Run("scene 'Tags.*.Id' wildcard also does NOT validate (still-broken)", func(t *testing.T) {
+	t.Run("scene 'Tags.*.Id' wildcard validates slice element (fixed)", func(t *testing.T) {
 		v := validate.Struct(newForm(), "updateStar")
 		v.StopOnError = false
 		ok := v.Validate("updateStar")
-		t.Logf("v2.0 #283 scene 'Tags.*.Id': ok=%v errors=%v", ok, v.Errors)
-		// 通配也命不中, 整体竟然通过(空 Id 未被校验)
-		assert.True(t, ok)
+		// 通配命中 Tags.0.Id, 空 Id 正确报错; Name/Date 不在场景内, 不被校验
+		assert.False(t, ok)
+		assert.ErrSubMsg(t, v.Errors, "Tags.0.Id is required")
+		assert.NotContains(t, v.Errors.String(), "Tags.0.Name")
+		assert.NotContains(t, v.Errors.String(), "Tags.0.Date")
+		// Name 太短(min_len:7)但不在 updateStar 场景内, 不应报错
+		assert.NotContains(t, v.Errors.String(), "Name")
 	})
 
-	t.Run("scene 'Tags.0.Id' explicit index DOES validate (workaround)", func(t *testing.T) {
+	t.Run("scene 'Tags.0.Id' explicit index DOES validate (workaround still valid)", func(t *testing.T) {
 		v := validate.Struct(newForm(), "updateIdx")
 		v.StopOnError = false
 		ok := v.Validate("updateIdx")

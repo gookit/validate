@@ -165,6 +165,43 @@ func ValueIsEmpty(v reflect.Value) bool {
 	return reflects.IsEmpty(v)
 }
 
+// indexPathToWildcard replaces each purely-numeric path segment with "*".
+// eg: "Tags.0.Id" -> "Tags.*.Id". hasIdx reports whether any numeric segment was
+// found; callers skip wildcard scene matching when it is false (the common case),
+// keeping the hot path cheap. (#283)
+func indexPathToWildcard(path string) (string, bool) {
+	// cheap pre-gate: no digit at all -> no index segment, avoid the split.
+	if !strings.ContainsFunc(path, func(r rune) bool { return r >= '0' && r <= '9' }) {
+		return path, false
+	}
+
+	segs := strings.Split(path, ".")
+	hasIdx := false
+	for i, s := range segs {
+		if isAllDigits(s) {
+			segs[i] = "*"
+			hasIdx = true
+		}
+	}
+	if !hasIdx {
+		return path, false
+	}
+	return strings.Join(segs, "."), true
+}
+
+// isAllDigits reports whether s is non-empty and all ASCII digits.
+func isAllDigits(s string) bool {
+	if s == "" {
+		return false
+	}
+	for i := 0; i < len(s); i++ {
+		if s[i] < '0' || s[i] > '9' {
+			return false
+		}
+	}
+	return true
+}
+
 // ErrConvertFail error
 var ErrConvertFail = errors.New("convert value is failure")
 
