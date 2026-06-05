@@ -619,16 +619,16 @@ type issue324Member struct {
 
 // https://github.com/gookit/validate/v2/issues/324 Nested Form Data Binding Fails for multipart/form-data
 //
-// still-broken in v2.0(未支持的特性): multipart/form-data 的嵌套字段(无论 bracket 写法
-// "address[street]" 还是 dot 写法 "address.street")都不能绑定到嵌套 struct。
+// FIXED(对象嵌套): multipart/form-data 的嵌套字段(bracket "address[street]" 或 dot
+// "address.street")现可绑定到嵌套 struct。
 //
-// 根因: FromURLValues 把表单键**原样平铺**进 d.Form(url.Values); BindSafeData 把
-// safeData(平铺 map)json.Marshal 再 Unmarshal —— 平铺键 "address[street]"/"address.street"
-// 在 JSON 里只是顶层扁平键, 不会变成嵌套对象, 故 Address 子字段始终为空。validate 没有
-// 对 bracket/dot 嵌套键做解析或展开。
+// 根因: FromURLValues 把表单键原样平铺进 d.Form; BindSafeData 把 safeData(平铺 map)直接
+// marshal, 平铺键不变成嵌套对象。
 //
-// 修复方向(改业务代码, 本任务只核查): 绑定前把 bracket "a[b]" 归一为路径 "a.b", 并按点
-// 路径把平铺键展开成嵌套 map 再绑定。此处断言 v2.0 真实(嵌套不绑定)行为并标注。
+// 修复: ① FromURLValues 用 normalizeFormKey 把 bracket 归一为点路径(address[street]->
+// address.street); ② BindSafeData 用 maputil.SetByPath 把点路径 safeData 展开成嵌套 map
+// 再绑定。前提: nested 字段要有点路径规则才进 safeData(与 map/form 既有语义一致)。
+// 范围: 仅对象嵌套; 数组下标 bracket(items[0][name])留后续。
 func TestIssue_324_v2(t *testing.T) {
 	run := func(t *testing.T, street, city string) issue324Member {
 		t.Helper()
@@ -640,6 +640,9 @@ func TestIssue_324_v2(t *testing.T) {
 		data := validate.FromURLValues(form)
 		v := data.Create()
 		v.StringRule("name", "required")
+		// nested 字段用点路径声明规则, 才会进入 safeData
+		v.StringRule("address.street", "required")
+		v.StringRule("address.city", "required")
 		assert.True(t, v.Validate())
 
 		var req issue324Member
@@ -647,20 +650,54 @@ func TestIssue_324_v2(t *testing.T) {
 		return req
 	}
 
-	t.Run("bracket notation address[street] does NOT bind nested (still-broken)", func(t *testing.T) {
+	t.Run("bracket notation address[street] binds nested (fixed)", func(t *testing.T) {
 		req := run(t, "address[street]", "address[city]")
-		// 简单字段正常绑定
 		assert.Eq(t, "John", req.Name)
-		// 嵌套字段未绑定(期望 Main St / New York)
-		assert.Eq(t, "", req.Address.Street)
-		assert.Eq(t, "", req.Address.City)
+		assert.Eq(t, "Main St", req.Address.Street)
+		assert.Eq(t, "New York", req.Address.City)
 	})
 
-	t.Run("dot notation address.street also does NOT bind nested (still-broken)", func(t *testing.T) {
+	t.Run("dot notation address.street binds nested (fixed)", func(t *testing.T) {
 		req := run(t, "address.street", "address.city")
 		assert.Eq(t, "John", req.Name)
-		assert.Eq(t, "", req.Address.Street)
-		assert.Eq(t, "", req.Address.City)
+		assert.Eq(t, "Main St", req.Address.Street)
+		assert.Eq(t, "New York", req.Address.City)
+	})
+
+	t.Run("multi-level bracket a[b][c] binds (fixed)", func(t *testing.T) {
+		type inner struct {
+			No string `json:"no"`
+		}
+		type outer struct {
+			Addr struct {
+				Street inner `json:"street"`
+			} `json:"addr"`
+		}
+		form := url.Values{}
+		form.Set("addr[street][no]", "12")
+
+		v := validate.FromURLValues(form).Create()
+		v.StringRule("addr.street.no", "required")
+		assert.True(t, v.Validate())
+
+		var got outer
+		assert.NoErr(t, v.BindSafeData(&got))
+		assert.Eq(t, "12", got.Addr.Street.No)
+	})
+
+	t.Run("nested field without a rule is not bound (safeData semantics kept)", func(t *testing.T) {
+		form := url.Values{}
+		form.Set("name", "John")
+		form.Set("address[street]", "Main St")
+
+		v := validate.FromURLValues(form).Create()
+		v.StringRule("name", "required") // 不给 address.street 规则
+		assert.True(t, v.Validate())
+
+		var req issue324Member
+		assert.NoErr(t, v.BindSafeData(&req))
+		assert.Eq(t, "John", req.Name)
+		assert.Eq(t, "", req.Address.Street) // 未校验 -> 不进 safeData -> 不绑定
 	})
 }
 
