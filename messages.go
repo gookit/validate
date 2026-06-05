@@ -549,6 +549,20 @@ func (t *Translator) findMessage(validator, field string, argLen int) string {
 		return msg
 	}
 
+	// field-level fallback message. eg key: "name"
+	// set via StringMessage("name", "name is invalid"). by specificity
+	// "field" sits between "field.validator" and bare "validator", so an
+	// explicit field-level message overrides the generic builtin/validator
+	// message for any failing validator of the field.
+	// NOTE: only consult the instance custom messages here (not the global
+	// builtinMessages) so a field whose name happens to equal a builtin
+	// validator key can't accidentally pick up a builtin message.
+	if t.messages != nil {
+		if msg, ok := t.messages[field]; ok {
+			return msg
+		}
+	}
+
 	// only validator name. "required"
 	if msg, ok := t.lookupMessage(validator); ok {
 		return msg

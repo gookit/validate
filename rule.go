@@ -244,6 +244,69 @@ func (v *Validation) ConfigRules(mp MS) *Validation {
 	return v
 }
 
+// StringMessage set error messages for a field by a tag-style string. It
+// mirrors the `message` struct tag format, the same way StringRule mirrors
+// the rule tag. Chainable, returns *Validation.
+//
+// Message string format:
+//   - multiple, per-validator: split by "|", each segment is "validator:message".
+//     it is registered under the "field.validator" key.
+//   - single, field-level: a segment without ":" is registered under the bare
+//     "field" key and acts as a fallback message for any failing validator of
+//     the field.
+//
+// Usage:
+//
+//	// per-validator messages
+//	v.StringMessage("name", "required:name is required|minLen:name is too short")
+//	// field-level fallback message
+//	v.StringMessage("name", "name is invalid")
+func (v *Validation) StringMessage(field, message string) *Validation {
+	message = strings.TrimSpace(message)
+	if field == "" || message == "" {
+		return v
+	}
+
+	// split by "|" into per-validator (or single field-level) messages.
+	for _, seg := range strings.Split(message, "|") {
+		seg = strings.TrimSpace(seg)
+		if seg == "" {
+			continue
+		}
+
+		// has validator prefix: "validator:message" -> key "field.validator"
+		if strings.ContainsRune(seg, ':') {
+			nodes := strings.SplitN(seg, ":", 2)
+			validator := strings.TrimSpace(nodes[0])
+			msg := strings.TrimSpace(nodes[1])
+			if validator == "" || msg == "" {
+				continue
+			}
+			v.trans.AddMessage(field+"."+validator, msg)
+		} else {
+			// no validator prefix: field-level fallback -> key "field"
+			v.trans.AddMessage(field, seg)
+		}
+	}
+	return v
+}
+
+// StringMessages set error messages for multi fields by string map. It mirrors
+// StringRules: map key is the field, value is the tag-style message spec.
+//
+// Usage:
+//
+//	v.StringMessages(validate.MS{
+//		"name": "required:name is required|minLen:name is too short",
+//		"age":  "age is invalid",
+//	})
+func (v *Validation) StringMessages(mp MS) *Validation {
+	mp.OrderedRange(func(field, message string) {
+		v.StringMessage(field, message)
+	})
+	return v
+}
+
 // AddRule for current validation
 //
 // Usage:
