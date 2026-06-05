@@ -166,18 +166,39 @@ func (r *FilterRule) Apply(v *Validation) (err error) {
 			}
 		}
 
+		// interior ".*" wildcard path (eg "ports.*.container_start"): the value
+		// fetched via GetByPath is a slice []any{...} of the per-element scalars
+		// collected from after the wildcard. apply the filters to EACH element
+		// (mirrors validateWildcardSlice on the validate side); otherwise a scalar
+		// filter like "int" would try to convert the whole slice as a single value
+		// and fail with "convert value type error" (#262). the per-element result
+		// is stored back under the wildcard key, which the validate path reads via
+		// tryGet -> filteredData, so element-wise validation just works.
+		//
+		// NOTE: only INTERIOR wildcards expand. a TERMINAL ".*" (eg "Domains.*" on
+		// a []string field) fetches the field's own slice, where slice-aware
+		// filters like "trimStrings"/"unique" operate on the whole slice (#172) —
+		// those keep the scalar/whole-value path below.
+		if strings.Contains(field, ".*") && !strings.HasSuffix(field, ".*") {
+			if rv := reflect.ValueOf(val); rv.Kind() == reflect.Slice {
+				out := make([]any, rv.Len())
+				for i := 0; i < rv.Len(); i++ {
+					if out[i], err = r.applyFilters(v, rv.Index(i).Interface()); err != nil {
+						return err
+					}
+				}
+				// note: source write-back (updateValue) is skipped for the wildcard
+				// path — it only supports whole-field Set; the collected slice in
+				// filteredData carries the result (covers Map/JSON sources).
+				v.filteredData[field] = out
+				continue
+			}
+			// not a slice (single match) -> fall through to the scalar path below.
+		}
+
 		// call filters
-		for i, name := range r.filters {
-			fv := v.FilterFuncValue(name)
-			args := parseArgString(r.filterArgs[i])
-			if !fv.IsValid() { // is built int filters
-				val, err = filter.Apply(name, val, args)
-			} else {
-				val, err = callCustomFilter(fv, val, args)
-			}
-			if err != nil {
-				return err
-			}
+		if val, err = r.applyFilters(v, val); err != nil {
+			return err
 		}
 
 		// update source data field value
@@ -190,6 +211,26 @@ func (r *FilterRule) Apply(v *Validation) (err error) {
 		v.filteredData[field] = newVal
 	}
 	return
+}
+
+// applyFilters runs the rule's full filter chain on a single value and returns
+// the filtered result. Used for both the scalar path and per-element on the
+// ".*" wildcard path.
+func (r *FilterRule) applyFilters(v *Validation, val any) (any, error) {
+	var err error
+	for i, name := range r.filters {
+		fv := v.FilterFuncValue(name)
+		args := parseArgString(r.filterArgs[i])
+		if !fv.IsValid() { // is built in filters
+			val, err = filter.Apply(name, val, args)
+		} else {
+			val, err = callCustomFilter(fv, val, args)
+		}
+		if err != nil {
+			return nil, err
+		}
+	}
+	return val, nil
 }
 
 // Fields name get

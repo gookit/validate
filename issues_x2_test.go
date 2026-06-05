@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/gookit/goutil/dump"
+	"github.com/gookit/goutil/mathutil"
 	"github.com/gookit/goutil/x/assert"
 	"github.com/gookit/validate/v2"
 )
@@ -496,20 +497,20 @@ func TestIssue_327_v2(t *testing.T) {
 
 // https://github.com/gookit/validate/v2/issues/262 filter 无法对切片中的元素应用
 //
-// still-broken in v2.0: 用通配路径 "ports.*.container_start" 给切片元素挂 filter,
-// 仍报 `_filter: ports.*.container_start: convert value type error`。
+// FIXED: 通配路径 "ports.*.container_start" 给切片元素挂 filter, 现已逐元素应用,
+// 不再报 `convert value type error`。
 //
-// 根因: 通配路径 "ports.*.container_start" 通过 GetByPath 取到的是整个切片
-// []any{80}(而非逐个标量), filter("int") 试图把这个 slice 当成单个值转 int -> 失败。
-// 显式数字索引 "ports.0.container_start" 取到标量 80, filter 正常工作。即 filter 没有
-// 对通配的切片元素逐个应用。
+// 根因: 通配路径经 GetByPath 取到整个切片 []any{80}(而非逐个标量), 旧逻辑把 filter("int")
+// 应用到整个 slice -> 当单个值转 int 失败。filter 链路缺少验证器侧 validateWildcardSlice
+// 那样的 ".*" 逐元素展开。
 //
-// 修复需改业务代码(filter 阶段对通配路径展开并逐元素应用), 本任务不改业务代码,
-// 故断言当前真实行为并标注。
+// 修复: FilterRule.Apply 检测到字段含 ".*" 且取值为切片时, 逐元素 apply filter, 结果作为
+// 收集切片写回 filteredData[通配key]; 验证器经 tryGet 优先读 filteredData, 形态天然对齐,
+// 逐元素校验直接跑通。范围: 先支持 Map/JSON 源、单级 ".*"。
 func TestIssue_262_v2(t *testing.T) {
-	jsonStr := `{"ports":[{"container_start":80,"container_end":80,"protocol":"tcp"}]}`
+	jsonStr := `{"ports":[{"container_start":80,"container_end":81,"protocol":"tcp"},{"container_start":90,"container_end":91,"protocol":"udp"}]}`
 
-	t.Run("wildcard filter on slice element still errors (still-broken)", func(t *testing.T) {
+	t.Run("wildcard filter on slice elements applies per-element (fixed)", func(t *testing.T) {
 		v, err := validate.FromJSON(jsonStr)
 		assert.NoErr(t, err)
 		vv := v.Create()
@@ -520,13 +521,15 @@ func TestIssue_262_v2(t *testing.T) {
 		vv.AddRule("ports.*.protocol", "string")
 
 		ok := vv.Validate()
-		t.Logf("v2.0 still-broken #262: ok=%v errors=%v", ok, vv.Errors)
-		// 期望: 通过并把元素转为 int。实际: filter 报 convert value type error。
-		assert.False(t, ok)
-		assert.StrContains(t, vv.Errors.String(), "convert value type error")
+		assert.True(t, ok)
+		assert.Empty(t, vv.Errors)
+		// 逐元素转为 int 后, 收集切片写回到通配 key
+		starts, hasStart := vv.SafeData()["ports.*.container_start"]
+		assert.True(t, hasStart)
+		assert.Eq(t, []any{80, 90}, starts)
 	})
 
-	t.Run("explicit index filter works (workaround)", func(t *testing.T) {
+	t.Run("explicit index filter works (workaround still valid)", func(t *testing.T) {
 		v, err := validate.FromJSON(jsonStr)
 		assert.NoErr(t, err)
 		vv := v.Create()
@@ -535,5 +538,20 @@ func TestIssue_262_v2(t *testing.T) {
 		vv.AddRule("ports.0.container_start", "int")
 		assert.True(t, vv.Validate())
 		assert.Eq(t, 80, vv.SafeData()["ports.0.container_start"])
+	})
+
+	t.Run("wildcard custom filter applies per-element (fixed)", func(t *testing.T) {
+		v, err := validate.FromJSON(jsonStr)
+		assert.NoErr(t, err)
+		vv := v.Create()
+		// 自定义 filter 走 callCustomFilter 分支, 同样应逐元素生效
+		vv.AddFilter("plus10", func(val any) (int, error) {
+			n, e := mathutil.ToInt(val)
+			return n + 10, e
+		})
+		vv.FilterRule("ports.*.container_start", "plus10")
+		vv.AddRule("ports.*.container_start", "int")
+		assert.True(t, vv.Validate())
+		assert.Eq(t, []any{90, 100}, vv.SafeData()["ports.*.container_start"])
 	})
 }
