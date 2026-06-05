@@ -3,6 +3,7 @@ package validate_test
 import (
 	"mime/multipart"
 	"net/url"
+	"regexp"
 	"testing"
 
 	"github.com/gookit/goutil/dump"
@@ -866,5 +867,79 @@ func TestIssue_203_v2(t *testing.T) {
 		v := validate.Map(map[string]any{"code": ""})
 		v.StringRule("code", "required")
 		assert.False(t, v.Validate())
+	})
+}
+
+// --- #244 support: stand-in HTML/JS sanitizer ---
+//
+// issue244HTMLTagRe 匹配任意 HTML 标签(含 <script>/<img ...> 等)。
+// 这是一个**最小可用的 stand-in 清洗实现**, 仅用于在测试中演示"自定义 filter
+// 在绑定前清洗字符串"的用法。**真实场景请勿用正则去 HTML**(无法防御所有 XSS),
+// 应换成 bluemonday: `policy := bluemonday.UGCPolicy(); ... policy.Sanitize(s)`。
+var issue244HTMLTagRe = regexp.MustCompile(`<[^>]*>`)
+
+// sanitizeHTMLStandIn 去掉字符串里的 HTML 标签(stand-in)。
+// 真实使用时整体替换为 bluemonday 的 `policy.Sanitize(s)` 即可, filter 接线方式不变。
+func sanitizeHTMLStandIn(s string) string {
+	return issue244HTMLTagRe.ReplaceAllString(s, "")
+}
+
+// https://github.com/gookit/validate/v2/issues/244
+// [Question] How to sanitize all data for v.sanitize() with bluemonday
+//
+// 核查结论: **answered(非 bug, 用法问题)**。提问者想在数据绑定到 struct 字段**之前**,
+// 用 bluemonday 把字符串里的 HTML/JS 清掉, 再走 BindSafeData。本库自带的自定义 filter
+// 机制(`AddFilter` + `filter:"xxx"` tag / 程序化 `FilterRule`)正好满足: filter 在
+// 校验/绑定**之前**运行, 把 bluemonday 的 `policy.Sanitize` 包成一个 filter 挂到字符串
+// 字段上即可 —— 无需任何新依赖, 也无需改库。
+//
+// 本测试用一个**最小 stand-in 清洗函数** sanitizeHTMLStandIn(简单正则去标签)演示
+// 同一套 filter 接线; **真实使用时只需把它换成 `bluemondayPolicy.Sanitize`**, 其余
+// 不变。覆盖两种接线方式: ① struct tag `filter:"sanitizeHTML"`; ② 程序化 FilterRule。
+func TestIssue_244_v2(t *testing.T) {
+	const dirty = `Hello <script>alert('xss')</script><b>World</b>`
+	const clean = `Hello alert('xss')World`
+
+	t.Run("struct tag filter sanitizes before BindSafeData", func(t *testing.T) {
+		// 字符串字段挂 filter:"sanitizeHTML"; filter 在校验/绑定前运行
+		type UserForm struct {
+			Bio string `json:"bio" filter:"sanitizeHTML" validate:"string"`
+		}
+
+		f := &UserForm{Bio: dirty}
+		v := validate.New(f)
+		// 真实场景: v.AddFilter("sanitizeHTML", bluemondayPolicy.Sanitize)
+		v.AddFilter("sanitizeHTML", sanitizeHTMLStandIn)
+
+		assert.True(t, v.Validate())
+		// 清洗后的值已进入 safeData(键为字段名 Bio)
+		assert.Eq(t, clean, v.SafeData()["Bio"])
+
+		out := &UserForm{}
+		assert.NoErr(t, v.BindSafeData(out))
+		assert.Eq(t, clean, out.Bio)
+		assert.StrNotContains(t, out.Bio, "<script>")
+		assert.StrNotContains(t, out.Bio, "<b>")
+	})
+
+	t.Run("programmatic FilterRule sanitizes before BindSafeData", func(t *testing.T) {
+		type UserForm struct {
+			Bio string `json:"bio"`
+		}
+
+		v := validate.Map(map[string]any{"bio": dirty})
+		// 真实场景: v.AddFilter("sanitizeHTML", bluemondayPolicy.Sanitize)
+		v.AddFilter("sanitizeHTML", sanitizeHTMLStandIn)
+		// 先清洗, 再加一条校验规则 —— 只有"参与校验"的字段才会进 safeData 供绑定
+		v.FilterRule("bio", "sanitizeHTML")
+		v.StringRule("bio", "string")
+
+		assert.True(t, v.Validate())
+		assert.Eq(t, clean, v.SafeData()["bio"])
+
+		out := &UserForm{}
+		assert.NoErr(t, v.BindSafeData(out))
+		assert.Eq(t, clean, out.Bio)
+		assert.StrNotContains(t, out.Bio, "script")
 	})
 }
