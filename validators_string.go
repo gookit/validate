@@ -50,9 +50,16 @@ func HasURLSchema(s string) bool { return s != "" && rxURLSchema.MatchString(s) 
 // IsFullURL string.
 func IsFullURL(s string) bool { return s != "" && rxFullURL.MatchString(s) }
 
-// IsURL string.
+// IsURL string. This is a loose URI-reference check (relative refs, paths and
+// bare hosts are accepted); for a strict absolute URL use IsFullURL.
 func IsURL(s string) bool {
 	if s == "" {
+		return false
+	}
+
+	// a URL/URI reference cannot contain raw whitespace; url.Parse is otherwise
+	// lenient enough to accept things like "not a url" (#138).
+	if strings.ContainsAny(s, " \t\r\n\f\v") {
 		return false
 	}
 

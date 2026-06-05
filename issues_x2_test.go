@@ -559,40 +559,49 @@ func TestIssue_262_v2(t *testing.T) {
 
 // https://github.com/gookit/validate/v2/issues/138 FullUrl regex needs improvement
 //
-// still-broken in v2.0(enhancement 未做): fullUrl 的正则
-//
-//	^(?:ftp|tcp|udp|wss?|https?):\/\/[\w\.\/#=?&-_%]+$
-//
-// 字符类过于宽松, 把一批非法 URL 判为合法。issue 给的三个反例当前都通过 IsFullURL:
-//   - "https://www.googl_?e.com/testme"(含 _ 与 ? 等)
+// FIXED: 旧 fullUrl 正则 `^...://[\w.\/#=?&-_%]+$` 字符类过宽, 把非法 URL 判为合法。
+// 新正则要求 scheme + 结构化 host(domain.tld 或 IPv4) + 可选 port + 可选 path/query,
+// issue 三个反例现已被拒:
+//   - "https://www.googl_?e.com/testme"(host 含下划线/非法结构)
 //   - "https://www"(无 TLD)
-//   - "https://not%23"
+//   - "https://not%23"(host 含非法字符且无 TLD)
 //
-// 此外 IsURL 基于 url.Parse(err==nil), 更宽松(连 "not a url" 都判为合法)。
-//
-// 修复方向(改业务代码, 本任务只核查): 参考 asaskevich/govalidator 的 URL 正则收紧
-// host/TLD/字符集校验。故此处断言 v2.0 真实(仍宽松)行为并标注。
+// IsURL 是宽松的 URI-reference 检查(其自身测试要求 "123"、"/users/profile/1" 合法,
+// 故保持宽松); 仅补一个空白字符护栏, 让 "not a url" 这种含空格的串被拒。
 func TestIssue_138_v2(t *testing.T) {
-	t.Run("fullUrl regex too permissive, accepts invalid URLs (still-broken)", func(t *testing.T) {
-		invalidButAccepted := []string{
+	t.Run("fullUrl rejects invalid URLs (fixed)", func(t *testing.T) {
+		invalid := []string{
 			"https://www.googl_?e.com/testme",
 			"https://www",
 			"https://not%23",
 		}
-		for _, s := range invalidButAccepted {
-			// 期望: 应为 false(非法)。实际: 仍 true。断言现状。
-			assert.True(t, validate.IsFullURL(s), "expected v2.0 to (wrongly) accept %q", s)
-		}
-
-		// 合法基线仍应通过
-		for _, s := range []string{"http://example.com", "https://www.google.com/testme", "ftp://files.example.com/a"} {
-			assert.True(t, validate.IsFullURL(s))
+		for _, s := range invalid {
+			assert.False(t, validate.IsFullURL(s), "expected %q to be rejected now", s)
 		}
 	})
 
-	t.Run("IsURL (url.Parse based) even more permissive (still-broken)", func(t *testing.T) {
-		// url.Parse 几乎不报错, 连明显非 URL 的串也判为合法
-		assert.True(t, validate.IsURL("not a url"))
+	t.Run("fullUrl still accepts valid URLs (no regression)", func(t *testing.T) {
+		valid := []string{
+			"http://example.com",
+			"https://www.google.com/testme",
+			"https://www.google.com/test_me", // 下划线在 path 里仍合法
+			"http://www.google.com/test?a=2%25a&b=c",
+			"ftp://files.example.com/a",
+			"http://192.168.0.1/path", // IPv4 host
+			"http://a.com:8080/x",     // 带端口
+		}
+		for _, s := range valid {
+			assert.True(t, validate.IsFullURL(s), "expected %q to stay valid", s)
+		}
+	})
+
+	t.Run("IsURL stays loose but rejects whitespace (fixed)", func(t *testing.T) {
+		// 含空格的串不再被误判为合法
+		assert.False(t, validate.IsURL("not a url"))
+		// 宽松语义保持: 相对引用/路径/裸串仍合法
+		assert.True(t, validate.IsURL("a.com?p=1"))
+		assert.True(t, validate.IsURL("/users/profile/1"))
+		assert.True(t, validate.IsURL("123"))
 	})
 }
 

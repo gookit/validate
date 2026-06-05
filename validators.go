@@ -25,7 +25,12 @@ const (
 	Latitude     = "^[-+]?([1-8]?\\d(\\.\\d+)?|90(\\.0+)?)$"
 	Longitude    = "^[-+]?(180(\\.0+)?|((1[0-7]\\d)|([1-9]?\\d))(\\.\\d+)?)$"
 	DNSName      = `^([a-zA-Z0-9_]{1}[a-zA-Z0-9_-]{0,62}){1}(\.[a-zA-Z0-9_]{1}[a-zA-Z0-9_-]{0,62})*[\._]?$`
-	FullURL      = `^(?:ftp|tcp|udp|wss?|https?):\/\/[\w\.\/#=?&-_%]+$`
+	// FullURL requires scheme + a structured host (domain.tld or IPv4), with an
+	// optional port and path/query/fragment. The host structure is what rejects
+	// the over-permissive cases of the old `[\w./#=?&-_%]+` blob (#138): a missing
+	// TLD ("https://www"), invalid host chars ("https://not%23"), or an underscore
+	// in the host ("https://www.googl_?e.com/...").
+	FullURL      = `^(?:ftp|tcp|udp|wss?|https?)://(?:(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}|(?:\d{1,3}\.){3}\d{1,3})(?::\d{1,5})?(?:[/?#]\S*)?$`
 	URLSchema    = `((ftp|tcp|udp|wss?|https?):\/\/)`
 	URLUsername  = `(\S+(:\S*)?@)`
 	URLPath      = `((\/|\?|#)[^\s]*)`
