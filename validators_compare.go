@@ -149,10 +149,8 @@ func Enum(val, enum any) bool {
 	// if is string value
 	if strVal, ok := v.(string); ok {
 		if ss, ok := enum.([]string); ok {
-			for _, strItem := range ss {
-				if strVal == strItem { // exists
-					return true
-				}
+			if arrutil.StringsContains(ss, strVal) {
+				return true
 			}
 		}
 		return false
@@ -161,10 +159,8 @@ func Enum(val, enum any) bool {
 	// as int64 value
 	intVal := v.(int64)
 	if int64s, err := arrutil.ToInt64s(enum); err == nil {
-		for _, i64 := range int64s {
-			if intVal == i64 {
-				return true
-			}
+		if arrutil.Int64sHas(int64s, intVal) {
+			return true
 		}
 	}
 	return false
