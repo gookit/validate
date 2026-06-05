@@ -159,3 +159,99 @@ func TestIssue_189_v2(t *testing.T) {
 		assert.Eq(t, "name is required", v.Errors.FieldOne("name"))
 	})
 }
+
+// https://github.com/gookit/validate/issues/292
+// 希望支持完整逻辑条件(或/非)
+//
+// 诉求: 验证「字段是 IP 或 CIDR」, 但 `validate:"ip|CIDR"` 里 `|` 是规则分隔符(逻辑与,
+// 两者都要满足), 无法表达「任一满足即可」。
+//
+// 实现: 新增组合校验器 `rule_one_of` (规则级"逻辑或"), 满足列出的任一子校验器即通过。
+//   - 名称用 rule_one_of 而非 oneof: oneof 已是 enum 别名(语义=值∈集合), 会撞车。
+//   - phase1 仅支持无参子校验器(ip/cidr/email/url/...); 带参子规则(min:5)留后续。
+//   - 子项名支持别名(ip/IP/cidr/CIDR), 经 ValidatorName 解析。
+//   - 未知子校验器名 → build/解析期 fail-fast(panic), 与现有未知 validator 行为一致。
+//   - 错误消息: "{field} did not satisfy any of: %v"(%v 渲染子校验器名列表)。
+func TestIssue_292_v2(t *testing.T) {
+	t.Run("tag: ip hits -> pass", func(t *testing.T) {
+		type Host struct {
+			Addr string `validate:"rule_one_of:ip,cidr"`
+		}
+		v := validate.Struct(&Host{Addr: "1.2.3.4"})
+		assert.True(t, v.Validate())
+	})
+
+	t.Run("tag: cidr hits -> pass", func(t *testing.T) {
+		type Host struct {
+			Addr string `validate:"rule_one_of:ip,cidr"`
+		}
+		v := validate.Struct(&Host{Addr: "10.0.0.0/8"})
+		assert.True(t, v.Validate())
+	})
+
+	t.Run("tag: neither -> fail with message", func(t *testing.T) {
+		type Host struct {
+			Addr string `validate:"rule_one_of:ip,cidr"`
+		}
+		v := validate.Struct(&Host{Addr: "not-an-addr"})
+		assert.False(t, v.Validate())
+		assert.StrContains(t, v.Errors.FieldOne("Addr"), "did not satisfy any")
+	})
+
+	t.Run("programmatic StringRule: ip pass, invalid fail", func(t *testing.T) {
+		v := validate.Map(map[string]any{"addr": "1.2.3.4"})
+		v.StringRule("addr", "rule_one_of:ip,cidr")
+		assert.True(t, v.Validate())
+
+		v2 := validate.Map(map[string]any{"addr": "abc"})
+		v2.StringRule("addr", "rule_one_of:ip,cidr")
+		assert.False(t, v2.Validate())
+		assert.StrContains(t, v2.Errors.FieldOne("addr"), "did not satisfy any")
+	})
+
+	t.Run("alias resolution: ip/IP/cidr/CIDR all hit", func(t *testing.T) {
+		// uppercase aliases resolve via ValidatorName
+		v := validate.Map(map[string]any{"addr": "1.2.3.4"})
+		v.StringRule("addr", "rule_one_of:IP,CIDR")
+		assert.True(t, v.Validate())
+
+		v2 := validate.Map(map[string]any{"addr": "10.0.0.0/8"})
+		v2.StringRule("addr", "rule_one_of:ip,cidr")
+		assert.True(t, v2.Validate())
+	})
+
+	t.Run("combine with required", func(t *testing.T) {
+		// empty -> rejected by required
+		v := validate.Map(map[string]any{"addr": ""})
+		v.StringRule("addr", "required|rule_one_of:ip,cidr")
+		assert.False(t, v.Validate())
+
+		// non-empty invalid -> rejected by rule_one_of
+		v2 := validate.Map(map[string]any{"addr": "xxx"})
+		v2.StringRule("addr", "required|rule_one_of:ip,cidr")
+		assert.False(t, v2.Validate())
+		assert.StrContains(t, v2.Errors.FieldOne("addr"), "did not satisfy any")
+
+		// valid -> pass
+		v3 := validate.Map(map[string]any{"addr": "1.2.3.4"})
+		v3.StringRule("addr", "required|rule_one_of:ip,cidr")
+		assert.True(t, v3.Validate())
+	})
+
+	t.Run("without required: empty value is skipped (SkipOnEmpty)", func(t *testing.T) {
+		// rule_one_of is a non-required validator; empty value is skipped -> pass.
+		v := validate.Map(map[string]any{"addr": ""})
+		v.StringRule("addr", "rule_one_of:ip,cidr")
+		assert.True(t, v.Validate())
+	})
+
+	t.Run("unknown sub-validator name -> panic (fail-fast)", func(t *testing.T) {
+		// unknown name placed first so the loop reaches it regardless of value;
+		// fail-fast panics rather than silently swallowing the typo.
+		assert.Panics(t, func() {
+			v := validate.Map(map[string]any{"addr": "1.2.3.4"})
+			v.StringRule("addr", "rule_one_of:no_such_validator,ip")
+			v.Validate()
+		})
+	})
+}
