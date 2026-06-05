@@ -315,3 +315,123 @@ func TestIssue_232_v2(t *testing.T) {
 		assert.True(t, v.Validate())
 	})
 }
+
+// --- #283 support type (ConfigValidation/CustomValidator methods need pkg-level type) ---
+
+type issue283Tag struct {
+	Id   string `validate:"required"`
+	Name string `validate:"required"`
+	Date string `validate:"required"`
+}
+
+type issue283Form struct {
+	Name string        `validate:"required|min_len:7"`
+	Code string        `validate:"required|customValidator"`
+	Tags []issue283Tag `validate:"required"`
+	Test int           `validate:"required|greaterThan:1"`
+}
+
+func (f issue283Form) CustomValidator(val string) bool { return len(val) == 4 }
+
+func (f issue283Form) ConfigValidation(v *validate.Validation) {
+	v.WithScenes(validate.SValues{
+		// 报告者写法: 用不带索引的 "Tags.Id" 想校验切片元素
+		"update":     []string{"Name", "Tags.Id", "Test"},
+		"updateStar": []string{"Tags.*.Id"},
+		"updateIdx":  []string{"Tags.0.Id"},
+	})
+}
+
+// https://github.com/gookit/validate/v2/issues/283 Scenes does not work in slices
+//
+// still-broken in v2.0(部分): 场景(scene)字段列表无法用 "Tags.Id"(不带索引)或
+// "Tags.*.Id"(通配)来命中切片元素生成的规则 —— 级联会生成 "Tags.0.Id" 这样带索引
+// 的规则名, 而场景按字符串精确匹配, "Tags.Id" / "Tags.*.Id" 都匹配不上, 于是切片内
+// 字段在该场景下根本不被校验。只有写显式数字索引 "Tags.0.Id" 才能命中。
+//
+// 这是 issue 标题 "Scenes does not work in slices" 的核心: 场景无法用通配/无索引方式
+// 选中切片元素字段。修复需改业务代码(场景匹配支持通配/前缀), 本任务不改业务代码,
+// 故断言当前真实行为并标注。
+func TestIssue_283_v2(t *testing.T) {
+	newForm := func() *issue283Form {
+		return &issue283Form{
+			Name: "inhere", Code: "asd", Test: 1,
+			Tags: []issue283Tag{{Id: "", Name: "", Date: ""}},
+		}
+	}
+
+	t.Run("scene 'Tags.Id' does NOT validate slice element (still-broken)", func(t *testing.T) {
+		v := validate.Struct(newForm(), "update")
+		v.StopOnError = false
+		ok := v.Validate("update")
+		t.Logf("v2.0 #283 scene 'Tags.Id': ok=%v errors=%v", ok, v.Errors)
+		// Name(太短)与 Test 报错, 但 Tags.0.Id 完全未被校验(无 Tags 相关错误)
+		assert.False(t, ok)
+		assert.NotContains(t, v.Errors.String(), "Tags")
+	})
+
+	t.Run("scene 'Tags.*.Id' wildcard also does NOT validate (still-broken)", func(t *testing.T) {
+		v := validate.Struct(newForm(), "updateStar")
+		v.StopOnError = false
+		ok := v.Validate("updateStar")
+		t.Logf("v2.0 #283 scene 'Tags.*.Id': ok=%v errors=%v", ok, v.Errors)
+		// 通配也命不中, 整体竟然通过(空 Id 未被校验)
+		assert.True(t, ok)
+	})
+
+	t.Run("scene 'Tags.0.Id' explicit index DOES validate (workaround)", func(t *testing.T) {
+		v := validate.Struct(newForm(), "updateIdx")
+		v.StopOnError = false
+		ok := v.Validate("updateIdx")
+		// 显式数字索引可命中, 空 Id 正确报错
+		assert.False(t, ok)
+		assert.ErrSubMsg(t, v.Errors, "Tags.0.Id is required")
+	})
+}
+
+// --- #314 support types (ConfigValidation needs pkg-level type) ---
+
+type issue314Sub struct {
+	A string
+}
+
+type issue314Struct struct {
+	SubStruct *issue314Sub `validate:"required"`
+}
+
+func (issue314Struct) ConfigValidation(v *validate.Validation) {
+	v.WithScenes(validate.SValues{
+		"SubStruct": []string{"SubStruct"},
+		"None":      []string{""}, // 期望: 此场景下什么都不校验
+	})
+}
+
+// https://github.com/gookit/validate/v2/issues/314 Scene with empty validation rules now fails
+//
+// still-broken in v2.0(行为回退): 场景 "None": []string{""} 期望"不校验任何字段",
+// v1.4.5 下可正常通过, 但现在仍会报 "SubStruct is required"。
+//
+// 根因: sceneFieldMap() 把空字符串 "" 当作一个普通场景字段键, 得到 sceneFields={"":1}。
+// 随后 isNotNeedToCheck("SubStruct") 里 `strings.Join(fields[0:0], ".")` 得到 ""——
+// 恰好命中 sceneFields[""], 于是判定"需要校验", required 仍被触发。即空字符串场景项
+// 反而把所有字段都纳入校验, 与"什么都不校验"语义相反。
+//
+// 修复需改业务代码(sceneFieldMap 跳过空字段 / isNotNeedToCheck 不让空前缀命中),
+// 本任务不改业务代码, 故断言当前真实(仍回退)行为并标注。
+func TestIssue_314_v2(t *testing.T) {
+	t.Run("empty-rule scene 'None' still triggers validation (still-broken)", func(t *testing.T) {
+		foo := issue314Struct{}
+		err := validate.Struct(&foo).ValidateE("None")
+		t.Logf("v2.0 still-broken #314: None scene err=%v", err)
+		// 期望: err 为空。实际: 仍报 SubStruct required。
+		assert.NotEmpty(t, err)
+		assert.StrContains(t, err.String(), "SubStruct is required")
+	})
+
+	t.Run("scene 'SubStruct' validates SubStruct (correct)", func(t *testing.T) {
+		foo := issue314Struct{}
+		err := validate.Struct(&foo).ValidateE("SubStruct")
+		assert.NotEmpty(t, err)
+		assert.StrContains(t, err.String(), "SubStruct is required")
+	})
+}
