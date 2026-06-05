@@ -38,6 +38,54 @@ func Test_Issue227(t *testing.T) {
 }
 
 // https://github.com/gookit/validate/v2/issues/259 Embedded structs are not validated properly #259
+//
+// not-a-bug in v2.0(核心问题已修): issue 标题"嵌入结构体未被正确验证"在 v1.5.2 下
+// 的根因是匿名嵌入结构体的字段根本没有被级联验证。v2.0(T10)起匿名嵌入结构体始终级联
+// (豁免 CheckSubOnParentMarked), 因此 NameField.Name / BranchField.Branch 上的
+// `required` 规则现在会被求值 —— 嵌入字段已被正确验证。
+//
+// 报告者期望 perm2(Type=remove)整体通过, 其心智模型是: 嵌入字段 UserData 上的
+// `required_if:Type,give` 不满足时, 应"门控"住其内部所有 required 规则。但 gookit
+// 的设计是: 嵌入字段被展平后, 内部 `required` 规则是独立求值的, 不受外层
+// required_if 门控。所以 perm2 仍会因 name/branch 为空而失败 —— 这是设计行为, 不是
+// 缺陷; 正确写法应在内部字段上用条件规则。下面断言 v2.0 的真实行为。
+func TestIssue_259_v2(t *testing.T) {
+	type NameField struct {
+		Name string `json:"name" validate:"required|max_len:5000"`
+	}
+	type BranchField struct {
+		Branch string `json:"branch" validate:"required|min_len:32|max_len:32"`
+	}
+	type UserData struct {
+		NameField   `json:",inline"`
+		BranchField `json:",inline"`
+	}
+	type Permission struct {
+		UserData `json:",inline" validate:"required_if:Type,give"`
+		Type     string `json:"type" validate:"required|in:give,remove"`
+		Access   string `json:"access" validate:"required_if:Type,remove"`
+	}
+
+	t.Run("embedded fields are now cascaded and validated (give+empty fails)", func(t *testing.T) {
+		perm1 := Permission{UserData: UserData{}, Type: "give"}
+		v1 := validate.Struct(perm1)
+		v1.StopOnError = false
+		// give 场景下 Name/Branch 必填, 空值应失败(证明嵌入字段确实被验证了)
+		assert.False(t, v1.Validate())
+		assert.ErrSubMsg(t, v1.Errors, "name is required")
+	})
+
+	t.Run("inner required is not gated by outer required_if (design behavior)", func(t *testing.T) {
+		perm2 := Permission{Type: "remove", Access: "change_types"}
+		v2 := validate.Struct(&perm2)
+		v2.StopOnError = false
+		// 嵌入字段被展平, 内部 required 独立求值, 不受外层 required_if 门控,
+		// 因此 name/branch 为空仍报错 —— 这是设计行为, 非缺陷。
+		assert.False(t, v2.Validate())
+		assert.ErrSubMsg(t, v2.Errors, "name is required")
+		assert.ErrSubMsg(t, v2.Errors, "branch is required")
+	})
+}
 
 // https://github.com/gookit/validate/v2/issues/272 eqField对于指针类型数据无法正确校验
 func Test_Issue272(t *testing.T) {
@@ -103,5 +151,167 @@ func Test_Issue316(t *testing.T) {
 		assert.True(t, v.Validate())
 		assert.Nil(t, v.Errors.ErrOrNil())
 		dump.P(v.SafeData())
+	})
+}
+
+// https://github.com/gookit/validate/v2/issues/217 Nested resources are evaluated differently
+//
+// still-broken in v2.0(注: 已有 TestIssues_217, 此为补充复现, 故用 _v2 后缀):
+// Nested.Samples 是 []Sample, Sample.Val 是 *bool 且带 required。当某个元素的 Val
+// 指向 false(非 nil 指针)时, 切片内子结构体的 required 仍把它判为"空"而报错;
+// 而 Val 指向 true 的元素不报错。
+//
+// 根因: data_source.go 的子结构体取值路径(GetByPath/tryGet 的 fieldAtSubStruct
+// 分支)对解引用后的 *bool 直接返回 fv.IsZero() 作为"是否为空"标志 —— bool(false)
+// 的 IsZero()==true, 于是被 required 误判为空。而顶层字段路径专门把 bool 视为存在
+// (见 data_source.go 注释 "bool as exists"), 两条路径行为不一致, 这正是 issue 标题
+// "Nested resources are evaluated differently" 所指。
+//
+// 修复需改业务代码(data_source.go 子结构体路径对 bool 做 as-exists 处理), 本任务
+// 只做核查不改业务代码, 故此处断言 v2.0 的真实(仍有缺陷)行为, 留待后续修复。
+func TestIssue_217_v2(t *testing.T) {
+	type Sample struct {
+		Val *bool `validate:"required"`
+	}
+	type Nested struct {
+		Samples []Sample `validate:"slice"`
+	}
+
+	t.Run("top-level *bool->false passes required (correct)", func(t *testing.T) {
+		val := false
+		v := validate.Struct(Sample{Val: &val})
+		// 顶层路径把 bool 视为存在, *bool->false 正确通过
+		assert.True(t, v.Validate())
+	})
+
+	t.Run("nil *bool fails required (correct)", func(t *testing.T) {
+		v := validate.Struct(Sample{Val: nil})
+		assert.False(t, v.Validate())
+	})
+
+	t.Run("slice element *bool->false WRONGLY fails required (v2.0 still-broken)", func(t *testing.T) {
+		val, val2 := false, true
+		data := Nested{Samples: []Sample{{Val: &val}, {Val: &val2}}}
+		v := validate.Struct(data)
+		v.StopOnError = false
+		// 期望: 应通过(两个元素的 Val 都非 nil)。实际: 仍失败, 只有指向 false 的
+		// Samples.0.Val 被误报为空。下面断言当前真实行为, 并标注仍未解决。
+		ok := v.Validate()
+		t.Logf("v2.0 still-broken #217: ok=%v errors=%v", ok, v.Errors)
+		assert.False(t, ok)
+		assert.ErrSubMsg(t, v.Errors, "Samples.0.Val is required")
+		// 指向 true 的元素不会被误报
+		assert.NotContains(t, v.Errors.String(), "Samples.1.Val")
+	})
+}
+
+// --- #235 support types (custom-validator method must be on a named pkg-level type) ---
+
+type issue235Node struct {
+	Name     string
+	Location string
+}
+
+// issue235Config 用 issue 报告里推荐的"自定义校验器"写法验证 slice-of-struct。
+// 注意 v2.0 下需要给 Nodes 字段加 validate tag(此处 customFunction)才会被收集。
+type issue235Config struct {
+	Nodes []issue235Node `validate:"customFunction"`
+}
+
+// CustomFunction 在父结构体上校验整个切片: 任一元素若有 Location 但缺 Name 则失败。
+func (c issue235Config) CustomFunction(nodes []issue235Node) bool {
+	for k := range nodes {
+		if nodes[k].Location != "" && nodes[k].Name == "" {
+			return false
+		}
+	}
+	return true
+}
+
+func (c issue235Config) Messages() map[string]string {
+	return validate.MS{"customFunction": "each {field} needs `Name` set if `Location` is set"}
+}
+
+// https://github.com/gookit/validate/v2/issues/235 How do I validate slice of struct inside a struct?
+//
+// partial in v2.0:
+//   - 报告者最初的写法 `required_with:Nodes..Location`(跨切片元素的路径式 required_with)
+//     仍不能按预期工作: 即便第 1 个元素没有 Location, 它仍报 Nodes.1.Name 必填。这条
+//     路径式跨元素引用方式 v2.0 依旧不支持(still-broken, 见 t.Run "path-based...")。
+//   - issue 自带的"在切片字段上挂自定义校验器"workaround 在 v2.0 下完全可用
+//     (resolved): 给 Nodes 加 `validate:"customFunction"` tag 即可触发并逐元素校验,
+//     这也是推荐解法。
+func TestIssue_235_v2(t *testing.T) {
+	t.Run("path-based required_with across slice elements still misbehaves", func(t *testing.T) {
+		type Node struct {
+			Name     string `validate:"required_with:Nodes..Location"`
+			Location string
+		}
+		type Config struct {
+			Nodes []Node `validate:""`
+		}
+		// 第 2 个元素既无 Location 也无 Name, 按 required_with 语义不该报错,
+		// 但 v2.0 仍把 Nodes.1.Name 判为必填 —— 路径式跨元素引用未生效。
+		data := &Config{Nodes: []Node{{Name: "node1", Location: "A"}, {}}}
+		v := validate.Struct(data)
+		v.StopOnError = false
+		ok := v.Validate()
+		t.Logf("v2.0 path-based required_with #235: ok=%v errors=%v", ok, v.Errors)
+		assert.False(t, ok)
+		assert.ErrSubMsg(t, v.Errors, "Nodes.1.Name")
+	})
+
+	t.Run("custom-validator workaround works (recommended)", func(t *testing.T) {
+		// good: 每个有 Location 的元素都有 Name
+		good := &issue235Config{Nodes: []issue235Node{{Name: "n1", Location: "A"}, {}}}
+		vg := validate.Struct(good)
+		vg.StopOnError = false
+		assert.True(t, vg.Validate())
+
+		// bad: 有元素含 Location 但缺 Name
+		bad := &issue235Config{Nodes: []issue235Node{{Location: "B"}}}
+		vb := validate.Struct(bad)
+		vb.StopOnError = false
+		assert.False(t, vb.Validate())
+		assert.ErrSubMsg(t, vb.Errors, "needs `Name` set if `Location` is set")
+	})
+}
+
+// https://github.com/gookit/validate/v2/issues/232
+// 在校验 struct A 时, 其成员 a 是另一个 struct B 的 slice, 如何让 A.a 的 tag 触发对
+// 每个 B 元素的字段规则(如 B 的 validateb)进行校验。
+//
+// resolved in v2.0: 只要给切片字段 a 加上 `validate` tag(空 tag `validate:""` 也算),
+// v2.0 就会下探到每个 B 元素并应用 B 自身的字段规则(CheckSubOnParentMarked 行为)。
+// 这正是该提问的答案: 给 A.a 加 validate tag 即可触发对 B 的级联验证; 不加 tag 则
+// 不级联。
+func TestIssue_232_v2(t *testing.T) {
+	type B struct {
+		Bval string `validate:"required|min_len:3"`
+	}
+
+	t.Run("slice field WITH validate tag cascades into each B", func(t *testing.T) {
+		type A struct {
+			Items []B `validate:"required"`
+		}
+		// 元素 Bval 太短, 应触发 B 的 min_len 规则
+		v := validate.Struct(A{Items: []B{{Bval: "x"}}})
+		v.StopOnError = false
+		assert.False(t, v.Validate())
+		assert.ErrSubMsg(t, v.Errors, "Items.0.Bval min length is 3")
+
+		// 合法元素应通过
+		ok := validate.Struct(A{Items: []B{{Bval: "hello"}}})
+		assert.True(t, ok.Validate())
+	})
+
+	t.Run("slice field WITHOUT validate tag does not cascade (v2.0 design)", func(t *testing.T) {
+		type A struct {
+			Items []B
+		}
+		// 无 validate tag, v2.0 不下探, 即便元素非法也通过
+		v := validate.Struct(A{Items: []B{{Bval: "x"}}})
+		v.StopOnError = false
+		assert.True(t, v.Validate())
 	})
 }
