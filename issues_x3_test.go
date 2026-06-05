@@ -76,3 +76,86 @@ func TestIssue_184_v2(t *testing.T) {
 		assert.StrNotContains(t, msg, "(value:")
 	})
 }
+
+// https://github.com/gookit/validate/issues/189
+// 希望增加 StringMessage 方法
+//
+// 诉求: 像 StringRule 那样, 可以用 tag 写法(字符串)来声明字段的错误消息,
+// 而不必使用 map 形态的 AddMessages/WithMessages。
+//
+// 实现: 新增 v.StringMessage(field, message) 与批量 v.StringMessages(MS)。
+// 镜像 `message` struct tag 的字符串格式, 链式返回 *Validation。
+//
+// 字符串格式:
+//   - 按校验器多条(以 "|" 分隔), 每段 "validator:message" -> 注册到 "field.validator" 键。
+//     eg: "required:name is required|minLen:name is too short"
+//   - 字段级单条(无 "validator:" 前缀) -> 注册到 "field" 键, 作为该字段任意校验器失败时的兜底消息。
+//     eg: "name is invalid"
+func TestIssue_189_v2(t *testing.T) {
+	t.Run("per-validator messages: required uses its own custom msg", func(t *testing.T) {
+		// empty value -> required fails (non-required validators skip empty),
+		// so the "required" per-validator message is used.
+		v := validate.Map(map[string]any{"name": ""})
+		v.StringRule("name", "required|minLen:5")
+		v.StringMessage("name", "required:name is required|minLen:name is too short")
+
+		assert.False(t, v.Validate())
+		assert.Eq(t, "name is required", v.Errors.Field("name")["required"])
+	})
+
+	t.Run("per-validator messages: minLen uses its own custom msg", func(t *testing.T) {
+		// non-empty short value -> required passes, only minLen fails,
+		// so the "minLen" per-validator message is used.
+		v := validate.Map(map[string]any{"name": "ab"})
+		v.StringRule("name", "required|minLen:5")
+		v.StringMessage("name", "required:name is required|minLen:name is too short")
+
+		assert.False(t, v.Validate())
+		assert.Eq(t, "name is too short", v.Errors.Field("name")["minLen"])
+	})
+
+	t.Run("field-level fallback message", func(t *testing.T) {
+		v := validate.Map(map[string]any{"name": "ab"})
+		v.StringRule("name", "minLen:5")
+		v.StringMessage("name", "name is invalid")
+
+		assert.False(t, v.Validate())
+		assert.Eq(t, "name is invalid", v.Errors.FieldOne("name"))
+	})
+
+	t.Run("trim whitespace around segments and parts", func(t *testing.T) {
+		v := validate.Map(map[string]any{"name": ""})
+		v.StringRule("name", "required")
+		v.StringMessage("name", "  required : name is required  ")
+
+		assert.False(t, v.Validate())
+		assert.Eq(t, "name is required", v.Errors.FieldOne("name"))
+	})
+
+	t.Run("StringMessages batch", func(t *testing.T) {
+		v := validate.Map(map[string]any{"name": "", "age": 5})
+		v.StopOnError = false
+		v.StringRules(validate.MS{
+			"name": "required",
+			"age":  "min:10",
+		})
+		v.StringMessages(validate.MS{
+			"name": "required:name is required",
+			"age":  "age is invalid", // field-level fallback
+		})
+
+		assert.False(t, v.Validate())
+		assert.Eq(t, "name is required", v.Errors.FieldOne("name"))
+		assert.Eq(t, "age is invalid", v.Errors.FieldOne("age"))
+	})
+
+	t.Run("chained with StringRule returns *Validation", func(t *testing.T) {
+		v := validate.Map(map[string]any{"name": ""})
+		// chainable: StringRule(...).StringMessage(...)
+		v.StringRule("name", "required").
+			StringMessage("name", "required:name is required")
+
+		assert.False(t, v.Validate())
+		assert.Eq(t, "name is required", v.Errors.FieldOne("name"))
+	})
+}
