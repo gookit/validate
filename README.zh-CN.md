@@ -7,7 +7,9 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/gookit/validate)](https://goreportcard.com/report/github.com/gookit/validate)
 [![Actions Status](https://github.com/gookit/validate/workflows/Unit-Tests/badge.svg)](https://github.com/gookit/validate/actions)
 
-Go通用的数据验证与过滤库，使用简单，内置大部分常用验证器、过滤器，支持自定义消息、字段翻译。
+Go 通用的数据验证与过滤库，使用简单，内置大部分常用验证器、过滤器，支持自定义消息、字段翻译。
+
+> **[README](README.md)**
 
 - 简单方便，支持前置验证检查, 支持添加自定义验证器
   - 大多数过滤器和验证器都有别名方便使用
@@ -26,18 +28,12 @@ Go通用的数据验证与过滤库，使用简单，内置大部分常用验证
 - 支持直接使用规则来验证值 例如: `validate.Val("xyz@mail.com", "required|email")`
 - 完善的单元测试，测试覆盖率 **> 90%**
 
-## [English](README.md)
-
-Please see the English introduction **[README](README.md)**
-
 ## Go Doc
 
-- [godoc for gopkg](https://pkg.go.dev/gopkg.in/gookit/validate.v1)
-- [godoc for github](https://pkg.go.dev/github.com/gookit/validate)
+- [Godoc for github](https://pkg.go.dev/github.com/gookit/validate/v2)
 
 > **v2.0**：模块路径已变更为 `github.com/gookit/validate/v2`（要求 Go 1.21+）。
-> 安装：`go get github.com/gookit/validate/v2`。从 v1.x 升级请参阅
-> [升级指南](docs/UPGRADE-v2.md)。
+> 安装：`go get github.com/gookit/validate/v2`。从 v1.x 升级请参阅 [升级指南](docs/UPGRADE-v2.md)。
 
 ## 验证结构体(Struct)
 
@@ -745,6 +741,7 @@ func main()  {
 `required_without_all/requiredWithoutAll`  | `required_without_all:foo,bar,...` 只有在其他指定字段全部不出现时，验证的字段才必须存在且不为空 
 `-/safe`  | 标记当前字段是安全的，无需验证
 `int/integer/isInt`  | 检查值是 `intX` `uintX` 类型，同时支持大小检查 `"int"` `"int:2"` `"int:2,12"`
+`intStr/intString/isIntString`  | 检查值是整数数字字符串(允许前导符号 `+`/`-`)。例如 `"10"` `"-10"`
 `uint/isUint`  |  检查值是 `uintX` 类型(`value >= 0`)
 `bool/isBool`  |  检查值是布尔字符串(`true`: "1", "on", "yes", "true", `false`: "0", "off", "no", "false").
 `string/isString`  |  检查值是字符串类型，同时支持长度检查 `"string"` `"string:2"` `"string:2,12"`
@@ -768,6 +765,7 @@ func main()  {
 `len/length`  |  检查值长度等于给定大小(use for `string` `array` `slice` `map`).
 `min_len/minLen/minLength`  |  检查值的最小长度是给定大小
 `max_len/maxLen/maxLength`  |  检查值的最大长度是给定大小
+`strLen/strLength/stringLength`  |  检查字符串长度(按 rune/字符 计数)是否在给定范围。例如 `"strLength:3"` `"strLength:3,12"`
 `email/isEmail`  |   检查值是Email地址字符串
 `regex/regexp`  |  检查该值是否可以通过正则验证
 `arr/list/array/isArray`  |  检查值是 `array` 或者 `slice`类型
@@ -805,6 +803,8 @@ func main()  {
 `lon/longitude/isLongitude` | 检查值是经度坐标
 `mac/isMAC` | 检查值是MAC字符串
 `num/number/isNumber` | 检查值是数字字符串. `>= 0`
+`numeric/isNumeric` | 检查值是数值字符串(仅数字 `[0-9]+`, `>= 0`)。接受任意类型值，会先转为字符串再检查。
+`strNum/stringNum/isStringNumber` | 检查值是数字字符串(仅数字 `[0-9]+`, `>= 0`)。仅接受字符串类型。
 `cn_mobile/cnMobile/isCnMobile` | 检查值是中国11位手机号码字符串
 `printableASCII/isPrintableASCII` | Check value is PrintableASCII string.
 `rgbColor/RGBColor/isRGBColor` | 检查值是RGB颜色字符串
@@ -821,6 +821,8 @@ func main()  {
 `uuid4/isUUID4` | 检查值是UUID4字符串
 `uuid5/isUUID5` | 检查值是UUID5字符串
 `filePath/isFilePath` | 检查值是一个存在的文件路径
+`pathExist/pathExists` | 检查值是一个存在的路径(文件或目录)。
+`dirPath/isDirPath` | 检查值是一个存在的本地目录路径。
 `unixPath/isUnixPath` | 检查值是Unix Path字符串
 `winPath/isWinPath` | 检查值是Windows路径字符串
 `isbn10/ISBN10/isISBN10` | 检查值是ISBN10字符串

@@ -9,6 +9,8 @@
 
 `validate` is a generic Go data validate and filter tool library.
 
+> **[中文说明](README.zh-CN.md)**
+
 - Support quick validate `Map`, `Struct`, `Request`(`Form`, `JSON`, `url.Values`, `UploadedFile`) data
   - Validating `http.Request` automatically collects data based on the request `Content-Type` value
   - Supports checking each child value in a slice. eg: `v.StringRule("tags.*", "required|string")`
@@ -23,18 +25,12 @@
 - Can use `validate` in any frameworks, such as Gin, Echo, Chi and more
 - Supports direct use of rules to validate value. eg: `validate.Val("xyz@mail.com", "required|email")`
 
-## [中文说明](README.zh-CN.md)
-
-中文说明请查看 **[README.zh-CN](README.zh-CN.md)**
-
 ## Go Doc
 
-- [godoc for gopkg](https://pkg.go.dev/gopkg.in/gookit/validate.v1)
-- [godoc for github](https://pkg.go.dev/github.com/gookit/validate)
+- [Godoc for github](https://pkg.go.dev/github.com/gookit/validate/v2)
 
 > **v2.0**: the module path is now `github.com/gookit/validate/v2` (requires Go 1.21+).
-> Install via `go get github.com/gookit/validate/v2`. See the
-> [upgrade guide](docs/UPGRADE-v2.md) for migrating from v1.x.
+> Install via `go get github.com/gookit/validate/v2`. See the [upgrade guide](docs/UPGRADE-v2.md) for migrating from v1.x.
 
 ## Validate Struct
 
@@ -816,6 +812,7 @@ validator/aliases | description
 `requiredWithoutAll`  | `required_without_all:foo,bar,...` The field under validation must be present and not empty only when all of the other specified fields are not present. 
 `-/safe`  | The field values are safe and do not require validation
 `int/integer/isInt`  | Check value is `intX` `uintX` type, And support size checking. eg: `"int"` `"int:2"` `"int:2,12"`
+`intStr/intString/isIntString`  | Check value is an integer number string(allow leading sign `+`/`-`). eg: `"10"` `"-10"`
 `uint/isUint`  |  Check value is uint(`uintX`) type, `value >= 0`
 `bool/isBool`  |  Check value is bool string(`true`: "1", "on", "yes", "true", `false`: "0", "off", "no", "false").
 `string/isString`  |  Check value is string type.
@@ -845,6 +842,7 @@ validator/aliases | description
 `ints/isInts`  |  Check value is int slice type(only allow `[]int`).
 `min_len/minLen/minLength`  |  Check the minimum length of the value is the given size
 `max_len/maxLen/maxLength`  |  Check the maximum length of the value is the given size
+`strLen/strLength/stringLength`  |  Check the string length (counted by rune/character) is in the given range. eg `"strLength:3"` `"strLength:3,12"`
 `eq_field/eqField`  |  Check that the field value is equals to the value of another field
 `ne_field/neField`  |  Check that the field value is not equals to the value of another field
 `gte_field/gteField`  |  Check that the field value is greater than or equal to the value of another field
@@ -876,6 +874,8 @@ validator/aliases | description
 `lon/longitude/isLongitude` | Check value is Longitude string.
 `mac/isMAC` | Check value is MAC string.
 `num/number/isNumber` | Check value is number string. `>= 0`
+`numeric/isNumeric` | Check value is a numeric string(only digits `[0-9]+`, `>= 0`). Accepts any value, converts to string first.
+`strNum/stringNum/isStringNumber` | Check value is a number string(only digits `[0-9]+`, `>= 0`). Only accepts string type.
 `cn_mobile/cnMobile/isCnMobile` | Check value is china mobile number string.
 `printableASCII/isPrintableASCII` | Check value is PrintableASCII string.
 `rgb_color/rgbColor/RGBColor/isRGBColor` | Check value is RGB color string.
@@ -892,6 +892,8 @@ validator/aliases | description
 `uuid4/isUUID4` | Check value is UUID4 string.
 `uuid5/isUUID5` | Check value is UUID5 string.
 `filePath/isFilePath` | Check value is an existing file path
+`pathExist/pathExists` | Check value is an existing path(file or directory).
+`dirPath/isDirPath` | Check value is an existing local directory path.
 `unixPath/isUnixPath` | Check value is Unix Path string.
 `winPath/isWinPath` | Check value is Windows Path string.
 `isbn10/ISBN10/isISBN10` | Check value is ISBN10 string.
