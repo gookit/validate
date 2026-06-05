@@ -654,3 +654,113 @@ func TestIssue_324_v2(t *testing.T) {
 		assert.Eq(t, "", req.Address.City)
 	})
 }
+
+// https://github.com/gookit/validate/v2/issues/277 Identifying the First Failed Field (StopOnError=true)
+//
+// answered(非 bug): StopOnError=true(默认)时 Validate 失败后, v.Errors 仅含**第一个**出错
+// 字段; 可直接取字段名 + 校验器(tag) + 消息。这就是提问的答案。
+func TestIssue_277_v2(t *testing.T) {
+	type SomeStruct struct {
+		Name  string `validate:"required"`
+		Email string `validate:"required|email"`
+	}
+	// Name 合法(required 通过), Email 非空但非邮箱 -> email 校验失败
+	v := validate.Struct(&SomeStruct{Name: "John", Email: "not an email"})
+	assert.True(t, v.StopOnError) // 默认开启
+	assert.False(t, v.Validate())
+
+	// 仅第一个出错字段 Email 进入 Errors, Name 不在
+	assert.True(t, v.Errors.HasField("Email"))
+	assert.False(t, v.Errors.HasField("Name"))
+	// 取该字段失败的校验器(tag)与消息
+	fe := v.Errors.Field("Email") // map[validator]message
+	_, byEmail := fe["email"]
+	assert.True(t, byEmail)
+	assert.StrContains(t, v.Errors.FieldOne("Email"), "Email")
+}
+
+// https://github.com/gookit/validate/v2/issues/266 Can `in` be used with slice in tag validation?
+//
+// partial(答案=用 .* 程序化写法): 结构体 tag 里的 in(enum)不会逐元素校验切片, 而是把整个
+// []string 当单值丢给 Enum -> ConvToBasicType 失败 -> 整体报错。要逐元素校验需用程序化的
+// "S.*" 规则(StringRule), tag 方式不支持。
+func TestIssue_266_v2(t *testing.T) {
+	t.Run("tag 'in' on []string checks whole slice and fails (not per-element)", func(t *testing.T) {
+		type A struct {
+			S []string `validate:"required|in:a,b"`
+		}
+		// 两个元素都合法, 但 in 作用于整个切片 -> 仍失败
+		v := validate.Struct(&A{S: []string{"a", "b"}})
+		v.StopOnError = false
+		assert.False(t, v.Validate())
+		assert.ErrSubMsg(t, v.Errors, "must be in the enum")
+	})
+
+	t.Run("workaround: programmatic 'S.*' validates each element", func(t *testing.T) {
+		ok := validate.Map(map[string]any{"S": []string{"a", "b"}})
+		ok.StringRule("S.*", "in:a,b")
+		assert.True(t, ok.Validate())
+
+		bad := validate.Map(map[string]any{"S": []string{"a", "x"}})
+		bad.StringRule("S.*", "in:a,b")
+		assert.False(t, bad.Validate())
+		assert.ErrSubMsg(t, bad.Errors, "must be in the enum")
+	})
+}
+
+// https://github.com/gookit/validate/v2/issues/265 How CheckZero config flag works.
+//
+// finding(文档勘误): GlobalOption.CheckZero 在 v2.0 中**已声明但无任何消费方**(no-op),
+// 切换它不会改变任何校验行为。零值是否参与校验由 SkipOnEmpty 决定, 与 CheckZero 无关。
+func TestIssue_265_v2(t *testing.T) {
+	type Foo struct {
+		Age int `validate:"min:18"`
+	}
+	run := func() bool { return validate.Struct(&Foo{Age: 0}).Validate() }
+
+	got1 := run() // CheckZero=false(默认)
+	validate.Config(func(opt *validate.GlobalOption) { opt.CheckZero = true })
+	defer validate.ResetOption()
+	got2 := run() // CheckZero=true
+
+	// 切换 CheckZero 前后结果完全一致 -> 该 flag 当前无效果
+	assert.Eq(t, got1, got2)
+}
+
+// https://github.com/gookit/validate/v2/issues/162 Combine required_if with a validation rule
+//
+// answered(可实现): required_if 可与后续规则链式组合。"required_if:Type,B|uuid4" 表示
+// 当 Type==B 时 ID 必填且须为 uuid4; Type!=B 时 ID 可空(按 SkipOnEmpty 跳过), 但若提供
+// 非空值仍按 uuid4 校验(uuid4 不被条件门控, 仅"是否必填"被门控)。
+func TestIssue_162_v2(t *testing.T) {
+	type Form struct {
+		Type string `validate:"in:B,C"`
+		ID   string `validate:"required_if:Type,B|uuid4"`
+	}
+	good := "94e48bd3-e990-405e-bd10-304e767cd3fd"
+
+	t.Run("Type=B + valid uuid -> pass", func(t *testing.T) {
+		assert.True(t, validate.Struct(&Form{Type: "B", ID: good}).Validate())
+	})
+	t.Run("Type=B + empty -> fail (required)", func(t *testing.T) {
+		v := validate.Struct(&Form{Type: "B", ID: ""})
+		v.StopOnError = false
+		assert.False(t, v.Validate())
+		assert.ErrSubMsg(t, v.Errors, "ID is required")
+	})
+	t.Run("Type=C + empty -> pass (not required)", func(t *testing.T) {
+		assert.True(t, validate.Struct(&Form{Type: "C", ID: ""}).Validate())
+	})
+	t.Run("Type=B + invalid uuid -> fail (uuid4)", func(t *testing.T) {
+		v := validate.Struct(&Form{Type: "B", ID: "notauuid"})
+		v.StopOnError = false
+		assert.False(t, v.Validate())
+		assert.ErrSubMsg(t, v.Errors, "UUID4")
+	})
+	t.Run("Type=C + non-empty invalid uuid -> still fail uuid4 (rule not gated by condition)", func(t *testing.T) {
+		v := validate.Struct(&Form{Type: "C", ID: "notauuid"})
+		v.StopOnError = false
+		assert.False(t, v.Validate())
+		assert.ErrSubMsg(t, v.Errors, "UUID4")
+	})
+}
