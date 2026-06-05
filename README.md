@@ -30,7 +30,15 @@
 - [Godoc for github](https://pkg.go.dev/github.com/gookit/validate/v2)
 
 > **v2.0**: the module path is now `github.com/gookit/validate/v2` (requires Go 1.21+).
-> Install via `go get github.com/gookit/validate/v2`. See the [upgrade guide](docs/UPGRADE-v2.md) for migrating from v1.x.
+> See the [upgrade guide](docs/UPGRADE-v2.md) for migrating from v1.x.
+>
+> **Performance**: see [Benchmark comparison](docs/benchmark-v1-to-v2.md) for the v1.5.7 → v1.6.0 → v2.0.0 benchmark results.
+
+Install:
+
+```bash
+go get github.com/gookit/validate/v2
+```
 
 ## Validate Struct
 
