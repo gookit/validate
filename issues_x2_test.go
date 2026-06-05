@@ -435,3 +435,103 @@ func TestIssue_314_v2(t *testing.T) {
 		assert.StrContains(t, err.String(), "SubStruct is required")
 	})
 }
+
+// https://github.com/gookit/validate/v2/issues/327 未指定 required 时没有获取到对应字段的值
+//
+// not-a-bug in v2.0(设计行为, 已可正常工作): 报告者抱怨"未填写 required 的字段
+// (如 bbb)取不到绑定值"。实际规则是: 只有"参与了校验且通过"的字段才会进入 safeData,
+// 进而能被 BindStruct 绑定。
+//   - bbb 加了非 required 规则(如 string)且有非空值 -> 正常进入 safeData 并绑定(OK)。
+//   - bbb 完全没有规则, 或值为空被 SkipOnEmpty 跳过 -> 不进入 safeData, 自然取不到。
+//
+// 这与 required 无关, 是"safeData 只含校验过的数据"的设计。报告者把它当 BUG 实为
+// 用法误解。AddMessages 不写 required 项也不会影响其它字段的消息(下面一并验证)。
+func TestIssue_327_v2(t *testing.T) {
+	t.Run("non-required rule with value IS captured & bound", func(t *testing.T) {
+		data := validate.FromMap(map[string]any{"aaa": "hello", "bbb": "world"})
+		v := data.Create()
+		v.StringRule("aaa", "required|string|minLen:4")
+		v.StringRule("bbb", "string") // 非 required 规则
+		assert.True(t, v.Validate())
+
+		var reqData struct {
+			Aaa string `json:"aaa"`
+			Bbb string `json:"bbb"`
+		}
+		assert.NoErr(t, v.BindStruct(&reqData))
+		// 非 required 的 bbb 同样被绑定到了
+		assert.Eq(t, "hello", reqData.Aaa)
+		assert.Eq(t, "world", reqData.Bbb)
+		assert.Eq(t, "world", v.SafeData()["bbb"])
+	})
+
+	t.Run("field WITHOUT any rule is not in safeData (design)", func(t *testing.T) {
+		data := validate.FromMap(map[string]any{"aaa": "hello", "bbb": "world"})
+		v := data.Create()
+		v.StringRule("aaa", "required|string|minLen:4")
+		// bbb 没有任何规则
+		assert.True(t, v.Validate())
+		// 没有规则的字段不进入 safeData -> 取不到, 这是设计而非缺陷
+		_, ok := v.SafeData()["bbb"]
+		assert.False(t, ok)
+	})
+
+	t.Run("AddMessages without 'required' entry does not break other field messages", func(t *testing.T) {
+		data := validate.FromMap(map[string]any{"aaa": "x", "bbb": "world"})
+		v := data.Create()
+		v.StringRule("aaa", "required|string|minLen:4")
+		v.StringRule("bbb", "string")
+		// 故意不提供 aaa.required 的自定义消息
+		v.AddMessages(map[string]string{
+			"aaa.minLen": "长度不少于 4 个字符",
+			"bbb.string": "格式不正确",
+		})
+		assert.False(t, v.Validate())
+		// aaa.minLen 的自定义消息仍生效, 其它字段消息未被吞掉
+		assert.StrContains(t, v.Errors.String(), "长度不少于 4 个字符")
+	})
+}
+
+// https://github.com/gookit/validate/v2/issues/262 filter 无法对切片中的元素应用
+//
+// still-broken in v2.0: 用通配路径 "ports.*.container_start" 给切片元素挂 filter,
+// 仍报 `_filter: ports.*.container_start: convert value type error`。
+//
+// 根因: 通配路径 "ports.*.container_start" 通过 GetByPath 取到的是整个切片
+// []any{80}(而非逐个标量), filter("int") 试图把这个 slice 当成单个值转 int -> 失败。
+// 显式数字索引 "ports.0.container_start" 取到标量 80, filter 正常工作。即 filter 没有
+// 对通配的切片元素逐个应用。
+//
+// 修复需改业务代码(filter 阶段对通配路径展开并逐元素应用), 本任务不改业务代码,
+// 故断言当前真实行为并标注。
+func TestIssue_262_v2(t *testing.T) {
+	jsonStr := `{"ports":[{"container_start":80,"container_end":80,"protocol":"tcp"}]}`
+
+	t.Run("wildcard filter on slice element still errors (still-broken)", func(t *testing.T) {
+		v, err := validate.FromJSON(jsonStr)
+		assert.NoErr(t, err)
+		vv := v.Create()
+		vv.FilterRule("ports.*.container_start", "int")
+		vv.FilterRule("ports.*.container_end", "int")
+		vv.AddRule("ports.*.container_start", "int")
+		vv.AddRule("ports.*.container_end", "int")
+		vv.AddRule("ports.*.protocol", "string")
+
+		ok := vv.Validate()
+		t.Logf("v2.0 still-broken #262: ok=%v errors=%v", ok, vv.Errors)
+		// 期望: 通过并把元素转为 int。实际: filter 报 convert value type error。
+		assert.False(t, ok)
+		assert.StrContains(t, vv.Errors.String(), "convert value type error")
+	})
+
+	t.Run("explicit index filter works (workaround)", func(t *testing.T) {
+		v, err := validate.FromJSON(jsonStr)
+		assert.NoErr(t, err)
+		vv := v.Create()
+		// 显式数字索引可命中标量值, filter 正常
+		vv.FilterRule("ports.0.container_start", "int")
+		vv.AddRule("ports.0.container_start", "int")
+		assert.True(t, vv.Validate())
+		assert.Eq(t, 80, vv.SafeData()["ports.0.container_start"])
+	})
+}
