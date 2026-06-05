@@ -710,8 +710,11 @@ func TestIssue_266_v2(t *testing.T) {
 
 // https://github.com/gookit/validate/v2/issues/265 How CheckZero config flag works.
 //
-// finding(文档勘误): GlobalOption.CheckZero 在 v2.0 中**已声明但无任何消费方**(no-op),
-// 切换它不会改变任何校验行为。零值是否参与校验由 SkipOnEmpty 决定, 与 CheckZero 无关。
+// finding -> Deprecated: GlobalOption.CheckZero 已声明但无任何消费方(no-op), 切换它不会
+// 改变任何校验行为。已在 v2.0 标记为 Deprecated(见 validate.go), 后续移除。零值是否参与
+// 校验请用 Rule.SetSkipEmpty(false) / SkipOnEmpty=false / required, 与 CheckZero 无关。
+//
+// 本用例**有意**设置该 deprecated 字段, 以证明其为 no-op(切换前后结果一致)。
 func TestIssue_265_v2(t *testing.T) {
 	type Foo struct {
 		Age int `validate:"min:18"`
@@ -719,7 +722,7 @@ func TestIssue_265_v2(t *testing.T) {
 	run := func() bool { return validate.Struct(&Foo{Age: 0}).Validate() }
 
 	got1 := run() // CheckZero=false(默认)
-	validate.Config(func(opt *validate.GlobalOption) { opt.CheckZero = true })
+	validate.Config(func(opt *validate.GlobalOption) { opt.CheckZero = true }) //nolint:staticcheck // intentionally exercise deprecated no-op
 	defer validate.ResetOption()
 	got2 := run() // CheckZero=true
 

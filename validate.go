@@ -101,7 +101,13 @@ type GlobalOption struct {
 	UpdateSource bool
 	// CheckDefault Whether to validate the default value set by the user
 	CheckDefault bool
-	// CheckZero Whether validate the default zero value. (intX,uintX: 0, string: "")
+	// CheckZero whether to validate the zero value. (intX,uintX: 0, string: "")
+	//
+	// Deprecated: this flag is a no-op — it was declared but never wired into the
+	// validation logic. To validate empty/zero values instead of skipping them,
+	// use per-rule Rule.SetSkipEmpty(false), set SkipOnEmpty=false on the
+	// Validation/global option, or mark the field as required. It will be removed
+	// in a future release.
 	CheckZero bool
 	// ErrKeyFmt config. TODO
 	//
