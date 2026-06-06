@@ -1,7 +1,10 @@
 package validate_test
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/gookit/goutil/x/assert"
 	"github.com/gookit/validate/v2"
@@ -253,5 +256,122 @@ func TestIssue_292_v2(t *testing.T) {
 			v.StringRule("addr", "rule_one_of:no_such_validator,ip")
 			v.Validate()
 		})
+	})
+}
+
+// https://github.com/gookit/validate/v2/issues/257
+// Enhancement: Add IsActiveURL Validation Rule
+//
+// 诉求: 新增 isActiveURL 校验器, 通过发起 HTTP 请求判断一个 URL 是否可访问/活跃。
+//
+// 实现: 新增 IsActiveURL(s) -> validator isActiveURL (别名 activeURL/activeUrl/
+// active_url)。先用 IsFullURL 做廉价结构校验 (非法 URL 不发请求); 合法则先 HEAD,
+// 405 时回退 GET; 最终状态码 <400 (2xx/3xx) 视为活跃。超时由包级 ActiveURLTimeout
+// 控制。空值/SkipOnEmpty: 非必填校验器, 空值默认跳过。
+//
+// 本测试全程使用 httptest 本地 server, 绝不访问真实外网。
+func TestIssue_257_v2(t *testing.T) {
+	// 缩短超时以保证快, 并 defer 复位避免污染其它测试。
+	old := validate.ActiveURLTimeout
+	validate.ActiveURLTimeout = 1 * time.Second
+	defer func() { validate.ActiveURLTimeout = old }()
+
+	t.Run("active: 200 -> true (direct func)", func(t *testing.T) {
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		}))
+		defer ts.Close()
+
+		assert.True(t, validate.IsActiveURL(ts.URL))
+	})
+
+	t.Run("active: 200 -> pass (tag via Struct)", func(t *testing.T) {
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		}))
+		defer ts.Close()
+
+		type Site struct {
+			Link string `validate:"isActiveURL"`
+		}
+		v := validate.Struct(&Site{Link: ts.URL})
+		assert.True(t, v.Validate())
+	})
+
+	t.Run("active: alias activeURL -> pass", func(t *testing.T) {
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		}))
+		defer ts.Close()
+
+		type Site struct {
+			Link string `validate:"activeURL"`
+		}
+		v := validate.Struct(&Site{Link: ts.URL})
+		assert.True(t, v.Validate())
+	})
+
+	t.Run("HEAD 405 -> fallback GET 200 -> true", func(t *testing.T) {
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.Method == http.MethodHead {
+				w.WriteHeader(http.StatusMethodNotAllowed)
+				return
+			}
+			w.WriteHeader(http.StatusOK)
+		}))
+		defer ts.Close()
+
+		assert.True(t, validate.IsActiveURL(ts.URL))
+	})
+
+	t.Run("inactive: 500 -> false", func(t *testing.T) {
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusInternalServerError)
+		}))
+		defer ts.Close()
+
+		assert.False(t, validate.IsActiveURL(ts.URL))
+
+		type Site struct {
+			Link string `validate:"isActiveURL"`
+		}
+		v := validate.Struct(&Site{Link: ts.URL})
+		assert.False(t, v.Validate())
+	})
+
+	t.Run("unreachable: closed server -> false", func(t *testing.T) {
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		}))
+		url := ts.URL
+		ts.Close() // 关闭后再校验 -> 连接被拒
+
+		assert.False(t, validate.IsActiveURL(url))
+	})
+
+	t.Run("empty string -> false", func(t *testing.T) {
+		assert.False(t, validate.IsActiveURL(""))
+	})
+
+	t.Run("invalid URL -> false without dialing", func(t *testing.T) {
+		// 非法 full URL 不应真去发请求, 直接被 IsFullURL 短路。
+		assert.False(t, validate.IsActiveURL("not a url"))
+		assert.False(t, validate.IsActiveURL("/path/only"))
+	})
+
+	t.Run("empty value skipped (SkipOnEmpty), required rejects", func(t *testing.T) {
+		// 非必填: 空值跳过 -> pass
+		type Opt struct {
+			Link string `validate:"isActiveURL"`
+		}
+		v := validate.Struct(&Opt{Link: ""})
+		assert.True(t, v.Validate())
+
+		// required: 空值被拒
+		type Req struct {
+			Link string `validate:"required|isActiveURL"`
+		}
+		v2 := validate.Struct(&Req{Link: ""})
+		assert.False(t, v2.Validate())
 	})
 }
