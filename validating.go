@@ -574,6 +574,139 @@ func callValidator(v *Validation, fm *funcMeta, field string, val any, args []an
 		}
 	case "isSlice":
 		ok = IsSlice(val)
+	case "isNumeric": // receives any, pass val directly
+		ok = IsNumeric(val)
+	// --- single-arg string validators: T2 移入 switch,免反射 fv.Call ---
+	// 统一用 valToString(val) 安全取字符串(命名字符串类型/可转换值都不 panic),
+	// 取不到字符串时 ok 保持 false,行为与反射路径一致。
+	case "isEmail":
+		if s, sok := valToString(val); sok {
+			ok = IsEmail(s)
+		}
+	case "isURL":
+		if s, sok := valToString(val); sok {
+			ok = IsURL(s)
+		}
+	case "isFullURL":
+		if s, sok := valToString(val); sok {
+			ok = IsFullURL(s)
+		}
+	case "isIP":
+		if s, sok := valToString(val); sok {
+			ok = IsIP(s)
+		}
+	case "isIPv4":
+		if s, sok := valToString(val); sok {
+			ok = IsIPv4(s)
+		}
+	case "isIPv6":
+		if s, sok := valToString(val); sok {
+			ok = IsIPv6(s)
+		}
+	case "isCIDR":
+		if s, sok := valToString(val); sok {
+			ok = IsCIDR(s)
+		}
+	case "isCIDRv4":
+		if s, sok := valToString(val); sok {
+			ok = IsCIDRv4(s)
+		}
+	case "isCIDRv6":
+		if s, sok := valToString(val); sok {
+			ok = IsCIDRv6(s)
+		}
+	case "isMAC":
+		if s, sok := valToString(val); sok {
+			ok = IsMAC(s)
+		}
+	case "isAlpha":
+		if s, sok := valToString(val); sok {
+			ok = IsAlpha(s)
+		}
+	case "isAlphaNum":
+		if s, sok := valToString(val); sok {
+			ok = IsAlphaNum(s)
+		}
+	case "isAlphaDash":
+		if s, sok := valToString(val); sok {
+			ok = IsAlphaDash(s)
+		}
+	case "isASCII":
+		if s, sok := valToString(val); sok {
+			ok = IsASCII(s)
+		}
+	case "isPrintableASCII":
+		if s, sok := valToString(val); sok {
+			ok = IsPrintableASCII(s)
+		}
+	case "isUUID":
+		if s, sok := valToString(val); sok {
+			ok = IsUUID(s)
+		}
+	case "isUUID3":
+		if s, sok := valToString(val); sok {
+			ok = IsUUID3(s)
+		}
+	case "isUUID4":
+		if s, sok := valToString(val); sok {
+			ok = IsUUID4(s)
+		}
+	case "isUUID5":
+		if s, sok := valToString(val); sok {
+			ok = IsUUID5(s)
+		}
+	case "isBase64":
+		if s, sok := valToString(val); sok {
+			ok = IsBase64(s)
+		}
+	case "isDataURI":
+		if s, sok := valToString(val); sok {
+			ok = IsDataURI(s)
+		}
+	case "isHexadecimal":
+		if s, sok := valToString(val); sok {
+			ok = IsHexadecimal(s)
+		}
+	case "isHexColor":
+		if s, sok := valToString(val); sok {
+			ok = IsHexColor(s)
+		}
+	case "isRGBColor":
+		if s, sok := valToString(val); sok {
+			ok = IsRGBColor(s)
+		}
+	case "isLatitude":
+		if s, sok := valToString(val); sok {
+			ok = IsLatitude(s)
+		}
+	case "isLongitude":
+		if s, sok := valToString(val); sok {
+			ok = IsLongitude(s)
+		}
+	case "isDNSName":
+		if s, sok := valToString(val); sok {
+			ok = IsDNSName(s)
+		}
+	case "isMultiByte":
+		if s, sok := valToString(val); sok {
+			ok = IsMultiByte(s)
+		}
+	case "isCnMobile":
+		if s, sok := valToString(val); sok {
+			ok = IsCnMobile(s)
+		}
+	case "isISBN10":
+		if s, sok := valToString(val); sok {
+			ok = IsISBN10(s)
+		}
+	case "isISBN13":
+		if s, sok := valToString(val); sok {
+			ok = IsISBN13(s)
+		}
+	case "hasWhitespace":
+		if s, sok := valToString(val); sok {
+			ok = HasWhitespace(s)
+		}
 	default:
 		// 3. call user custom validators, will call by reflect
 		ok = callValidatorValue(v, fm.fv, val, args, addNum, vfv)
