@@ -368,8 +368,7 @@ func FromStruct(s any) (*StructData, error) {
 	data := &StructData{
 		ValidateTag: gOpt.ValidateTag,
 		// init map
-		fieldNames:  make(map[string]int8),
-		fieldValues: make(map[string]reflect.Value),
+		fieldNames: make(map[string]int8),
 	}
 
 	if s == nil {

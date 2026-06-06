@@ -127,7 +127,6 @@ func buildRuleTemplate(rt reflect.Type) *ruleTemplate {
 		ValidateTag: gOpt.ValidateTag,
 		FilterTag:   gOpt.FilterTag,
 		fieldNames:  make(map[string]int8),
-		fieldValues: make(map[string]reflect.Value),
 	}
 	tv := newEmpty()
 	tv.data = td
