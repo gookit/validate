@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/gookit/goutil/reflects"
 	"github.com/gookit/goutil/x/assert"
 )
 
@@ -25,12 +26,12 @@ func TestIsEmpty(t *testing.T) {
 		is.True(IsEmpty(val))
 	}
 
-	is.True(ValueIsEmpty(reflect.ValueOf(nil)))
-	is.True(ValueIsEmpty(reflect.ValueOf("")))
+	is.True(reflects.IsEmpty(reflect.ValueOf(nil)))
+	is.True(reflects.IsEmpty(reflect.ValueOf("")))
 
 	type T struct{ _ any }
 	rv := reflect.ValueOf(T{}).Field(0)
-	is.True(ValueIsEmpty(rv))
+	is.True(reflects.IsEmpty(rv))
 }
 
 func TestContains(t *testing.T) {

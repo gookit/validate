@@ -160,11 +160,6 @@ func addSliceItem(sl reflect.Value, depth int, collector func(item reflect.Value
 	return c
 }
 
-// ValueIsEmpty check. alias of reflects.IsEmpty()
-func ValueIsEmpty(v reflect.Value) bool {
-	return reflects.IsEmpty(v)
-}
-
 // indexPathToWildcard replaces each purely-numeric path segment with "*".
 // eg: "Tags.0.Id" -> "Tags.*.Id". hasIdx reports whether any numeric segment was
 // found; callers skip wildcard scene matching when it is false (the common case),

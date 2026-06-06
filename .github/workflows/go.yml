@@ -2,71 +2,72 @@ name: Unit-Tests
 on:
   pull_request:
     paths:
-      - 'go.mod'
-      - '**.go'
-      - '**.yml'
+      - "go.mod"
+      - "**.go"
+      - "**.yml"
 
   push:
+    branches: # Only trigger branch pushes; tag pushes are ignored.
+      - "**"
     paths:
-      - 'go.mod'
-      - '**.go'
-      - '**.yml'
+      - "go.mod"
+      - "**.go"
+      - "**.yml"
 
 permissions:
   contents: read
 
 jobs:
-
   test:
     name: Test on go ${{ matrix.go_version }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
         go_version: [1.21, 1.22, 1.23, 1.24, 1.25, "stable"]
-#        os: [ubuntu-latest, windows-latest, macOS-latest]
+    #        os: [ubuntu-latest, windows-latest, macOS-latest]
 
     steps:
-    - name: Check out code
-      uses: actions/checkout@v6
+      - name: Check out code
+        uses: actions/checkout@v6
 
-    - name: Setup Go SDK
-      uses: actions/setup-go@v6
-      timeout-minutes: 3
-      with:
-        go-version: ${{ matrix.go_version }}
+      - name: Setup Go SDK
+        uses: actions/setup-go@v6
+        timeout-minutes: 3
+        with:
+          go-version: ${{ matrix.go_version }}
 
-    - name: Run unit tests
-#      run: go test -v -cover ./...
-#      must add " for profile.cov on Windows OS
-      run: go test -coverprofile="profile.cov" ./...
+      - name: Run unit tests
+        #      run: go test -v -cover ./...
+        #      must add " for profile.cov on Windows OS
+        run: go test -coverprofile="profile.cov" ./...
 
-    - name: Send coverage
-      uses: shogo82148/actions-goveralls@v1
-      with:
-        path-to-profile: profile.cov
-        flag-name: Go-${{ matrix.go_version }}
-        shallow: true
-        parallel: true
+      - name: Send coverage
+        uses: shogo82148/actions-goveralls@v1
+        with:
+          path-to-profile: profile.cov
+          flag-name: Go-${{ matrix.go_version }}
+          shallow: true
+          parallel: true
 
   lint:
-      name: code linter
-      runs-on: ubuntu-latest
-      steps:
-        - name: Check out code
-          uses: actions/checkout@v6
+    name: code linter
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v6
 
-        - name: Setup Go SDK
-          uses: actions/setup-go@v6
-          timeout-minutes: 3
-          with:
-            go-version: "stable"
+      - name: Setup Go SDK
+        uses: actions/setup-go@v6
+        timeout-minutes: 3
+        with:
+          go-version: "stable"
 
-        - name: golangci-lint
-          uses: golangci/golangci-lint-action@v9
-          with:
-            # Optional: version of golangci-lint to use in form of v1.2 or v1.2.3 or `latest` to use the latest version
-            version: latest
-            args: --issues-exit-code=0
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v9
+        with:
+          # Optional: version of golangci-lint to use in form of v1.2 or v1.2.3 or `latest` to use the latest version
+          version: latest
+          args: --issues-exit-code=0
 
   # notifies that all test jobs are finished.
   finish:

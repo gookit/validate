@@ -1,12 +1,14 @@
-package validate
+package fieldval_test
 
 import (
 	"reflect"
 	"testing"
 
+	"github.com/gookit/goutil/reflects"
 	"github.com/gookit/goutil/x/assert"
 
 	"github.com/gookit/validate/v2/internal/fieldval"
+	"github.com/gookit/validate/v2/internal/reflectx"
 )
 
 func ptrOf[T any](v T) *T { return &v }
@@ -30,7 +32,7 @@ func TestFieldValue_rV(t *testing.T) {
 		// nilRVal is reflect.ValueOf(NilObject{}): valid, struct kind
 		assert.True(t, rv.IsValid())
 		assert.Eq(t, reflect.Struct, rv.Kind())
-		assert.True(t, IsNilObj(rv.Interface()))
+		assert.True(t, reflectx.IsNilObj(rv.Interface()))
 	})
 
 	t.Run("typed nil pointer stays valid ptr", func(t *testing.T) {
@@ -150,12 +152,28 @@ func TestFieldValue_isEmpty(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			fv := fieldval.New("n", c.src)
-			want := IsEmpty(c.src)
+			want := valIsEmpty(c.src)
 			assert.Eq(t, want, fv.IsEmpty(), "isEmpty must match IsEmpty(any)")
 			// cached: second call consistent
 			assert.Eq(t, want, fv.IsEmpty())
 		})
 	}
+}
+
+func valIsEmpty(v any) bool {
+	if v == nil {
+		return true
+	}
+
+	var rv reflect.Value
+
+	// type check val is reflect.Value
+	if v2, ok := v.(reflect.Value); ok {
+		rv = v2
+	} else {
+		rv = reflect.ValueOf(v)
+	}
+	return reflects.IsEmpty(rv)
 }
 
 // TestNewFieldValueRV covers the reflect.Value-based constructor reserved for P2.
@@ -172,7 +190,7 @@ func TestNewFieldValueRV(t *testing.T) {
 		fv := fieldval.NewRV("n", reflect.Value{})
 		rv := fv.RV()
 		assert.True(t, rv.IsValid())
-		assert.True(t, IsNilObj(rv.Interface()))
+		assert.True(t, reflectx.IsNilObj(rv.Interface()))
 	})
 
 	t.Run("equivalent to fieldval.New for same value", func(t *testing.T) {

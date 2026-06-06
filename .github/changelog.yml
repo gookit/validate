@@ -2,7 +2,7 @@ title: "## Change Log"
 # style allow: simple, markdown(mkdown), ghr(gh-release)
 style: gh-release
 # group names
-names: [Refactor, Fixed, Feature, Update, Other]
+names: [Refactor, Feature, Update, Fixed, Other]
 # if empty will auto fetch by git remote
 #repo_url: https://github.com/gookit/goutil
 
