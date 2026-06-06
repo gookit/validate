@@ -325,9 +325,14 @@ func (t *Translator) Reset() {
 	// P5a: no longer eagerly copy the ~150 builtinMessages into every instance.
 	// t.messages only holds user custom messages now (lazily allocated on first
 	// AddMessage/AddMessages); lookups fall back to the global builtinMessages.
+	//
+	// Step 2: labelMap/fieldMap are likewise lazily allocated on first write (see
+	// the ensure*/guards in addLabelName/AddFieldMap). Most validations set no
+	// custom label/output-name, so eager make() here wasted 2 allocs per instance.
+	// Reads (range/index-get/comma-ok) are nil-safe.
 	t.messages = nil
-	t.labelMap = make(map[string]string)
-	t.fieldMap = make(map[string]string)
+	t.labelMap = nil
+	t.fieldMap = nil
 }
 
 // lookupMessage finds a message by key: first the instance custom messages
@@ -352,6 +357,12 @@ func (t *Translator) FieldMap() map[string]string {
 // AddFieldMap config field output name data.
 // If you want to display in the field with the original field is not the same
 func (t *Translator) AddFieldMap(fieldMap map[string]string) {
+	if len(fieldMap) == 0 {
+		return
+	}
+	if t.fieldMap == nil { // lazy
+		t.fieldMap = make(map[string]string, len(fieldMap))
+	}
 	for name, outName := range fieldMap {
 		t.fieldMap[name] = outName
 	}
@@ -378,6 +389,9 @@ func (t *Translator) LabelMap() map[string]string {
 
 func (t *Translator) addLabelName(field, labelName string) {
 	if labelName != "" {
+		if t.labelMap == nil { // lazy
+			t.labelMap = make(map[string]string)
+		}
 		t.labelMap[field] = labelName
 	}
 }

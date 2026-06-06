@@ -120,18 +120,61 @@ func NewValidation(data DataFace, scene ...string) *Validation {
 }
 
 /*************************************************************
+ * lazy map allocation guards (perf Step 2)
+ *
+ * Each per-instance map in newEmpty() is allocated on FIRST WRITE only. Writing
+ * to a nil map panics, so every write site must call its ensure*() first; reads
+ * (range/len/index-get/comma-ok) are nil-safe and need no guard.
+ *************************************************************/
+
+func (v *Validation) ensureErrors() {
+	if v.Errors == nil {
+		v.Errors = make(Errors)
+	}
+}
+
+func (v *Validation) ensureSafeData() {
+	if v.safeData == nil {
+		v.safeData = make(map[string]any)
+	}
+}
+
+func (v *Validation) ensureFilteredData() {
+	if v.filteredData == nil {
+		v.filteredData = make(map[string]any)
+	}
+}
+
+func (v *Validation) ensureOptionals() {
+	if v.optionals == nil {
+		v.optionals = make(map[string]int8)
+	}
+}
+
+func (v *Validation) ensureValidatorMaps() {
+	if v.validators == nil {
+		v.validators = make(map[string]int8)
+	}
+	if v.validatorMetas == nil {
+		v.validatorMetas = make(map[string]*funcMeta)
+	}
+}
+
+/*************************************************************
  * validation settings
  *************************************************************/
 
 // ResetResult reset the validate result.
 func (v *Validation) ResetResult() {
-	v.Errors = Errors{}
+	// Step 2: result maps reset to nil (lazily re-allocated on first write), so a
+	// Reset()'d instance keeps the no-alloc property on the next clean validation.
+	v.Errors = nil
 	v.hasError = false
 	v.hasFiltered = false
 	v.hasValidated = false
 	// result data
-	v.safeData = make(map[string]any)
-	v.filteredData = make(map[string]any)
+	v.safeData = nil
+	v.filteredData = nil
 }
 
 // Reset the Validation instance.
@@ -151,7 +194,7 @@ func (v *Validation) Reset() {
 func (v *Validation) resetRules() {
 	// reset rules
 	v.rules = v.rules[:0]
-	v.optionals = make(map[string]int8)
+	v.optionals = nil // lazily re-allocated on first write (ensureOptionals)
 	v.filterRules = v.filterRules[:0]
 }
 
@@ -292,6 +335,7 @@ func (v *Validation) AddValidators(m map[string]any) *Validation {
 func (v *Validation) AddValidator(name string, checkFunc any) *Validation {
 	fv := checkValidatorFunc(name, checkFunc)
 
+	v.ensureValidatorMaps() // lazy
 	v.validators[name] = validatorTypeCustom
 	// v.validatorValues[name] = fv
 	v.validatorMetas[name] = newFuncMeta(name, false, fv)
@@ -317,6 +361,7 @@ func (v *Validation) validatorMeta(name string) *funcMeta {
 	// receiver) behave identically to the previous eager construction.
 	if builder, ok := ctxValidatorBuilders[name]; ok {
 		fm := newFuncMeta(name, true, builder(v))
+		v.ensureValidatorMaps() // lazy
 		v.validators[name] = validatorTypeBuiltin
 		v.validatorMetas[name] = fm
 		return fm
@@ -328,6 +373,7 @@ func (v *Validation) validatorMeta(name string) *funcMeta {
 		if ok {
 			fm := newFuncMeta(name, false, fv)
 			// storage it.
+			v.ensureValidatorMaps() // lazy
 			v.validators[name] = validatorTypeCustom
 			v.validatorMetas[name] = fm
 
@@ -459,6 +505,7 @@ func (v *Validation) AddError(field, validator, msg string) {
 		v.hasError = true
 	}
 
+	v.ensureErrors() // lazy: only the error path allocates Errors
 	field = v.trans.FieldName(field)
 	v.Errors.Add(field, validator, msg)
 }

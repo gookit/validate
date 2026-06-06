@@ -161,6 +161,7 @@ func (r *FilterRule) Apply(v *Validation) (err error) {
 
 			// dont need check default value
 			if !v.CheckDefault {
+				v.ensureSafeData() // lazy
 				v.safeData[field] = newVal // save validated value.
 				continue
 			}
@@ -190,6 +191,7 @@ func (r *FilterRule) Apply(v *Validation) (err error) {
 				// note: source write-back (updateValue) is skipped for the wildcard
 				// path — it only supports whole-field Set; the collected slice in
 				// filteredData carries the result (covers Map/JSON sources).
+				v.ensureFilteredData() // lazy
 				v.filteredData[field] = out
 				continue
 			}
@@ -208,6 +210,7 @@ func (r *FilterRule) Apply(v *Validation) (err error) {
 		}
 
 		// save filtered value.
+		v.ensureFilteredData() // lazy
 		v.filteredData[field] = newVal
 	}
 	return

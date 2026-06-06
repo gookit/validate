@@ -332,6 +332,7 @@ func (v *Validation) addOneRule(fields, validator, realName string, args []any) 
 	// append rule
 	v.rules = append(v.rules, rule)
 	if rule.optional {
+		v.ensureOptionals() // lazy
 		for _, field := range rule.fields {
 			v.optionals[field] = 0
 		}

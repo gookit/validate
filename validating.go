@@ -168,6 +168,7 @@ func (r *Rule) applyField(field, name string, v *Validation) (stop bool) {
 
 		// dont need check default value
 		if !v.CheckDefault {
+			v.ensureSafeData() // lazy
 			v.safeData[field] = val // save validated value.
 			return false
 		}
@@ -198,6 +199,7 @@ func (r *Rule) applyField(field, name string, v *Validation) (stop bool) {
 		// re-set value
 		val = newVal
 		// save filtered value.
+		v.ensureFilteredData() // lazy
 		v.filteredData[field] = val
 	}
 
@@ -211,6 +213,7 @@ func (r *Rule) applyField(field, name string, v *Validation) (stop bool) {
 		if v.data != nil && v.data.Type() == sourceForm {
 			field, _, _ = strings.Cut(field, ".*")
 		}
+		v.ensureSafeData() // lazy
 		v.safeData[field] = val
 	} else { // build and collect error message
 		msg := r.errorMessage(field, r.validator, v)

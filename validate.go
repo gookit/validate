@@ -236,20 +236,16 @@ func init() {
 }
 
 func newEmpty() *Validation {
+	// perf (Step 2): all per-instance maps below are now LAZILY allocated on
+	// first write (see the ensure*() guards) instead of eagerly here. Most common
+	// validations leave several of them empty (no error, no optional field, no
+	// custom validator, no filtered data), so eager make() wasted ~4-6 allocs per
+	// instance. Reads of a nil map are safe (return zero value); only writes need
+	// the guard. trans's labelMap/fieldMap are likewise lazy (see messages.go).
 	v := &Validation{
-		Errors: make(Errors),
 		// create message translator
 		// trans: StdTranslator,
 		trans: NewTranslator(),
-		// validated data
-		safeData:  make(map[string]any),
-		optionals: make(map[string]int8),
-		// validator names. context validators are bound lazily, see validatorMeta.
-		validators: make(map[string]int8),
-		// validator func meta info. context validators are bound lazily.
-		validatorMetas: make(map[string]*funcMeta),
-		// filtered data
-		filteredData: make(map[string]any),
 		// default config
 		StopOnError:  gOpt.StopOnError,
 		SkipOnEmpty:  gOpt.SkipOnEmpty,

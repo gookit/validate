@@ -247,8 +247,11 @@ func (d *StructData) instantiateStatic(v *Validation) {
 	}
 
 	// --- optionals ---
-	for k, val := range tpl.optionals {
-		v.optionals[k] = val
+	if len(tpl.optionals) > 0 {
+		v.ensureOptionals() // lazy
+		for k, val := range tpl.optionals {
+			v.optionals[k] = val
+		}
 	}
 
 	// --- default values ---
