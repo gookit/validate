@@ -72,6 +72,36 @@ func (v *Validation) ValidateE(scene ...string) Errors {
 	return v.Errors
 }
 
+// ValidateR runs validation and returns the outcome as a *ValidResult that is
+// decoupled from this instance. It is the primitive behind the top-level Check()
+// and works on ANY configured instance (struct/map/programmatic builder).
+//
+// The result's Errors/safeData/filteredData are MOVED out of v (pointer
+// hand-over, O(1) — not copied), then v is Released. So the returned result is
+// safe to hold indefinitely while v may be reused by a pool. For a non-pooled v
+// (default New/Struct/Map path) Release() is a no-op and v is simply discarded.
+//
+// After ValidateR the instance must NOT be used again (its result has been moved
+// out and it may have been returned to a pool). When you only need the boolean /
+// error face, use Validate() bool + v.Errors instead.
+func (v *Validation) ValidateR(scene ...string) *ValidResult {
+	v.Validate(scene...)
+
+	// move (not copy) the result out of v into the standalone result object.
+	r := &ValidResult{
+		Errors:       v.Errors,
+		safeData:     v.safeData,
+		filteredData: v.filteredData,
+	}
+	// hand over ownership: nil the moved maps on v so Release()'s clear() leaves
+	// them alone and the lazy-alloc chain rebuilds cleanly on the next reuse.
+	v.Errors = nil
+	v.safeData = nil
+	v.filteredData = nil
+	v.Release() // no-op unless v came from a pool (Factory / Check)
+	return r
+}
+
 // Validate processing
 func (v *Validation) Validate(scene ...string) bool {
 	// has been validated OR has error
