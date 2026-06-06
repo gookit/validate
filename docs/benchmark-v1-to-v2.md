@@ -110,3 +110,11 @@
 - **v2 新增的 `FactoryStructReuse`** 为重复校验同一结构体类型提供了更优路径（相比同版本 `StructFlat` 更快且内存/分配更少），是 v2 在工程化复用场景下的重要增强。
 
 > 总体而言，从 v1.5.7 到 v2.0.0，库在结构体与 Map 校验的核心路径上实现了数倍级别的性能提升与内存/分配的大幅下降；v2 相对 v1.6.0 主要在结构体解析路径上继续优化，个别用例存在小幅回退。
+
+## 与 go-playground/validator 的对照（#215）
+
+针对 issue [#215](https://github.com/gookit/validate/issues/215)，另补了一份 **gookit/validate vs go-playground/validator** 的对照 benchmark，置于独立 module（不影响主仓库依赖）：
+
+- 目录：[`_examples/bench-vs-goplayground/`](../_examples/bench-vs-goplayground/)（独立 `go.mod`，`replace` 指向本地 validate）。
+- 运行：`cd _examples/bench-vs-goplayground && go test -bench . -benchmem -run '^$'`。
+- 内容：对“等价规则的校验调用”分扁平成功/失败、嵌套成功三组场景对照，附公平性声明（两库特性/语义不同）与本机结果，详见该目录 `README.md`。
