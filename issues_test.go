@@ -25,8 +25,9 @@ func TestIssue_2(t *testing.T) {
 
 	fl := Fl{123}
 	v := validate.Struct(fl)
-	assert.True(t, v.Validate())
-	assert.Equal(t, float64(123), v.SafeVal("A"))
+	r := v.ValidateR()
+	assert.True(t, r.IsOK())
+	assert.Equal(t, float64(123), r.SafeVal("A"))
 
 	val, ok := v.Raw("A")
 	assert.True(t, ok)
@@ -75,8 +76,9 @@ func TestIssues_19(t *testing.T) {
 	}
 
 	v := validate.New(req)
-	is.True(v.Validate())
-	sd := v.SafeData()
+	r := v.ValidateR()
+	is.True(r.IsOK())
+	sd := r.SafeData()
 	is.Equal("abcd", sd["CountryCode"])
 	is.Equal("13677778888", sd["Phone"])
 
@@ -99,8 +101,9 @@ func TestIssues_19(t *testing.T) {
 	}
 
 	v = validate.New(req1)
-	is.True(v.Validate())
-	sd = v.SafeData()
+	r = v.ValidateR()
+	is.True(r.IsOK())
+	sd = r.SafeData()
 	is.Equal("abcd", sd["CountryCode"])
 
 	is.Equal("abcd", req1.CountryCode)
@@ -803,10 +806,11 @@ func TestIssues_107(t *testing.T) {
 	assert.Equal(t, float64(12), v.RawVal("tip_amount"))
 
 	// call validate
-	assert.True(t, v.Validate())
+	r := v.ValidateR()
+	assert.True(t, r.IsOK())
 	// dump.Println(v.FilteredData())
-	dump.Println(v.SafeData())
-	assert.Equal(t, int64(12), v.SafeVal("tip_amount"))
+	dump.Println(r.SafeData())
+	assert.Equal(t, int64(12), r.SafeVal("tip_amount"))
 }
 
 // https://github.com/gookit/validate/v2/issues/111
@@ -1472,14 +1476,15 @@ func TestIssues_221(t *testing.T) {
 	v.StringRule("clinics.*.doctors.*.dates", "required|array")
 	v.StringRule("clinics.*.doctors.*.dates.*.date", "required|string")
 
-	if assert.True(t, v.Validate()) { // validate ok
-		safeData := v.SafeData()
+	r := v.ValidateR()
+	if assert.True(t, r.IsOK()) { // validate ok
+		safeData := r.SafeData()
 
 		fmt.Println("Validation OK:")
 		dump.Println(safeData)
 	} else {
 		fmt.Println("Validation Fail:")
-		fmt.Println(v.Errors) // all error messages
+		fmt.Println(r.Errors) // all error messages
 	}
 }
 
@@ -1502,12 +1507,13 @@ func TestIssues_223(t *testing.T) {
 	v.StringRule("clinics", "required|array")
 	v.StringRule("clinics.*.clinic_id", "string")
 
-	if assert.False(t, v.Validate()) {
+	r := v.ValidateR()
+	if assert.False(t, r.IsOK()) {
 		fmt.Println("Validation Fail:")
-		fmt.Println(string(v.Errors.JSON())) // all error messages
-		assert.StrContains(t, v.Errors.String(), "clinics.*.clinic_id value must be a string")
+		fmt.Println(string(r.Errors.JSON())) // all error messages
+		assert.StrContains(t, r.Errors.String(), "clinics.*.clinic_id value must be a string")
 	} else {
-		safeData := v.SafeData()
+		safeData := r.SafeData()
 		fmt.Println("Validation OK:")
 		dump.Println(safeData)
 	}

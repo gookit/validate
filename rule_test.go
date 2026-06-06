@@ -36,18 +36,18 @@ func TestRule_basic(t *testing.T) {
 	v.AddRule("name", "ltField", "key0")
 
 	// validate. will skip validate field "name"
-	v.Validate()
-	is.True(v.IsOK())
-	is.Empty(v.Errors)
-	is.Equal("val0", v.SafeVal("key0"))
-	is.Equal(nil, v.SafeVal("not-exist"))
+	vr := v.ValidateR()
+	is.True(vr.IsOK())
+	is.Empty(vr.Errors)
+	is.Equal("val0", vr.SafeVal("key0"))
+	is.Equal(nil, vr.SafeVal("not-exist"))
 
 	// validate on "test". will validate field "name"
 	v.ResetResult()
-	v.Validate("test")
-	is.True(v.IsOK())
-	is.Equal("val0", v.SafeVal("key0"))
-	is.Equal("inhere-HI", v.SafeVal("name"))
+	vr = v.ValidateR("test")
+	is.True(vr.IsOK())
+	is.Equal("val0", vr.SafeVal("key0"))
+	is.Equal("inhere-HI", vr.SafeVal("name"))
 }
 
 func TestRule_SetBeforeFunc(t *testing.T) {
@@ -100,13 +100,14 @@ func TestRule_SetSkipEmpty(t *testing.T) {
 	v := Map(mp)
 	v.AddRule("age", "int", 1)
 	v.AddRule("name", "string", 1, 10)
-	is.True(v.Validate())
+	r := v.ValidateR()
+	is.True(r.IsOK())
 
-	sd := v.SafeData()
+	sd := r.SafeData()
 	is.Contains(sd, "name")
 	is.NotContains(sd, "age")
-	is.Equal("inhere", v.GetSafe("name"))
-	is.Equal(nil, v.GetSafe("age"))
+	is.Equal("inhere", r.SafeVal("name"))
+	is.Equal(nil, r.SafeVal("age"))
 
 	v = Map(mp)
 	v.AddRule("age", "int", 1).SetSkipEmpty(false)

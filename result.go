@@ -31,28 +31,6 @@ type ValidResult struct {
 	filteredData M
 }
 
-// defaultFactory backs Check() with a package-level pool of reusable
-// *Validation instances. Reusing instances across calls amortizes the
-// per-instance construction cost; ValidResult decouples the result so the
-// instance can be returned to this pool right after Validate.
-var defaultFactory = NewFactory()
-
-// Check validates struct data and returns the result. It is the recommended
-// default entry: stateless from the caller's side and internally pooled (reuses
-// *Validation instances via a package pool), mirroring go-playground's
-// validate.Struct(s). The pooled instance is returned automatically — no manual
-// lifecycle / Release needed.
-//
-// For map data or programmatic rules, build a Validation (validate.Map / New +
-// StringRule...) and call its ValidateR() instead.
-//
-//	r := validate.Check(&user)
-//	if r.Fail() { return r.Err() }
-//	r.BindSafeData(&out)
-func Check(structPtr any, scene ...string) *ValidResult {
-	return defaultFactory.Struct(structPtr, scene...).ValidateR()
-}
-
 // IsOK reports whether validation passed (no errors).
 func (r *ValidResult) IsOK() bool { return r.Errors.Empty() }
 

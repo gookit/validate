@@ -32,10 +32,10 @@ func TestMap(t *testing.T) {
 	v.AddRule("age", "max", 99)
 	v.AddRule("age", "min", 1)
 
-	ok := v.Validate()
-	is.False(ok)
-	is.Equal("name min length is 7", v.Errors.FieldOne("name"))
-	is.Empty(v.SafeData())
+	r := v.ValidateR()
+	is.False(r.IsOK())
+	is.Equal("name min length is 7", r.Errors.FieldOne("name"))
+	is.Empty(r.SafeData())
 
 	v = New(nil)
 	is.Contains(v.Errors.String(), "invalid input data")
@@ -115,15 +115,16 @@ func TestErrorMessages(t *testing.T) {
 		"newSt": "newSt's err msg",
 	})
 
-	is.False(v.Validate())
-	is.Equal("oldSt's err msg", v.Errors.FieldOne("oldSt"))
-	is.Equal("newSt's err msg", v.Errors.FieldOne("newSt"))
+	r := v.ValidateR()
+	is.False(r.IsOK())
+	is.Equal("oldSt's err msg", r.Errors.FieldOne("oldSt"))
+	is.Equal("newSt's err msg", r.Errors.FieldOne("newSt"))
 	// test binding
 	u := struct {
 		Age  int
 		Name string
 	}{}
-	err := v.BindStruct(&u)
+	err := r.BindStruct(&u)
 	is.Nil(err)
 	is.Equal(0, u.Age)
 
@@ -220,13 +221,13 @@ func TestStruct(t *testing.T) {
 
 	// validate
 	v.StopOnError = false
-	ok := v.Validate()
-	is.True(v.IsFail())
-	is.False(ok)
-	is.Equal("User Name min length is 7", v.Errors.FieldOne("Name"))
-	is.Equal("oh! the UpdateAt is required", v.Errors.FieldOne("UpdateAt"))
-	is.Empty(v.SafeData())
-	is.Empty(v.FilteredData())
+	r := v.ValidateR()
+	is.True(r.Fail())
+	is.False(r.IsOK())
+	is.Equal("User Name min length is 7", r.Errors.FieldOne("Name"))
+	is.Equal("oh! the UpdateAt is required", r.Errors.FieldOne("UpdateAt"))
+	is.Empty(r.SafeData())
+	is.Empty(r.FilteredData())
 
 	u.Name = "new name"
 	u.Status = 3
@@ -278,13 +279,14 @@ func TestJSON(t *testing.T) {
 		"age":  "required|int|range:1,99",
 	})
 
-	is.False(v.Validate())
-	is.Empty(v.SafeData())
+	r := v.ValidateR()
+	is.False(r.IsOK())
+	is.Empty(r.SafeData())
 
-	is.Contains(v.Errors, "age")
-	is.Contains(v.Errors, "name")
-	is.Contains(v.Errors.String(), "name min length is 7")
-	is.Contains(v.Errors.String(), "age value must be in the range 1 - 99")
+	is.Contains(r.Errors, "age")
+	is.Contains(r.Errors, "name")
+	is.Contains(r.Errors.String(), "name min length is 7")
+	is.Contains(r.Errors.String(), "age value must be in the range 1 - 99")
 
 	// test set
 	iv, ok := v.Raw("type")
@@ -309,9 +311,10 @@ func TestJSON(t *testing.T) {
 	// float to int
 	fl := v.FilterRule("age", "int")
 	is.Equal([]string{"age"}, fl.Fields())
-	is.True(v.Validate())
-	is.Equal(100, v.SafeData()["age"])
-	is.Equal("inhere", v.SafeData()["name"])
+	r = v.ValidateR()
+	is.True(r.IsOK())
+	is.Equal(100, r.SafeData()["age"])
+	is.Equal("inhere", r.SafeData()["name"])
 }
 
 func TestFromQuery(t *testing.T) {
@@ -332,9 +335,10 @@ func TestFromQuery(t *testing.T) {
 	val, ok := v.Raw("name")
 	is.True(ok)
 	is.Equal("inhere", val)
-	is.False(v.Validate())
-	is.Equal("name min length is 7", v.Errors.FieldOne("name"))
-	is.Empty(v.SafeData())
+	r := v.ValidateR()
+	is.False(r.IsOK())
+	is.Equal("name min length is 7", r.Errors.FieldOne("name"))
+	is.Empty(r.SafeData())
 
 	v = FromQuery(data).Validation(fmt.Errorf("an error"))
 	is.Equal("an error", v.Errors.One())
@@ -370,12 +374,12 @@ func TestValidate_Request(t *testing.T) {
 	v.StringRule("size", "required|min:1", "int")
 	v.StringRule("status", "min:1", "int")
 	v.StringRule("name", "minLen:5", "trim|upper")
-	v.Validate()
-	is.True(v.IsOK())
-	is.Equal(10, v.SafeVal("size"))
-	is.Equal(1, v.SafeVal("page"))
-	is.Equal(nil, v.SafeVal("status"))
-	is.Equal("INHERE", v.SafeVal("name"))
+	vr := v.ValidateR()
+	is.True(vr.IsOK())
+	is.Equal(10, vr.SafeVal("size"))
+	is.Equal(1, vr.SafeVal("page"))
+	is.Equal(nil, vr.SafeVal("status"))
+	is.Equal("INHERE", vr.SafeVal("name"))
 
 	// =================== POST: form data ===================
 	body := strings.NewReader("name= inhere &age=50&remember=yes&email=eml@a.com")
@@ -398,17 +402,17 @@ func TestValidate_Request(t *testing.T) {
 		"email":    "email",
 		"remember": "-", // mark is safe. don't validate, collect to safe data.
 	})
-	v.Validate() // validate
+	vr = v.ValidateR() // validate
 	// fmt.Println(v.Errors, v.safeData)
-	is.True(v.IsOK())
-	fmt.Println(v.Errors)
-	val, ok := v.Safe("name")
+	is.True(vr.IsOK())
+	fmt.Println(vr.Errors)
+	val, ok := vr.Safe("name")
 	is.True(ok)
 	is.Equal("Inhere", val)
-	is.Equal(50, v.SafeVal("age"))
-	is.Equal("eml@a.com", v.SafeVal("email"))
-	is.Equal("Inhere", v.SafeVal("name"))
-	is.Equal(true, v.SafeVal("remember"))
+	is.Equal(50, vr.SafeVal("age"))
+	is.Equal("eml@a.com", vr.SafeVal("email"))
+	is.Equal("Inhere", vr.SafeVal("name"))
+	is.Equal(true, vr.SafeVal("remember"))
 }
 
 func TestFromRequest_FileForm(t *testing.T) {
@@ -539,15 +543,15 @@ func TestFromRequest_MultiFileForm(t *testing.T) {
 	v.AddRule("docs.*", "required")
 	v.AddRule("docs.*", "file")
 	v.AddRule("docs.*", "mime", "text/plain", "application/pdf")
-	v.Validate()
-	is.True(v.IsOK())
+	vr := v.ValidateR()
+	is.True(vr.IsOK())
 
 	var files struct {
 		File   *multipart.FileHeader   `form:"file"`
 		Images []*multipart.FileHeader `form:"images"`
 		Docs   []*multipart.FileHeader `form:"docs"`
 	}
-	err = v.BindSafeData(&files)
+	err = vr.BindSafeData(&files)
 	is.NoErr(err)
 	is.NotNil(files.File)
 	is.Len(files.Images, 1)
@@ -655,9 +659,9 @@ func TestFromRequest_JSON(t *testing.T) {
 				// - create validation
 				v := d.Create()
 				v.StringRule("name", "-", "trim|upper")
-				v.Validate() // validate
-				is.True(v.IsOK())
-				err = v.BindSafeData(user)
+				vr := v.ValidateR() // validate
+				is.True(vr.IsOK())
+				err = vr.BindSafeData(user)
 				is.NoErr(err)
 				is.Equal("INHERE", user.Name)
 			} else {
@@ -844,11 +848,14 @@ func TestValidation_ValidateData(t *testing.T) {
 
 	ok := v.ValidateData(d)
 	assert.True(t, ok)
-	assert.NotEmpty(t, v.SafeData())
+	assert.True(t, v.IsOK())
 
+	// safe/filtered data now live on ValidResult (see result_test.go); here we
+	// only verify ValidateData's boolean face and that Reset returns the instance
+	// to a clean, re-runnable state.
 	v.Reset()
-	assert.Empty(t, v.SafeData())
-	assert.Empty(t, v.FilteredData())
+	assert.True(t, v.IsOK())
+	assert.True(t, v.Errors.Empty())
 }
 
 func TestGetSet_OnNilData(t *testing.T) {
@@ -861,11 +868,6 @@ func TestGetSet_OnNilData(t *testing.T) {
 
 	// Get
 	val, ok := v.Get("age")
-	is.Nil(val)
-	is.False(ok)
-
-	// Safe
-	val, ok = v.Safe("age")
 	is.Nil(val)
 	is.False(ok)
 
@@ -899,8 +901,9 @@ func TestBuiltInValidators(t *testing.T) {
 	v.Reset()
 
 	v.StringRule("age", "isInt", "int")
-	is.True(v.Validate())
-	is.Equal(12, v.SafeVal("age"))
+	r := v.ValidateR()
+	is.True(r.IsOK())
+	is.Equal(12, r.SafeVal("age"))
 	v.Reset()
 
 	is.Panics(func() {

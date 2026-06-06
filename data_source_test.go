@@ -315,8 +315,8 @@ func TestValidatePrivateFieldsWhenFalse(t *testing.T) {
 	defer ResetOption()
 
 	v := Struct(barz)
-	v.Validate()
+	r := v.ValidateR()
 
 	assert.Equal(t, v.hasError, false)
-	dump.P(v.Errors, v.SafeData())
+	dump.P(r.Errors, r.SafeData())
 }

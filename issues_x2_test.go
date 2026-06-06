@@ -29,12 +29,13 @@ func Test_Issue227(t *testing.T) {
 	v := d.Create()
 	v.AddRule("File", "min_len", 1)
 
-	assert.True(t, v.Validate())
-	dump.P(v.Errors)
-	assert.Nil(t, v.Errors.ErrOrNil())
+	r := v.ValidateR()
+	assert.True(t, r.IsOK())
+	dump.P(r.Errors)
+	assert.Nil(t, r.Errors.ErrOrNil())
 
 	u := &UserForm{}
-	err := v.BindStruct(u)
+	err := r.BindStruct(u)
 	assert.NoError(t, err)
 	dump.P(u)
 }
@@ -150,9 +151,10 @@ func Test_Issue316(t *testing.T) {
 		v := dataFace.Create()
 		v.FilterRule("value", "int64")
 		v.StringRule("value", "int")
-		assert.True(t, v.Validate())
-		assert.Nil(t, v.Errors.ErrOrNil())
-		dump.P(v.SafeData())
+		r := v.ValidateR()
+		assert.True(t, r.IsOK())
+		assert.Nil(t, r.Errors.ErrOrNil())
+		dump.P(r.SafeData())
 	})
 }
 
@@ -457,17 +459,18 @@ func TestIssue_327_v2(t *testing.T) {
 		v := data.Create()
 		v.StringRule("aaa", "required|string|minLen:4")
 		v.StringRule("bbb", "string") // 非 required 规则
-		assert.True(t, v.Validate())
+		r := v.ValidateR()
+		assert.True(t, r.IsOK())
 
 		var reqData struct {
 			Aaa string `json:"aaa"`
 			Bbb string `json:"bbb"`
 		}
-		assert.NoErr(t, v.BindStruct(&reqData))
+		assert.NoErr(t, r.BindStruct(&reqData))
 		// 非 required 的 bbb 同样被绑定到了
 		assert.Eq(t, "hello", reqData.Aaa)
 		assert.Eq(t, "world", reqData.Bbb)
-		assert.Eq(t, "world", v.SafeData()["bbb"])
+		assert.Eq(t, "world", r.SafeData()["bbb"])
 	})
 
 	t.Run("field WITHOUT any rule is not in safeData (design)", func(t *testing.T) {
@@ -475,9 +478,10 @@ func TestIssue_327_v2(t *testing.T) {
 		v := data.Create()
 		v.StringRule("aaa", "required|string|minLen:4")
 		// bbb 没有任何规则
-		assert.True(t, v.Validate())
+		r := v.ValidateR()
+		assert.True(t, r.IsOK())
 		// 没有规则的字段不进入 safeData -> 取不到, 这是设计而非缺陷
-		_, ok := v.SafeData()["bbb"]
+		_, ok := r.SafeData()["bbb"]
 		assert.False(t, ok)
 	})
 
@@ -522,11 +526,11 @@ func TestIssue_262_v2(t *testing.T) {
 		vv.AddRule("ports.*.container_end", "int")
 		vv.AddRule("ports.*.protocol", "string")
 
-		ok := vv.Validate()
-		assert.True(t, ok)
-		assert.Empty(t, vv.Errors)
+		rr := vv.ValidateR()
+		assert.True(t, rr.IsOK())
+		assert.Empty(t, rr.Errors)
 		// 逐元素转为 int 后, 收集切片写回到通配 key
-		starts, hasStart := vv.SafeData()["ports.*.container_start"]
+		starts, hasStart := rr.SafeData()["ports.*.container_start"]
 		assert.True(t, hasStart)
 		assert.Eq(t, []any{80, 90}, starts)
 	})
@@ -538,8 +542,9 @@ func TestIssue_262_v2(t *testing.T) {
 		// 显式数字索引可命中标量值, filter 正常
 		vv.FilterRule("ports.0.container_start", "int")
 		vv.AddRule("ports.0.container_start", "int")
-		assert.True(t, vv.Validate())
-		assert.Eq(t, 80, vv.SafeData()["ports.0.container_start"])
+		rr := vv.ValidateR()
+		assert.True(t, rr.IsOK())
+		assert.Eq(t, 80, rr.SafeData()["ports.0.container_start"])
 	})
 
 	t.Run("wildcard custom filter applies per-element (fixed)", func(t *testing.T) {
@@ -553,8 +558,9 @@ func TestIssue_262_v2(t *testing.T) {
 		})
 		vv.FilterRule("ports.*.container_start", "plus10")
 		vv.AddRule("ports.*.container_start", "int")
-		assert.True(t, vv.Validate())
-		assert.Eq(t, []any{90, 100}, vv.SafeData()["ports.*.container_start"])
+		rr := vv.ValidateR()
+		assert.True(t, rr.IsOK())
+		assert.Eq(t, []any{90, 100}, rr.SafeData()["ports.*.container_start"])
 	})
 }
 
@@ -644,10 +650,11 @@ func TestIssue_324_v2(t *testing.T) {
 		// nested 字段用点路径声明规则, 才会进入 safeData
 		v.StringRule("address.street", "required")
 		v.StringRule("address.city", "required")
-		assert.True(t, v.Validate())
+		r := v.ValidateR()
+		assert.True(t, r.IsOK())
 
 		var req issue324Member
-		assert.NoErr(t, v.BindSafeData(&req))
+		assert.NoErr(t, r.BindSafeData(&req))
 		return req
 	}
 
@@ -679,10 +686,11 @@ func TestIssue_324_v2(t *testing.T) {
 
 		v := validate.FromURLValues(form).Create()
 		v.StringRule("addr.street.no", "required")
-		assert.True(t, v.Validate())
+		r := v.ValidateR()
+		assert.True(t, r.IsOK())
 
 		var got outer
-		assert.NoErr(t, v.BindSafeData(&got))
+		assert.NoErr(t, r.BindSafeData(&got))
 		assert.Eq(t, "12", got.Addr.Street.No)
 	})
 
@@ -693,10 +701,11 @@ func TestIssue_324_v2(t *testing.T) {
 
 		v := validate.FromURLValues(form).Create()
 		v.StringRule("name", "required") // 不给 address.street 规则
-		assert.True(t, v.Validate())
+		r := v.ValidateR()
+		assert.True(t, r.IsOK())
 
 		var req issue324Member
-		assert.NoErr(t, v.BindSafeData(&req))
+		assert.NoErr(t, r.BindSafeData(&req))
 		assert.Eq(t, "John", req.Name)
 		assert.Eq(t, "", req.Address.Street) // 未校验 -> 不进 safeData -> 不绑定
 	})
@@ -853,8 +862,9 @@ func TestIssue_203_v2(t *testing.T) {
 	t.Run("non-required + custom filter runs for non-empty value", func(t *testing.T) {
 		// Code="ok" -> upper -> "OK" -> customCheck 通过; filter 确实跑了
 		v := validate.Struct(&issue203Bar{Code: "ok"})
-		assert.True(t, v.Validate())
-		assert.Eq(t, "OK", v.SafeData()["Code"])
+		r := v.ValidateR()
+		assert.True(t, r.IsOK())
+		assert.Eq(t, "OK", r.SafeData()["Code"])
 	})
 
 	t.Run("non-required + EMPTY value is skipped (SkipOnEmpty: optional, by design)", func(t *testing.T) {
@@ -911,12 +921,13 @@ func TestIssue_244_v2(t *testing.T) {
 		// 真实场景: v.AddFilter("sanitizeHTML", bluemondayPolicy.Sanitize)
 		v.AddFilter("sanitizeHTML", sanitizeHTMLStandIn)
 
-		assert.True(t, v.Validate())
+		r := v.ValidateR()
+		assert.True(t, r.IsOK())
 		// 清洗后的值已进入 safeData(键为字段名 Bio)
-		assert.Eq(t, clean, v.SafeData()["Bio"])
+		assert.Eq(t, clean, r.SafeData()["Bio"])
 
 		out := &UserForm{}
-		assert.NoErr(t, v.BindSafeData(out))
+		assert.NoErr(t, r.BindSafeData(out))
 		assert.Eq(t, clean, out.Bio)
 		assert.StrNotContains(t, out.Bio, "<script>")
 		assert.StrNotContains(t, out.Bio, "<b>")
@@ -934,11 +945,12 @@ func TestIssue_244_v2(t *testing.T) {
 		v.FilterRule("bio", "sanitizeHTML")
 		v.StringRule("bio", "string")
 
-		assert.True(t, v.Validate())
-		assert.Eq(t, clean, v.SafeData()["bio"])
+		r := v.ValidateR()
+		assert.True(t, r.IsOK())
+		assert.Eq(t, clean, r.SafeData()["bio"])
 
 		out := &UserForm{}
-		assert.NoErr(t, v.BindSafeData(out))
+		assert.NoErr(t, r.BindSafeData(out))
 		assert.Eq(t, clean, out.Bio)
 		assert.StrNotContains(t, out.Bio, "script")
 	})

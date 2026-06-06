@@ -20,14 +20,15 @@ func TestFilterOnStruct(t *testing.T) {
 	}
 
 	v := New(u)
-	ris.True(v.Validate())
+	r := v.ValidateR()
+	ris.True(r.IsOK())
 
 	// since 1.1.4 filtered value will update to source
 	ris.Equal("ONE", u.Tres)
 	ris.Equal("INHERE", u.Name)
 
 	// bind filtering and validated data to struct
-	err := v.BindSafeData(u)
+	err := r.BindSafeData(u)
 	ris.Nil(err)
 	ris.Equal("ONE", u.Tres)
 	ris.Equal("INHERE", u.Name)
@@ -84,12 +85,13 @@ func TestAddFilter(t *testing.T) {
 
 	v.Sanitize() // do filtering
 	v.Sanitize() // repeat call
-	is.True(v.IsOK())
-	is.Equal(50, v.Filtered("age"))
-	is.Equal("INHERE", v.Filtered("name"))
-	is.Equal("myFilter0", v.Filtered("key0"))
-	is.Equal("myFilter2:ab", v.Filtered("key1"))
-	is.Contains(fmt.Sprint(v.FilteredData()), "key0:myFilter0")
+	r := v.ValidateR()
+	is.True(r.IsOK())
+	is.Equal(50, r.Filtered("age"))
+	is.Equal("INHERE", r.Filtered("name"))
+	is.Equal("myFilter0", r.Filtered("key0"))
+	is.Equal("myFilter2:ab", r.Filtered("key1"))
+	is.Contains(fmt.Sprint(r.FilteredData()), "key0:myFilter0")
 
 	v.Trans().AddMessage("new-key", "msg text")
 	is.True(v.Trans().HasMessage("new-key"))
