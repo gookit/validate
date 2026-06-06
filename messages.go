@@ -175,9 +175,10 @@ var builtinMessages = map[string]string{
 	"stringLength1": "{field} min length is %d",
 	"stringLength2": "{field} length must be in the range %d - %d",
 
-	"isURL":     "{field} must be a valid URL address",
-	"isFullURL": "{field} must be a valid full URL address",
-	"regexp":    "{field} must match pattern %s",
+	"isURL":       "{field} must be a valid URL address",
+	"isFullURL":   "{field} must be a valid full URL address",
+	"isActiveURL": "{field} must be an active and reachable URL",
+	"regexp":      "{field} must match pattern %s",
 
 	"isFile":  "{field} must be an uploaded file",
 	"isImage": "{field} must be an uploaded image file",

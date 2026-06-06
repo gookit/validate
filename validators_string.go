@@ -3,14 +3,21 @@ package validate
 import (
 	"encoding/json"
 	"net"
+	"net/http"
 	"net/url"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/gookit/goutil/jsonutil"
 	"github.com/gookit/goutil/strutil"
 	"github.com/gookit/validate/v2/internal/reflectx"
 )
+
+// ActiveURLTimeout is the per-request timeout used by IsActiveURL when probing
+// a URL for reachability. Adjust it to tune how long to wait for the remote
+// server before treating the URL as inactive.
+var ActiveURLTimeout = 5 * time.Second
 
 /*************************************************************
  * region global: string validators
@@ -65,6 +72,50 @@ func IsURL(s string) bool {
 
 	_, err := url.Parse(s)
 	return err == nil
+}
+
+// IsActiveURL reports whether s is a reachable/active URL.
+//
+// It first does a cheap structural check via IsFullURL (must have scheme+host);
+// an invalid full URL returns false WITHOUT any network access. Otherwise it
+// issues a real HTTP request: a HEAD first, falling back to GET when the server
+// answers 405 (Method Not Allowed). A final status code < 400 (2xx/3xx, after
+// following the default redirects) is considered active and returns true; any
+// transport error or status code >= 400 returns false.
+//
+// NOTE: this performs a real, network-dependent HTTP request, so it may be slow.
+// Tune the timeout via the package-level ActiveURLTimeout. When validating
+// untrusted input, be aware of the SSRF risk (an attacker-controlled URL causes
+// your server to make outbound requests) and gate it accordingly.
+func IsActiveURL(s string) bool {
+	if s == "" {
+		return false
+	}
+
+	// cheap short-circuit: not a structurally valid full URL -> never dial out.
+	if !IsFullURL(s) {
+		return false
+	}
+
+	client := &http.Client{Timeout: ActiveURLTimeout}
+
+	resp, err := client.Head(s)
+	if err != nil {
+		return false
+	}
+	_ = resp.Body.Close()
+
+	// some servers reject HEAD with 405; retry once with GET before judging.
+	if resp.StatusCode == http.StatusMethodNotAllowed {
+		resp, err = client.Get(s)
+		if err != nil {
+			return false
+		}
+		_ = resp.Body.Close()
+	}
+
+	// 2xx/3xx (after redirects) => active and reachable.
+	return resp.StatusCode < 400
 }
 
 // IsDataURI string.
