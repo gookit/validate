@@ -5,8 +5,6 @@ import (
 	"reflect"
 	"strings"
 	"sync"
-
-	"github.com/gookit/goutil/maputil"
 )
 
 // some default value settings.
@@ -633,38 +631,11 @@ func (v *Validation) BindSafeData(ptr any) error {
 	}
 
 	// to json bytes
-	bts, err := Marshal(v.expandSafeData())
+	bts, err := Marshal(expandSafeData(v.safeData))
 	if err != nil {
 		return err
 	}
 	return Unmarshal(bts, ptr)
-}
-
-// expandSafeData returns safeData ready for binding. When a key carries a dot
-// path (eg "address.street", from a nested/bracket form field, #324), it is
-// expanded into a nested map so it binds onto nested struct fields. When no key
-// contains a dot (the common case) the original flat map is returned unchanged,
-// keeping the marshal output byte-identical.
-func (v *Validation) expandSafeData() map[string]any {
-	hasDot := false
-	for k := range v.safeData {
-		if strings.IndexByte(k, '.') >= 0 {
-			hasDot = true
-			break
-		}
-	}
-	if !hasDot {
-		return v.safeData
-	}
-
-	nested := make(map[string]any, len(v.safeData))
-	for k, val := range v.safeData {
-		// on a path/leaf conflict, keep the flat key rather than dropping data.
-		if err := maputil.SetByPath(&nested, k, val); err != nil {
-			nested[k] = val
-		}
-	}
-	return nested
 }
 
 // Set value by key
