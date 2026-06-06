@@ -595,49 +595,6 @@ func (v *Validation) GetWithDefault(key string) (val any, exist, isDefault bool)
 	return
 }
 
-// Filtered get filtered value by key
-func (v *Validation) Filtered(key string) any {
-	return v.filteredData[key]
-}
-
-// Safe get safe value by key
-func (v *Validation) Safe(key string) (val any, ok bool) {
-	if v.data == nil { // check input data
-		return
-	}
-	val, ok = v.safeData[key]
-	return
-}
-
-// SafeVal get safe value by key
-func (v *Validation) SafeVal(key string) any {
-	val, _ := v.Safe(key)
-	return val
-}
-
-// GetSafe get safe value by key
-func (v *Validation) GetSafe(key string) any {
-	val, _ := v.Safe(key)
-	return val
-}
-
-// BindStruct binding safe data to a struct. alias of BindSafeData
-func (v *Validation) BindStruct(ptr any) error { return v.BindSafeData(ptr) }
-
-// BindSafeData binding safe data to an struct.
-func (v *Validation) BindSafeData(ptr any) error {
-	if len(v.safeData) == 0 { // no safe data.
-		return nil
-	}
-
-	// to json bytes
-	bts, err := Marshal(expandSafeData(v.safeData))
-	if err != nil {
-		return err
-	}
-	return Unmarshal(bts, ptr)
-}
-
 // Set value by key
 func (v *Validation) Set(field string, val any) error {
 	// check input data
@@ -724,14 +681,6 @@ func (v *Validation) IsFail() bool { return v.hasError }
 
 // IsSuccess for the validating
 func (v *Validation) IsSuccess() bool { return !v.hasError }
-
-// SafeData get all validated safe data
-func (v *Validation) SafeData() M { return v.safeData }
-
-// FilteredData return filtered data.
-func (v *Validation) FilteredData() M {
-	return v.filteredData
-}
 
 /*************************************************************
  * helper methods

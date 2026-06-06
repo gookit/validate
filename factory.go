@@ -8,21 +8,29 @@ import "sync"
 //
 // It is NON-default: validate.New / validate.Struct / validate.Map and their
 // lifecycle are unchanged. Only callers who explicitly opt in via a Factory get
-// pooling, and they MUST call v.Release() to return the instance to the pool.
+// pooling. Most callers should prefer the top-level Check(), which uses a
+// package pool automatically; a Factory is for when you want a PRIVATE pool.
 //
 // Usage:
 //
 //	f := validate.NewFactory()
 //	for _, u := range users {
-//		v := f.Struct(&u) // pooled instance + cached type meta
-//		v.Validate()
-//		// ... use v.Errors / v.SafeData() ...
-//		v.Release()       // fully Reset + return to pool
+//		// ValidateR snapshots the result into a ValidResult and returns the
+//		// instance to the pool automatically (no manual Release):
+//		r := f.Struct(&u).ValidateR()
+//		if r.Fail() { /* use r.Errors */ }
+//		// r.SafeData() / r.BindStruct(&out) ...
 //	}
+//
+// When you only need the boolean / error face, call Validate() then Release():
+//
+//	v := f.Struct(&u)
+//	if !v.Validate() { /* use v.Errors */ }
+//	v.Release() // fully Reset + return to pool
 //
 // A Validation obtained from a Factory behaves identically to validate.Struct /
 // validate.Map (same rules, same result). Do NOT keep using a *Validation after
-// Release(): it may be handed to another caller.
+// Release()/ValidateR(): it may be handed to another caller.
 type Factory struct {
 	pool *sync.Pool
 }
