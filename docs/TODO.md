@@ -5,7 +5,8 @@
 - [x] use pool for Validation — `Val`/`Var` pooled in v1.6.0; opt-in `Factory`/pool for `Struct`/`Map` landed in v2.0 (`factory.go`: `NewFactory` + `Factory.Struct/Map` + `(*Validation).Release()`)
 - [x] inner validators always use `reflect.Value` as param — done in v2.0: `Gt`/`Lt`/`Between` etc. unified through `valueCompare` (`validators_compare.go`)
 - [x] can register custom type — done in v2.0 (`register_type.go`: `AddCustomType` / `ResetCustomTypes`)
-- field value struct (original sketch, realized as unexported `fieldValue`):
+- [x] field value struct (original sketch, realized as unexported `fieldValue`):
+- [ ] callValidator 使用 swith 进行快速的验证方法调用，避免了使用反射。还有哪些常用验证可以使用此方法优化，需要添加一下
 
 ```go
 type FieldValue struct {
