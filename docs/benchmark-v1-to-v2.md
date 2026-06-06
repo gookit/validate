@@ -118,3 +118,4 @@
 - 目录：[`_examples/bench-vs-goplayground/`](../_examples/bench-vs-goplayground/)（独立 `go.mod`，`replace` 指向本地 validate）。
 - 运行：`cd _examples/bench-vs-goplayground && go test -bench . -benchmem -run '^$'`。
 - 内容：对“等价规则的校验调用”分扁平成功/失败、嵌套成功三组场景对照，附公平性声明（两库特性/语义不同）与本机结果，详见该目录 `README.md`。
+- **差距根因分析与优化清单**：见 [`docs/perf/gookit-vs-goplayground-gap-analysis.md`](perf/gookit-vs-goplayground-gap-analysis.md)（23 allocs 归因、go-playground 0 分配原因、safeData/filter flag 实测、Factory 复用实测、优化排序）。
