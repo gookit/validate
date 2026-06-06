@@ -295,16 +295,17 @@ func main()  {
 		v.AddRule("name", "minLen", 7)
 		v.AddRule("age", "max", 99)
 		
-		if v.Validate() { // validate ok
-			// safeData := v.SafeData()
+		vr := v.ValidateR()
+		if vr.IsOK() { // validate ok
+			// safeData := vr.SafeData()
 			userForm := &UserForm{}
-			v.BindSafeData(userForm)
+			vr.BindSafeData(userForm)
 
 			// do something ...
 			fmt.Println(userForm.Name)
 		} else {
-			fmt.Println(v.Errors) // all error messages
-			fmt.Println(v.Errors.One()) // returns a random error message text
+			fmt.Println(vr.Errors) // all error messages
+			fmt.Println(vr.Errors.One()) // returns a random error message text
 		}
 	})
 	
@@ -672,21 +673,30 @@ _ = v.Validate() // true:提取出 "inhere" 后按 required|minLen:3 校验
 
 ### 池化工厂(`NewFactory`)
 
-当你需要大批量校验**同类型**数据时,可以用 opt-in 的 `Factory` 从池中复用 `*Validation`
-实例,摊销构造成本(复用场景 allocs 约减半:11 vs 23)。`Struct` / `Map` / `New` 的默认
-行为与生命周期**完全不变** —— 只有显式使用 `Factory` 的调用方才会走池化路径。
+当你需要大批量校验**同类型**数据时,可以用 opt-in 的 `Factory` 从**私有池**复用
+`*Validation` 实例,摊销构造成本。`Struct` / `Map` / `New` 的默认行为与生命周期
+**完全不变** —— 只有显式使用 `Factory` 的调用方才会走池化路径。
 
-> **必须**调用 `v.Release()` 把实例归还到池,且 `Release()` 之后**不要**再使用该实例。
-> `Release()` 对非工厂来源的实例是安全的 no-op。
+> 大多数场景直接用顶层 `validate.Check(&u)` 即可——它内部用包级池自动复用实例。
+> 只有当你想要一个**私有**池时才需要 `Factory`。
 
 ```go
 f := validate.NewFactory()
 for i := range users {
-	v := f.Struct(&users[i]) // 从池中取复用实例 + 复用类型元数据
-	v.Validate()
-	// ... 使用 v.Errors / v.SafeData() ...
-	v.Release() // Reset 后归还到池
+	// ValidateR 会把结果快照进 ValidResult 并自动归还实例到池(无需手动 Release):
+	r := f.Struct(&users[i]).ValidateR()
+	if r.Fail() {
+		// 使用 r.Errors / r.SafeData() / r.BindStruct(&out) ...
+	}
 }
+```
+
+若只需要布尔/错误面,可 `Validate()` 后 `Release()`:
+
+```go
+v := f.Struct(&users[i])
+if !v.Validate() { /* 使用 v.Errors */ }
+v.Release() // Reset 后归还到池; 之后不要再使用 v
 ```
 
 ## 在gin框架中使用

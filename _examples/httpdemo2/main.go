@@ -47,13 +47,14 @@ func main() {
 				"int":      "the {field} must be integer",
 			})
 
-		if v.Validate() { // validate ok
-			dump.P(v.SafeData())
+		vr := v.ValidateR()
+		if vr.IsOK() { // validate ok
+			dump.P(vr.SafeData())
 			_, _ = w.Write([]byte("hello"))
 		} else {
-			fmt.Println(v.Errors.One()) // returns a random error message text
-			fmt.Println(v.Errors)       // all error messages
-			_, _ = w.Write([]byte(v.Errors.String()))
+			fmt.Println(vr.Errors.One()) // returns a random error message text
+			fmt.Println(vr.Errors)       // all error messages
+			_, _ = w.Write([]byte(vr.Errors.String()))
 		}
 	})
 

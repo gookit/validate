@@ -38,16 +38,17 @@ func main() {
 		v.AddRule("age", "max", 99)
 		v.AddRule("code", "regex", `\d{4,6}`)
 
-		if v.Validate() { // validate ok
-			// safeData := v.SafeData()
+		vr := v.ValidateR()
+		if vr.IsOK() { // validate ok
+			// safeData := vr.SafeData()
 			userForm := &UserForm{}
-			v.BindSafeData(userForm)
+			vr.BindSafeData(userForm)
 
 			// do something ...
 			fmt.Println(userForm.Name)
 		} else {
-			fmt.Println(v.Errors)       // all error messages
-			fmt.Println(v.Errors.One()) // returns a random error message text
+			fmt.Println(vr.Errors)       // all error messages
+			fmt.Println(vr.Errors.One()) // returns a random error message text
 		}
 	})
 

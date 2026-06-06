@@ -67,6 +67,20 @@ func BenchmarkPlaygroundFlatValid(b *testing.B) {
 	}
 }
 
+// Check 是 gookit 的池化无状态入口(对标 playground 复用单实例的方式):
+// 内部用包级 sync.Pool 复用 *Validation,返回与实例解耦的 *ValidResult。
+func BenchmarkGookitCheckValid(b *testing.B) {
+	data := validFlatGookit()
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		r := gookit.Check(&data)
+		if r.Fail() {
+			b.Fatalf("expected valid, got: %v", r.Errors)
+		}
+	}
+}
+
 /*************************************************************
  * 场景 2：扁平 struct —— 失败路径（含非法字段，触发错误）
  *

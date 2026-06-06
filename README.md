@@ -267,15 +267,19 @@ func main()  {
 	//	 "update": []string{"name"},
 	// })
 	
-	if v.Validate() { // validate ok
-		safeData := v.SafeData()
+	r := v.ValidateR() // returns a *ValidResult, decoupled from v
+	if r.IsOK() { // validate ok
+		safeData := r.SafeData()
 		// do something ...
 	} else {
-		fmt.Println(v.Errors) // all error messages
-		fmt.Println(v.Errors.One()) // returns a random error message text
+		fmt.Println(r.Errors) // all error messages
+		fmt.Println(r.Errors.One()) // returns a random error message text
 	}
 }
 ```
+
+> Tip: for struct validation, prefer the top-level `validate.Check(&u)` — it is
+> stateless and pooled internally, and returns the same `*ValidResult`.
 
 ## Validate Request
 
@@ -320,16 +324,17 @@ func main()  {
 		v.AddRule("age", "max", 99)
 		v.StringRule("code", `required|regex:\d{4,6}`)
 
-		if v.Validate() { // validate ok
-			// safeData := v.SafeData()
+		vr := v.ValidateR()
+		if vr.IsOK() { // validate ok
+			// safeData := vr.SafeData()
 			userForm := &UserForm{}
-			v.BindSafeData(userForm)
+			vr.BindSafeData(userForm)
 
 			// do something ...
 			fmt.Println(userForm.Name)
 		} else {
-			fmt.Println(v.Errors) // all error messages
-			fmt.Println(v.Errors.One()) // returns a random error message text
+			fmt.Println(vr.Errors) // all error messages
+			fmt.Println(vr.Errors.One()) // returns a random error message text
 		}
 	})
 
@@ -746,23 +751,32 @@ _ = v.Validate() // true: extracted "inhere" then checked by required|minLen:3
 ### Pooled Factory (`NewFactory`)
 
 When you validate large batches of the **same type**, an opt-in `Factory` reuses
-`*Validation` instances from a pool to amortize the construction cost (about half
-the allocs in the reuse path: 11 vs 23). The default behaviour and lifecycle of
-`Struct` / `Map` / `New` are **unchanged** — only callers who explicitly use a
-`Factory` get pooling.
+`*Validation` instances from a private pool to amortize the construction cost. The
+default behaviour and lifecycle of `Struct` / `Map` / `New` are **unchanged** —
+only callers who explicitly use a `Factory` get pooling.
 
-> You **must** call `v.Release()` to return the instance to the pool, and must
-> **not** use it after `Release()`. `Release()` is a safe no-op for non-factory
-> instances.
+> Most callers should just use the top-level `validate.Check(&u)`, which pools
+> instances via a package pool automatically. Reach for a `Factory` only when you
+> want a **private** pool.
 
 ```go
 f := validate.NewFactory()
 for i := range users {
-	v := f.Struct(&users[i]) // pooled instance + cached type meta
-	v.Validate()
-	// ... use v.Errors / v.SafeData() ...
-	v.Release() // reset + return to the pool
+	// ValidateR snapshots the result and returns the instance to the pool
+	// automatically (no manual Release):
+	r := f.Struct(&users[i]).ValidateR()
+	if r.Fail() {
+		// use r.Errors / r.SafeData() / r.BindStruct(&out) ...
+	}
 }
+```
+
+When you only need the boolean / error face, call `Validate()` then `Release()`:
+
+```go
+v := f.Struct(&users[i])
+if !v.Validate() { /* use v.Errors */ }
+v.Release() // reset + return to the pool; do not use v afterwards
 ```
 
 ## Use on gin framework
