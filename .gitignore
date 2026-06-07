@@ -22,3 +22,4 @@ vendor
 # go work
 go.wor*
 .xenv.toml
+tmp/
