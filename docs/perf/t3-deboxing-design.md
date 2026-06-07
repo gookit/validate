@@ -121,6 +121,24 @@ T3 唯一能省装箱的字段是**取了值但既不入 safeData、也不需要
 
 **建议**：先用一个**抛弃式 spike**（不进主干）量化 `CheckErr` 的真实 allocs 与对 multi-rule 字段的影响，再决定是否落地。spike 产物存 `tmp/`。
 
+### 6.1 Spike 实测结果（2026-06-07，已验证，代码已回退）
+
+抛弃式原型测了 3 个变体（bench `gookitFlat`：Name 3 规则/Email 2/Age 3；报告存 `tmp/spike-checkerr-report.md`）：
+
+| 变体 | 入口 | ns/op | B/op | allocs/op |
+|---|---|---:|---:|---:|
+| A 基线 | `Check`（收集 safeData + 建 ValidResult） | 1389 | 405 | **6** |
+| B 无去重 | `CheckErr`（跳过 safeData/filtered/壳，**不**装箱去重） | 1428 | 105 | **8 ⚠️负优化** |
+| C 1槽去重 | `CheckErr` + 连续同字段取值去重 | 1175 | 40 | **3** |
+
+**关键证实**：
+
+- **B 反升到 8 allocs（比基线 +2）**：跳过 safeData 后丢失"装箱去重"——8 条规则各自 `TryGet→fv.Interface()` 重新装箱（约 8 次 vs 基线 3 次），多出的 ~5 次装箱把省下的 3 个（safeData 2 + 壳 1）全部抵消并反超。**单跳过 safeData 是负优化**，§4/§6 的预判成立。
+- **C 降到 3 allocs**（−50% allocs / B/op −90% / ns −16%）：补上"连续同字段 1 槽去重"把每字段装箱压回 1 次，才兑现"省 3 个"的理论值。
+- **1 槽够用前提**：`gookitFlat` 同字段多规则在 `v.rules` 中连续，故 1 槽命中率接近理想；若规则编排不保证同字段连续则退化回 B。正式化需：去重机制与 skipCollect 解耦、处理 zero 标志（`SkipOnEmpty`/默认值依赖）、补失败路径基准（`OneError`/`errorx.Raw` 的 alloc）。
+
+**净结论**：`CheckErr` 形态 C **确实能把"只要过/败"的入口压到 3 allocs**，但**必须连同装箱去重一起做**，否则负优化。是否落地是**产品 API 决策**（值不值得为一个 opt-in 快速入口加这套机制 + 维护成本），不再是 T3"去装箱"那种纯性能改造。
+
 ---
 
 ## 7. 决策建议
