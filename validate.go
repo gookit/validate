@@ -365,30 +365,43 @@ func FromJSONBytes(bs []byte) (*MapData, error) {
 
 // FromStruct create a Data from struct
 func FromStruct(s any) (*StructData, error) {
-	data := &StructData{
-		ValidateTag: gOpt.ValidateTag,
-		// init map
-		fieldNames: make(map[string]int8),
+	data := &StructData{}
+	err := data.fromStruct(s)
+	return data, err
+}
+
+// fromStruct (re)initializes d from the source struct s. Extracted from
+// FromStruct so the pooled Factory path can refill a REUSED StructData (carried
+// on a pooled Validation as v.sd) without allocating a new one. For a fresh
+// zero-value d this is byte-for-byte identical to the old inline FromStruct body.
+//
+// It first reset()s d (unbind previous source + clear caches), keeping any
+// already-allocated maps for reuse.
+func (d *StructData) fromStruct(s any) error {
+	d.reset()
+	d.ValidateTag = gOpt.ValidateTag
+	if d.fieldNames == nil {
+		d.fieldNames = make(map[string]int8)
 	}
 
 	if s == nil {
-		return data, ErrInvalidData
+		return ErrInvalidData
 	}
 
 	val := reflects.Elem(reflect.ValueOf(s))
 	typ := val.Type()
 
 	if val.Kind() != reflect.Struct || typ == timeType {
-		return data, ErrInvalidData
+		return ErrInvalidData
 	}
 
-	data.src = s
-	data.value = val
-	data.valueTyp = typ
+	d.src = s
+	d.value = val
+	d.valueTyp = typ
 	// build/fetch cached type-level metadata (field index, tags, Implements...).
-	data.meta = getTypeMeta(typ)
+	d.meta = getTypeMeta(typ)
 
-	return data, nil
+	return nil
 }
 
 var jsonContent = regexp.MustCompile(`(?i)application/((\w|\.|-)+\+)?json(-seq)?`)

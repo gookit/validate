@@ -62,10 +62,16 @@ func (f *Factory) get() *Validation {
 func (f *Factory) Struct(s any, scene ...string) *Validation {
 	v := f.get()
 
-	sd, err := FromStruct(s)
-	v.data = sd
+	// reuse the pooled StructData carried on v (avoids a new StructData +
+	// fieldNames map per call). fromStruct() reset()s it before refilling, and
+	// resetForReuse() unbinds it on release — so no source leak / cross-type bleed.
+	if v.sd == nil {
+		v.sd = &StructData{}
+	}
+	err := v.sd.fromStruct(s)
+	v.data = v.sd
 	// assemble rules/config onto the pooled instance (mirrors StructData.Create).
-	sd.createInto(v, err)
+	v.sd.createInto(v, err)
 	return v.SetScene(scene...)
 }
 

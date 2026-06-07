@@ -129,6 +129,52 @@ func TestCheck_poolReuse(t *testing.T) {
 	}
 }
 
+type checkAddr struct {
+	City string `validate:"required|min_len:2" json:"city"`
+	Zip  string `validate:"required" json:"zip"`
+}
+
+// S3: the pooled StructData (v.sd) is reused across calls — including across
+// DIFFERENT struct types. Verify no field-name bleed / source leak between types.
+func TestCheck_poolReuse_mixedTypes(t *testing.T) {
+	for i := 0; i < 50; i++ {
+		ru := Check(validCheckUser()) // type checkUser
+		assert.True(t, ru.IsOK())
+		assert.Eq(t, "inhere", ru.SafeVal("Name"))
+
+		ra := Check(&checkAddr{City: "NYC", Zip: "10001"}) // different type, reused pool slot
+		assert.True(t, ra.IsOK())
+		assert.Eq(t, "NYC", ra.SafeVal("City"))
+		// checkUser's fields must NOT leak into the addr result
+		_, hasName := ra.Safe("Name")
+		assert.False(t, hasName)
+
+		rbad := Check(&checkAddr{City: "x"}) // City too short + Zip missing
+		assert.True(t, rbad.Fail())
+	}
+}
+
+// Concurrency: Check of MIXED types from many goroutines must be race-clean and
+// correct (each goroutine gets its own pooled instance + StructData).
+func TestCheck_concurrent_mixedTypes(t *testing.T) {
+	var wg sync.WaitGroup
+	for g := 0; g < 16; g++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for i := 0; i < 100; i++ {
+				if r := Check(validCheckUser()); !r.IsOK() || r.SafeVal("Name") != "inhere" {
+					t.Errorf("user: unexpected result: ok=%v name=%v", r.IsOK(), r.SafeVal("Name"))
+				}
+				if r := Check(&checkAddr{City: "NYC", Zip: "10001"}); !r.IsOK() || r.SafeVal("City") != "NYC" {
+					t.Errorf("addr: unexpected result: ok=%v city=%v", r.IsOK(), r.SafeVal("City"))
+				}
+			}
+		}()
+	}
+	wg.Wait()
+}
+
 // Concurrency: Check must be safe from many goroutines (run with -race).
 func TestCheck_concurrent(t *testing.T) {
 	var wg sync.WaitGroup

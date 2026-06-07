@@ -38,6 +38,11 @@ type Validation struct {
 
 	// source input data
 	data DataFace
+	// sd is a reusable StructData carried by POOLED instances (Factory / Check) so
+	// a struct validation does not allocate a new StructData + fieldNames map on
+	// every call. nil on the default New/Struct/Map path. It is reset (source
+	// unbound, caches cleared) on reuse — see resetForReuse + StructData.fromStruct.
+	sd *StructData
 	// all validated fields list
 	// fields []string
 
@@ -208,6 +213,12 @@ func (v *Validation) resetRules() {
 func (v *Validation) resetForReuse() {
 	// --- source input ---
 	v.data = nil
+	// pooled StructData: unbind source + clear field caches but KEEP the
+	// allocation for reuse. Prevents a pooled instance from pinning the last
+	// validated struct while it sits idle in the pool.
+	if v.sd != nil {
+		v.sd.reset()
+	}
 
 	// --- result data + flags (mirrors ResetResult, but clears maps in place to
 	// reuse the already-allocated buckets — this is the whole point of pooling) ---

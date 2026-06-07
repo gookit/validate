@@ -227,6 +227,22 @@ func (d *StructData) Src() any { return d.src }
 // Type get
 func (d *StructData) Type() uint8 { return sourceStruct }
 
+// reset unbinds the source object and clears the per-source caches, KEEPING any
+// already-allocated maps (fieldNames/fieldValues) for reuse. Used by the pooled
+// path: resetForReuse() calls it when a pooled instance is recycled (so the pool
+// does not pin the last validated struct), and fromStruct() calls it before
+// refilling. Safe on a fresh zero-value d (clear of a nil map is a no-op).
+func (d *StructData) reset() {
+	d.src = nil
+	d.value = reflect.Value{}
+	d.valueTyp = nil
+	d.meta = nil
+	d.ValidateTag = ""
+	d.FilterTag = ""
+	clear(d.fieldNames)
+	clear(d.fieldValues)
+}
+
 // Validation creates a Validation from the StructData
 func (d *StructData) Validation(err ...error) *Validation { return d.Create(err...) }
 
