@@ -221,9 +221,16 @@ func (d *StructData) instantiateStatic(v *Validation) {
 	// time (string->typed). Sharing the template's args slice would corrupt the
 	// template / race across instances, so each instance gets a fresh copy.
 	if len(tpl.rules) > 0 {
-		// keep this instance's OWN backing array (cap=len) so Reset/复用 + AddRule
-		// re-append never overwrites the shared template backing array.
-		v.rules = make([]*Rule, 0, len(tpl.rules))
+		// reuse this instance's OWN backing array when it is large enough (pooled
+		// reuse: resetForReuse already did v.rules[:0]); otherwise allocate one
+		// sized to the template. Either way it stays an instance-owned array (never
+		// the shared template's), so Reset/复用 + AddRule re-append never overwrites
+		// the template backing array.
+		if cap(v.rules) < len(tpl.rules) {
+			v.rules = make([]*Rule, 0, len(tpl.rules))
+		} else {
+			v.rules = v.rules[:0]
+		}
 		for _, tr := range tpl.rules {
 			if tr.argsReady {
 				// argsReady 模板规则在校验期完全只读(valueValidate 跳过 convertArgsType,
@@ -239,7 +246,12 @@ func (d *StructData) instantiateStatic(v *Validation) {
 
 	// --- filter rules: clone (filters slice + filterArgs map copied) ---
 	if len(tpl.filterRules) > 0 {
-		v.filterRules = make([]*FilterRule, 0, len(tpl.filterRules))
+		// same instance-owned-array reuse as v.rules above.
+		if cap(v.filterRules) < len(tpl.filterRules) {
+			v.filterRules = make([]*FilterRule, 0, len(tpl.filterRules))
+		} else {
+			v.filterRules = v.filterRules[:0]
+		}
 		for _, tfr := range tpl.filterRules {
 			v.filterRules = append(v.filterRules, cloneFilterRule(tfr))
 		}
