@@ -5,6 +5,8 @@ import (
 	"reflect"
 	"strings"
 	"sync"
+
+	"github.com/gookit/validate/v2/internal/fieldval"
 )
 
 // some default value settings.
@@ -155,15 +157,33 @@ func (v *Validation) ensureFilteredData() {
 	}
 }
 
-// commitValue records a field's validated value: into the skipCollect 1-slot
-// cache (CheckErr fast path) or into safeData (normal collect path).
-func (v *Validation) commitValue(field string, val any) {
+// commitValue records a field's validated value carrier: into the skipCollect
+// 1-slot cache (CheckErr fast path) or into safeData (normal collect path,
+// materializes via Src() — §9 safeData 墙).
+//
+// 逃逸约束(R4 关键): 绝不把载体指针 fv 存进 *Validation 这种逃逸结构,否则
+// escape 分析会把 getFieldCarrier 现造的所有载体标记为 escapes-to-heap,连带
+// struct 热路径载体逃逸(实测 +N allocs)。因此:
+//   - struct 源 skipCollect: 只记 scKey, scVal 置 nil。dedup 重读经 tryGetRV
+//     (box-free, 源已写回默认/过滤值), 不缓存载体。
+//   - map/form 源 skipCollect: 值本就是 any, 记 scVal=fv.Src()(无额外装箱)。
+//   - 非 skipCollect: safeData 收集恒装箱(§9 的墙), 用 Src() 物化。
+func (v *Validation) commitValue(field string, fv *fieldval.FieldValue) {
 	if v.skipCollect {
-		v.scKey, v.scVal = field, val
+		v.scKey = field
+		if v.data != nil && v.data.Type() == sourceStruct {
+			// struct: 不主动物化(box-free)。但若本字段某校验器已物化过 Src(srcSet),
+			// 把这个已装箱的值传递给 scVal, 让同字段后续规则的载体复用(免重复装箱);
+			// 未物化(载体全程 RV-native, 如 Name/Email)则 scVal 留 nil, dedup 经源重读。
+			v.scVal, _ = fv.SrcIfSet()
+		} else {
+			// map/form: 值本就是 any, 记下以对同字段连续读去重(语义同改造前)。
+			v.scVal = fv.Src()
+		}
 		return
 	}
 	v.ensureSafeData()
-	v.safeData[field] = val
+	v.safeData[field] = fv.Src()
 }
 
 func (v *Validation) ensureOptionals() {
@@ -593,8 +613,12 @@ func (v *Validation) tryGet(key string) (val any, exist, zero bool) {
 
 	// CheckErr(skipCollect): safeData/filteredData 不收集,改用 1 槽对同字段连续读
 	// 去重;其它字段落源(源已写回默认/过滤值,故读到已解析值,见计划 §4)。
+	//
+	// struct 源: commitValue 仅在校验器已物化 Src 时缓存 scVal(否则留 nil), 命中
+	// 非 nil 即复用(免重复装箱);nil 则 TryGet 重读(updateValue 已写回源, box-free)。
+	// map/form 源: updateValue 不写源, 故 scVal 缓存是过滤/默认值的唯一来源, 命中即返回。
 	if v.skipCollect {
-		if v.scKey == key {
+		if v.scKey == key && (v.data.Type() != sourceStruct || v.scVal != nil) {
 			return v.scVal, true, false
 		}
 		return v.data.TryGet(key)
@@ -637,6 +661,94 @@ func (v *Validation) GetWithDefault(key string) (val any, exist, isDefault bool)
 		val = defVal
 	}
 	return
+}
+
+// fieldResolve is the by-VALUE result of getFieldCarrier: it carries everything
+// applyField needs to build the carrier ITSELF (inline, on its own stack frame),
+// so the *fieldval.FieldValue never escapes through a function return — the R4
+// escape trap that turned every carrier into a heap alloc (实测 CheckErrValid
+// 3→6). useRV picks NewRV(rv) (struct, box-free) vs New(val) (any) at the call
+// site; exist/isDefault keep GetWithDefault semantics byte-for-byte.
+type fieldResolve struct {
+	rv        reflect.Value // struct 源的字段值(useRV=true 时有效)
+	val       any           // map/form/dedup/filtered/safeData/默认值(useRV=false 时有效)
+	useRV     bool          // true → applyField 用 NewRV(rv) 懒构造; false → New(val)
+	exist     bool
+	isDefault bool
+}
+
+// getFieldCarrier resolves a field to a fieldResolve descriptor with byte-for-byte
+// identical (exist, isDefault) semantics to GetWithDefault, but for STRUCT sources
+// it returns the raw reflect.Value (useRV=true) so the caller can build the carrier
+// via NewRV — keeping the boxed value lazy so a pass-through (struct) validation
+// never calls Interface() (痛点 R4 端到端去装箱).
+//
+// Branch equivalence to GetWithDefault→tryGet (must stay lock-step):
+//   - v.data == nil                  → exist=false; only defValues can flip isDefault.
+//   - skipCollect && scKey==field    → (struct: 源重读 tryGetRV; map/form: scVal dedup).
+//   - filtered / safeData hit        → any (useRV=false), exist=true, zero=false.
+//   - struct source                  → tryGetRV(field) (exist, zero); useRV=true (lazy).
+//   - map/form source                → data.TryGet(field) (any) → useRV=false.
+//   - then: if !(exist && !zero) and defValues[field] exists → val=defVal, isDefault=true.
+func (v *Validation) getFieldCarrier(field string) fieldResolve {
+	var r fieldResolve
+	var zero bool
+
+	if v.data == nil {
+		// mirrors tryGet's nil return (val=nil, exist=false, zero=false).
+		r.exist, zero = false, false
+	} else if v.skipCollect {
+		// skipCollect dedup (mirrors tryGet):
+		//   - map/form 源: updateValue 不写源, scVal 是唯一来源 → 命中即包装。
+		//   - struct 源: 若上一规则已把已装箱值传到 scVal(commitValue 的 SrcIfSet),
+		//     直接复用 scVal(免重复装箱, 把 Age 的 min/max 两次装箱降为一次);否则
+		//     scVal=nil → 经 tryGetRV 重读(源已写回默认/过滤值, box-free, 不缓存载体避逃逸)。
+		if v.scKey == field && (v.data.Type() != sourceStruct || v.scVal != nil) {
+			r.val, r.exist, zero = v.scVal, true, false
+		} else {
+			r.rv, r.val, r.useRV, r.exist, zero = v.resolveSource(field)
+		}
+	} else {
+		// normal collect path: filtered → safeData → source (mirrors tryGet).
+		if val1, ok := v.filteredData[field]; ok {
+			r.val, r.exist, zero = val1, true, false
+		} else if val2, ok := v.safeData[field]; ok {
+			r.val, r.exist, zero = val2, true, false
+		} else {
+			r.rv, r.val, r.useRV, r.exist, zero = v.resolveSource(field)
+		}
+	}
+
+	// GetWithDefault: if value exists and is non-zero, no default substitution.
+	if r.exist && !zero {
+		return r
+	}
+
+	// try read custom default value (replaces the value with the default; any).
+	if defVal, ok := v.defValues[field]; ok {
+		r.val, r.rv, r.useRV, r.isDefault = defVal, reflect.Value{}, false, true
+		return r
+	}
+	// no default: keep the resolved (possibly zero/not-exist) descriptor as-is.
+	return r
+}
+
+// resolveSource reads the field straight from the data source: struct sources
+// return the reflect.Value (useRV=true, lazy/box-free); other sources box via
+// TryGet (useRV=false). Mirrors the v.data.TryGet(field) tail of tryGet.
+func (v *Validation) resolveSource(field string) (rv reflect.Value, val any, useRV, exist, zero bool) {
+	if sd, ok := v.data.(*StructData); ok {
+		fv, ex, zr := sd.tryGetRV(field)
+		if !ex {
+			// not-exist: TryGet would return (nil, false, false). val=nil so the
+			// caller's New(field, nil) matches the boxed not-exist path.
+			return reflect.Value{}, nil, false, false, false
+		}
+		return fv, nil, true, true, zr
+	}
+	// map/form: value is already any.
+	val, exist, zero = v.data.TryGet(field)
+	return reflect.Value{}, val, false, exist, zero
 }
 
 // Set value by key

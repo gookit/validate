@@ -191,13 +191,27 @@ func (r *Rule) applyField(field, name string, v *Validation) (stop bool) {
 
 	var err error
 
-	// get field value. val, exist := v.Get(field)
-	val, exist, isDefault := v.GetWithDefault(field)
+	// resolve the field value as a descriptor (by VALUE, no heap pointer), then
+	// build the carrier INLINE below so it stays on this stack frame (escaping it
+	// through a return turns every carrier into a heap alloc — the R4 trap).
+	// struct 源 → NewRV(rv) 懒构造(不装箱); map/form/默认/过滤 → New(val)。
+	// 与 GetWithDefault 逐分支等价(见 getFieldCarrier)。
+	rs := v.getFieldCarrier(field)
+	exist, isDefault := rs.exist, rs.isDefault
+
+	// build the carrier inline (stack-local). NewRV keeps Src() lazy for struct.
+	var fv *fieldval.FieldValue
+	if rs.useRV {
+		fv = fieldval.NewRV(field, rs.rv)
+	} else {
+		fv = fieldval.New(field, rs.val)
+	}
 
 	// value not exists but has default value
 	if isDefault {
-		// update source data field value and re-set value
-		val, err = v.updateValue(field, val)
+		// update source data field value and re-set value (default 路径走 any,非热路径)
+		var newVal any
+		newVal, err = v.updateValue(field, fv.Src())
 		if err != nil {
 			v.AddErrorf(field, err.Error())
 			if v.StopOnError {
@@ -205,10 +219,12 @@ func (r *Rule) applyField(field, name string, v *Validation) (stop bool) {
 			}
 			return false
 		}
+		// re-set value: 默认值替换后用新值重建载体。
+		fv = fieldval.New(field, newVal)
 
 		// dont need check default value
 		if !v.CheckDefault {
-			v.commitValue(field, val) // safeData 或 skipCollect 1 槽
+			v.commitValue(field, fv) // safeData 或 skipCollect 1 槽
 			return false
 		}
 
@@ -220,13 +236,14 @@ func (r *Rule) applyField(field, name string, v *Validation) (stop bool) {
 
 	// apply filter func.
 	if exist && r.filterFunc != nil {
-		if val, err = r.filterFunc(val); err != nil {
+		var fVal any
+		if fVal, err = r.filterFunc(fv.Src()); err != nil {
 			v.AddError(filterError, filterError, field+": "+err.Error())
 			return true
 		}
 
 		// update source field value
-		newVal, err := v.updateValue(field, val)
+		newVal, err := v.updateValue(field, fVal)
 		if err != nil {
 			v.AddErrorf(field, err.Error())
 			if v.StopOnError {
@@ -235,23 +252,19 @@ func (r *Rule) applyField(field, name string, v *Validation) (stop bool) {
 			return false
 		}
 
-		// re-set value
-		val = newVal
-		// save filtered value.
+		// re-set value: 过滤后用新值重建载体(any 路径,非热路径)。
+		fv = fieldval.New(field, newVal)
+		// save filtered value. newVal 本就是已装箱 any, 直接记 scVal(无额外装箱),
+		// 让同字段后续规则的载体复用过滤后的值(struct 源也复用, 与 commitValue 一致)。
 		if v.skipCollect {
-			v.scKey, v.scVal = field, val
+			v.scKey, v.scVal = field, newVal
 		} else {
 			v.ensureFilteredData() // lazy
-			v.filteredData[field] = val
+			v.filteredData[field] = newVal
 		}
 	}
 
-	// build the value carrier once (still eager New(field, val) here — Commit
-	// R4.2b-2 will switch the source read to tryGetRV+NewRV). 本步纯重构:载体仍急
-	// 构造,alloc/行为零变化;valueValidate 改吃载体复用其缓存 RV。
-	fv := fieldval.New(field, val)
-
-	// empty value AND is not required* AND skip on empty.
+	// empty value AND is not required* AND skip on empty. (carrier RV-native, no box)
 	if r.skipEmpty && r.nameNotRequired && fv.IsEmpty() {
 		return false
 	}
@@ -261,13 +274,13 @@ func (r *Rule) applyField(field, name string, v *Validation) (stop bool) {
 		if v.data != nil && v.data.Type() == sourceForm {
 			field, _, _ = strings.Cut(field, ".*")
 		}
-		v.commitValue(field, val) // safeData 或 skipCollect 1 槽
+		v.commitValue(field, fv) // safeData 或 skipCollect 1 槽
 	} else { // build and collect error message
 		msg := r.errorMessage(field, r.validator, v)
 		// opt-in: append the failing value to the message (issue #184). default
-		// off keeps the message byte-for-byte unchanged.
+		// off keeps the message byte-for-byte unchanged. (only此点物化 Src)
 		if v.ErrShowValue {
-			msg = fmt.Sprintf("%s (value: %v)", msg, val)
+			msg = fmt.Sprintf("%s (value: %v)", msg, fv.Src())
 		}
 		v.AddError(field, r.validator, msg)
 	}
@@ -345,18 +358,17 @@ func (r *Rule) valueValidate(field, name string, fv *fieldval.FieldValue, v *Val
 		return true
 	}
 
-	// val: the boxed value, materialized lazily from the carrier. For struct
-	// sources (NewRV) this only boxes when a downstream consumer truly needs
-	// `any`; for map/form sources (New) it is the already-set src (no new box).
-	val := fv.Src()
-
 	// T5: 自定义类型 → 提取底层值,使 required/empty/compare 都作用于提取值。
 	// 门控 hasCustomTypes 内联在此:未注册时仅一次 atomic load 即短路,不进入
 	// resolveCustomType 函数调用,保证热路径零开销。提取后值已变,重建载体。
+	//
+	// IMPORTANT(R4 去装箱): val 在此 **不再急取** fv.Src()。NewRV 载体的 Src() 会
+	// reflect.Interface() 装箱;通过路径(required/min/max/email 等)全程经 vfv/RV/
+	// String 消费, 不需要 val any。仅在确需 any 的点(自定义类型提取、类型转换、
+	// callValidator 的 vfv==nil 回退)才物化 fv.Src(), 每字段最多一次(srcSet 缓存)。
 	if hasCustomTypes.Load() {
-		if ev, ok := resolveCustomType(val); ok {
-			val = ev
-			fv = fieldval.New(field, val)
+		if ev, ok := resolveCustomType(fv.Src()); ok {
+			fv = fieldval.New(field, ev)
 		}
 	}
 
@@ -435,9 +447,13 @@ func (r *Rule) valueValidate(field, name string, fv *fieldval.FieldValue, v *Val
 	// 3. convert field value type, is func first argument.
 	// vfv carries the original value; if a conversion happens below, val no
 	// longer matches the carrier, so drop it (vfv=nil) to keep reflect correct.
+	//
+	// convVal 仅在转换分支被赋值并随 vfv=nil 传给 callValidator(那里读 convVal);
+	// vfv!=nil 时 callValidator 的 val 形参传 nil, 需 any 的分支改读 vfv.Src()(懒装箱)。
 	vfv := fv
+	var convVal any
 	if r.nameNotRequired && !isFieldCtx && valArgKind != reflect.Interface && valArgKind != valKind {
-		val, ok = convValAsFuncValArgType(valArgKind, valKind, val)
+		convVal, ok = convValAsFuncValArgType(valArgKind, valKind, fv.Src())
 		if !ok {
 			v.convArgTypeError(field, fm.name, valKind, valArgKind, 1)
 			return false
@@ -446,7 +462,7 @@ func (r *Rule) valueValidate(field, name string, fv *fieldval.FieldValue, v *Val
 	}
 
 	// 4. call built in validator
-	return callValidator(v, fm, field, val, r.arguments, addNum, vfv)
+	return callValidator(v, fm, field, convVal, r.arguments, addNum, vfv)
 }
 
 // validateWildcardSlice validates the ".*" wildcard slice branch: it flattens
@@ -553,11 +569,25 @@ func convValAsFuncValArgType(valArgKind, valKind reflect.Kind, val any) (any, bo
 	return nil, false
 }
 
+// boxedVal returns the boxed `any` a validator branch needs: when the carrier
+// vfv is present (vfv!=nil ⇒ val matches it) it lazily materializes vfv.Src()
+// (one box per field, cached); otherwise val was already a converted/sub-element
+// any (vfv==nil) and is returned as-is. This keeps the R4 hot path box-free:
+// only branches that truly consume `any` trigger the Src() boxing.
+func boxedVal(val any, vfv *fieldval.FieldValue) any {
+	if vfv != nil {
+		return vfv.Src()
+	}
+	return val
+}
+
 // callValidator dispatches to the matching validator. The built-in switch
 // avoids reflection; the default branch calls custom validators by reflection.
 //
-// vfv is the optional value carrier matching `val` (nil if val was transformed
-// or is a slice sub-element); it is only forwarded to the reflective path.
+// vfv is the optional value carrier matching the field value (nil if the value
+// was transformed or is a slice sub-element, in which case `val` holds the
+// converted/sub any). val-consuming branches read via boxedVal(val, vfv) so the
+// boxed value is materialized lazily only when actually needed.
 func callValidator(v *Validation, fm *funcMeta, field string, val any, args []any, addNum int, vfv *fieldval.FieldValue) (ok bool) {
 	// use `switch` can avoid using reflection to call methods and improve speed
 	// fm.name please see pkg var: validatorValues
@@ -569,17 +599,17 @@ func callValidator(v *Validation, fm *funcMeta, field string, val any, args []an
 			ok = v.Required(field, val)
 		}
 	case "requiredIf":
-		ok = v.RequiredIf(field, val, args2strings(args)...)
+		ok = v.RequiredIf(field, boxedVal(val, vfv), args2strings(args)...)
 	case "requiredUnless":
-		ok = v.RequiredUnless(field, val, args2strings(args)...)
+		ok = v.RequiredUnless(field, boxedVal(val, vfv), args2strings(args)...)
 	case "requiredWith":
-		ok = v.RequiredWith(field, val, args2strings(args)...)
+		ok = v.RequiredWith(field, boxedVal(val, vfv), args2strings(args)...)
 	case "requiredWithAll":
-		ok = v.RequiredWithAll(field, val, args2strings(args)...)
+		ok = v.RequiredWithAll(field, boxedVal(val, vfv), args2strings(args)...)
 	case "requiredWithout":
-		ok = v.RequiredWithout(field, val, args2strings(args)...)
+		ok = v.RequiredWithout(field, boxedVal(val, vfv), args2strings(args)...)
 	case "requiredWithoutAll":
-		ok = v.RequiredWithoutAll(field, val, args2strings(args)...)
+		ok = v.RequiredWithoutAll(field, boxedVal(val, vfv), args2strings(args)...)
 	case "lt":
 		if vfv != nil {
 			ok = ivalidators.Lt(vfv, args[0])
@@ -611,7 +641,7 @@ func callValidator(v *Validation, fm *funcMeta, field string, val any, args []an
 			ok = Enum(val, args[0])
 		}
 	case "rule_one_of": // #292: 列表参数同 enum, args[0] 为子校验器名 []string
-		ok = v.RuleOneOf(val, args[0])
+		ok = v.RuleOneOf(boxedVal(val, vfv), args[0])
 	case "notIn":
 		if vfv != nil {
 			ok = ivalidators.NotIn(vfv, args[0])
@@ -659,7 +689,7 @@ func callValidator(v *Validation, fm *funcMeta, field string, val any, args []an
 			}
 		}
 	case "isNumber":
-		ok = IsNumber(val)
+		ok = IsNumber(boxedVal(val, vfv))
 	case "isStringNumber":
 		if s, sok := fieldStr(vfv, val); sok {
 			ok = IsStringNumber(s)
@@ -683,10 +713,11 @@ func callValidator(v *Validation, fm *funcMeta, field string, val any, args []an
 			ok = MaxLength(val, args[0].(int))
 		}
 	case "stringLength":
+		bv := boxedVal(val, vfv)
 		if argLn := len(args); argLn == 1 {
-			ok = RuneLength(val, args[0].(int))
+			ok = RuneLength(bv, args[0].(int))
 		} else if argLn == 2 {
-			ok = RuneLength(val, args[0].(int), args[1].(int))
+			ok = RuneLength(bv, args[0].(int), args[1].(int))
 		}
 	case "regexp":
 		if s, sok := fieldStr(vfv, val); sok {
@@ -740,8 +771,8 @@ func callValidator(v *Validation, fm *funcMeta, field string, val any, args []an
 			c = fieldval.New(field, val)
 		}
 		ok = ivalidators.IsMap(c)
-	case "isNumeric": // receives any, pass val directly
-		ok = IsNumeric(val)
+	case "isNumeric": // receives any, materialize lazily via boxedVal
+		ok = IsNumeric(boxedVal(val, vfv))
 	// R2.5b: Contains/NotContains 提升进 switch 免 reflect.Call + argIn 分配。
 	// 不搬 internal(依赖 includeElement→IsEqual 共享 root 助手),仍调 public,但传
 	// c.RealV().Interface() 复现 reflect.Call 的 RealV 预解引用(指针容器解引用生效)。

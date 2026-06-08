@@ -29,7 +29,10 @@ type FieldValue struct {
 	real reflect.Value // de-pointered rv, lazy
 
 	srcSet   bool // src materialized (New: eager; NewRV: lazy until Src() called)
-	rvInit   bool // rv/rt initialized
+	rvInit   bool // rv initialized
+	rtInit   bool // rt initialized (decoupled from rvInit so NewRV stays inlinable:
+	// NewRV sets rv eagerly but defers rt to RT() — computing rv.Type() in NewRV
+	// pushed its inline cost >budget, forcing the returned carrier to escape).
 	realInit bool // real initialized
 	// tri-state caches: 0=unknown 1=yes 2=no
 	zero  int8
@@ -47,21 +50,37 @@ func New(name string, src any) *FieldValue {
 // (struct source). It avoids an Interface()->ValueOf round-trip AND keeps the
 // boxed value lazy: src is materialized (rv.Interface()) only on first Src()
 // call, so RV-native consumers (IsEmpty/String/calcLen/required) never box.
+//
+// IMPORTANT(R4 去装箱): 此函数必须保持 **可内联**(inlinable),否则它返回的
+// *FieldValue 会因从非内联函数返回而被 escape 分析判为逃逸到堆,使每个 struct
+// 字段载体都堆分配(实测 CheckErrValid +N allocs)。为此把 invalid-RV 的冷分支
+// 抽到独立的 newRVInvalid,让 NewRV 体足够小可内联;valid-RV(热路径)直接内联构造
+// &FieldValue{...} 进调用方栈帧, 与可内联的 New 同样栈分配。
 func NewRV(name string, rv reflect.Value) *FieldValue {
-	f := &FieldValue{name: name, rv: rv, rvInit: true}
-	if rv.IsValid() {
-		f.rt = rv.Type()
-		// srcSet stays false: defer rv.Interface() boxing until Src() is read.
-	} else {
-		// keep behavior consistent with RV(): invalid -> nilRVal. src is pinned
-		// to nil here (srcSet=true) so Src() returns nil, byte-for-byte matching
-		// the pre-refactor NewRV(invalid) which left Src as its zero value (nil).
-		f.rv = reflectx.NilRVal
-		f.rt = reflectx.NilRVal.Type()
-		f.src = nil
-		f.srcSet = true
+	if !rv.IsValid() {
+		return newRVInvalid(name)
 	}
-	return f
+	// srcSet stays false: defer rv.Interface() boxing until Src() is read.
+	// rt is left lazy (rtInit=false) — computing rv.Type() here would exceed the
+	// inline budget and force this carrier to escape to the heap (R4 hot path).
+	return &FieldValue{name: name, rv: rv, rvInit: true}
+}
+
+// newRVInvalid is the cold path of NewRV for an invalid reflect.Value, kept out
+// of NewRV so the latter stays inlinable (see NewRV note). Behavior matches the
+// pre-refactor NewRV(invalid): rv→NilRVal, src pinned to nil (srcSet=true) so
+// Src() returns nil byte-for-byte. rt is materialized here (cold path, off the
+// hot path) so RT() on an invalid carrier matches the previous eager value.
+func newRVInvalid(name string) *FieldValue {
+	return &FieldValue{
+		name:   name,
+		rv:     reflectx.NilRVal,
+		rt:     reflectx.NilRVal.Type(),
+		src:    nil,
+		srcSet: true,
+		rvInit: true,
+		rtInit: true,
+	}
 }
 
 // Src returns the original boxed value, materializing it lazily for NewRV
@@ -75,6 +94,19 @@ func (f *FieldValue) Src() any {
 		f.srcSet = true
 	}
 	return f.src
+}
+
+// SrcIfSet returns the boxed src ONLY if it was already materialized (no new
+// rv.Interface() boxing). Used by the skipCollect dedup to carry an
+// already-boxed value to the next rule's carrier of the same field, so a
+// validator that needs `any` (e.g. valueCompare on Age) boxes once across the
+// field's rules instead of once per rule — without ever boxing fields whose
+// validators stayed RV-native.
+func (f *FieldValue) SrcIfSet() (any, bool) {
+	if f.srcSet {
+		return f.src, true
+	}
+	return nil, false
 }
 
 // RV returns reflect.ValueOf(src), lazily built and cached.
@@ -93,14 +125,18 @@ func (f *FieldValue) RV() reflect.Value {
 		f.rv = rv
 		f.rt = rv.Type()
 		f.rvInit = true
+		f.rtInit = true // rv+rt computed together on the New path
 	}
 	return f.rv
 }
 
-// RT returns the reflect.Type of RV(), lazily built and cached.
+// RT returns the reflect.Type of RV(), lazily built and cached. NewRV defers rt
+// (rtInit=false) to keep itself inlinable, so RT() computes rv.Type() on first
+// access here; New computes both rv+rt together in RV().
 func (f *FieldValue) RT() reflect.Type {
-	if !f.rvInit {
-		f.RV()
+	if !f.rtInit {
+		f.rt = f.RV().Type()
+		f.rtInit = true
 	}
 	return f.rt
 }
