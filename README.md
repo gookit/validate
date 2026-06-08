@@ -393,6 +393,14 @@ v := d.Validation()
 
 - `func (v *Validation) Validate(scene ...string) bool` Do validating and return is success.
 - `func (v *Validation) ValidateE(scene ...string) Errors` Do validating and return error.
+- `func (v *Validation) ValidateR(scene ...string) *ValidResult` Validate and return a `ValidResult` decoupled from the instance.
+
+> **Since v2.0, `Validation` keeps only the pass/fail + error face.** The safe-data /
+> bind methods (`SafeData()` / `Safe()` / `SafeVal()` / `Filtered()` / `FilteredData()` /
+> `BindSafeData()` / `BindStruct()`) moved to the result object `ValidResult`. Get one via
+> `validate.Check(&u)` (recommended for structs, pooled) or `v.ValidateR()` (map/builder),
+> then call e.g. `r.SafeData()` / `r.BindStruct(ptr)`. For pass/fail only, use
+> `validate.CheckErr(structPtr any, scene ...string) error` (fewest allocations).
 
 ## More Usage
 

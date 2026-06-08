@@ -366,8 +366,16 @@ v := d.Validation()
 - `func (v *Validation) Filtering() bool` 应用所有过滤规则
 - `func (v *Validation) Validate() bool` 应用所有验证和过滤规则，返回是否验证成功
 - `func (v *Validation) ValidateE() Errors` 应用所有验证和过滤规则，并在失败时返回错误
-- `func (v *Validation) SafeData() map[string]any` 获取所有经过验证的数据
-- `func (v *Validation) BindSafeData(ptr any) error` 将验证后的安全数据绑定到一个结构体
+- `func (v *Validation) ValidateR() *ValidResult` 验证并返回与实例解耦的结果对象 `ValidResult`
+
+> **v2.0 起 `Validation` 仅保留「过/败 + 错误」面**：获取安全数据/绑定结构体的方法
+> （`SafeData()` / `Safe()` / `SafeVal()` / `Filtered()` / `FilteredData()` / `BindSafeData()` / `BindStruct()`）
+> 已移至结果对象 `ValidResult`。请通过 `validate.Check(&u)`（推荐，struct，内部池化）或
+> `v.ValidateR()`（map/builder）拿到 `*ValidResult`，再调用：
+> - `func (r *ValidResult) SafeData() map[string]any` 获取所有经过验证的安全数据
+> - `func (r *ValidResult) BindSafeData(ptr any) error` 将安全数据绑定到结构体（别名 `BindStruct`）
+>
+> 只需要「过/败」结果时，用 `func validate.CheckErr(structPtr any, scene ...string) error`（最少分配）。
 
 ## 更多使用
 
