@@ -198,8 +198,7 @@ func (r *Rule) applyField(field, name string, v *Validation) (stop bool) {
 
 		// dont need check default value
 		if !v.CheckDefault {
-			v.ensureSafeData() // lazy
-			v.safeData[field] = val // save validated value.
+			v.commitValue(field, val) // safeData 或 skipCollect 1 槽
 			return false
 		}
 
@@ -229,8 +228,12 @@ func (r *Rule) applyField(field, name string, v *Validation) (stop bool) {
 		// re-set value
 		val = newVal
 		// save filtered value.
-		v.ensureFilteredData() // lazy
-		v.filteredData[field] = val
+		if v.skipCollect {
+			v.scKey, v.scVal = field, val
+		} else {
+			v.ensureFilteredData() // lazy
+			v.filteredData[field] = val
+		}
 	}
 
 	// empty value AND is not required* AND skip on empty.
@@ -243,8 +246,7 @@ func (r *Rule) applyField(field, name string, v *Validation) (stop bool) {
 		if v.data != nil && v.data.Type() == sourceForm {
 			field, _, _ = strings.Cut(field, ".*")
 		}
-		v.ensureSafeData() // lazy
-		v.safeData[field] = val
+		v.commitValue(field, val) // safeData 或 skipCollect 1 槽
 	} else { // build and collect error message
 		msg := r.errorMessage(field, r.validator, v)
 		// opt-in: append the failing value to the message (issue #184). default

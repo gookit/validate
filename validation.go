@@ -110,6 +110,13 @@ type Validation struct {
 	//
 	// key is field name, value is field vale is: init=0 empty=1 not-empty=2.
 	optionals map[string]int8
+
+	// CheckErr(skipCollect) 模式状态。skipCollect=true 时跳过 safeData/filteredData
+	// 收集,改用 scKey/scVal 1 槽缓存对"同字段连续取值"做装箱去重(镜像 safeData 的
+	// 去重职责)。详见 docs/perf/checkerr-impl-plan.md。
+	skipCollect bool
+	scKey       string
+	scVal       any
 }
 
 // NewEmpty new validation instance, but not with data.
@@ -146,6 +153,17 @@ func (v *Validation) ensureFilteredData() {
 	if v.filteredData == nil {
 		v.filteredData = make(map[string]any)
 	}
+}
+
+// commitValue records a field's validated value: into the skipCollect 1-slot
+// cache (CheckErr fast path) or into safeData (normal collect path).
+func (v *Validation) commitValue(field string, val any) {
+	if v.skipCollect {
+		v.scKey, v.scVal = field, val
+		return
+	}
+	v.ensureSafeData()
+	v.safeData[field] = val
 }
 
 func (v *Validation) ensureOptionals() {
@@ -267,6 +285,12 @@ func (v *Validation) resetForReuse() {
 	v.trans.messages = nil
 	clear(v.trans.labelMap)
 	clear(v.trans.fieldMap)
+
+	// --- CheckErr(skipCollect) 状态:必须清,否则 CheckErr 用过的池实例被 Check
+	// 复用时会残留 skipCollect=true 导致 Check 收不到 safeData。 ---
+	v.skipCollect = false
+	v.scKey = ""
+	v.scVal = nil
 }
 
 // TODO Config(opt *Options) *Validation
@@ -565,6 +589,15 @@ func (v *Validation) RawVal(key string) any {
 func (v *Validation) tryGet(key string) (val any, exist, zero bool) {
 	if v.data == nil {
 		return
+	}
+
+	// CheckErr(skipCollect): safeData/filteredData 不收集,改用 1 槽对同字段连续读
+	// 去重;其它字段落源(源已写回默认/过滤值,故读到已解析值,见计划 §4)。
+	if v.skipCollect {
+		if v.scKey == key {
+			return v.scVal, true, false
+		}
+		return v.data.TryGet(key)
 	}
 
 	// find from filtered data.

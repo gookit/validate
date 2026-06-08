@@ -209,3 +209,18 @@ func TestValidResult_filtered(t *testing.T) {
 	assert.Eq(t, 100, r.Filtered("age"))
 	assert.NotEmpty(t, r.FilteredData())
 }
+
+func TestCheckErr_basic(t *testing.T) {
+	assert.NoErr(t, CheckErr(validCheckUser()))
+	assert.Err(t, CheckErr(invalidCheckUser()))
+}
+
+// CheckErr 用过的池实例,后续 Check 必须仍能正常收 safeData(resetForReuse 清 skipCollect)
+func TestCheckErr_poolNoContaminationWithCheck(t *testing.T) {
+	for i := 0; i < 30; i++ {
+		assert.NoErr(t, CheckErr(validCheckUser()))
+		r := Check(validCheckUser())
+		assert.True(t, r.IsOK())
+		assert.Eq(t, "inhere", r.SafeVal("Name")) // safeData 仍被收集
+	}
+}

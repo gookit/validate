@@ -53,6 +53,22 @@ func Check(structPtr any, scene ...string) *ValidResult {
 	return defaultFactory.Struct(structPtr, scene...).ValidateR()
 }
 
+// CheckErr validates struct data and returns only the pass/fail result as an
+// error (nil = passed). It is an opt-in FAST entry for "only need ok/err, no
+// safe data / no binding": pooled like Check, but it skips collecting safeData/
+// filteredData and building a *ValidResult, reaching fewer allocations.
+//
+// Use Check / ValidateR when you need the cleaned data or BindStruct. CheckErr
+// is struct-only (map/programmatic rules: use New/Map + ValidateErr).
+func CheckErr(structPtr any, scene ...string) error {
+	v := defaultFactory.Struct(structPtr, scene...)
+	v.skipCollect = true // must precede Validate so applyField skips collection
+	v.Validate()
+	err := v.Errors.OneError()
+	v.Release()
+	return err
+}
+
 // IsOK reports whether validation passed (no errors).
 func (r *ValidResult) IsOK() bool { return r.Errors.Empty() }
 

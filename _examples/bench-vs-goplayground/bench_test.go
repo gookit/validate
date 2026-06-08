@@ -81,6 +81,17 @@ func BenchmarkGookitCheckValid(b *testing.B) {
 	}
 }
 
+func BenchmarkGookitCheckErrValid(b *testing.B) {
+	data := validFlatGookit()
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		if gookit.CheckErr(&data) != nil {
+			b.Fatalf("expected valid")
+		}
+	}
+}
+
 /*************************************************************
  * 场景 2：扁平 struct —— 失败路径（含非法字段，触发错误）
  *
