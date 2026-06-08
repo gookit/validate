@@ -10,6 +10,7 @@ import (
 	"github.com/gookit/goutil/strutil"
 	"github.com/gookit/validate/v2/internal/fieldval"
 	"github.com/gookit/validate/v2/internal/reflectx"
+	ivalidators "github.com/gookit/validate/v2/internal/validators"
 )
 
 // valToString coerces a field value to string for the string validators in the
@@ -550,13 +551,29 @@ func callValidator(v *Validation, fm *funcMeta, field string, val any, args []an
 	case "requiredWithoutAll":
 		ok = v.RequiredWithoutAll(field, val, args2strings(args)...)
 	case "lt":
-		ok = Lt(val, args[0])
+		if vfv != nil {
+			ok = ivalidators.Lt(vfv, args[0])
+		} else {
+			ok = Lt(val, args[0])
+		}
 	case "gt":
-		ok = Gt(val, args[0])
+		if vfv != nil {
+			ok = ivalidators.Gt(vfv, args[0])
+		} else {
+			ok = Gt(val, args[0])
+		}
 	case "min":
-		ok = Min(val, args[0])
+		if vfv != nil {
+			ok = ivalidators.Min(vfv, args[0])
+		} else {
+			ok = Min(val, args[0])
+		}
 	case "max":
-		ok = Max(val, args[0])
+		if vfv != nil {
+			ok = ivalidators.Max(vfv, args[0])
+		} else {
+			ok = Max(val, args[0])
+		}
 	case "enum":
 		ok = Enum(val, args[0])
 	case "rule_one_of": // #292: 列表参数同 enum, args[0] 为子校验器名 []string
@@ -602,7 +619,11 @@ func callValidator(v *Validation, fm *funcMeta, field string, val any, args []an
 			ok = Regexp(s, args[0].(string))
 		}
 	case "between":
-		ok = Between(val, args[0], args[1])
+		if vfv != nil {
+			ok = ivalidators.Between(vfv, args[0], args[1])
+		} else {
+			ok = Between(val, args[0], args[1])
+		}
 	case "isJSON":
 		if s, sok := valToString(val); sok {
 			ok = IsJSON(s)

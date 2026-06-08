@@ -8,6 +8,7 @@ import (
 	"reflect"
 
 	"github.com/gookit/goutil/reflects"
+	"github.com/gookit/goutil/strutil"
 
 	"github.com/gookit/validate/v2/internal/reflectx"
 )
@@ -141,6 +142,24 @@ func (f *FieldValue) IsEmpty() bool {
 		}
 	}
 	return f.empty == 1
+}
+
+// String 返回字段值的字符串形式,语义与 validating.go valToString 字节级一致,
+// 但复用缓存的 RV()(命名字符串类型/可转换值都不 panic)。bool 报告是否取到可用字符串。
+//
+// NOTE: 签名是 () (string, bool),不满足 fmt.Stringer,无冲突。
+func (f *FieldValue) String() (string, bool) {
+	if s, ok := f.Src.(string); ok {
+		return s, true
+	}
+	if f.Src == nil {
+		return "", false
+	}
+	if rv := f.RV(); rv.Kind() == reflect.String {
+		return rv.String(), true
+	}
+	s, err := strutil.ToString(f.Src)
+	return s, err == nil
 }
 
 // isStrSrc reports whether src holds a plain string (mirrors the type assertion

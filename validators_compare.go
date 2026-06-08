@@ -10,7 +10,9 @@ import (
 	"github.com/gookit/goutil/fsutil"
 	"github.com/gookit/goutil/mathutil"
 	"github.com/gookit/goutil/strutil"
+	"github.com/gookit/validate/v2/internal/fieldval"
 	"github.com/gookit/validate/v2/internal/reflectx"
+	ivalidators "github.com/gookit/validate/v2/internal/validators"
 )
 
 /*************************************************************
@@ -103,32 +105,32 @@ func IntEqual(val any, wantVal int64) bool {
 // Gt check value greater dst value.
 //
 // only check for: int(X), uint(X), float(X), string.
-func Gt(val, minVal any) bool { return reflectx.ValueCompare(val, minVal, ">") }
+func Gt(val, minVal any) bool { return ivalidators.Gt(fieldval.New("", val), minVal) }
 
 // Gte check value greater or equal dst value
 // only check for: int(X), uint(X), float(X), string.
-func Gte(val, minVal any) bool { return reflectx.ValueCompare(val, minVal, ">=") }
+func Gte(val, minVal any) bool { return ivalidators.Gte(fieldval.New("", val), minVal) }
 
 // Min check value greater or equal dst value, alias Gte()
 // only check for: int(X), uint(X), float(X), string.
-func Min(val, minVal any) bool { return reflectx.ValueCompare(val, minVal, ">=") }
+func Min(val, minVal any) bool { return ivalidators.Min(fieldval.New("", val), minVal) }
 
 // Lt less than dst value.
 // only check for: int(X), uint(X), float(X).
-func Lt(val, maxVal any) bool { return reflectx.ValueCompare(val, maxVal, "<") }
+func Lt(val, maxVal any) bool { return ivalidators.Lt(fieldval.New("", val), maxVal) }
 
 // Lte less than or equal dst value.
 // only check for: int(X), uint(X), float(X).
-func Lte(val, maxVal any) bool { return reflectx.ValueCompare(val, maxVal, "<=") }
+func Lte(val, maxVal any) bool { return ivalidators.Lte(fieldval.New("", val), maxVal) }
 
 // Max less than or equal dst value, alias Lte()
 // only check for: int(X), uint(X), float(X).
-func Max(val, maxVal any) bool { return reflectx.ValueCompare(val, maxVal, "<=") }
+func Max(val, maxVal any) bool { return ivalidators.Max(fieldval.New("", val), maxVal) }
 
 // Between value in the given range (inclusive).
 // only check for: int(X), uint(X), float(X), string.
 func Between(val, minVal, maxVal any) bool {
-	return reflectx.ValueCompare(val, minVal, ">=") && reflectx.ValueCompare(val, maxVal, "<=")
+	return ivalidators.Between(fieldval.New("", val), minVal, maxVal)
 }
 
 /*************************************************************
