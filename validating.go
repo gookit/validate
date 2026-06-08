@@ -126,7 +126,7 @@ func (v *Validation) Validate(scene ...string) bool {
 	}
 
 	v.hasValidated = true
-	if v.hasError { // clear safe data on error.
+	if v.hasError && !v.skipCollect { // clear safe data on error (skip in CheckErr fast path).
 		v.safeData = make(map[string]any)
 	}
 	return v.IsSuccess()
