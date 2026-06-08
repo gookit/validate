@@ -89,6 +89,11 @@ var (
  * global validators
  *************************************************************/
 
+const (
+	styleLegacy   uint8 = iota // func(val any, ...) → reflect.Call
+	styleFieldCtx              // func(FieldCtx) bool → typed 直调
+)
+
 type funcMeta struct {
 	fv reflect.Value
 	// validator name
@@ -100,6 +105,10 @@ type funcMeta struct {
 	builtin bool
 	// the last arg is variadic param. like "... any"
 	isVariadic bool
+	// R3: 自定义校验器签名形态。styleLegacy=func(val any,...)(reflect.Call);
+	// styleFieldCtx=func(FieldCtx)bool(typed 直调,免 reflect.Call)。
+	style  uint8
+	fcFunc func(FieldCtx) bool // 仅 style==styleFieldCtx 时非 nil
 }
 
 func (fm *funcMeta) checkArgNum(argNum int, name string) {
@@ -125,6 +134,13 @@ func newFuncMeta(name string, builtin bool, fv reflect.Value) *funcMeta {
 	fm.numIn = ft.NumIn()   // arg num of the func
 	fm.numOut = ft.NumOut() // return arg num of the func
 	fm.isVariadic = ft.IsVariadic()
+
+	// R3: 识别 func(FieldCtx) bool 形态,存 typed 函数以便分派时直调(免 reflect.Call)。
+	// 对 builtin 也会跑,但 builtin 永不匹配,无害。
+	if fc, ok := fv.Interface().(func(FieldCtx) bool); ok {
+		fm.style = styleFieldCtx
+		fm.fcFunc = fc
+	}
 
 	return fm
 }

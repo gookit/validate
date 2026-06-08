@@ -236,6 +236,8 @@ func panicf(format string, args ...any) {
 	panic("validate: " + fmt.Sprintf(format, args...))
 }
 
+// checkValidatorFunc 校验自定义校验器函数签名(至少 1 个入参、唯一返回值为 bool)。
+// R3: func(FieldCtx) bool 形态天然满足这些约束(NumIn==1、NumOut==1 且 bool),无需额外分支。
 func checkValidatorFunc(name string, fn any) reflect.Value {
 	if !goodName(name) {
 		panicf("validate name %s is not a valid identifier", name)
