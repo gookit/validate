@@ -147,7 +147,7 @@ func IsEmail(val any) bool   { return validators.IsEmail(fieldval.New("", val)) 
 
 1. `StructData` 增 `tryGetRV(field) (reflect.Value, exist, zero)`（不 `Interface()`）。
 2. 取值链（`tryGet`/`GetWithDefault`/`applyField`）携带 `fieldval.NewRV(field, rv)`（启用那个预留构造），不再 `fieldval.New(any)`。
-3. carrier 的 `Src`（`any`）改为**真懒**（只有 legacy 自定义校验器 / safeData 存储 / `fl.Arg` 才触发 `Interface()`）。
+3. carrier 的 `Src`（`any`）改为**真懒**（只在确需 `any` 时才 `Interface()`：legacy `func(val any,...)` 自定义校验器入参、safeData 存储；FieldCtx 风格只取 `Value()`/`Raw()` 不触发）。
 
 **安全边界**：仅 struct 源；map/form 源本就是 `any`，无此装箱。
 
