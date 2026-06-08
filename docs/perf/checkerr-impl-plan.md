@@ -1,6 +1,6 @@
 # `CheckErr` 实施计划（opt-in 快速过/败入口，目标 3 allocs）
 
-> **类型**：实施计划（待执行）。**本文不改业务代码。**
+> **类型**：实施计划（**已完成 ✅** —— P1 机制 + P2 测试/基准/文档均已落地）。
 > **日期**：2026-06-07
 > **前置**：`v2.x-perf-optimization-plan.md`（S1–S3.1 已落地，`Check` 池化 = 6 allocs）、`t3-deboxing-design.md` §6.1（CheckErr spike 实测：A=6 / B=8 / **C=3**）。
 > **范围**：仅 **struct 数据源**。新增公开函数 `CheckErr`，**附加、非破坏**。
@@ -159,10 +159,10 @@ func (v *Validation) tryGet(key string) (val any, exist, zero bool) {
 
 ## 7. 分阶段实施（每步独立 commit + golden×3 + race）
 
-- **P1（机制）**：C-1～C-5。新增 `CheckErr` + skipCollect 门控 + 1 槽去重 + resetForReuse 清理。
-  验收：`go build` + `go vet` + `go test -run TestRuleCompat -count=3 .`（golden 逐字节）+ `go test -count=1 .` + `-race`。基准 `CheckErr` 应 = 3 allocs。
-- **P2（测试与文档）**：C-6 测试矩阵 + C-7 基准 + C-8 文档。
-  验收：新用例全过 + `-race` + 基准数字入文档。
+- **P1（机制）✅ 已完成**：C-1～C-5。新增 `CheckErr` + skipCollect 门控 + 1 槽去重 + resetForReuse 清理。
+  验收：`go build` + `go vet` + `go test -run TestRuleCompat -count=3 .`（golden 逐字节）+ `go test -count=1 .` + `-race` 全过。基准 `CheckErr` valid = 3 allocs ✅。
+- **P2（测试与文档）✅ 已完成**：C-6 测试矩阵 + C-7 基准 + C-8 文档。
+  验收：新用例全过 + `-race` + 基准数字入文档（见 §10 实施结果）。
 
 > 体量评估：业务代码 ~5 处小改 + 1 新函数（远低于 100 行业务代码、3 文件量级以"逻辑点"计虽达 4 文件但均为小改），属附加特性。按规范分两子阶段提交。
 
@@ -189,3 +189,57 @@ func (v *Validation) tryGet(key string) (val any, exist, zero bool) {
 3. `go test -count=1 .` + `go test -race -count=1 .` 全过（含 §6 新用例）。
 4. 基准 `BenchmarkGookitCheckErrValid` = **3 allocs/op**（对照 `Check` 6）。
 5. 文档（README 中英 + 本计划 + 主计划）同步，基准数字入文档。
+
+---
+
+## 10. 实施结果（P1 + P2 实测）
+
+> 环境：go1.25.10，Intel i7-14700KF，`flat` 数据集（Name 3 规则 / Email 2 / Age 3）。
+> 基准命令：`cd _examples/bench-vs-goplayground && GOWORK=off go test -bench 'CheckErr' -benchmem -run '^$' -benchtime=2s .`
+
+### 10.1 基准数字
+
+| 入口 | 路径 | allocs/op | B/op | ns/op |
+|---|---|---:|---:|---:|
+| `Check`（基线） | valid | 6 | 405 | ~1389 |
+| **`CheckErr`** | **valid** | **3** ✅ | **40** | **~1133** |
+| `Struct().Validate()` | invalid | 32 | 3106 | ~2035 |
+| **`CheckErr`** | **invalid** | **21** | **1771** | **~1811** |
+
+- **valid 路径**：兑现 spike C 目标 = **3 allocs/op**（对照 `Check` 6，B/op −90%、ns −18%）。
+- **invalid 路径**：21 allocs（对照 `Struct().Validate()` 32），失败时的分配主要来自错误消息构建（3 个失败字段各自走消息模板/格式化），属固有成本；skipCollect 仍显著优于普通入口。
+
+### 10.2 失败路径优化（本次落地）
+
+`validating.go Validate()` 末尾：
+
+```go
+v.hasValidated = true
+if v.hasError && !v.skipCollect { // clear safe data on error (skip in CheckErr fast path).
+    v.safeData = make(map[string]any)
+}
+```
+
+skipCollect 模式失败时 `safeData` 维持 nil（CheckErr 不读它，`tryGet` skip 分支与 `resetForReuse` 的 `clear(nil)` 均安全），省去这次无谓 `make` —— 让 CheckErr 失败路径也少 1 alloc。非 skipCollect 路径完全不变（golden×3 守护）。
+
+### 10.3 测试矩阵（result_test.go，全过）
+
+核心策略 **differential testing**：对一组多样结构体（合法/非法/多规则/含 filter tag/含跨字段规则各若干）断言 `(CheckErr(s)==nil) == Check(s).IsOK()`。覆盖：
+
+| 用例 | 结果 |
+|---|---|
+| `TestCheckErr_vsCheck_differential`（20 例工厂） | ✅ |
+| 多规则同字段（required/min_len/max_len 各失败） | ✅ |
+| filter + 多规则同字段（trim\|lower 后过/败一致） | ✅ |
+| 跨字段 `eq_field`/`required_with`/`gt_field` 引用带 filter 字段 | ✅ |
+| 默认值 `default:` tag（零值用默认、显式非零覆盖默认） | ✅ |
+| skipEmpty 语义（空可选字段跳过、非空校验） | ✅ |
+| 池复用 CheckErr→CheckErr 异类型交替 | ✅ |
+| 并发混跑 Check/CheckErr（-race） | ✅ |
+| 非 struct 入参（nil/map/int/string → error，不 panic） | ✅ |
+
+> **关键发现（非 bug，方法论守门）**：differential 必须**每次新建结构体**。struct 源 `UpdateSource=true`，默认值/过滤值写回源；若复用同一指针先 `CheckErr` 再 `Check`，第二次校验看到的是已被改写的源（如默认值字段已非零 → 改走 filter 路径），导致两次结果"看似不一致"。这是 gookit 既有源写回语义（两次连续 `Check` 同指针亦然），与 CheckErr 无关。测试用例已用工厂函数 `func() any` 保证每次产新实例。
+
+### 10.4 自检结果
+
+`go build ./...` + `go vet .` 干净；`go test -run TestRuleCompat -count=3 .`（golden 逐字节）、`go test -count=1 .`、`go test -race -count=1 .` 全过。

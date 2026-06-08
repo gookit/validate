@@ -224,3 +224,227 @@ func TestCheckErr_poolNoContaminationWithCheck(t *testing.T) {
 		assert.Eq(t, "inhere", r.SafeVal("Name")) // safeData 仍被收集
 	}
 }
+
+// =============================================================================
+// CheckErr P2 测试矩阵 (docs/perf/checkerr-impl-plan.md §6)
+//
+// 核心策略: differential testing —— 对多样 struct 断言
+//
+//	(CheckErr(s) == nil) == Check(s).IsOK()
+//
+// 直接证明 CheckErr 与 Check 过/败一致。差异化用例 **务必每次用新建结构体**:
+// struct 源 UpdateSource=true,默认值/过滤值会写回源,复用同一指针多次校验会因源
+// 被改写而行为不同(这是 gookit 既有语义,与 CheckErr 无关)。
+// =============================================================================
+
+// 跨字段: Confirm 必须等于 Pwd。Confirm 带 filter:"trim",验证"过滤值经 1 槽/源
+// 写回正确传递给跨字段校验器"(计划 §4 写回论证)。
+type ceCrossField struct {
+	Pwd     string `validate:"required" json:"pwd"`
+	Confirm string `validate:"required|eq_field:Pwd" filter:"trim" json:"confirm"`
+}
+
+// filter + 多规则同字段: Name 带 filter:"trim|lower" + 3 条 validate 规则。
+type ceFilterMulti struct {
+	Name string `validate:"required|min_len:3|max_len:10" filter:"trim|lower" json:"name"`
+	Tag  string `validate:"required|in:a,b,c" filter:"trim|lower" json:"tag"`
+}
+
+// 默认值: 零值字段 + default tag (struct-only,经 tag 解析 SetDefValue)。
+type ceDefault struct {
+	Name string `validate:"required|min_len:3|default:tom" json:"name"`
+	Age  int    `validate:"uint|max:150|default:23" json:"age"`
+}
+
+// required_with: B 在 A 存在时必填。A 带 filter:"trim"。
+type ceReqWith struct {
+	A string `validate:"required" filter:"trim" json:"a"`
+	B string `validate:"required_with:A" json:"b"`
+}
+
+// gt_field: Max 必须大于 Min。
+type ceGtField struct {
+	Min int `validate:"required|int" json:"min"`
+	Max int `validate:"required|gt_field:Min" json:"max"`
+}
+
+// differentialCases 返回一组工厂函数(每次调用产新实例,避免源写回串扰)。
+func differentialCases() []func() any {
+	return []func() any{
+		// --- 合法 ---
+		func() any { return validCheckUser() },
+		func() any { return &checkAddr{City: "NYC", Zip: "10001"} },
+		func() any { return &ceCrossField{Pwd: "abc123", Confirm: " abc123 "} }, // trim 后相等
+		func() any { return &ceCrossField{Pwd: "abc123", Confirm: "abc123"} },
+		func() any { return &ceFilterMulti{Name: " Inhere ", Tag: " A "} }, // trim|lower 后合法
+		func() any { return &ceDefault{} },                                // 全默认 -> 合法
+		func() any { return &ceDefault{Name: "alice", Age: 40} },
+		func() any { return &ceReqWith{A: "x", B: "y"} },
+		func() any { return &ceReqWith{} }, // A 为空 -> required_with 不触发,但 A required 失败
+		func() any { return &ceGtField{Min: 1, Max: 9} },
+		// --- 非法 ---
+		func() any { return invalidCheckUser() },
+		func() any { return &checkAddr{City: "x"} },                            // City 太短 + Zip 缺失
+		func() any { return &ceCrossField{Pwd: "abc123", Confirm: "xyz"} },     // 不等
+		func() any { return &ceFilterMulti{Name: " ab ", Tag: " z "} },         // name 太短 + tag 不在集合
+		func() any { return &ceFilterMulti{Name: " this-is-way-too-long " } },  // name 超长 + tag 缺失
+		func() any { return &ceDefault{Name: "x", Age: 5} },                    // name 太短
+		func() any { return &ceDefault{Age: 999} },                            // age 超 max
+		func() any { return &ceReqWith{A: "x"} },                              // A 存在 -> B 必填,B 空 -> 失败
+		func() any { return &ceGtField{Min: 9, Max: 1} },                       // max 不大于 min
+		func() any { return &ceGtField{Min: 5, Max: 5} },                       // 相等 -> 不满足 gt
+	}
+}
+
+// TestCheckErr_vsCheck_differential: 核心差异化断言。
+func TestCheckErr_vsCheck_differential(t *testing.T) {
+	for i, mk := range differentialCases() {
+		ceErr := CheckErr(mk()) // 新实例
+		ckRes := Check(mk())    // 新实例
+		assert.Eq(t, ckRes.IsOK(), ceErr == nil,
+			"case %d: CheckErr-ok=%v (err=%v) but Check.IsOK=%v", i, ceErr == nil, ceErr, ckRes.IsOK())
+	}
+}
+
+// TestCheckErr_multiRuleSameField: 同字段 3+ 规则,合法->nil;让其中一条失败->err。
+func TestCheckErr_multiRuleSameField(t *testing.T) {
+	t.Run("all-pass", func(t *testing.T) {
+		assert.NoErr(t, CheckErr(&ceFilterMulti{Name: "inhere", Tag: "a"}))
+	})
+	t.Run("min_len-fail", func(t *testing.T) {
+		assert.Err(t, CheckErr(&ceFilterMulti{Name: "ab", Tag: "a"}))
+	})
+	t.Run("max_len-fail", func(t *testing.T) {
+		assert.Err(t, CheckErr(&ceFilterMulti{Name: "this-name-is-too-long", Tag: "a"}))
+	})
+	t.Run("required-fail", func(t *testing.T) {
+		assert.Err(t, CheckErr(&ceFilterMulti{Tag: "a"}))
+	})
+}
+
+// TestCheckErr_filterMultiRule: filter + 多规则同字段,与 Check 一致(过滤值经 1 槽/源写回)。
+func TestCheckErr_filterMultiRule(t *testing.T) {
+	t.Run("filtered-becomes-valid", func(t *testing.T) {
+		// " Inhere " --trim|lower--> "inhere" (len 6, 合法)
+		assert.NoErr(t, CheckErr(&ceFilterMulti{Name: " Inhere ", Tag: " A "}))
+		// Check 同样应通过
+		assert.True(t, Check(&ceFilterMulti{Name: " Inhere ", Tag: " A "}).IsOK())
+	})
+	t.Run("filtered-still-invalid", func(t *testing.T) {
+		// " ab " --trim|lower--> "ab" (len 2, min_len:3 失败)
+		assert.Err(t, CheckErr(&ceFilterMulti{Name: " ab ", Tag: "a"}))
+		assert.False(t, Check(&ceFilterMulti{Name: " ab ", Tag: "a"}).IsOK())
+	})
+}
+
+// TestCheckErr_crossField_withFilter: 跨字段校验器引用带 filter 的字段(计划 §4 写回论证)。
+func TestCheckErr_crossField_withFilter(t *testing.T) {
+	t.Run("eq_field-after-trim-equal", func(t *testing.T) {
+		// Confirm " abc123 " --trim--> "abc123" == Pwd "abc123" -> 通过
+		assert.NoErr(t, CheckErr(&ceCrossField{Pwd: "abc123", Confirm: " abc123 "}))
+		assert.True(t, Check(&ceCrossField{Pwd: "abc123", Confirm: " abc123 "}).IsOK())
+	})
+	t.Run("eq_field-not-equal", func(t *testing.T) {
+		assert.Err(t, CheckErr(&ceCrossField{Pwd: "abc123", Confirm: "different"}))
+		assert.False(t, Check(&ceCrossField{Pwd: "abc123", Confirm: "different"}).IsOK())
+	})
+	t.Run("required_with-and-gt_field", func(t *testing.T) {
+		assert.NoErr(t, CheckErr(&ceReqWith{A: " x ", B: "y"}))
+		assert.Err(t, CheckErr(&ceReqWith{A: "x"})) // B 必填但空
+		assert.NoErr(t, CheckErr(&ceGtField{Min: 1, Max: 2}))
+		assert.Err(t, CheckErr(&ceGtField{Min: 2, Max: 1}))
+	})
+}
+
+// TestCheckErr_default_vsCheck: zero 值 + default tag(struct-only,经 tag 解析)。
+// 说明: CheckErr 不暴露 *Validation,无法经 SetDefValue 手动设默认值;但 default
+// tag 路径(parseRulesFromTag -> SetDefValue)对 struct 源生效,故此处可覆盖。
+func TestCheckErr_default_vsCheck(t *testing.T) {
+	t.Run("zero-fields-use-default", func(t *testing.T) {
+		// Name 默认 "tom"(len 3 满足 min_len:3),Age 默认 23 -> 合法
+		assert.NoErr(t, CheckErr(&ceDefault{}))
+		assert.True(t, Check(&ceDefault{}).IsOK())
+	})
+	t.Run("explicit-invalid-overrides-default", func(t *testing.T) {
+		// 显式 Name "x"(非零)-> 不走默认 -> min_len:3 失败
+		assert.Err(t, CheckErr(&ceDefault{Name: "x"}))
+		assert.False(t, Check(&ceDefault{Name: "x"}).IsOK())
+	})
+}
+
+// TestCheckErr_skipEmpty_semantics: CheckErr 不暴露 v 来设 SkipOnEmpty(实例级开关),
+// 故通过 differential(Check 也用默认 gOpt)+ tag 级 optional 语义覆盖等价场景。
+// uint 校验器对零值字段默认 skipEmpty,这里断言 CheckErr 与 Check 对"空可选字段"一致。
+func TestCheckErr_skipEmpty_semantics(t *testing.T) {
+	type ceOptional struct {
+		Name string `validate:"required" json:"name"`
+		Note string `validate:"min_len:5" json:"note"` // 空时跳过(skipEmpty 默认)
+	}
+	t.Run("empty-optional-skipped", func(t *testing.T) {
+		assert.NoErr(t, CheckErr(&ceOptional{Name: "x"})) // Note 空 -> 跳过
+		assert.True(t, Check(&ceOptional{Name: "x"}).IsOK())
+	})
+	t.Run("nonempty-optional-validated", func(t *testing.T) {
+		assert.Err(t, CheckErr(&ceOptional{Name: "x", Note: "ab"})) // Note 非空且太短
+		assert.False(t, Check(&ceOptional{Name: "x", Note: "ab"}).IsOK())
+	})
+}
+
+// TestCheckErr_poolReuse_alternatingTypes: 池复用 CheckErr->CheckErr 异类型交替,
+// 合法/非法混合,断言各自结果正确(1 槽不串味)。
+func TestCheckErr_poolReuse_alternatingTypes(t *testing.T) {
+	for i := 0; i < 100; i++ {
+		assert.NoErr(t, CheckErr(validCheckUser()))                          // typeA 合法
+		assert.Err(t, CheckErr(&checkAddr{City: "x"}))                       // typeB 非法
+		assert.NoErr(t, CheckErr(&ceFilterMulti{Name: "inhere", Tag: "b"})) // typeC 合法
+		assert.Err(t, CheckErr(invalidCheckUser()))                          // typeA 非法
+		assert.NoErr(t, CheckErr(&checkAddr{City: "NYC", Zip: "10001"}))    // typeB 合法
+	}
+}
+
+// TestCheckErr_concurrent_mixedWithCheck: 多 goroutine 同时跑 Check 和 CheckErr
+// (同/异类型),断言结果正确、无竞争(-race)。
+func TestCheckErr_concurrent_mixedWithCheck(t *testing.T) {
+	var wg sync.WaitGroup
+	for g := 0; g < 16; g++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for i := 0; i < 100; i++ {
+				if CheckErr(validCheckUser()) != nil {
+					t.Errorf("CheckErr(valid user): expected nil")
+				}
+				if CheckErr(invalidCheckUser()) == nil {
+					t.Errorf("CheckErr(invalid user): expected err")
+				}
+				if r := Check(validCheckUser()); !r.IsOK() || r.SafeVal("Name") != "inhere" {
+					t.Errorf("Check(valid user): unexpected ok=%v name=%v", r.IsOK(), r.SafeVal("Name"))
+				}
+				if CheckErr(&checkAddr{City: "NYC", Zip: "10001"}) != nil {
+					t.Errorf("CheckErr(valid addr): expected nil")
+				}
+				if r := Check(&checkAddr{City: "x"}); !r.Fail() {
+					t.Errorf("Check(invalid addr): expected fail")
+				}
+			}
+		}()
+	}
+	wg.Wait()
+}
+
+// TestCheckErr_nonStruct: 非 struct 入参应返回非 nil error(FromStruct 的 ErrInvalidData
+// 路径),不 panic。
+func TestCheckErr_nonStruct(t *testing.T) {
+	t.Run("nil", func(t *testing.T) {
+		assert.Err(t, CheckErr(nil))
+	})
+	t.Run("map", func(t *testing.T) {
+		assert.Err(t, CheckErr(map[string]any{"name": "inhere"}))
+	})
+	t.Run("int", func(t *testing.T) {
+		assert.Err(t, CheckErr(123))
+	})
+	t.Run("string", func(t *testing.T) {
+		assert.Err(t, CheckErr("not a struct"))
+	})
+}

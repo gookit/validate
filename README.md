@@ -344,6 +344,27 @@ func main()  {
 
 ## Quick Method
 
+Quick validate a struct (pooled internally, no manual lifecycle):
+
+- `Check(structPtr any, scene ...string) *ValidResult` — recommended default for struct validation. Stateless from the caller's side, internally pooled. Returns a `*ValidResult` carrying the cleaned/safe data and bind helpers.
+- `CheckErr(structPtr any, scene ...string) error` — **opt-in FAST entry** for "only need ok/err, no safe data / no binding". Pooled like `Check` but it **skips collecting safeData/filteredData** and does not build a `*ValidResult`, so it reaches fewer allocations (struct-valid: 3 allocs vs `Check` 6). Returns `nil` on pass, otherwise the first error.
+
+```go
+// fast pass/fail (e.g. middleware reject) — no cleaned data needed
+if err := validate.CheckErr(&u); err != nil {
+	return err
+}
+
+// need the cleaned data or BindStruct? use Check / ValidateR instead
+r := validate.Check(&u)
+if r.Fail() {
+	return r.Err()
+}
+r.BindSafeData(&out)
+```
+
+> `CheckErr` is struct-only. For map data or programmatic rules, build a `Validation` (`New`/`Map` + `StringRule...`) and call `ValidateErr()`.
+
 Quick create `Validation` instance.
 
 - `New(data any, scene ...string) *Validation`

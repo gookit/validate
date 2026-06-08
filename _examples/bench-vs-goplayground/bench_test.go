@@ -92,6 +92,19 @@ func BenchmarkGookitCheckErrValid(b *testing.B) {
 	}
 }
 
+// 失败路径基准：CheckErr 对非法数据。skipCollect 下失败也少 1 alloc
+// (跳过 hasError 时的 safeData=make,见 validating.go Validate)。
+func BenchmarkGookitCheckErrInvalid(b *testing.B) {
+	data := invalidFlatGookit()
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		if gookit.CheckErr(&data) == nil {
+			b.Fatalf("expected invalid")
+		}
+	}
+}
+
 /*************************************************************
  * 场景 2：扁平 struct —— 失败路径（含非法字段，触发错误）
  *
