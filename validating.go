@@ -726,6 +726,22 @@ func callValidator(v *Validation, fm *funcMeta, field string, val any, args []an
 		ok = ivalidators.IsMap(c)
 	case "isNumeric": // receives any, pass val directly
 		ok = IsNumeric(val)
+	// R2.5b: Contains/NotContains 提升进 switch 免 reflect.Call + argIn 分配。
+	// 不搬 internal(依赖 includeElement→IsEqual 共享 root 助手),仍调 public,但传
+	// c.RealV().Interface() 复现 reflect.Call 的 RealV 预解引用(指针容器解引用生效)。
+	// args[0](sub)走单 any 形参,convertArgsType 不转换,与原 reflect.Call 路径一致。
+	case "contains":
+		c := vfv
+		if c == nil {
+			c = fieldval.New(field, val)
+		}
+		ok = Contains(c.RealV().Interface(), args[0])
+	case "notContains":
+		c := vfv
+		if c == nil {
+			c = fieldval.New(field, val)
+		}
+		ok = NotContains(c.RealV().Interface(), args[0])
 	// --- single-arg string validators: T2 移入 switch,免反射 fv.Call ---
 	// 统一用 fieldStr(vfv,val) 安全取字符串(命名字符串类型/可转换值都不 panic;有载体时
 	// 复用其缓存 RV),取不到字符串时 ok 保持 false,行为与反射路径一致。

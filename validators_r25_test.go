@@ -151,3 +151,75 @@ func TestR25a_switch_dispatch(t *testing.T) {
 		assert.False(t, v2.Validate())
 	})
 }
+
+// ===== R2.5b: Contains / NotContains 提升进 switch(不搬 internal) =====
+
+// 等价契约: switch 表达式 Contains(c.RealV().Interface(), sub) ≡ 原 default 路径
+// reflect.Call 调 includeElement(vfv.RealV(), sub)。reflect.Call 路径里 public Contains
+// 收到的就是 vfv.RealV().Interface(),故二者按定义恒等;此处断言 switch 表达式与
+// 「直接 Contains(realVAny(v), sub)」一致(覆盖 []T / *[]T 指针容器 / map / string / nil)。
+func TestR25b_Contains_equiv(t *testing.T) {
+	sl := []string{"go", "rust"}
+	psl := &sl
+	mp := map[string]int{"a": 1, "b": 2}
+	cases := []struct {
+		v   any
+		sub any
+	}{
+		{[]string{"go", "rust"}, "go"},
+		{[]string{"go", "rust"}, "x"},
+		{psl, "rust"},        // *[]string 指针容器, 验证 RealV 解引用生效
+		{psl, "x"},           // 指针容器未命中
+		{mp, "a"},            // map key 命中
+		{mp, "zzz"},          // map key 未命中
+		{"hello world", "wor"}, // string 包含
+		{"hello", "zzz"},     // string 不包含
+		{nil, "x"},           // nil 容器
+	}
+	for _, c := range cases {
+		// switch 表达式
+		got := Contains(fieldval.New("", c.v).RealV().Interface(), c.sub)
+		// 等价参考(同一表达式 = reflect.Call 路径语义)
+		want := Contains(realVAny(c.v), c.sub)
+		assert.Require(t, assert.Eq(t, want, got, "Contains mismatch v=%#v sub=%#v", c.v, c.sub))
+
+		gotN := NotContains(fieldval.New("", c.v).RealV().Interface(), c.sub)
+		wantN := NotContains(realVAny(c.v), c.sub)
+		assert.Require(t, assert.Eq(t, wantN, gotN, "NotContains mismatch v=%#v sub=%#v", c.v, c.sub))
+	}
+}
+
+// 端到端: 经 AddRule 走 callValidator 的 contains/notContains 新 case。
+func TestR25b_switch_dispatch(t *testing.T) {
+	t.Run("contains-slice", func(t *testing.T) {
+		v := New(map[string]any{"tags": []string{"go", "rust"}})
+		v.AddRule("tags", "contains", "go")
+		assert.True(t, v.Validate())
+
+		v2 := New(map[string]any{"tags": []string{"go", "rust"}})
+		v2.AddRule("tags", "contains", "x")
+		assert.False(t, v2.Validate())
+	})
+
+	t.Run("contains-string", func(t *testing.T) {
+		v := New(map[string]any{"s": "hello world"})
+		v.AddRule("s", "contains", "wor")
+		assert.True(t, v.Validate())
+	})
+
+	t.Run("contains-map-key", func(t *testing.T) {
+		v := New(map[string]any{"m": map[string]int{"a": 1, "b": 2}})
+		v.AddRule("m", "contains", "a")
+		assert.True(t, v.Validate())
+	})
+
+	t.Run("notContains", func(t *testing.T) {
+		v := New(map[string]any{"tags": []string{"go", "rust"}})
+		v.AddRule("tags", "notContains", "x")
+		assert.True(t, v.Validate())
+
+		v2 := New(map[string]any{"tags": []string{"go", "rust"}})
+		v2.AddRule("tags", "notContains", "go")
+		assert.False(t, v2.Validate())
+	})
+}
