@@ -4,6 +4,8 @@ import (
 	"reflect"
 	"strings"
 	"sync"
+
+	"github.com/gookit/validate/v2/internal/fieldval"
 )
 
 var (
@@ -42,6 +44,9 @@ func Val(val any, rule string) error {
 
 	field := DefaultFieldName
 	rules := stringSplit(strings.Trim(rule, "|:"), "|")
+
+	// Val 入参 val 本就是 any → New 急构造载体(srcSet=true),valueValidate 改吃载体。
+	fv := fieldval.New(field, val)
 
 	es := make(Errors)
 
@@ -91,7 +96,7 @@ func Val(val any, rule string) error {
 		}
 
 		// validate value use validator.
-		if !r.valueValidate(field, realName, val, v) {
+		if !r.valueValidate(field, realName, fv, v) {
 			es.Add(field, validator, r.errorMessage(field, r.validator, v))
 			break
 		}

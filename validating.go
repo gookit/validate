@@ -246,13 +246,18 @@ func (r *Rule) applyField(field, name string, v *Validation) (stop bool) {
 		}
 	}
 
+	// build the value carrier once (still eager New(field, val) here — Commit
+	// R4.2b-2 will switch the source read to tryGetRV+NewRV). 本步纯重构:载体仍急
+	// 构造,alloc/行为零变化;valueValidate 改吃载体复用其缓存 RV。
+	fv := fieldval.New(field, val)
+
 	// empty value AND is not required* AND skip on empty.
-	if r.skipEmpty && r.nameNotRequired && IsEmpty(val) {
+	if r.skipEmpty && r.nameNotRequired && fv.IsEmpty() {
 		return false
 	}
 
 	// validate field value
-	if r.valueValidate(field, name, val, v) {
+	if r.valueValidate(field, name, fv, v) {
 		if v.data != nil && v.data.Type() == sourceForm {
 			field, _, _ = strings.Cut(field, ".*")
 		}
@@ -334,18 +339,24 @@ type value struct {
 // branch is extracted into validateWildcardSlice for readability (it only runs
 // for ".*" fields, off the common path); the rest is kept inline so the hot
 // path's call-frame count and behavior are identical to before the split.
-func (r *Rule) valueValidate(field, name string, val any, v *Validation) (ok bool) {
+func (r *Rule) valueValidate(field, name string, fv *fieldval.FieldValue, v *Validation) (ok bool) {
 	// "-" OR "safe" mark field value always is safe.
 	if name == RuleSafe1 || name == RuleSafe {
 		return true
 	}
 
+	// val: the boxed value, materialized lazily from the carrier. For struct
+	// sources (NewRV) this only boxes when a downstream consumer truly needs
+	// `any`; for map/form sources (New) it is the already-set src (no new box).
+	val := fv.Src()
+
 	// T5: 自定义类型 → 提取底层值,使 required/empty/compare 都作用于提取值。
 	// 门控 hasCustomTypes 内联在此:未注册时仅一次 atomic load 即短路,不进入
-	// resolveCustomType 函数调用,保证热路径零开销。
+	// resolveCustomType 函数调用,保证热路径零开销。提取后值已变,重建载体。
 	if hasCustomTypes.Load() {
 		if ev, ok := resolveCustomType(val); ok {
 			val = ev
+			fv = fieldval.New(field, val)
 		}
 	}
 
@@ -354,7 +365,7 @@ func (r *Rule) valueValidate(field, name string, val any, v *Validation) (ok boo
 
 	// perf: The most commonly used rule "required" - direct call v.Required()
 	if name == RuleRequired && dotStarNum == 0 {
-		return v.Required(field, val)
+		return v.requiredByCtx(field, fv)
 	}
 
 	// call value validator in the rule.
@@ -400,15 +411,14 @@ func (r *Rule) valueValidate(field, name string, val any, v *Validation) (ok boo
 		}
 	}
 
-	// build the value carrier once; its rV() is computed lazily and reused
-	// here and in the downstream callValidatorValue, removing the repeated
-	// reflect.ValueOf(val) (痛点 A, design §4.3).
+	// use the carrier built by the caller; its rV() is computed lazily and
+	// reused here and in the downstream callValidatorValue, removing the
+	// repeated reflect.ValueOf(val) (痛点 A, design §4.3).
 	//
 	// NOTE: rV() substitutes nilRVal for an any(nil) src so the Call path won't
 	// panic (#125). But valueValidate's original logic relied on valKind being
 	// Invalid for nil; restore that so behavior is unchanged. rftVal itself is
 	// only consumed in the Slice branch below, which nil never enters.
-	fv := fieldval.New(field, val)
 	rftVal := fv.RV()
 	valKind := rftVal.Kind()
 	// nil 字段:RV() 已把 any(nil) 物化为 NilRVal(NilObject{}),用 box-free 的
