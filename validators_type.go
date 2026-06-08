@@ -4,9 +4,10 @@ import (
 	"reflect"
 	"strconv"
 
-	"github.com/gookit/goutil/mathutil"
 	"github.com/gookit/goutil/strutil"
+	"github.com/gookit/validate/v2/internal/fieldval"
 	"github.com/gookit/validate/v2/internal/reflectx"
+	ivalidators "github.com/gookit/validate/v2/internal/validators"
 )
 
 /*************************************************************
@@ -85,14 +86,7 @@ func IsArray(val any, strict ...bool) (ok bool) {
 }
 
 // IsSlice check value is slice type
-func IsSlice(val any) (ok bool) {
-	if val == nil {
-		return false
-	}
-
-	rv := reflect.Indirect(reflect.ValueOf(val))
-	return rv.Kind() == reflect.Slice
-}
+func IsSlice(val any) (ok bool) { return ivalidators.IsSlice(fieldval.New("", val)) }
 
 // IsInts is int slice check
 func IsInts(val any) bool {
@@ -129,29 +123,7 @@ func IsMap(val any) (ok bool) {
 
 // IsInt check, and support length check
 func IsInt(val any, minAndMax ...int64) (ok bool) {
-	if val == nil {
-		return false
-	}
-	val = reflectx.IndirectValue(val)
-
-	intVal, valid := mathutil.StrictInt(val)
-	if !valid {
-		return false
-	}
-
-	argLn := len(minAndMax)
-	if argLn == 0 { // only check type
-		return true
-	}
-
-	// value check
-	minVal := minAndMax[0]
-	if argLn == 1 { // only min length check.
-		return intVal >= minVal
-	}
-
-	// min and max length check
-	return intVal >= minVal && intVal <= minAndMax[1]
+	return ivalidators.IsInt(fieldval.New("", val), minAndMax...)
 }
 
 // IsString check and support length check.
@@ -162,33 +134,5 @@ func IsInt(val any, minAndMax ...int64) (ok bool) {
 //	ok := IsString(val, 5) // with min len check
 //	ok := IsString(val, 5, 12) // with min and max len check
 func IsString(val any, minAndMaxLen ...int) (ok bool) {
-	val = reflectx.IndirectValue(val)
-
-	if val == nil {
-		return false
-	}
-
-	argLn := len(minAndMaxLen)
-	str, isStr := val.(string)
-
-	// only check type
-	if argLn == 0 {
-		return isStr
-	}
-
-	if !isStr {
-		return false
-	}
-
-	// length check
-	strLen := len(str)
-	minLen := minAndMaxLen[0]
-
-	// only min length check.
-	if argLn == 1 {
-		return strLen >= minLen
-	}
-
-	// min and max length check
-	return strLen >= minLen && strLen <= minAndMaxLen[1]
+	return ivalidators.IsString(fieldval.New("", val), minAndMaxLen...)
 }

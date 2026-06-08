@@ -582,19 +582,43 @@ func callValidator(v *Validation, fm *funcMeta, field string, val any, args []an
 		ok = NotIn(val, args[0])
 	case "isInt":
 		if argLn := len(args); argLn == 0 {
-			ok = IsInt(val)
+			if vfv != nil {
+				ok = ivalidators.IsInt(vfv)
+			} else {
+				ok = IsInt(val)
+			}
 		} else if argLn == 1 {
-			ok = IsInt(val, args[0].(int64))
+			if vfv != nil {
+				ok = ivalidators.IsInt(vfv, args[0].(int64))
+			} else {
+				ok = IsInt(val, args[0].(int64))
+			}
 		} else { // argLn == 2
-			ok = IsInt(val, args[0].(int64), args[1].(int64))
+			if vfv != nil {
+				ok = ivalidators.IsInt(vfv, args[0].(int64), args[1].(int64))
+			} else {
+				ok = IsInt(val, args[0].(int64), args[1].(int64))
+			}
 		}
 	case "isString":
 		if argLn := len(args); argLn == 0 {
-			ok = IsString(val)
+			if vfv != nil {
+				ok = ivalidators.IsString(vfv)
+			} else {
+				ok = IsString(val)
+			}
 		} else if argLn == 1 {
-			ok = IsString(val, args[0].(int))
+			if vfv != nil {
+				ok = ivalidators.IsString(vfv, args[0].(int))
+			} else {
+				ok = IsString(val, args[0].(int))
+			}
 		} else { // argLn == 2
-			ok = IsString(val, args[0].(int), args[1].(int))
+			if vfv != nil {
+				ok = ivalidators.IsString(vfv, args[0].(int), args[1].(int))
+			} else {
+				ok = IsString(val, args[0].(int), args[1].(int))
+			}
 		}
 	case "isNumber":
 		ok = IsNumber(val)
@@ -629,7 +653,11 @@ func callValidator(v *Validation, fm *funcMeta, field string, val any, args []an
 			ok = IsJSON(s)
 		}
 	case "isSlice":
-		ok = IsSlice(val)
+		if vfv != nil {
+			ok = ivalidators.IsSlice(vfv)
+		} else {
+			ok = IsSlice(val)
+		}
 	case "isNumeric": // receives any, pass val directly
 		ok = IsNumeric(val)
 	// --- single-arg string validators: T2 移入 switch,免反射 fv.Call ---

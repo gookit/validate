@@ -162,6 +162,23 @@ func (f *FieldValue) String() (string, bool) {
 	return s, err == nil
 }
 
+// Indirect 返回单层指针解引用后的值(any),语义与 reflectx.IndirectValue(Src) 字节级一致:
+// 未类型化 nil→nil;非指针→原样(Src,无新装箱);非空指针→解引用后的 Interface();空指针→nil。
+// 复用缓存 RV(),避免二次 reflect.ValueOf。
+func (f *FieldValue) Indirect() any {
+	if f.Src == nil {
+		return nil
+	}
+	rv := f.RV()
+	if rv.Kind() == reflect.Ptr {
+		if ev := reflect.Indirect(rv); ev.IsValid() {
+			return ev.Interface()
+		}
+		return nil
+	}
+	return f.Src
+}
+
 // isStrSrc reports whether src holds a plain string (mirrors the type assertion
 // in IsEmpty(any)).
 func isStrSrc(src any) bool {
