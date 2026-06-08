@@ -35,6 +35,15 @@ func valToString(val any) (string, bool) {
 	return s, err == nil
 }
 
+// fieldStr 取字段值的字符串形式:有载体(vfv!=nil ⇒ vfv.Src==val)时复用其缓存 RV(避免
+// valToString 的二次 reflect.ValueOf),否则回退 valToString。两路对同输入字节级一致。
+func fieldStr(vfv *fieldval.FieldValue, val any) (string, bool) {
+	if vfv != nil {
+		return vfv.String()
+	}
+	return valToString(val)
+}
+
 // const requiredValidator = "required"
 
 // the validating result status:
@@ -631,7 +640,7 @@ func callValidator(v *Validation, fm *funcMeta, field string, val any, args []an
 	case "isNumber":
 		ok = IsNumber(val)
 	case "isStringNumber":
-		if s, sok := valToString(val); sok {
+		if s, sok := fieldStr(vfv, val); sok {
 			ok = IsStringNumber(s)
 		}
 	case "length":
@@ -659,7 +668,7 @@ func callValidator(v *Validation, fm *funcMeta, field string, val any, args []an
 			ok = RuneLength(val, args[0].(int), args[1].(int))
 		}
 	case "regexp":
-		if s, sok := valToString(val); sok {
+		if s, sok := fieldStr(vfv, val); sok {
 			ok = Regexp(s, args[0].(string))
 		}
 	case "between":
@@ -669,7 +678,7 @@ func callValidator(v *Validation, fm *funcMeta, field string, val any, args []an
 			ok = Between(val, args[0], args[1])
 		}
 	case "isJSON":
-		if s, sok := valToString(val); sok {
+		if s, sok := fieldStr(vfv, val); sok {
 			ok = IsJSON(s)
 		}
 	case "isSlice":
@@ -681,134 +690,134 @@ func callValidator(v *Validation, fm *funcMeta, field string, val any, args []an
 	case "isNumeric": // receives any, pass val directly
 		ok = IsNumeric(val)
 	// --- single-arg string validators: T2 移入 switch,免反射 fv.Call ---
-	// 统一用 valToString(val) 安全取字符串(命名字符串类型/可转换值都不 panic),
-	// 取不到字符串时 ok 保持 false,行为与反射路径一致。
+	// 统一用 fieldStr(vfv,val) 安全取字符串(命名字符串类型/可转换值都不 panic;有载体时
+	// 复用其缓存 RV),取不到字符串时 ok 保持 false,行为与反射路径一致。
 	case "isEmail":
-		if s, sok := valToString(val); sok {
+		if s, sok := fieldStr(vfv, val); sok {
 			ok = IsEmail(s)
 		}
 	case "isURL":
-		if s, sok := valToString(val); sok {
+		if s, sok := fieldStr(vfv, val); sok {
 			ok = IsURL(s)
 		}
 	case "isFullURL":
-		if s, sok := valToString(val); sok {
+		if s, sok := fieldStr(vfv, val); sok {
 			ok = IsFullURL(s)
 		}
 	case "isIP":
-		if s, sok := valToString(val); sok {
+		if s, sok := fieldStr(vfv, val); sok {
 			ok = IsIP(s)
 		}
 	case "isIPv4":
-		if s, sok := valToString(val); sok {
+		if s, sok := fieldStr(vfv, val); sok {
 			ok = IsIPv4(s)
 		}
 	case "isIPv6":
-		if s, sok := valToString(val); sok {
+		if s, sok := fieldStr(vfv, val); sok {
 			ok = IsIPv6(s)
 		}
 	case "isCIDR":
-		if s, sok := valToString(val); sok {
+		if s, sok := fieldStr(vfv, val); sok {
 			ok = IsCIDR(s)
 		}
 	case "isCIDRv4":
-		if s, sok := valToString(val); sok {
+		if s, sok := fieldStr(vfv, val); sok {
 			ok = IsCIDRv4(s)
 		}
 	case "isCIDRv6":
-		if s, sok := valToString(val); sok {
+		if s, sok := fieldStr(vfv, val); sok {
 			ok = IsCIDRv6(s)
 		}
 	case "isMAC":
-		if s, sok := valToString(val); sok {
+		if s, sok := fieldStr(vfv, val); sok {
 			ok = IsMAC(s)
 		}
 	case "isAlpha":
-		if s, sok := valToString(val); sok {
+		if s, sok := fieldStr(vfv, val); sok {
 			ok = IsAlpha(s)
 		}
 	case "isAlphaNum":
-		if s, sok := valToString(val); sok {
+		if s, sok := fieldStr(vfv, val); sok {
 			ok = IsAlphaNum(s)
 		}
 	case "isAlphaDash":
-		if s, sok := valToString(val); sok {
+		if s, sok := fieldStr(vfv, val); sok {
 			ok = IsAlphaDash(s)
 		}
 	case "isASCII":
-		if s, sok := valToString(val); sok {
+		if s, sok := fieldStr(vfv, val); sok {
 			ok = IsASCII(s)
 		}
 	case "isPrintableASCII":
-		if s, sok := valToString(val); sok {
+		if s, sok := fieldStr(vfv, val); sok {
 			ok = IsPrintableASCII(s)
 		}
 	case "isUUID":
-		if s, sok := valToString(val); sok {
+		if s, sok := fieldStr(vfv, val); sok {
 			ok = IsUUID(s)
 		}
 	case "isUUID3":
-		if s, sok := valToString(val); sok {
+		if s, sok := fieldStr(vfv, val); sok {
 			ok = IsUUID3(s)
 		}
 	case "isUUID4":
-		if s, sok := valToString(val); sok {
+		if s, sok := fieldStr(vfv, val); sok {
 			ok = IsUUID4(s)
 		}
 	case "isUUID5":
-		if s, sok := valToString(val); sok {
+		if s, sok := fieldStr(vfv, val); sok {
 			ok = IsUUID5(s)
 		}
 	case "isBase64":
-		if s, sok := valToString(val); sok {
+		if s, sok := fieldStr(vfv, val); sok {
 			ok = IsBase64(s)
 		}
 	case "isDataURI":
-		if s, sok := valToString(val); sok {
+		if s, sok := fieldStr(vfv, val); sok {
 			ok = IsDataURI(s)
 		}
 	case "isHexadecimal":
-		if s, sok := valToString(val); sok {
+		if s, sok := fieldStr(vfv, val); sok {
 			ok = IsHexadecimal(s)
 		}
 	case "isHexColor":
-		if s, sok := valToString(val); sok {
+		if s, sok := fieldStr(vfv, val); sok {
 			ok = IsHexColor(s)
 		}
 	case "isRGBColor":
-		if s, sok := valToString(val); sok {
+		if s, sok := fieldStr(vfv, val); sok {
 			ok = IsRGBColor(s)
 		}
 	case "isLatitude":
-		if s, sok := valToString(val); sok {
+		if s, sok := fieldStr(vfv, val); sok {
 			ok = IsLatitude(s)
 		}
 	case "isLongitude":
-		if s, sok := valToString(val); sok {
+		if s, sok := fieldStr(vfv, val); sok {
 			ok = IsLongitude(s)
 		}
 	case "isDNSName":
-		if s, sok := valToString(val); sok {
+		if s, sok := fieldStr(vfv, val); sok {
 			ok = IsDNSName(s)
 		}
 	case "isMultiByte":
-		if s, sok := valToString(val); sok {
+		if s, sok := fieldStr(vfv, val); sok {
 			ok = IsMultiByte(s)
 		}
 	case "isCnMobile":
-		if s, sok := valToString(val); sok {
+		if s, sok := fieldStr(vfv, val); sok {
 			ok = IsCnMobile(s)
 		}
 	case "isISBN10":
-		if s, sok := valToString(val); sok {
+		if s, sok := fieldStr(vfv, val); sok {
 			ok = IsISBN10(s)
 		}
 	case "isISBN13":
-		if s, sok := valToString(val); sok {
+		if s, sok := fieldStr(vfv, val); sok {
 			ok = IsISBN13(s)
 		}
 	case "hasWhitespace":
-		if s, sok := valToString(val); sok {
+		if s, sok := fieldStr(vfv, val); sok {
 			ok = HasWhitespace(s)
 		}
 	default:
