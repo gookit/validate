@@ -176,21 +176,16 @@ func NotIn(val, enum any) bool { return !Enum(val, enum) }
  *************************************************************/
 
 // Length equal check for string, array, slice, map
-func Length(val any, wantLen int) bool {
-	ln := CalcLength(val)
-	return ln != -1 && ln == wantLen
-}
+func Length(val any, wantLen int) bool { return ivalidators.Length(fieldval.New("", val), wantLen) }
 
 // MinLength check for string, array, slice, map
 func MinLength(val any, minLen int) bool {
-	ln := CalcLength(val)
-	return ln != -1 && ln >= minLen
+	return ivalidators.MinLength(fieldval.New("", val), minLen)
 }
 
 // MaxLength check for string, array, slice, map
 func MaxLength(val any, maxLen int) bool {
-	ln := CalcLength(val)
-	return ln != -1 && ln <= maxLen
+	return ivalidators.MaxLength(fieldval.New("", val), maxLen)
 }
 
 // ByteLength check string's length

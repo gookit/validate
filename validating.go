@@ -627,11 +627,23 @@ func callValidator(v *Validation, fm *funcMeta, field string, val any, args []an
 			ok = IsStringNumber(s)
 		}
 	case "length":
-		ok = Length(val, args[0].(int))
+		if vfv != nil {
+			ok = ivalidators.Length(vfv, args[0].(int))
+		} else {
+			ok = Length(val, args[0].(int))
+		}
 	case "minLength":
-		ok = MinLength(val, args[0].(int))
+		if vfv != nil {
+			ok = ivalidators.MinLength(vfv, args[0].(int))
+		} else {
+			ok = MinLength(val, args[0].(int))
+		}
 	case "maxLength":
-		ok = MaxLength(val, args[0].(int))
+		if vfv != nil {
+			ok = ivalidators.MaxLength(vfv, args[0].(int))
+		} else {
+			ok = MaxLength(val, args[0].(int))
+		}
 	case "stringLength":
 		if argLn := len(args); argLn == 1 {
 			ok = RuneLength(val, args[0].(int))
