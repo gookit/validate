@@ -80,7 +80,13 @@ func ConvTypeByBaseKind(srcVal any, dstType reflect.Kind) (any, error) {
 // ConvToBasicType convert custom type to generic basic int, string, unit.
 // returns string, int64 or error
 func ConvToBasicType(val any) (value any, err error) {
-	v := reflect.Indirect(reflect.ValueOf(val))
+	return ConvToBasicTypeRV(reflect.ValueOf(val))
+}
+
+// ConvToBasicTypeRV 同 ConvToBasicType,但直接吃 reflect.Value(复用调用方缓存,
+// 免二次 reflect.ValueOf)。语义与 ConvToBasicType 字节级一致。
+func ConvToBasicTypeRV(rv reflect.Value) (value any, err error) {
+	v := reflect.Indirect(rv)
 
 	switch v.Kind() {
 	case reflect.String:

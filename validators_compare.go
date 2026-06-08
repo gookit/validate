@@ -6,7 +6,6 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/gookit/goutil/arrutil"
 	"github.com/gookit/goutil/fsutil"
 	"github.com/gookit/goutil/mathutil"
 	"github.com/gookit/goutil/strutil"
@@ -138,38 +137,10 @@ func Between(val, minVal, maxVal any) bool {
  *************************************************************/
 
 // Enum value(int(X),string) should be in the given enum(strings, ints, uints).
-func Enum(val, enum any) bool {
-	if val == nil || enum == nil {
-		return false
-	}
-
-	v, err := reflectx.ConvToBasicType(val)
-	if err != nil {
-		return false
-	}
-
-	// if is string value
-	if strVal, ok := v.(string); ok {
-		if ss, ok := enum.([]string); ok {
-			if arrutil.StringsContains(ss, strVal) {
-				return true
-			}
-		}
-		return false
-	}
-
-	// as int64 value
-	intVal := v.(int64)
-	if int64s, err := arrutil.ToInt64s(enum); err == nil {
-		if arrutil.Int64sHas(int64s, intVal) {
-			return true
-		}
-	}
-	return false
-}
+func Enum(val, enum any) bool { return ivalidators.Enum(fieldval.New("", val), enum) }
 
 // NotIn value should be not in the given enum(strings, ints, uints).
-func NotIn(val, enum any) bool { return !Enum(val, enum) }
+func NotIn(val, enum any) bool { return ivalidators.NotIn(fieldval.New("", val), enum) }
 
 /*************************************************************
  * region global: length validators
