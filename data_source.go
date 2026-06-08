@@ -357,7 +357,28 @@ func (d *StructData) ensureFieldValues() {
 }
 
 // TryGet value by field name. support get sub-value by path.
+//
+// Delegates the whole resolve logic to tryGetRV (single source of truth) and
+// only boxes the resolved reflect.Value via Interface() when the field exists.
+// exist=true already implies CanInterface() (tryGetRV returns exist=true only
+// in that case), so fv.Interface() below is always safe.
 func (d *StructData) TryGet(field string) (val any, exist, zero bool) {
+	fv, exist, zero := d.tryGetRV(field)
+	if !exist {
+		return nil, false, false
+	}
+	return fv.Interface(), true, zero
+}
+
+// tryGetRV resolves a field value by name (supports sub-path) and returns the
+// underlying reflect.Value WITHOUT boxing via Interface(). It is the value
+// resolve primitive shared by TryGet: same exist/zero semantics, the only
+// difference is that the caller decides whether/when to box.
+//
+// On hit: exist=true, zero=fv.IsZero(). On any early return (field missing /
+// type mismatch / nil pointer / invalid / !CanInterface): fv is the zero
+// reflect.Value, exist=false, zero=false.
+func (d *StructData) tryGetRV(field string) (fv reflect.Value, exist, zero bool) {
 	// Only uppercase if the field is not already registered with its original casing.
 	// This allows private/unexported embedded struct fields to be accessed correctly
 	// when ValidatePrivateFields is enabled (e.g., "foo.Field1" must not become "Foo.Field1").
@@ -365,14 +386,13 @@ func (d *StructData) TryGet(field string) (val any, exist, zero bool) {
 		field = strutil.UpperFirst(field)
 	}
 	// read from cache. only populated by Set() (e.g. default-value / filter
-	// writes), so a later read here reflects the updated field value. TryGet
+	// writes), so a later read here reflects the updated field value. tryGetRV
 	// itself no longer caches — see the note at the resolve-and-return below.
 	if fv, ok := d.fieldValues[field]; ok {
-		return fv.Interface(), true, fv.IsZero()
+		return fv, true, fv.IsZero()
 	}
 
 	// var isPtr bool
-	var fv reflect.Value
 	// want to get sub struct field.
 	if strings.IndexByte(field, '.') > 0 {
 		fieldNodes := strings.Split(field, ".")
@@ -396,7 +416,7 @@ func (d *StructData) TryGet(field string) (val any, exist, zero bool) {
 
 		// last key is wildcard, return all sub-value
 		if len(fieldNodes) == 1 && fieldNodes[0] == maputil.Wildcard {
-			return fv.Interface(), true, fv.IsZero()
+			return fv, true, fv.IsZero()
 		}
 
 		kind = fv.Type().Kind()
@@ -485,7 +505,12 @@ func (d *StructData) TryGet(field string) (val any, exist, zero bool) {
 		// the value cache was net alloc-negative (the map + entries cost more
 		// than they ever saved). Dropping the write removes ~2 allocs and ~10%
 		// time per struct validation. Set() still caches its own writes.
-		return fv.Interface(), true, fv.IsZero()
+		//
+		// NOTE: returning exist=true ONLY inside this CanInterface() guard is the
+		// one subtle point preserved from the original TryGet: a valid but
+		// non-interfaceable fv still yields exist=false (falls through to the
+		// bare return below).
+		return fv, true, fv.IsZero()
 	}
 	return
 }
