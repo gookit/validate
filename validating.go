@@ -378,10 +378,15 @@ func (r *Rule) valueValidate(field, name string, val any, v *Validation) (ok boo
 		valArgKind = ft.In(1).Kind()
 	}
 
+	// R3: fieldctx 风格校验器签名固定为 func(FieldCtx)bool, 规则 args 经 fc.Arg() 取,
+	// 不作为函数形参 → 跳过 checkArgNum(否则 argNum!=numIn=1 panic)与 convertArgsType
+	// (否则会按 In(0)=接口错误转换);值类型转换块因 valArgKind 恒为 Interface 已天然跳过。
+	isFieldCtx := fm.style == styleFieldCtx
+
 	// some prepare and check.
 	argNum := len(r.arguments) + addNum // "data" and "val" position
 	// check arg num is match, need exclude "requiredXXX"
-	if r.nameNotRequired {
+	if r.nameNotRequired && !isFieldCtx {
 		//noinspection GoNilness
 		fm.checkArgNum(argNum, r.validator)
 	}
@@ -389,7 +394,7 @@ func (r *Rule) valueValidate(field, name string, val any, v *Validation) (ok boo
 	// 2. args data type convert. Skip when the static template already
 	// pre-converted these args at build time (P3a: r.argsReady).
 	args := r.arguments
-	if !r.argsReady {
+	if !r.argsReady && !isFieldCtx {
 		if ok = convertArgsType(v, fm, field, args, addNum); !ok {
 			return false
 		}
@@ -419,7 +424,7 @@ func (r *Rule) valueValidate(field, name string, val any, v *Validation) (ok boo
 	// vfv carries the original value; if a conversion happens below, val no
 	// longer matches the carrier, so drop it (vfv=nil) to keep reflect correct.
 	vfv := fv
-	if r.nameNotRequired && valArgKind != reflect.Interface && valArgKind != valKind {
+	if r.nameNotRequired && !isFieldCtx && valArgKind != reflect.Interface && valArgKind != valKind {
 		val, ok = convValAsFuncValArgType(valArgKind, valKind, val)
 		if !ok {
 			v.convArgTypeError(field, fm.name, valKind, valArgKind, 1)
@@ -821,8 +826,9 @@ func callValidator(v *Validation, fm *funcMeta, field string, val any, args []an
 			ok = HasWhitespace(s)
 		}
 	default:
-		// 3. call user custom validators, will call by reflect
-		ok = callValidatorValue(v, fm.fv, val, args, addNum, vfv)
+		// 3. call user custom validators, will call by reflect (legacy)
+		// or typed direct call (fieldctx style). dispatch inside.
+		ok = callValidatorValue(v, fm, field, val, args, addNum, vfv)
 	}
 	return
 }
@@ -931,7 +937,26 @@ func convertRuleArgs(fm *funcMeta, field string, args []any, addNum int) error {
 // and the pointer-deref here (痛点 A, design §4.3). It MUST be nil whenever
 // `val` differs from the carrier's source (e.g. after type conversion or for
 // slice sub-elements), so the reflect.Value stays consistent with `val`.
-func callValidatorValue(v *Validation, fv reflect.Value, val any, args []any, addNum int, vfv *fieldval.FieldValue) bool {
+func callValidatorValue(v *Validation, fm *funcMeta, field string, val any, args []any, addNum int, vfv *fieldval.FieldValue) bool {
+	// R3: fieldctx 风格 → typed 直调,免 reflect.Call 的 argIn 装箱。args 经 fc.Arg() 取。
+	//
+	// 注意(逃逸): 绝不把入参 vfv 指针存进会逃逸到堆的 fieldCtx,否则 escape 分析会把
+	// vfv 形参标记为 leaking,连带让 legacy 热路径在 valueValidate 构造的 carrier 也
+	// 逃逸到堆(实测 +5 allocs)。这里改为按 vfv 的(值拷贝)reflect.Value 现造一个新
+	// carrier(NewRV 不重做 ValueOf),vfv 仅被读取不被存储,从而切断逃逸链。
+	if fm.style == styleFieldCtx {
+		var carrier *fieldval.FieldValue
+		if vfv != nil {
+			// 复用 vfv 已缓存的 RV(值拷贝传入),语义与 vfv.RealV()/Raw() 一致。
+			carrier = fieldval.NewRV(field, vfv.RV())
+		} else { // wildcard/转换值路径无载体,按 field+val 现造
+			carrier = fieldval.New(field, val)
+		}
+		return fm.fcFunc(&fieldCtx{fv: carrier, field: field, args: args})
+	}
+
+	// ===== legacy reflect 路径(与改造前逐字节一致,仅 fv 改用 fm.fv) =====
+	fv := fm.fv
 	// build params for the validator func.
 	argNum := len(args)
 	argIn := make([]reflect.Value, argNum+addNum)
