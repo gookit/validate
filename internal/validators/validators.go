@@ -34,8 +34,9 @@ func valueCompare(fl *fieldval.FieldValue, dstVal any, op string) bool {
 		}
 	} else {
 		// non-pointer: use the original boxed value, equivalent to
-		// IndirectValue's non-pointer branch (and without a new boxing alloc).
-		srcVal = fl.Src
+		// IndirectValue's non-pointer branch. For New carriers (the only ones in
+		// the current flow) Src() returns the already-set src — no new boxing.
+		srcVal = fl.Src()
 	}
 
 	// string compare

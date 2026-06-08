@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/gookit/goutil/reflects"
+	"github.com/gookit/validate/v2/internal/fieldval"
 	"github.com/gookit/validate/v2/internal/reflectx"
 )
 
@@ -205,6 +206,29 @@ func (v *Validation) Required(field string, val any) bool {
 
 	// check value
 	return !IsEmpty(val)
+}
+
+// requiredByCtx 是 Required 的载体(FieldValue)原生版:前置逻辑与 Required 逐行一致,
+// 仅把末尾的 `!IsEmpty(val)`(public,需对 val 装箱)换成 `!fv.IsEmpty()`(RV-native,
+// 不碰 Src)。fv.IsEmpty() 与 IsEmpty(val) 对同一输入等价(见 fieldval 等价测试)。
+func (v *Validation) requiredByCtx(field string, fv *fieldval.FieldValue) bool {
+	if v.isInOptional(field) {
+		return true
+	}
+
+	if v.data != nil && v.data.Type() == sourceForm {
+		// check is upload file
+		if v.data.(*FormData).HasFile(field) {
+			return true
+		}
+	}
+
+	if v.isIgnoreableZeroNumeric(field) {
+		return true
+	}
+
+	// check value (carrier RV-native, no Src boxing)
+	return !fv.IsEmpty()
 }
 
 // RuleOneOf 规则级"逻辑或"(#292): val 满足列出的任一子校验器即通过, 全部不满足才失败。

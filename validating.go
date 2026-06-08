@@ -411,7 +411,9 @@ func (r *Rule) valueValidate(field, name string, val any, v *Validation) (ok boo
 	fv := fieldval.New(field, val)
 	rftVal := fv.RV()
 	valKind := rftVal.Kind()
-	if fv.Src == nil {
+	// nil 字段:RV() 已把 any(nil) 物化为 NilRVal(NilObject{}),用 box-free 的
+	// IsNilRV 判定还原 valKind=Invalid(与改造前 `fv.Src==nil` 字节级等价),不读 Src。
+	if reflectx.IsNilRV(rftVal) {
 		valKind = reflect.Invalid
 	}
 
@@ -551,7 +553,11 @@ func callValidator(v *Validation, fm *funcMeta, field string, val any, args []an
 	// fm.name please see pkg var: validatorValues
 	switch fm.name {
 	case "required":
-		ok = v.Required(field, val)
+		if vfv != nil {
+			ok = v.requiredByCtx(field, vfv) // 载体原生,免 val 装箱
+		} else {
+			ok = v.Required(field, val)
+		}
 	case "requiredIf":
 		ok = v.RequiredIf(field, val, args2strings(args)...)
 	case "requiredUnless":

@@ -23,11 +23,12 @@ import (
 // within one validation pass (a *Validation is not shared concurrently).
 type FieldValue struct {
 	name string        // field name/path. eg: "name", "details.sub.*.field"
-	Src  any           // original value from the data source
+	src  any           // original value from the data source (lazily materialized for NewRV)
 	rv   reflect.Value // = reflect.ValueOf(src), lazy. (nilRVal when src is invalid)
 	rt   reflect.Type  // = rv.Type(), lazy
 	real reflect.Value // de-pointered rv, lazy
 
+	srcSet   bool // src materialized (New: eager; NewRV: lazy until Src() called)
 	rvInit   bool // rv/rt initialized
 	realInit bool // real initialized
 	// tri-state caches: 0=unknown 1=yes 2=no
@@ -36,28 +37,44 @@ type FieldValue struct {
 }
 
 // New builds a FieldValue from a plain any value (map/form sources).
-// The reflect.Value is built lazily on first need.
+// The caller already holds the boxed value, so src is set eagerly; the
+// reflect.Value is still built lazily on first need.
 func New(name string, src any) *FieldValue {
-	return &FieldValue{name: name, Src: src}
+	return &FieldValue{name: name, src: src, srcSet: true}
 }
 
 // NewRV builds a FieldValue from an already-available reflect.Value
-// (struct source). It avoids an Interface()->ValueOf round-trip. The `src` is
-// kept as the boxed value for callers/validators that still consume `any`.
-//
-// NOTE: reserved for P2 (struct path will pass the cached reflect.Value here);
-// defined now so the carrier API is complete.
+// (struct source). It avoids an Interface()->ValueOf round-trip AND keeps the
+// boxed value lazy: src is materialized (rv.Interface()) only on first Src()
+// call, so RV-native consumers (IsEmpty/String/calcLen/required) never box.
 func NewRV(name string, rv reflect.Value) *FieldValue {
 	f := &FieldValue{name: name, rv: rv, rvInit: true}
 	if rv.IsValid() {
 		f.rt = rv.Type()
-		f.Src = rv.Interface()
+		// srcSet stays false: defer rv.Interface() boxing until Src() is read.
 	} else {
-		// keep behavior consistent with rV(): invalid -> nilRVal
+		// keep behavior consistent with RV(): invalid -> nilRVal. src is pinned
+		// to nil here (srcSet=true) so Src() returns nil, byte-for-byte matching
+		// the pre-refactor NewRV(invalid) which left Src as its zero value (nil).
 		f.rv = reflectx.NilRVal
 		f.rt = reflectx.NilRVal.Type()
+		f.src = nil
+		f.srcSet = true
 	}
 	return f
+}
+
+// Src returns the original boxed value, materializing it lazily for NewRV
+// carriers (only reached when a downstream consumer truly needs `any`). For New
+// carriers src was set eagerly; for NewRV(invalid) src was pinned to nil at
+// construction. So the remaining lazy case here is NewRV(valid): rv.Interface(),
+// matching the previous eager `f.Src = rv.Interface()` exactly.
+func (f *FieldValue) Src() any {
+	if !f.srcSet {
+		f.src = f.rv.Interface()
+		f.srcSet = true
+	}
+	return f.src
 }
 
 // RV returns reflect.ValueOf(src), lazily built and cached.
@@ -67,7 +84,9 @@ func NewRV(name string, rv reflect.Value) *FieldValue {
 // so fv.Call() won't panic on an Invalid kind (#125).
 func (f *FieldValue) RV() reflect.Value {
 	if !f.rvInit {
-		rv := reflect.ValueOf(f.Src)
+		// only reached by New carriers (NewRV sets rvInit=true at build time),
+		// where srcSet is true, so f.src is read directly — no Src() boxing.
+		rv := reflect.ValueOf(f.src)
 		if !rv.IsValid() {
 			rv = reflectx.NilRVal
 		}
@@ -122,20 +141,16 @@ func (f *FieldValue) IsZero() bool {
 }
 
 // IsEmpty reports whether the value is empty, giving results identical to the
-// public IsEmpty(any) for the same input — including the untyped-nil and string
-// fast paths — but reusing rV() so the value is reflected at most once.
+// public IsEmpty(any) for the same input — without ever reading the boxed src.
+//
+// Pure reflect.Value: RV() substitutes NilRVal (= reflect.ValueOf(NilObject{}))
+// for an untyped-nil src, and reflects.IsEmpty(NilRVal) returns true via its
+// DeepEqual default branch — matching public IsEmpty(nil)==true. A string src
+// surfaces as Kind String, where reflects.IsEmpty does v.Len()==0, matching the
+// `s == ""` fast path. So one call covers nil / string / everything.
 func (f *FieldValue) IsEmpty() bool {
 	if f.empty == 0 {
-		var emp bool
-		switch {
-		case f.Src == nil: // untyped nil. same as IsEmpty(nil)
-			emp = true
-		case isStrSrc(f.Src): // string fast path. same as IsEmpty(string)
-			emp = f.Src.(string) == ""
-		default:
-			emp = reflects.IsEmpty(f.RV())
-		}
-		if emp {
+		if reflects.IsEmpty(f.RV()) {
 			f.empty = 1
 		} else {
 			f.empty = 2
@@ -149,16 +164,18 @@ func (f *FieldValue) IsEmpty() bool {
 //
 // NOTE: 签名是 () (string, bool),不满足 fmt.Stringer,无冲突。
 func (f *FieldValue) String() (string, bool) {
-	if s, ok := f.Src.(string); ok {
-		return s, true
-	}
-	if f.Src == nil {
-		return "", false
-	}
-	if rv := f.RV(); rv.Kind() == reflect.String {
+	rv := f.RV()
+	// 命名字符串类型也是 Kind String,直接取值,box-free。涵盖 plain string 快路径。
+	if rv.Kind() == reflect.String {
 		return rv.String(), true
 	}
-	s, err := strutil.ToString(f.Src)
+	// untyped nil src 经 RV() 物化为 NilRVal(NilObject{}),与现 `f.Src==nil`
+	// 分支等价:返回 "", false(无可用字符串)。box-free 的 Type 比较检测。
+	if reflectx.IsNilRV(rv) {
+		return "", false
+	}
+	// 非字符串值才物化(经 Src() 懒装箱),交给 strutil.ToString,与现 valToString 一致。
+	s, err := strutil.ToString(f.Src())
 	return s, err == nil
 }
 
@@ -166,7 +183,9 @@ func (f *FieldValue) String() (string, bool) {
 // 未类型化 nil→nil;非指针→原样(Src,无新装箱);非空指针→解引用后的 Interface();空指针→nil。
 // 复用缓存 RV(),避免二次 reflect.ValueOf。
 func (f *FieldValue) Indirect() any {
-	if f.Src == nil {
+	// Indirect 返回 any 必然装箱(非 bench 热路径,本步不优化),仅把字段读改为
+	// Src() 方法以适配懒化;nil 检测与逻辑保持与改造前字节级一致。
+	if f.Src() == nil {
 		return nil
 	}
 	rv := f.RV()
@@ -176,12 +195,5 @@ func (f *FieldValue) Indirect() any {
 		}
 		return nil
 	}
-	return f.Src
-}
-
-// isStrSrc reports whether src holds a plain string (mirrors the type assertion
-// in IsEmpty(any)).
-func isStrSrc(src any) bool {
-	_, ok := src.(string)
-	return ok
+	return f.Src()
 }

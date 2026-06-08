@@ -13,7 +13,7 @@ import (
 // 包含判定,其余按 int64 走 ToInt64s/Int64sHas。原 `if X { return true } return false`
 // 与 `return X` 行为等价,此处化简。
 func Enum(fl *fieldval.FieldValue, enum any) bool {
-	if fl.Src == nil || enum == nil {
+	if fl.Src() == nil || enum == nil {
 		return false
 	}
 

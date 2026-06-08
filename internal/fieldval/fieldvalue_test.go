@@ -181,7 +181,7 @@ func TestNewFieldValueRV(t *testing.T) {
 	t.Run("from valid reflect.Value", func(t *testing.T) {
 		fv := fieldval.NewRV("n", reflect.ValueOf("hello"))
 		assert.Eq(t, reflect.String, fv.RV().Kind())
-		assert.Eq(t, "hello", fv.Src)
+		assert.Eq(t, "hello", fv.Src())
 		assert.False(t, fv.IsEmpty())
 		assert.False(t, fv.IsZero())
 	})

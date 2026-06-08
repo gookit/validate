@@ -28,10 +28,21 @@ var nilObj = NilObject{}
 // NilRVal a reflect nil value (= reflect.ValueOf(NilObject{})).
 var NilRVal = reflect.ValueOf(nilObj)
 
+// nilRType is the reflect.Type of NilObject, cached for box-free IsNilRV checks.
+var nilRType = NilRVal.Type()
+
 // IsNilObj check value is internal NilObject
 func IsNilObj(val any) bool {
 	_, ok := val.(NilObject)
 	return ok
+}
+
+// IsNilRV reports whether rv is the nil sentinel — an invalid Value or a
+// NilObject — using a box-free Type comparison (no rv.Interface()). The carrier
+// substitutes NilRVal for an untyped-nil src, so this detects "nil field" purely
+// from the reflect.Value.
+func IsNilRV(rv reflect.Value) bool {
+	return !rv.IsValid() || rv.Type() == nilRType
 }
 
 // ValueCompare value compare.
