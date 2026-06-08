@@ -1,0 +1,72 @@
+goos: linux
+goarch: amd64
+pkg: github.com/gookit/validate/v2
+cpu: Intel(R) Core(TM) i7-14700KF
+BenchmarkFieldSuccess-28            	1000000000	         0.7499 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFieldSuccess-28            	1000000000	         0.7429 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFieldSuccess-28            	1000000000	         0.7390 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFieldSuccess-28            	1000000000	         0.7382 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFieldSuccess-28            	1000000000	         0.7463 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFieldSuccess-28            	1000000000	         0.7417 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFieldSuccessParallel-28    	1000000000	         0.1015 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFieldSuccessParallel-28    	1000000000	         0.1083 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFieldSuccessParallel-28    	1000000000	         0.1566 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFieldSuccessParallel-28    	1000000000	         0.1131 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFieldSuccessParallel-28    	1000000000	         0.1098 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFieldSuccessParallel-28    	1000000000	         0.1634 ns/op	       0 B/op	       0 allocs/op
+BenchmarkStructFlat-28              	  763647	      1519 ns/op	    1101 B/op	      12 allocs/op
+BenchmarkStructFlat-28              	  768532	      1520 ns/op	    1102 B/op	      12 allocs/op
+BenchmarkStructFlat-28              	  769489	      1512 ns/op	    1101 B/op	      12 allocs/op
+BenchmarkStructFlat-28              	  733680	      1521 ns/op	    1102 B/op	      12 allocs/op
+BenchmarkStructFlat-28              	  778857	      1528 ns/op	    1102 B/op	      12 allocs/op
+BenchmarkStructFlat-28              	  760653	      1521 ns/op	    1102 B/op	      12 allocs/op
+BenchmarkCheck-28                   	  833530	      1390 ns/op	     405 B/op	       6 allocs/op
+BenchmarkCheck-28                   	  832482	      1389 ns/op	     405 B/op	       6 allocs/op
+BenchmarkCheck-28                   	  845817	      1391 ns/op	     405 B/op	       6 allocs/op
+BenchmarkCheck-28                   	  838480	      1393 ns/op	     406 B/op	       6 allocs/op
+BenchmarkCheck-28                   	  820546	      1382 ns/op	     405 B/op	       6 allocs/op
+BenchmarkCheck-28                   	  848074	      1384 ns/op	     405 B/op	       6 allocs/op
+BenchmarkCheckErr-28                	 1000000	      1147 ns/op	      40 B/op	       3 allocs/op
+BenchmarkCheckErr-28                	 1000000	      1142 ns/op	      40 B/op	       3 allocs/op
+BenchmarkCheckErr-28                	 1000000	      1140 ns/op	      40 B/op	       3 allocs/op
+BenchmarkCheckErr-28                	 1000000	      1140 ns/op	      40 B/op	       3 allocs/op
+BenchmarkCheckErr-28                	 1000000	      1141 ns/op	      40 B/op	       3 allocs/op
+BenchmarkCheckErr-28                	 1000000	      1141 ns/op	      40 B/op	       3 allocs/op
+BenchmarkStructNested-28            	  751624	      1496 ns/op	    1192 B/op	      15 allocs/op
+BenchmarkStructNested-28            	  766309	      1503 ns/op	    1192 B/op	      15 allocs/op
+BenchmarkStructNested-28            	  761845	      1504 ns/op	    1192 B/op	      15 allocs/op
+BenchmarkStructNested-28            	  768753	      1502 ns/op	    1192 B/op	      15 allocs/op
+BenchmarkStructNested-28            	  764156	      1504 ns/op	    1192 B/op	      15 allocs/op
+BenchmarkStructNested-28            	  778377	      1506 ns/op	    1192 B/op	      15 allocs/op
+BenchmarkStructSliceOfStruct-28     	  110218	     10970 ns/op	    9847 B/op	     206 allocs/op
+BenchmarkStructSliceOfStruct-28     	  109354	     11009 ns/op	    9847 B/op	     206 allocs/op
+BenchmarkStructSliceOfStruct-28     	  109657	     10993 ns/op	    9847 B/op	     206 allocs/op
+BenchmarkStructSliceOfStruct-28     	  107332	     10951 ns/op	    9847 B/op	     206 allocs/op
+BenchmarkStructSliceOfStruct-28     	  108612	     11009 ns/op	    9847 B/op	     206 allocs/op
+BenchmarkStructSliceOfStruct-28     	  108093	     11012 ns/op	    9847 B/op	     206 allocs/op
+BenchmarkMapValidate-28             	  377492	      3165 ns/op	    3622 B/op	      65 allocs/op
+BenchmarkMapValidate-28             	  376258	      3182 ns/op	    3620 B/op	      65 allocs/op
+BenchmarkMapValidate-28             	  375777	      3196 ns/op	    3619 B/op	      65 allocs/op
+BenchmarkMapValidate-28             	  372162	      3180 ns/op	    3619 B/op	      65 allocs/op
+BenchmarkMapValidate-28             	  370282	      3152 ns/op	    3618 B/op	      65 allocs/op
+BenchmarkMapValidate-28             	  365874	      3166 ns/op	    3618 B/op	      65 allocs/op
+BenchmarkValValue-28                	 1984839	       602.3 ns/op	     502 B/op	       9 allocs/op
+BenchmarkValValue-28                	 1970745	       607.8 ns/op	     502 B/op	       9 allocs/op
+BenchmarkValValue-28                	 1986178	       606.7 ns/op	     502 B/op	       9 allocs/op
+BenchmarkValValue-28                	 1974868	       608.6 ns/op	     503 B/op	       9 allocs/op
+BenchmarkValValue-28                	 1977766	       603.8 ns/op	     502 B/op	       9 allocs/op
+BenchmarkValValue-28                	 1984778	       602.8 ns/op	     502 B/op	       9 allocs/op
+BenchmarkStructFirstParse-28        	 3930583	       300.7 ns/op	     712 B/op	       7 allocs/op
+BenchmarkStructFirstParse-28        	 3972066	       303.8 ns/op	     712 B/op	       7 allocs/op
+BenchmarkStructFirstParse-28        	 3959361	       301.9 ns/op	     712 B/op	       7 allocs/op
+BenchmarkStructFirstParse-28        	 3991464	       300.8 ns/op	     712 B/op	       7 allocs/op
+BenchmarkStructFirstParse-28        	 3969724	       305.8 ns/op	     712 B/op	       7 allocs/op
+BenchmarkStructFirstParse-28        	 3918277	       303.2 ns/op	     712 B/op	       7 allocs/op
+BenchmarkFactoryStructReuse-28      	  943268	      1274 ns/op	      40 B/op	       3 allocs/op
+BenchmarkFactoryStructReuse-28      	  949998	      1280 ns/op	      40 B/op	       3 allocs/op
+BenchmarkFactoryStructReuse-28      	  943426	      1281 ns/op	      40 B/op	       3 allocs/op
+BenchmarkFactoryStructReuse-28      	  838287	      1341 ns/op	      40 B/op	       3 allocs/op
+BenchmarkFactoryStructReuse-28      	  908058	      1322 ns/op	      41 B/op	       3 allocs/op
+BenchmarkFactoryStructReuse-28      	  922548	      1323 ns/op	      40 B/op	       3 allocs/op
+PASS
+ok  	github.com/gookit/validate/v2	76.155s

@@ -62,6 +62,29 @@ func BenchmarkStructFlat(b *testing.B) {
 	}
 }
 
+// BenchmarkCheck measures the pooled, stateless Check() entry (S2/S3): each
+// iteration gets a pooled instance + reused StructData and returns a *ValidResult.
+func BenchmarkCheck(b *testing.B) {
+	u := flatUser{Name: "inhere", Email: "john@example.com", Age: 30}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = Check(&u)
+	}
+}
+
+// BenchmarkCheckErr measures the opt-in fast pass/fail CheckErr() entry: pooled
+// like Check but skips safeData/filteredData collection + the ValidResult shell,
+// returning only an error (nil = passed).
+func BenchmarkCheckErr(b *testing.B) {
+	u := flatUser{Name: "inhere", Email: "john@example.com", Age: 30}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = CheckErr(&u)
+	}
+}
+
 // nestedProfile is the inner struct for BenchmarkStructNested (2-level nesting).
 type nestedProfile struct {
 	City string `validate:"required|minLen:2"`
