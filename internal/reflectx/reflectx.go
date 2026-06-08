@@ -135,3 +135,33 @@ func IndirectValue(input any) any {
 	// If the input is not a pointer, just return the input as it is
 	return input
 }
+
+// IndirectValueRV is the reflect.Value flavour of IndirectValue: it dereferences
+// a single pointer level of rv and returns the value as any. It mirrors
+// IndirectValue's pointer / nil-pointer / non-pointer branches; orig is the boxed
+// value rv was reflected from and is returned as-is for the non-pointer branch
+// (no fresh boxing alloc — and identical to IndirectValue, which returns the
+// original input unchanged for non-pointers).
+//
+// NOTE: callers pass a carrier's RealV() here (already de-pointered one level),
+// so this applies the SECOND indirection level — matching the reflect.Call path
+// where the public IsBool receives RealV().Interface() and then does its own
+// IndirectValue. RealV() substitutes NilRVal for a nil src (never an invalid
+// Value), so a nil field surfaces as NilObject{} not nil — same as reflect.Call.
+func IndirectValueRV(rv reflect.Value, orig any) any {
+	// If the value is a pointer, then use reflect.Indirect to get the actual value it points to
+	if rv.Kind() == reflect.Ptr {
+		// Use reflect.Indirect to safely dereference the pointer
+		rv = reflect.Indirect(rv)
+
+		// If the dereferenced value is valid (not nil), return the interface
+		if rv.IsValid() {
+			return rv.Interface()
+		}
+		// If the dereferenced value is not valid, return nil
+		return nil
+	}
+
+	// If the input is not a pointer, just return the original value as it is.
+	return orig
+}

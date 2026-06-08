@@ -692,6 +692,38 @@ func callValidator(v *Validation, fm *funcMeta, field string, val any, args []an
 		} else {
 			ok = IsSlice(val)
 		}
+	// R2.5a: 反射型类型校验器从 default(reflect.Call) 提升进 switch,改调 internal RV 版,
+	// 消除 reflect.Call 开销 + argIn 分配。等价契约: ivalidators.X(c) ≡ public X(c.RealV().Interface())
+	// (c 在 vfv==nil 时按 field+val 现造,复现 reflect.Call 的 vfv==nil 预解引用)。
+	// c 仅被内部函数读取不存储,不逃逸。
+	case "isBool":
+		c := vfv
+		if c == nil {
+			c = fieldval.New(field, val)
+		}
+		ok = ivalidators.IsBool(c)
+	case "isUint":
+		c := vfv
+		if c == nil {
+			c = fieldval.New(field, val)
+		}
+		ok = ivalidators.IsUint(c)
+	case "isArray":
+		c := vfv
+		if c == nil {
+			c = fieldval.New(field, val)
+		}
+		if len(args) == 0 {
+			ok = ivalidators.IsArray(c)
+		} else { // strict 变参已被 convertArgsType 转为 bool
+			ok = ivalidators.IsArray(c, args[0].(bool))
+		}
+	case "isMap":
+		c := vfv
+		if c == nil {
+			c = fieldval.New(field, val)
+		}
+		ok = ivalidators.IsMap(c)
 	case "isNumeric": // receives any, pass val directly
 		ok = IsNumeric(val)
 	// --- single-arg string validators: T2 移入 switch,免反射 fv.Call ---
