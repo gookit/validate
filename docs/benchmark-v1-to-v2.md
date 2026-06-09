@@ -93,6 +93,25 @@
 
 对照同版本的 `StructFlat`（1904.00 ns/op、1831.2 B/op、23 allocs/op）可见：在复用场景下，耗时进一步降低、内存约减半、分配次数从 23 降到 11，体现了 Factory 复用对重复校验同一结构体类型的优化价值。
 
+### RV-native 优化后（v2.x 持续优化）
+
+v2.0.0 之后，针对 v2 仍带的「校验器入参 `any` + 二次反射」做了一轮 **RV-native 重构**：把 ~60+ 无状态内建校验器搬入 `internal/validators`（入参为封装的 `reflect.Value`，载体 `internal/fieldval.FieldValue`）、热路径直调 internal RV 版去二次反射、新增 `func(FieldCtx) bool` 自定义校验器形态（typed、免 `reflect.Call`，与旧 `func(val any,...) bool` 共存），并在取值链端到端去装箱（载体懒构造持 RV、`Src` 懒装箱、`valueCompare`/`required` 纯 RV）。
+
+flat-valid 成功路径三入口最新实测（同 i7-14700KF，go1.25.10，`_examples/bench-vs-goplayground`）：
+
+| 入口 | allocs/op | B/op | ns/op |
+|---|---:|---:|---:|
+| `Struct(&u).Validate()` | 12 | ~1150 | ~1580 |
+| `Check(&u)` | 6 | ~405 | ~1460 |
+| `CheckErr(&u)` | **0** | **0** | ~1155 |
+| go-playground `Struct(&u)`（v10.30.3，对照） | 8 | ~129 | ~750 |
+
+要点：
+
+- **只有 `CheckErr` 达 0 alloc**（端到端去装箱的成果，原为 3 allocs）。`Check` / `Struct().Validate()` 因要收集 `safeData`（供 `SafeData()`/`BindStruct`，每个通过字段须装箱进 `map[string]any`）仍为 6 / 12 allocs，本轮**不变**（功能取舍）。
+- 对照 go-playground（本基准 flat-valid 实测 8 allocs、nested 4 allocs）：gookit `CheckErr` 的 alloc(0) 低于其 8，但 go-playground 的 **ns/op 仍更快**（~750 vs ~1155）。
+- 设计与实施细节见 [`docs/perf/rv-native-validators-rfc.md`](perf/rv-native-validators-rfc.md)。
+
 ## 结论
 
 数据呈现的演进趋势（忠于原始数据）：

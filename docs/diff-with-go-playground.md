@@ -9,7 +9,7 @@
 
 ## 0. 一句话定位
 
-- **go-playground/validator**：极致轻量的**纯校验器**（struct + 单值），成功路径 **0 alloc**——靠复用单实例、struct 元信息缓存、**只返回 error、不收集结果、不改值**。
+- **go-playground/validator**：极致轻量的**纯校验器**（struct + 单值），靠复用单实例、struct 元信息缓存、**只返回 error、不收集结果、不改值**；ns/op 仍是本基准最快（本基准 flat-valid 实测 8 allocs，见 §4）。
 - **gookit/validate**：**校验 + 过滤/净化 + 安全数据收集 + 结构体绑定** 一体的「瑞士军刀」，数据源更广（Map/Struct/Request/文件）。多出的几个 alloc 正是这些功能的成本。
 
 ---
@@ -22,13 +22,13 @@
 | 数据源 | Map / Struct / Request（Form / JSON / url.Values / **文件上传**），按 `Content-Type` 自动收集 | Struct + `Var` / `VarWithValue` |
 | 过滤 / 净化 | ✅ 校验前 `filter`（trim / int / upper … 20+），**可改写值** | ❌ 无（只校验、不改值） |
 | 结果产出 | ✅ `SafeData()` + `BindStruct` / `BindSafeData`（绑定清洗后数据到结构体） | ❌ 只返回 `error` |
-| 成功路径分配 | `Check` 6 / `CheckErr` 3 allocs（**因要收集结果**） | **0 alloc** |
+| 成功路径分配 | `Check` 6 / **`CheckErr` 0** allocs（`Check` 因要收集结果） | flat 8 allocs（本基准实测，见 §4） |
 | 内建校验器 | **70+**（多数带别名） | 100+（标签关键字） |
 | 内建过滤器 | **20+** | — |
-| 自定义校验器入参 | `any`（`func(val any, ...) bool`） | `FieldLevel`（直接给 `reflect.Value`） |
+| 自定义校验器入参 | `any`（`func(val any, ...) bool`）+ **现已新增 `func(FieldCtx) bool`**（typed、直接拿 `reflect.Value`/字段名/args，与旧签名共存） | `FieldLevel`（直接给 `reflect.Value`） |
 | i18n / 错误消息 | **内置** `en` / `zh-CN` / `zh-TW`；struct `message` / `label` tag | 经独立 `universal-translator` 包 |
 | 场景（scene） | ✅ 内置场景分组（不同场景校验不同字段） | struct-level + tag / groups（机制不同） |
-| 嵌套级联 | **按需**：具名子结构体带 `validate` tag 才下探（Java `@Valid` 风格） | 默认递归；slice/map 元素用 `dive` |
+| 嵌套级联 | **按需**：具名子结构体带 `validate` tag 才下探 | 默认递归；slice/map 元素用 `dive` |
 | slice/map 元素 | `field.*` 通配（`v.StringRule("tags.*", "...")`） | `dive` 关键字 |
 | 规则语法 | `\|` 分隔、`:` 传参（`required\|min:1\|max:99`） | `,` 分隔、`=` 传参（`required,min=1,max=99`） |
 | 跨字段 | `eq_field` / `gt_field` / `required_with` … | `eqfield` / `gtfield` / `required_with` … |
@@ -48,8 +48,8 @@
 
 ## 3. go-playground 独有 / 更强
 
-1. **0 alloc 成功路径**：复用单 `Validate` 实例 + 类型元信息缓存 + 只返回 error，不收集结果、不装箱。
-2. **`FieldLevel` 自定义校验器**：自定义校验器拿到的是 `reflect.Value`（`fl.Field()`），无装箱、无二次反射——这也是 gookit 的一处架构差（见 §5）。
+1. **更快的成功路径 ns/op**：复用单 `Validate` 实例 + 类型元信息缓存 + 只返回 error，不收集结果；本基准 flat-valid 实测 8 allocs / ~129 B，ns/op 仍领先（~750 vs gookit `CheckErr` ~1155）。
+2. **`FieldLevel` 自定义校验器**：自定义校验器拿到的是 `reflect.Value`（`fl.Field()`），无装箱、无二次反射——gookit 现已通过 RV-native 重构补上等价能力（`func(FieldCtx) bool`，见 §5）。
 3. **`dive` 深入校验**：对 slice/map 元素、嵌套层级有成熟的 `dive`/`keys`/`endkeys` 语义。
 4. **生态规模**：gin 默认绑定校验器，社区、第三方规则、文档更丰富。
 
@@ -59,24 +59,29 @@
 
 | 入口 | allocs/op | B/op | ns/op | 说明 |
 |---|---:|---:|---:|---|
-| `validate.Struct(&u).Validate()` | 12 | ~1101 | ~1519 | 通用、非池化 |
-| `validate.Check(&u)` | 6 | 405 | ~1390 | **推荐默认**，池化 + 收集结果 |
-| `validate.CheckErr(&u)` | 3 | 40 | ~1147 | opt-in 快速过/败，不收集结果 |
-| go-playground `validate.Struct(&u)` | **0** | 0 | ~470–750 | 不收集结果 |
+| `validate.Struct(&u).Validate()` | 12 | ~1150 | ~1580 | 通用、非池化 |
+| `validate.Check(&u)` | 6 | ~405 | ~1460 | **推荐默认**，池化 + 收集结果 |
+| `validate.CheckErr(&u)` | **0** | **0** | ~1155 | opt-in 快速过/败，不收集结果，**RV-native 端到端去装箱** |
+| go-playground `validate.Struct(&u)` | 8 | ~129 | ~750 | 不收集结果，ns/op 仍最快（本基准实测） |
 
-> 关键认知：**与 0 的差距本质是功能取舍**，不是单纯的实现差。gookit 收集 `safeData`（供 `SafeData()`/`BindStruct`），每个通过字段都要把值装箱进 `map[string]any` ——这是「收集结果」功能的固有成本。`CheckErr` 通过「不收集结果 + 同字段装箱去重」逼近到 3 allocs，是这条线上能做到的实用下限（细节见 `docs/perf/t3-deboxing-design.md` §4、`docs/perf/checkerr-impl-plan.md`）。
+> 关键认知：gookit 通过 RV-native 端到端去装箱（载体持 `reflect.Value`、`Src` 懒装箱、`valueCompare`/`required` 纯 RV），`CheckErr` 通过路径已达 **0 alloc**；`Check`/`Struct().Validate()` 因要收集 `safeData`（供 `SafeData()`/`BindStruct`，每个通过字段都要把值装箱进 `map[string]any`）仍为 6 / 12 allocs ——这是「收集结果」功能的固有成本（功能取舍，非实现差）。换言之：本基准 flat-valid 上 gookit `CheckErr` 的 alloc(0) **低于** go-playground(8)，但后者 ns/op 仍更快（~750 vs ~1155）；客观对照、不褒不贬（细节见 `docs/perf/rv-native-validators-rfc.md`）。
 >
-> gookit 这一轮的演进：flat-valid 成功路径 **23 → 12（非池化）/ 6（Check）/ 3（CheckErr）** allocs；完整数字见 `docs/plans/v2.0-perf-bench.txt`。
+> gookit 这一轮的演进：flat-valid 成功路径 **23 → 12（非池化）/ 6（Check）/ 0（CheckErr）** allocs；完整数字见 `docs/plans/v2.0-perf-bench.txt`。
 
 ---
 
-## 5. 架构差异：validator 入参 `any` vs `FieldLevel`
+## 5. 架构差异：validator 入参 `any` vs RV-native（`FieldCtx`）
 
-- gookit 内建/自定义校验器入参是 `any`：内建如 `Min(val any,...)` 内部还要 `reflect.ValueOf(val)`（二次反射）；自定义是 `func(val any,...) bool`（装箱 + reflect.Call）。
 - go-playground 校验器拿 `FieldLevel`，`fl.Field()` 直接是 `reflect.Value`，全程不装箱、不二次反射。
-- gookit 内部其实已有载体雏形 `internal/fieldval.FieldValue`（带 lazy `RV()`），但它**不是**公开的校验器入参契约。
+- gookit 旧版内建/自定义校验器入参是 `any`：内建如 `Min(val any,...)` 内部还要 `reflect.ValueOf(val)`（二次反射）；自定义是 `func(val any,...) bool`（装箱 + reflect.Call）。
 
-这是一笔**已知、有意保留的架构债**：在「收集结果」主路径上把它还掉收益 ≈ 0（safeData 仍要装箱）；要还需重写 ~70 个内建校验器并**改动公开的自定义校验器签名**（破坏所有用户的自定义 validator）。它是让 `CheckErr` 进一步逼近 0 alloc 的钥匙，但属大破坏性变更，目前不动；若推进，建议以**新增** FieldLevel 风格的可选接口、与现有 `any` 版共存的方式渐进。
+**RV-native 重构已完成**（不再是架构债）：
+
+1. **内建校验器 internal 化 + 载体持 RV**：~60+ 无状态内建校验器搬入 `internal/validators`，入参为封装的 `reflect.Value`（载体 `internal/fieldval.FieldValue`）；热路径在 `callValidator` 里**直调** internal RV 版，消除「校验器内部反复 `reflect.ValueOf`」的二次反射。public `Min/IsEmail/...` 保留原签名，转为薄 shim（外部直调/`Val()`/旧自定义仍可用），**签名/行为零破坏**。
+2. **自定义校验器新增 `func(FieldCtx) bool` 形态**（typed、免 `reflect.Call`，直接拿 `reflect.Value`/字段名/args）。这是**附加形态**，与旧 `func(val any,...) bool` **并存**，旧签名零破坏。命名用 **`FieldCtx`**（本项目选定，非 go-playground 的 `FieldLevel`——后者源于其 StructLevel/FieldLevel 二分，gookit 无此二分；`FieldCtx` 表「字段校验上下文」，且不与内部 `fieldval.FieldValue` 撞名）。
+3. **端到端去装箱**：取值链经 `tryGetRV` + `NewRV` 懒构造载体、`Src` 懒装箱、`valueCompare`/`required` 纯 RV，`CheckErr` 通过路径借此达 **0 alloc**（对标 go-playground 的零分配理念）。
+
+> 注意「收集结果」主路径（`Check`/`Struct().Validate()`）的 6/12 allocs **不受此影响**：safeData 仍要把通过字段装箱进 `map[string]any`（功能取舍，RV 化省不掉）。RV-native 的 alloc 收益落在 `CheckErr`；主价值是**架构 + 扩展性 + CheckErr 对标 0**。
 
 ---
 
@@ -91,5 +96,6 @@
 ## 7. 参考
 
 - 对照 benchmark：`_examples/bench-vs-goplayground/`（独立 module，`replace` 指向本地源码）。
-- 性能演进与设计：`docs/perf/v2.x-perf-optimization-plan.md`、`docs/perf/t3-deboxing-design.md`、`docs/perf/checkerr-impl-plan.md`。
+- RV-native 重构设计：`docs/perf/rv-native-validators-rfc.md`（本轮 RFC：internal 化 + 载体持 RV + FieldCtx 自定义校验器 + 端到端去装箱）。
+- 差距根因分析：`docs/perf/gookit-vs-goplayground-gap-analysis.md`。
 - 最新基准：`docs/plans/v2.0-perf-bench.txt`。

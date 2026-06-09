@@ -1,9 +1,10 @@
 # RFC：validator 入参 RV 化（`internal/validators` 核心 + FieldCtx 自定义校验器）
 
-> **类型**：架构设计 RFC（**待评审，未改业务代码**）。
-> **日期**：2026-06-07
+> **状态**：✅ 已全部实施（R1–R4 + R2.5 + scRV），CheckErr 结构体路径 0 alloc。
+> **类型**：架构设计 RFC（已落地，本文据实标注完成状态与 commit）。
+> **日期**：2026-06-07（设计）／2026-06-08（实施完成）
 > **动机**：架构升级，避免后期扩展受限。v2 起初就想把 validator 入参从 `any` 调整为「封装的 `reflect.Value`」，中途未完成（佐证：`internal/fieldval.FieldValue.NewRV` 注释写着 *"reserved for P2 (struct path will pass the cached reflect.Value here)"*——载体钩子留了，串联没做完）。本 RFC 把这件事补完并定型。
-> **前置**：`t3-deboxing-design.md`（去装箱分析）、`checkerr-impl-plan.md`（CheckErr 已落地 = 3 allocs）。
+> **前置**：`t3-deboxing-design.md`（去装箱分析）、`checkerr-impl-plan.md`（CheckErr 早期落地 = 3 allocs，本轮已进一步降到 0）。
 
 ---
 
@@ -168,14 +169,16 @@ func IsEmail(val any) bool   { return validators.IsEmail(fieldval.New("", val)) 
 
 ## 10. 分阶段实施（每步独立 commit + golden×3 + race，可单独回滚）
 
-| 步 | 内容 | 风险 | 对外影响 | alloc |
-|---|---|---|---|---|
-| **R1** | 建 `internal/validators` 脚手架 + 给 `FieldValue` 加 `String()`；**搬 1 个家族**（如比较类 Min/Max/Lt/Gt/Between）到 internal，public 变 shim，`callValidator` 对应 case 直调 internal | 中 | 无（签名不变） | 不变 |
-| **R2** | 按家族继续搬（标量类型类 → 取串类 → 其余无状态），每家族一提交 | 中 | 无 | 不变 |
-| **R3** | 公开 `FieldCtx` + `checkValidatorFunc` 识别新签名 + `funcMeta.style` + `callValidatorValue` 分派；新增 `func(FieldCtx) bool` 自定义校验器支持 | 中 | **新增 API（附加）** | 不变 |
-| **R4**（可选） | `tryGetRV` + carrier 持 RV + `Src` 真懒；measure CheckErr | **高** | 无 | CheckErr ↓ |
+| 步 | 内容 | 风险 | 对外影响 | alloc | 状态 / commit |
+|---|---|---|---|---|---|
+| **R1** | 建 `internal/validators` 脚手架 + 给 `FieldValue` 加 `String()`；**搬 1 个家族**（如比较类 Min/Max/Lt/Gt/Between）到 internal，public 变 shim，`callValidator` 对应 case 直调 internal | 中 | 无（签名不变） | 不变 | ✅ 已完成 `d90d91c` |
+| **R2** | 按家族继续搬（标量类型类 → 取串类 → 其余无状态），每家族一提交 | 中 | 无 | 不变 | ✅ 已完成 `5a89ab1`(标量) / `c69fc22`(长度) / `d079b28`(枚举) / `aeab5ee`(取串热路径) |
+| **R2.5**（附加） | `IsBool/IsUint/IsArray/IsMap` + `Contains/NotContains` 提升进 switch（免 `reflect.Call`，internal RV 版） | 低 | 无 | 不变 | ✅ 已完成 `db65592`(IsBool/IsUint/IsArray/IsMap) / `e0351f4`(Contains/NotContains) |
+| **R3** | 公开 `FieldCtx` + `checkValidatorFunc` 识别新签名 + `funcMeta.style` + `callValidatorValue` 分派；新增 `func(FieldCtx) bool` 自定义校验器支持 | 中 | **新增 API（附加）** | 不变 | ✅ 已完成 `bd98903`(公开 FieldCtx + funcMeta 识别) / `80805f9`(按 style 分派 + 落地) |
+| **R4** | `tryGetRV` + carrier 持 RV + `Src` 真懒；measure CheckErr | **高** | 无 | CheckErr ↓ 0 | ✅ 已完成 `7352c7f`(tryGetRV 原语) / `7fbd721`(Src 懒化 + required 原生) / `64b2429`(valueValidate 吃载体) / `503863d`(结构体源懒构造去 2 装箱) / `95431c1`(valueCompare 非指针纯 RV，去最后 1 装箱) |
+| **scRV**（收尾） | skipCollect 缓存字段 `reflect.Value` 免重读 + 闭合非指针边界 | 低 | 无 | 不变 | ✅ 已完成 `b60f8be` |
 
-> R1~R3 是架构主体（用户的核心诉求：internal 化 + callValidator 直调 + 自定义新参数）。R4 是兑现 CheckErr alloc 的可选续作，风险最高，可独立评估。
+> R1~R3 是架构主体（核心诉求：internal 化 + callValidator 直调 + 自定义新参数）。R4 兑现 CheckErr alloc（3→0，端到端去装箱），scRV 为收尾巩固。**全部已实施**。
 
 ---
 
@@ -197,13 +200,26 @@ func IsEmail(val any) bool   { return validators.IsEmail(fieldval.New("", val)) 
 - **D5** 是否做 R4（端到端去装箱）？还是 R1~R3 架构到位即止、alloc 维持现状？
 - **D6** ✅ **已定：`FieldCtx`**（不跟随 go-playground 的 `FieldLevel`——后者是其 StructLevel/FieldLevel 二分的产物，gookit 无此二分；`FieldCtx` 表「字段校验上下文」更贴切，且不与内部 `fieldval.FieldValue` 撞名）。方法：`Value()`/`Raw()`/`FieldName()`/`Arg(i)`/`Args()`。
 
-> **决策状态**：D6 已定。D1–D5 暂取上文「建议默认」（D1 不暴露 `Validation`；D2 仅 `func(FieldCtx) bool` + `Arg`；D3 仅 `AddValidator`；D4 carrier 入参；D5 先做 R1–R3、R4 另议）。**若 `/clear` 后无新指示，按这些默认推进。**
+> **决策状态（已实施）**：D6 已定（`FieldCtx`）。**D5 已决并已实施——做了完整 R4（端到端去装箱），CheckErr 达 0 alloc。** 其余 D1–D4、D6 均按上文「建议默认」落地：D1 不暴露 `Validation`；D2 仅 `func(FieldCtx) bool` + `Arg`；D3 仅 `AddValidator`；D4 carrier（`fieldval.FieldValue`）入参。全部决策已定型并实施完毕。
 
 ---
 
-## 14. /clear 后如何继续（开发交接）
+## 14. 开发交接（已全部完成）
 
-**当前状态**：本 RFC 已评审定 D6=`FieldCtx`，D1–D5 取建议默认（见 §12）。**尚未写任何业务代码。** 用户已确认按本 RFC 开发。
+**当前状态**：✅ **本 RFC 已全部实施完成**（R1–R4 + R2.5 + scRV，commit 见 §10）。决策见 §12（D5 已决并做了完整 R4）。
+
+**最终成果（i7-14700KF，go1.25.10，`_examples/bench-vs-goplayground`，flat-valid）**：
+
+- `CheckErrValid`：**3 → 0 alloc**（~1159 → ~1155 ns/op）——本轮关键成果，端到端去装箱。
+- `Check`：6 allocs **不变**（safeData 收集恒装箱，§9 的墙，设计取舍）。
+- `Struct().Validate()`：12 allocs **不变**（同上）。
+- `CheckErrInvalid`：21 → **20** allocs。
+- 对照 go-playground（v10.30.3，本基准实测）：flat 8 allocs、nested 4 allocs，ns/op 仍更快。
+- **验证**：golden×3 字节级（`TestRuleCompat -count=3`）+ `-race` + full `go test ./...` 全绿。
+
+---
+
+以下为原始 R1 开发交接（**已执行完毕**，保留供回溯）。
 
 **第一步 = R1（最低风险，签名/alloc 全不变，先跑通）**：
 1. 建 `internal/validators` 包（依赖方向：root → internal/validators → internal/fieldval/reflectx，**勿反向**）。
