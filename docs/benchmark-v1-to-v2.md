@@ -101,14 +101,15 @@ flat-valid 成功路径三入口最新实测（同 i7-14700KF，go1.25.10，`_ex
 
 | 入口 | allocs/op | B/op | ns/op |
 |---|---:|---:|---:|
-| `Struct(&u).Validate()` | 12 | ~1150 | ~1580 |
+| `Struct(&u).Validate()` | 7 | ~769 | ~1320 |
 | `Check(&u)` | 6 | ~405 | ~1460 |
 | `CheckErr(&u)` | **0** | **0** | ~1155 |
 | go-playground `Struct(&u)`（v10.30.3，对照） | 8 | ~129 | ~750 |
 
 要点：
 
-- **只有 `CheckErr` 达 0 alloc**（端到端去装箱的成果，原为 3 allocs）。`Check` / `Struct().Validate()` 因要收集 `safeData`（供 `SafeData()`/`BindStruct`，每个通过字段须装箱进 `map[string]any`）仍为 6 / 12 allocs，本轮**不变**（功能取舍）。
+- **只有 `CheckErr` 达 0 alloc**（端到端去装箱的成果，原为 3 allocs）。`Check` 因要收集 `safeData`（供 `SafeData()`/`BindStruct`，每个通过字段须装箱进 `map[string]any`）仍为 6 allocs（功能取舍）。
+- **struct 源只读入口自动免收集**：`Struct().Validate()`/`ValidateErr()`/`ValidateE()`（只返回 bool/error、不暴露 safeData）现默认走 `skipCollect` 快路径，自动跳过 safeData 收集装箱，`Struct(&u).Validate()` 从 12 → **7 allocs**（写回 `UpdateSource` 开启时跨字段仍正确；`Check`/`ValidateR` 经 `needCollect` 强制收集，不受影响；map/form 源不跳过）。
 - 对照 go-playground（本基准 flat-valid 实测 8 allocs、nested 4 allocs）：gookit `CheckErr` 的 alloc(0) 低于其 8，但 go-playground 的 **ns/op 仍更快**（~750 vs ~1155）。
 - 设计与实施细节见 [`docs/perf/rv-native-validators-rfc.md`](perf/rv-native-validators-rfc.md)。
 

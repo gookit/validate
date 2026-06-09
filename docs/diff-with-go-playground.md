@@ -59,14 +59,16 @@
 
 | 入口 | allocs/op | B/op | ns/op | 说明 |
 |---|---:|---:|---:|---|
-| `validate.Struct(&u).Validate()` | 12 | ~1150 | ~1580 | 通用、非池化 |
+| `validate.Struct(&u).Validate()` | 7 | ~769 | ~1320 | 通用、非池化；**struct 源只读入口自动跳过 safeData 收集** |
 | `validate.Check(&u)` | 6 | ~405 | ~1460 | **推荐默认**，池化 + 收集结果 |
 | `validate.CheckErr(&u)` | **0** | **0** | ~1155 | opt-in 快速过/败，不收集结果，**RV-native 端到端去装箱** |
 | go-playground `validate.Struct(&u)` | 8 | ~129 | ~750 | 不收集结果，ns/op 仍最快（本基准实测） |
 
-> 关键认知：gookit 通过 RV-native 端到端去装箱（载体持 `reflect.Value`、`Src` 懒装箱、`valueCompare`/`required` 纯 RV），`CheckErr` 通过路径已达 **0 alloc**；`Check`/`Struct().Validate()` 因要收集 `safeData`（供 `SafeData()`/`BindStruct`，每个通过字段都要把值装箱进 `map[string]any`）仍为 6 / 12 allocs ——这是「收集结果」功能的固有成本（功能取舍，非实现差）。换言之：本基准 flat-valid 上 gookit `CheckErr` 的 alloc(0) **低于** go-playground(8)，但后者 ns/op 仍更快（~750 vs ~1155）；客观对照、不褒不贬（细节见 `docs/perf/rv-native-validators-rfc.md`）。
+> struct 源只读校验入口（`Validate`/`ValidateErr`/`ValidateE`，只返回 bool/error、不暴露 safeData）现默认走 `skipCollect` 快路径，自动免去 safeData 收集装箱，故 `Struct(&u).Validate()` 从 12 → **7** allocs（写回 `UpdateSource` 开启时跨字段仍正确；map/form 源不跳过）。要取清洗后数据 / 绑定结构体，用 `Check`/`ValidateR`（它们通过 `needCollect` 强制收集）。
+
+> 关键认知：gookit 通过 RV-native 端到端去装箱（载体持 `reflect.Value`、`Src` 懒装箱、`valueCompare`/`required` 纯 RV），`CheckErr` 通过路径已达 **0 alloc**；`Check` 因要收集 `safeData`（供 `SafeData()`/`BindStruct`，每个通过字段都要把值装箱进 `map[string]any`）仍为 6 allocs ——这是「收集结果」功能的固有成本（功能取舍，非实现差）。`Struct().Validate()` 这类只读入口不需要 safeData，已自动跳过收集降到 7 allocs。换言之：本基准 flat-valid 上 gookit `CheckErr` 的 alloc(0) **低于** go-playground(8)，但后者 ns/op 仍更快（~750 vs ~1155）；客观对照、不褒不贬（细节见 `docs/perf/rv-native-validators-rfc.md`）。
 >
-> gookit 这一轮的演进：flat-valid 成功路径 **23 → 12（非池化）/ 6（Check）/ 0（CheckErr）** allocs；完整数字见 `docs/plans/v2.0-perf-bench.txt`。
+> gookit 这一轮的演进：flat-valid 成功路径 **23 → 7（非池化 `Struct().Validate()`，struct 源只读自动免收集）/ 6（Check）/ 0（CheckErr）** allocs；完整数字见 `docs/plans/v2.0-perf-bench.txt`。
 
 ---
 
@@ -81,7 +83,7 @@
 2. **自定义校验器新增 `func(FieldCtx) bool` 形态**（typed、免 `reflect.Call`，直接拿 `reflect.Value`/字段名/args）。这是**附加形态**，与旧 `func(val any,...) bool` **并存**，旧签名零破坏。命名用 **`FieldCtx`**（本项目选定，非 go-playground 的 `FieldLevel`——后者源于其 StructLevel/FieldLevel 二分，gookit 无此二分；`FieldCtx` 表「字段校验上下文」，且不与内部 `fieldval.FieldValue` 撞名）。
 3. **端到端去装箱**：取值链经 `tryGetRV` + `NewRV` 懒构造载体、`Src` 懒装箱、`valueCompare`/`required` 纯 RV，`CheckErr` 通过路径借此达 **0 alloc**（对标 go-playground 的零分配理念）。
 
-> 注意「收集结果」主路径（`Check`/`Struct().Validate()`）的 6/12 allocs **不受此影响**：safeData 仍要把通过字段装箱进 `map[string]any`（功能取舍，RV 化省不掉）。RV-native 的 alloc 收益落在 `CheckErr`；主价值是**架构 + 扩展性 + CheckErr 对标 0**。
+> 注意「收集结果」主路径（`Check`）的 6 allocs **不受此影响**：safeData 仍要把通过字段装箱进 `map[string]any`（功能取舍，RV 化省不掉）。`Struct().Validate()` 这类只读入口因不暴露 safeData，已默认跳过收集（12 → 7 allocs）。RV-native 的零分配收益落在 `CheckErr`；主价值是**架构 + 扩展性 + CheckErr 对标 0**。
 
 ---
 
@@ -89,7 +91,7 @@
 
 - 只要「**校验通过/失败**」、追求极致零分配、或已在用 gin 默认校验 → **go-playground**。
 - 需要「**过滤净化 + 取清洗后数据/绑定结构体 + 多数据源（Map/请求/文件）+ 内置中文 i18n + 场景**」→ **gookit**。
-- 在 gookit 内部按需求选入口：要数据/绑定用 `Check`/`ValidateR`（`*ValidResult`）；只要过/败用 `CheckErr`（struct，最省分配）；map/程序化规则用 `New`/`Map` + `ValidateErr`/`ValidateR`。
+- 在 gookit 内部按需求选入口：要数据/绑定用 `Check`/`ValidateR`（`*ValidResult`，强制收集 safeData）；只要过/败用 `CheckErr`（struct，最省分配）或 `Struct().Validate()`/`ValidateErr()`（struct 源只读入口默认走 skipCollect 快路径，自动免收集）；map/程序化规则用 `New`/`Map` + `ValidateErr`/`ValidateR`。
 
 ---
 
