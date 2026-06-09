@@ -488,3 +488,60 @@ func FromURLValues(values url.Values) *FormData {
 func FromQuery(values url.Values) *FormData {
 	return FromURLValues(values)
 }
+
+// defaultFactory backs Check() with a package-level pool of reusable
+// *Validation instances. Reusing instances across calls amortizes the
+// per-instance construction cost; ValidResult decouples the result so the
+// instance can be returned to this pool right after Validate.
+var defaultFactory = NewFactory()
+
+// Check is the recommended default entry for validating a STRUCT. It returns a
+// *ValidResult carrying the outcome (errors + safe/filtered data), decoupled from
+// the validation instance.
+//
+// It is the pooled fast path: structPtr is validated on a *Validation reused from
+// a package-level pool (amortizing construct/parse cost), and that instance is
+// returned to the pool automatically — no manual lifecycle / Release. This
+// mirrors go-playground's validate.Struct(s) usage shape.
+//
+// Scope / choosing an entry:
+//   - struct, need data or binding  -> Check (this) — r.SafeData() / r.BindStruct(&out)
+//   - struct, only need pass/fail   -> CheckErr (fewer allocations)
+//   - map / programmatic rules / request -> New / Map / FromRequest, then ValidateR()
+//
+// structPtr MUST be a struct (or pointer to struct); other inputs return a result
+// whose Errors carries ErrInvalidData (same as validate.Struct). The pooling and
+// the safe-data write-back semantics it relies on are struct-only — hence Check /
+// CheckErr do not accept map/form sources.
+//
+//	r := validate.Check(&user)
+//	if r.Fail() { return r.Err() }
+//	r.BindSafeData(&out)
+func Check(structPtr any, scene ...string) *ValidResult {
+	return defaultFactory.Struct(structPtr, scene...).ValidateR()
+}
+
+// CheckErr is the opt-in FAST pass/fail entry for a STRUCT: it returns only an
+// error (nil = passed; otherwise a random field error via Errors.OneError).
+//
+// Like Check it is pooled, but it additionally SKIPS collecting safe/filtered
+// data and SKIPS building a *ValidResult — so it allocates the least of all
+// entries. Use it for hot "accept or reject" paths (e.g. middleware) where the
+// cleaned data and BindStruct are not needed.
+//
+// When you need the cleaned data or struct binding, use Check / ValidateR
+// instead. CheckErr is STRUCT-ONLY by design: its skip-collect fast path relies
+// on struct source value write-back (UpdateSource) for cross-field correctness,
+// which map/form sources do not provide — for those use New / Map + ValidateErr.
+//
+//	if err := validate.CheckErr(&user); err != nil {
+//		return err
+//	}
+func CheckErr(structPtr any, scene ...string) error {
+	v := defaultFactory.Struct(structPtr, scene...)
+	v.skipCollect = true // must precede Validate so applyField skips collection
+	v.Validate()
+	err := v.Errors.OneError()
+	v.Release()
+	return err
+}
