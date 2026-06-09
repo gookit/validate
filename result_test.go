@@ -432,6 +432,60 @@ func TestCheckErr_concurrent_mixedWithCheck(t *testing.T) {
 	wg.Wait()
 }
 
+// =============================================================================
+// scRV 缓存回归: struct 源同字段去重复用缓存的 reflect.Value(box-free, 免重读源),
+// 并闭合非指针结构体的窄边界(scVal 重读源可能拿旧值, scRV 即已提交值更稳)。
+// =============================================================================
+
+// ceMultiNoDef: 无 default/无 filter 的同字段多规则, 走纯 dedup(无需写回源)。
+// Age 的 min/max 两条规则: 第二条复用 scRV(第一条提交的字段 rv), box-free 免重读。
+type ceMultiNoDef struct {
+	Name string `validate:"required|min_len:3|max_len:10" json:"name"`
+	Age  int    `validate:"required|min:1|max:150" json:"age"`
+}
+
+// TestCheckErr_scRV_structDedup: struct 源同字段多规则去重(scRV 路径)指针与非指针
+// 入参都正确; 第二条规则用缓存 rv 校验, 值不丢失/不串味。
+func TestCheckErr_scRV_structDedup(t *testing.T) {
+	t.Run("ptr-valid", func(t *testing.T) {
+		assert.NoErr(t, CheckErr(&ceMultiNoDef{Name: "inhere", Age: 30}))
+	})
+	t.Run("nonptr-valid", func(t *testing.T) {
+		// 非指针入参: 无 default/filter 故无写回需求; Age 的 max:150 复用 scRV(30)。
+		assert.NoErr(t, CheckErr(ceMultiNoDef{Name: "inhere", Age: 30}))
+	})
+	t.Run("nonptr-max-fail", func(t *testing.T) {
+		// 第二条规则 max:150 用缓存 rv(999) 应失败 — 证明 scRV 携带的是真实字段值。
+		assert.Err(t, CheckErr(ceMultiNoDef{Name: "inhere", Age: 999}))
+	})
+	t.Run("nonptr-min-fail", func(t *testing.T) {
+		// Age=0 时 required 先失败; 用 1..150 区间外的 name 太短再触一条, 确认值正确。
+		assert.Err(t, CheckErr(ceMultiNoDef{Name: "ab", Age: 30}))
+	})
+}
+
+// TestCheckErr_scRV_nonPtr_vsCheck_differential: 非指针结构体入参下, CheckErr 与
+// Check 结果逐项一致(differential)。覆盖 default/filter(非指针不可写回 -> 两路同机制
+// 同样失败, 自洽)与纯多规则(两路同样通过)。scRV 让两路对"已提交值"的复用稳定一致。
+func TestCheckErr_scRV_nonPtr_vsCheck_differential(t *testing.T) {
+	cases := []func() any{
+		// 纯多规则(无写回): 两路应一致通过/失败。
+		func() any { return ceMultiNoDef{Name: "inhere", Age: 30} },
+		func() any { return ceMultiNoDef{Name: "inhere", Age: 999} },
+		func() any { return ceMultiNoDef{Name: "ab", Age: 30} },
+		// default/filter 非指针不可写回: 两路同机制 -> 结果一致(此处均为失败)。
+		func() any { return ceDefault{} },
+		func() any { return ceFilterMulti{Name: " Inhere ", Tag: " A " } },
+		func() any { return ceCrossField{Pwd: "abc123", Confirm: " abc123 "} },
+	}
+	for i, mk := range cases {
+		ceErr := CheckErr(mk())
+		ckRes := Check(mk())
+		assert.Eq(t, ckRes.IsOK(), ceErr == nil,
+			"nonptr case %d: CheckErr-ok=%v (err=%v) but Check.IsOK=%v", i, ceErr == nil, ceErr, ckRes.IsOK())
+	}
+}
+
 // TestCheckErr_nonStruct: 非 struct 入参应返回非 nil error(FromStruct 的 ErrInvalidData
 // 路径),不 panic。
 func TestCheckErr_nonStruct(t *testing.T) {

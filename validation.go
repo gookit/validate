@@ -119,6 +119,11 @@ type Validation struct {
 	skipCollect bool
 	scKey       string
 	scVal       any
+	// scRV 缓存 struct 源字段的已提交 reflect.Value(值类型, 3 字, box-free)。
+	// scIsRV=true 时用 scRV 做同字段去重(免重读源、不装箱), 且因是值类型不是
+	// *FieldValue 指针, 不会导致 getFieldCarrier 现造的载体逃逸到堆。
+	scRV   reflect.Value
+	scIsRV bool
 }
 
 // NewEmpty new validation instance, but not with data.
@@ -163,22 +168,25 @@ func (v *Validation) ensureFilteredData() {
 //
 // 逃逸约束(R4 关键): 绝不把载体指针 fv 存进 *Validation 这种逃逸结构,否则
 // escape 分析会把 getFieldCarrier 现造的所有载体标记为 escapes-to-heap,连带
-// struct 热路径载体逃逸(实测 +N allocs)。因此:
-//   - struct 源 skipCollect: 只记 scKey, scVal 置 nil。dedup 重读经 tryGetRV
-//     (box-free, 源已写回默认/过滤值), 不缓存载体。
+// struct 热路径载体逃逸(实测 +N allocs)。scRV 缓存的是 reflect.Value 值类型
+// (非 *FieldValue 指针), 故 box-free 且不致载体逃逸。因此:
+//   - struct 源 skipCollect: 缓存 fv.RV()(已提交值的 rv, box-free), scIsRV=true。
+//     同字段后续规则直接复用此 rv, 免重读源、不装箱, 且即为已提交值(闭合非指针写回边界)。
 //   - map/form 源 skipCollect: 值本就是 any, 记 scVal=fv.Src()(无额外装箱)。
 //   - 非 skipCollect: safeData 收集恒装箱(§9 的墙), 用 Src() 物化。
 func (v *Validation) commitValue(field string, fv *fieldval.FieldValue) {
 	if v.skipCollect {
 		v.scKey = field
 		if v.data != nil && v.data.Type() == sourceStruct {
-			// struct: 不主动物化(box-free)。但若本字段某校验器已物化过 Src(srcSet),
-			// 把这个已装箱的值传递给 scVal, 让同字段后续规则的载体复用(免重复装箱);
-			// 未物化(载体全程 RV-native, 如 Name/Email)则 scVal 留 nil, dedup 经源重读。
-			v.scVal, _ = fv.SrcIfSet()
+			// 缓存字段值的 reflect.Value(值类型, 3 字, 不装箱、不致载体逃逸)。
+			// fv.RV() 对 NewRV 载体=源字段 rv; 对默认/过滤重建的 New 载体=新值 rv。
+			// 同字段后续规则直接复用此 rv, 免重读源、box-free, 且即为已提交值(闭合非指针写回边界)。
+			v.scRV, v.scIsRV = fv.RV(), true
+			v.scVal = nil
 		} else {
 			// map/form: 值本就是 any, 记下以对同字段连续读去重(语义同改造前)。
-			v.scVal = fv.Src()
+			v.scVal, v.scIsRV = fv.Src(), false
+			v.scRV = reflect.Value{}
 		}
 		return
 	}
@@ -311,6 +319,8 @@ func (v *Validation) resetForReuse() {
 	v.skipCollect = false
 	v.scKey = ""
 	v.scVal = nil
+	v.scRV = reflect.Value{}
+	v.scIsRV = false
 }
 
 // TODO Config(opt *Options) *Validation
@@ -614,12 +624,18 @@ func (v *Validation) tryGet(key string) (val any, exist, zero bool) {
 	// CheckErr(skipCollect): safeData/filteredData 不收集,改用 1 槽对同字段连续读
 	// 去重;其它字段落源(源已写回默认/过滤值,故读到已解析值,见计划 §4)。
 	//
-	// struct 源: commitValue 仅在校验器已物化 Src 时缓存 scVal(否则留 nil), 命中
-	// 非 nil 即复用(免重复装箱);nil 则 TryGet 重读(updateValue 已写回源, box-free)。
-	// map/form 源: updateValue 不写源, 故 scVal 缓存是过滤/默认值的唯一来源, 命中即返回。
+	// struct 源: commitValue 缓存已提交字段的 scRV(box-free), 命中即装箱返回(any
+	// 消费者如跨字段规则本就需要 any, 此装箱可接受, 非 0-alloc 热路径; 且 scRV 即
+	// 已提交值, 比重读源更稳)。map/form 源: updateValue 不写源, scVal 缓存是过滤/
+	// 默认值的唯一来源, 命中即返回。两路都是"已提交值"载体, 与改造前语义一致。
 	if v.skipCollect {
-		if v.scKey == key && (v.data.Type() != sourceStruct || v.scVal != nil) {
-			return v.scVal, true, false
+		if v.scKey == key {
+			if v.scIsRV {
+				return v.scRV.Interface(), true, false
+			}
+			if v.scVal != nil {
+				return v.scVal, true, false
+			}
 		}
 		return v.data.TryGet(key)
 	}
@@ -698,13 +714,20 @@ func (v *Validation) getFieldCarrier(field string) fieldResolve {
 		// mirrors tryGet's nil return (val=nil, exist=false, zero=false).
 		r.exist, zero = false, false
 	} else if v.skipCollect {
-		// skipCollect dedup (mirrors tryGet):
-		//   - map/form 源: updateValue 不写源, scVal 是唯一来源 → 命中即包装。
-		//   - struct 源: 若上一规则已把已装箱值传到 scVal(commitValue 的 SrcIfSet),
-		//     直接复用 scVal(免重复装箱, 把 Age 的 min/max 两次装箱降为一次);否则
-		//     scVal=nil → 经 tryGetRV 重读(源已写回默认/过滤值, box-free, 不缓存载体避逃逸)。
-		if v.scKey == field && (v.data.Type() != sourceStruct || v.scVal != nil) {
-			r.val, r.exist, zero = v.scVal, true, false
+		// skipCollect dedup (mirrors tryGet), 命中同字段三路:
+		//   - struct 源: 复用缓存的已提交 rv(scIsRV), box-free、免重读源, useRV=true
+		//     让 applyField 经 NewRV 懒构造载体(把 Age 的 min/max 两次重读降为零次);
+		//     scRV 即已提交值, 比重读源更稳(闭合非指针写回边界)。
+		//   - map/form 源(或已物化的 scVal): updateValue 不写源, scVal 是唯一来源 → 命中即包装。
+		//   - 未命中: 经 resolveSource 落源(struct: tryGetRV; map/form: TryGet)。
+		if v.scKey == field {
+			if v.scIsRV {
+				r.rv, r.useRV, r.exist, zero = v.scRV, true, true, false
+			} else if v.scVal != nil {
+				r.val, r.exist, zero = v.scVal, true, false
+			} else {
+				r.rv, r.val, r.useRV, r.exist, zero = v.resolveSource(field)
+			}
 		} else {
 			r.rv, r.val, r.useRV, r.exist, zero = v.resolveSource(field)
 		}

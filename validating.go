@@ -256,8 +256,10 @@ func (r *Rule) applyField(field, name string, v *Validation) (stop bool) {
 		fv = fieldval.New(field, newVal)
 		// save filtered value. newVal 本就是已装箱 any, 直接记 scVal(无额外装箱),
 		// 让同字段后续规则的载体复用过滤后的值(struct 源也复用, 与 commitValue 一致)。
+		// scIsRV 置 false 走 scVal 路径(newVal 已装箱); 清 scRV 避免残留旧字段的 rv。
+		// 注: 校验通过后 commitValue 会以 box-free 的 fv.RV() 覆盖此缓存。
 		if v.skipCollect {
-			v.scKey, v.scVal = field, newVal
+			v.scKey, v.scVal, v.scIsRV, v.scRV = field, newVal, false, reflect.Value{}
 		} else {
 			v.ensureFilteredData() // lazy
 			v.filteredData[field] = newVal
