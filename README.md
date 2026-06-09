@@ -347,7 +347,7 @@ func main()  {
 Quick validate a struct (pooled internally, no manual lifecycle):
 
 - `Check(structPtr any, scene ...string) *ValidResult` — recommended default for struct validation. Stateless from the caller's side, internally pooled. Returns a `*ValidResult` carrying the cleaned/safe data and bind helpers.
-- `CheckErr(structPtr any, scene ...string) error` — **opt-in FAST entry** for "only need ok/err, no safe data / no binding". Pooled like `Check` but it **skips collecting safeData/filteredData** and does not build a `*ValidResult`, so it reaches fewer allocations (struct-valid: 3 allocs vs `Check` 6). Returns `nil` on pass, otherwise the first error.
+- `CheckErr(structPtr any, scene ...string) error` — **opt-in FAST entry** for "only need ok/err, no safe data / no binding". Pooled like `Check` but it **skips collecting safeData/filteredData** and does not build a `*ValidResult`, so it reaches fewer allocations (struct-valid: **0 allocs** vs `Check` 6, via RV-native end-to-end deboxing). Returns `nil` on pass, otherwise the first error.
 
 ```go
 // fast pass/fail (e.g. middleware reject) — no cleaned data needed

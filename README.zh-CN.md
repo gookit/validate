@@ -318,7 +318,7 @@ func main()  {
 快速校验 struct（内部池化，无需手动管理生命周期）：
 
 - `Check(structPtr any, scene ...string) *ValidResult` —— struct 校验的推荐默认入口。调用方无状态、内部自动池化复用实例，返回携带清洗/安全数据与绑定方法的 `*ValidResult`。
-- `CheckErr(structPtr any, scene ...string) error` —— **opt-in 快速过/败入口**，适用于"只要过/败、不取清洗数据、不绑定"的高频场景（如中间件快速 reject）。与 `Check` 一样池化，但**跳过收集 safeData/filteredData**、也不构建 `*ValidResult`，因此分配更少（struct 合法路径：3 allocs，对照 `Check` 6）。通过返回 `nil`，否则返回首个错误。
+- `CheckErr(structPtr any, scene ...string) error` —— **opt-in 快速过/败入口**，适用于"只要过/败、不取清洗数据、不绑定"的高频场景（如中间件快速 reject）。与 `Check` 一样池化，但**跳过收集 safeData/filteredData**、也不构建 `*ValidResult`，因此分配更少（struct 合法路径：**0 allocs**，对照 `Check` 6；经 RV-native 端到端去装箱）。通过返回 `nil`，否则返回首个错误。
 
 ```go
 // 快速过/败（如中间件 reject）—— 不需要清洗后的数据
