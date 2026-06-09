@@ -117,6 +117,9 @@ type Validation struct {
 	// 收集,改用 scKey/scVal 1 槽缓存对"同字段连续取值"做装箱去重(镜像 safeData 的
 	// 去重职责)。详见 docs/perf/checkerr-impl-plan.md。
 	skipCollect bool
+	// needCollect 由 ValidateR/Check 置真以强制收集 safeData/filteredData,压过
+	// struct 源在 Validate() 的自动 skipCollect 快路径(它们要对外暴露 safeData)。
+	needCollect bool
 	scKey       string
 	scVal       any
 	// scRV 缓存 struct 源字段的已提交 reflect.Value(值类型, 3 字, box-free)。
@@ -317,6 +320,7 @@ func (v *Validation) resetForReuse() {
 	// --- CheckErr(skipCollect) 状态:必须清,否则 CheckErr 用过的池实例被 Check
 	// 复用时会残留 skipCollect=true 导致 Check 收不到 safeData。 ---
 	v.skipCollect = false
+	v.needCollect = false
 	v.scKey = ""
 	v.scVal = nil
 	v.scRV = reflect.Value{}

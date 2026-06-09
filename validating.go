@@ -95,6 +95,9 @@ func (v *Validation) ValidateE(scene ...string) Errors {
 // out and it may have been returned to a pool). When you only need the boolean /
 // error face, use Validate() bool + v.Errors instead.
 func (v *Validation) ValidateR(scene ...string) *ValidResult {
+	// force safeData/filteredData collection: ValidateR/Check expose them, so the
+	// struct-source auto skipCollect in Validate() must NOT trigger here.
+	v.needCollect = true
 	v.Validate(scene...)
 
 	// move (not copy) the result out of v into the standalone result object.
@@ -117,6 +120,15 @@ func (v *Validation) Validate(scene ...string) bool {
 	// has been validated OR has error
 	if v.hasValidated || v.shouldStop() {
 		return v.IsSuccess()
+	}
+
+	// 透明优化:struct 源(且写回开启,跨字段正确)在不需要 safeData 的入口(Validate/
+	// ValidateErr/ValidateE)自动走 skipCollect 快路径,免去 safeData 收集装箱。
+	// ValidateR/Check 通过 needCollect 强制收集(它们要暴露 safeData)。map/form 不跳过
+	// (filter+跨字段无写回的已知边界)。
+	if !v.needCollect && !v.skipCollect && v.data != nil &&
+		v.data.Type() == sourceStruct && v.UpdateSource {
+		v.skipCollect = true
 	}
 
 	// init scene info
