@@ -1,7 +1,7 @@
 github.com/gookit/filter v1.2.3 h1:Zo7cBOtsVzAoa/jtf+Ury6zlsbJXqInFdUpbbnB2vMM=
 github.com/gookit/filter v1.2.3/go.mod h1:nFLJcOV8dRgS1iiX23gUQgmHUhpuS40qCvAGgIvA1pM=
-github.com/gookit/goutil v0.7.6 h1:700ZP6QPWhw5ms7X13JH9fUs4LTyYMmncFFMGpK73ns=
-github.com/gookit/goutil v0.7.6/go.mod h1:vJS9HXctYTCLtCsZot5L5xF+O1oR17cDYO9R0HxBmnU=
+github.com/gookit/goutil v0.8.0 h1:efZWxfesXw8+5tQfTfRMSIC6A0ax527/H+A/aIiaSrw=
+github.com/gookit/goutil v0.8.0/go.mod h1:vJS9HXctYTCLtCsZot5L5xF+O1oR17cDYO9R0HxBmnU=
 golang.org/x/sync v0.11.0 h1:GGz8+XQP4FvTTrjZPzNKTMFtSXH80RAzG+5ghFPgK9w=
 golang.org/x/sync v0.11.0/go.mod h1:Czt+wKu1gCyEFDUtn0jG5QVvpJ6rzVqr5aXyt9drQfk=
 golang.org/x/sys v0.30.0 h1:QjkSwP/36a20jFYWkSue1YwXzLmsV5Gfq7Eiy72C1uc=
