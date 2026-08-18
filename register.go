@@ -1,6 +1,11 @@
 package validate
 
-import "reflect"
+import (
+	"reflect"
+	"sync"
+)
+
+var globalConfigMu sync.RWMutex
 
 var (
 	// global validators. contains built-in and user custom

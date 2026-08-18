@@ -418,7 +418,10 @@ func (v *Validation) validatorMeta(name string) *funcMeta {
 	}
 
 	// from global validators
-	if fm, ok := validatorMetas[name]; ok {
+	globalConfigMu.RLock()
+	fm, ok := validatorMetas[name]
+	globalConfigMu.RUnlock()
+	if ok {
 		return fm
 	}
 
@@ -465,7 +468,9 @@ func (v *Validation) HasValidator(name string) bool {
 	}
 
 	// global validators
+	globalConfigMu.RLock()
 	_, ok := validatorMetas[name]
+	globalConfigMu.RUnlock()
 	return ok
 }
 
@@ -474,9 +479,11 @@ func (v *Validation) Validators(withGlobal bool) map[string]int8 {
 	mp := make(map[string]int8, len(v.validators)+len(ctxValidatorBuilders))
 
 	if withGlobal {
+		globalConfigMu.RLock()
 		for name, typ := range validators {
 			mp[name] = typ
 		}
+		globalConfigMu.RUnlock()
 	}
 
 	// include the build-in context validators (always available, bound

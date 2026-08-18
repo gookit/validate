@@ -156,8 +156,11 @@ func ValidatorName(name string) string {
 
 // AddValidators to the global validators map
 func AddValidators(m map[string]any) {
+	globalConfigMu.Lock()
+	defer globalConfigMu.Unlock()
+
 	for name, checkFunc := range m {
-		AddValidator(name, checkFunc)
+		addGlobalValidator(name, checkFunc)
 	}
 }
 
@@ -170,6 +173,12 @@ func AddValidators(m map[string]any) {
 //		return true
 //	})
 func AddValidator(name string, checkFunc any) {
+	globalConfigMu.Lock()
+	defer globalConfigMu.Unlock()
+	addGlobalValidator(name, checkFunc)
+}
+
+func addGlobalValidator(name string, checkFunc any) {
 	fv := checkValidatorFunc(name, checkFunc)
 
 	validators[name] = validatorTypeCustom
@@ -179,7 +188,14 @@ func AddValidator(name string, checkFunc any) {
 
 // Validators get all validator names
 func Validators() map[string]int8 {
-	return validators
+	globalConfigMu.RLock()
+	defer globalConfigMu.RUnlock()
+
+	cp := make(map[string]int8, len(validators))
+	for name, typ := range validators {
+		cp[name] = typ
+	}
+	return cp
 }
 
 /*************************************************************
