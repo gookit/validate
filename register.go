@@ -6,6 +6,20 @@ import (
 )
 
 var globalConfigMu sync.RWMutex
+var globalFrozen bool
+
+// FreezeGlobal prevents further changes to package-level configuration.
+func FreezeGlobal() {
+	globalConfigMu.Lock()
+	globalFrozen = true
+	globalConfigMu.Unlock()
+}
+
+func panicIfGlobalFrozen() {
+	if globalFrozen {
+		panic("validate: global configuration is frozen")
+	}
+}
 
 var (
 	// global validators. contains built-in and user custom

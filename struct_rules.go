@@ -146,9 +146,10 @@ func buildRuleTemplate(rt reflect.Type) *ruleTemplate {
 	// keep only custom messages (those differing from the builtin defaults),
 	// matching the dimension captured by the golden regression snapshot.
 	if len(tv.trans.messages) > 0 {
+		globalMessages := CopyGlobalMessages()
 		custom := make(map[string]string)
 		for k, val := range tv.trans.messages {
-			if base, ok := builtinMessages[k]; !ok || base != val {
+			if base, ok := globalMessages[k]; !ok || base != val {
 				custom[k] = val
 			}
 		}

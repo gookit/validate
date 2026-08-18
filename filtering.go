@@ -17,13 +17,24 @@ var (
 
 // AddFilters add global filters
 func AddFilters(m map[string]any) {
+	globalConfigMu.Lock()
+	defer globalConfigMu.Unlock()
+	panicIfGlobalFrozen()
+
 	for name, filterFunc := range m {
-		AddFilter(name, filterFunc)
+		addGlobalFilter(name, filterFunc)
 	}
 }
 
 // AddFilter add global filter to the pkg.
 func AddFilter(name string, filterFunc any) {
+	globalConfigMu.Lock()
+	defer globalConfigMu.Unlock()
+	panicIfGlobalFrozen()
+	addGlobalFilter(name, filterFunc)
+}
+
+func addGlobalFilter(name string, filterFunc any) {
 	if filterValues == nil {
 		filterValues = make(map[string]reflect.Value)
 	}
@@ -58,7 +69,10 @@ func (v *Validation) FilterFuncValue(name string) reflect.Value {
 		return fv
 	}
 
-	if fv, ok := filterValues[name]; ok {
+	globalConfigMu.RLock()
+	fv, ok := filterValues[name]
+	globalConfigMu.RUnlock()
+	if ok {
 		return fv
 	}
 
@@ -161,7 +175,7 @@ func (r *FilterRule) Apply(v *Validation) (err error) {
 
 			// dont need check default value
 			if !v.CheckDefault {
-				v.ensureSafeData() // lazy
+				v.ensureSafeData()         // lazy
 				v.safeData[field] = newVal // save validated value.
 				continue
 			}

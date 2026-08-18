@@ -28,6 +28,10 @@ var hasCustomTypes atomic.Bool
 // 按传入样例的精确 reflect.Type 存储,不自动解指针:传 sql.NullString{} 只
 // 匹配该值类型;若要同时匹配指针,需另外传入 &sql.NullString{} 样例。
 func AddCustomType(fn CustomTypeFunc, types ...any) {
+	globalConfigMu.Lock()
+	defer globalConfigMu.Unlock()
+	panicIfGlobalFrozen()
+
 	if fn == nil || len(types) == 0 {
 		return
 	}
@@ -44,6 +48,10 @@ func AddCustomType(fn CustomTypeFunc, types ...any) {
 // ResetCustomTypes 清空所有已注册的自定义类型提取器并复位门控(测试/清理用,
 // 参照 ResetTypeCache)。通过 Range+Delete 实现以保持并发安全。
 func ResetCustomTypes() {
+	globalConfigMu.Lock()
+	defer globalConfigMu.Unlock()
+	panicIfGlobalFrozen()
+
 	customTypes.Range(func(key, _ any) bool {
 		customTypes.Delete(key)
 		return true

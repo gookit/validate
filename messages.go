@@ -270,6 +270,10 @@ var builtinMessages = map[string]string{
 
 // AddGlobalMessages add global builtin messages
 func AddGlobalMessages(mp map[string]string) {
+	globalConfigMu.Lock()
+	defer globalConfigMu.Unlock()
+	panicIfGlobalFrozen()
+
 	for name, msg := range mp {
 		builtinMessages[name] = msg
 	}
@@ -279,19 +283,30 @@ func AddGlobalMessages(mp map[string]string) {
 func AddBuiltinMessages(mp map[string]string) { AddGlobalMessages(mp) }
 
 // BuiltinMessages get builtin messages
-func BuiltinMessages() map[string]string { return builtinMessages }
+func BuiltinMessages() map[string]string { return CopyGlobalMessages() }
 
 // CopyGlobalMessages copy get builtin messages
 func CopyGlobalMessages() map[string]string {
-	cp := make(map[string]string, len(builtinMessages))
-	for name, msg := range builtinMessages {
+	globalConfigMu.RLock()
+	defer globalConfigMu.RUnlock()
+	return copyMessages(builtinMessages)
+}
+
+func copyMessages(messages map[string]string) map[string]string {
+	cp := make(map[string]string, len(messages))
+	for name, msg := range messages {
 		cp[name] = msg
 	}
 	return cp
 }
 
 // SetBuiltinMessages override set builtin messages
-func SetBuiltinMessages(mp map[string]string) { builtinMessages = mp }
+func SetBuiltinMessages(mp map[string]string) {
+	globalConfigMu.Lock()
+	defer globalConfigMu.Unlock()
+	panicIfGlobalFrozen()
+	builtinMessages = copyMessages(mp)
+}
 
 /*************************************************************
  * Error messages translator
@@ -345,7 +360,9 @@ func (t *Translator) lookupMessage(key string) (string, bool) {
 			return msg, true
 		}
 	}
+	globalConfigMu.RLock()
 	msg, ok := builtinMessages[key]
+	globalConfigMu.RUnlock()
 	return msg, ok
 }
 

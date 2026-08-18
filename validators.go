@@ -158,6 +158,7 @@ func ValidatorName(name string) string {
 func AddValidators(m map[string]any) {
 	globalConfigMu.Lock()
 	defer globalConfigMu.Unlock()
+	panicIfGlobalFrozen()
 
 	for name, checkFunc := range m {
 		addGlobalValidator(name, checkFunc)
@@ -175,6 +176,7 @@ func AddValidators(m map[string]any) {
 func AddValidator(name string, checkFunc any) {
 	globalConfigMu.Lock()
 	defer globalConfigMu.Unlock()
+	panicIfGlobalFrozen()
 	addGlobalValidator(name, checkFunc)
 }
 

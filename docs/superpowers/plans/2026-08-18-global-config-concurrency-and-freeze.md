@@ -167,13 +167,14 @@ Expected: 一个只包含阶段一代码、测试和进度更新的提交。
 - Modify: `validators.go`
 - Modify: `filtering.go:12-66`
 - Modify: `messages.go:271-294,342-350`
+- Modify: `struct_rules.go:146-157`
 - Modify: `register_type.go:30-52`
 - Modify: `global_config_test.go`
 - Modify: `docs/superpowers/plans/2026-08-18-global-config-concurrency-and-freeze.md`
 
-- [ ] **Step 1: 写入子进程冻结测试**
+- [x] **Step 1: 写入消息隔离、并发和子进程冻结测试**
 
-扩展 `global_config_test.go` 的导入。父测试启动当前测试二进制的单一 helper；子进程验证幂等冻结、全部全局修改 API panic，以及实例级配置仍可用：
+先验证消息输入/输出 map 隔离，并发触发全局消息更新和静态规则模板构建；再由父测试启动当前测试二进制的单一 helper，验证幂等冻结、全部全局修改 API panic，以及实例级配置仍可用：
 
 ~~~go
 func TestFreezeGlobal(t *testing.T) {
@@ -204,13 +205,13 @@ func TestFreezeGlobal(t *testing.T) {
 }
 ~~~
 
-- [ ] **Step 2: 运行测试证明 API 尚不存在**
+- [x] **Step 2: 运行测试证明 API 尚不存在**
 
 Run: `go test -run ^TestFreezeGlobal$ .`
 
 Expected: 编译失败并包含 `undefined: FreezeGlobal`。
 
-- [ ] **Step 3: 实现冻结状态和统一修改边界**
+- [x] **Step 3: 实现冻结状态和统一修改边界**
 
 在 `register.go` 增加：
 
@@ -253,9 +254,11 @@ func CopyGlobalMessages() map[string]string {
 
 `AddGlobalMessages`、`SetBuiltinMessages` 获取写锁并检查冻结；`SetBuiltinMessages` 手工复制输入 map 后保存。`Translator.lookupMessage` 只在读取全局 `builtinMessages` 时获取读锁。`AddBuiltinMessages` 继续复用 `AddGlobalMessages`。
 
+`struct_rules.go` 构建静态规则模板时通过 `CopyGlobalMessages()` 获取一次快照，再完成自定义消息差异比较，避免绕过消息同步边界。
+
 `register_type.go` 的 `AddCustomType`、`ResetCustomTypes` 获取同一写锁并检查冻结；底层 `sync.Map` 和 `atomic.Bool` 保持不变。
 
-- [ ] **Step 4: 格式化并验证冻结测试转绿**
+- [x] **Step 4: 格式化并验证冻结测试转绿**
 
 Run:
 
@@ -267,18 +270,18 @@ docker run --rm --mount "type=bind,source=$PWD,target=/src,readonly" -w /src gol
 
 Expected: 全部 PASS，无 data race。
 
-- [ ] **Step 5: 执行阶段二全量验证**
+- [x] **Step 5: 执行阶段二全量验证**
 
 Run: `go test ./...`，然后运行 `go vet ./...`。
 
 Expected: 全部退出码为 0。
 
-- [ ] **Step 6: 更新全部 checkbox 并提交阶段二**
+- [x] **Step 6: 更新全部 checkbox 并提交阶段二**
 
 Run:
 
 ~~~powershell
-git add -- register.go validators.go filtering.go messages.go register_type.go global_config_test.go docs/superpowers/plans/2026-08-18-global-config-concurrency-and-freeze.md
+git add -- register.go validators.go filtering.go messages.go struct_rules.go register_type.go global_config_test.go docs/superpowers/plans/2026-08-18-global-config-concurrency-and-freeze.md
 git commit -m "feat(validate): add explicit global configuration freeze"
 ~~~
 
