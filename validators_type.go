@@ -30,7 +30,7 @@ func IsUint(val any) bool {
 	case uint, uint8, uint16, uint32, uint64:
 		return true
 	case string:
-		_, err := strconv.ParseUint(typVal, 10, 32)
+		_, err := strconv.ParseUint(typVal, 10, 64)
 		return err == nil
 	}
 	return false

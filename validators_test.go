@@ -758,3 +758,17 @@ func TestDateCheck(t *testing.T) {
 	is.False(AfterOrEqualDate("invalid", "2018-10-26"))
 	is.False(AfterOrEqualDate("2018-10-25", "invalid"))
 }
+
+func TestIsUintFullRange(t *testing.T) {
+	for _, value := range []string{"4294967295", "4294967296", "18446744073709551615"} {
+		t.Run(value, func(t *testing.T) {
+			assert.True(t, IsUint(value))
+			v := Map(map[string]any{"number": value})
+			v.StringRule("number", "uint")
+			assert.True(t, v.Validate())
+		})
+	}
+	for _, value := range []string{"-1", "18446744073709551616", "1.5", ""} {
+		assert.False(t, IsUint(value))
+	}
+}
