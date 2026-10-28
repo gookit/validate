@@ -428,7 +428,7 @@ func (d *StructData) tryGetRV(field string) (fv reflect.Value, exist, zero bool)
 				index, _ := strconv.Atoi(fieldNode)
 				fv = fv.Index(index)
 			case reflect.Map:
-				fv = fv.MapIndex(reflect.ValueOf(fieldNode))
+				fv = structMapValue(fv, fieldNode)
 			case reflect.Struct:
 				fv = fv.FieldByName(fieldNode)
 			default: // no sub-value, should never have happened
@@ -515,6 +515,38 @@ func (d *StructData) tryGetRV(field string) (fv reflect.Value, exist, zero bool)
 	return
 }
 
+// structMapValue resolves a string or integer path segment using the map's
+// actual key type, including defined types. Keep string lookups into compatible
+// interface-keyed maps. Respect integer widths so invalid or overflowing
+// segments cannot accidentally select a different entry.
+func structMapValue(value reflect.Value, segment string) reflect.Value {
+	keyType := value.Type().Key()
+	key := reflect.ValueOf(segment)
+	if key.Type().AssignableTo(keyType) {
+		return value.MapIndex(key)
+	}
+	key = reflect.New(keyType).Elem()
+	switch keyType.Kind() {
+	case reflect.String:
+		key.SetString(segment)
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		number, err := strconv.ParseInt(segment, 10, keyType.Bits())
+		if err != nil {
+			return reflect.Value{}
+		}
+		key.SetInt(number)
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		number, err := strconv.ParseUint(segment, 10, keyType.Bits())
+		if err != nil {
+			return reflect.Value{}
+		}
+		key.SetUint(number)
+	default:
+		return reflect.Value{}
+	}
+	return value.MapIndex(key)
+}
+
 // Set value by field name.
 //
 // Notice: `StructData.src` the incoming struct must be a pointer to set the value
@@ -585,7 +617,10 @@ func (d *StructData) Set(field string, val any) (newVal any, err error) {
 
 					fv = fv.Index(index)
 				case reflect.Map:
-					fv = fv.MapIndex(reflect.ValueOf(fieldNode))
+					fv = structMapValue(fv, fieldNode)
+					if !fv.IsValid() {
+						return nil, ErrNoField
+					}
 				default:
 					fv = fv.FieldByName(fieldNode)
 				}

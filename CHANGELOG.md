@@ -1,5 +1,11 @@
 # CHANGE LOG
 
+## Unreleased
+
+- Resolve string and integer map keys using their declared type during nested
+  struct validation and filter/default write-back, including defined key types.
+  Invalid or overflowing integer path segments are treated as missing entries.
+
 ## v2.0.0
 
 v2.0 keeps breaking changes **intentionally minimal** (5 items). Core API,
