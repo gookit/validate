@@ -706,7 +706,14 @@ func TestEnumAndNotIn(t *testing.T) {
 
 	is.False(Enum(nil, []int{}))
 	is.False(Enum('a', []int{}))
-	is.False(Enum([]int{2}, []int{2, 3}))
+
+	// a slice value passes when every element is in the enum (#266)
+	is.True(Enum([]int{2}, []int{2, 3}))
+	is.True(Enum([]int{2, 3}, []int{2, 3}))
+	is.False(Enum([]int{2, 9}, []int{2, 3}))
+	is.False(NotIn([]int{2, 9}, []int{2, 3}))
+	is.True(NotIn([]int{8, 9}, []int{2, 3}))
+
 	is.False(Enum(12, []string{"a", "b"}))
 	is.False(Enum(12, nil))
 	is.False(Enum(12, map[int]int{2: 3}))

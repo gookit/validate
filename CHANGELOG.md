@@ -6,6 +6,12 @@
   struct validation and filter/default write-back, including defined key types.
   Invalid or overflowing integer path segments are treated as missing entries.
 - Treat out-of-range slice and array indexes in struct field paths as missing instead of panicking.
+- `in`/`not_in` now support a slice or array value: `in:go,php` passes when every element is in the
+  enumeration, `not_in:go,php` passes when no element is (a non-empty slice used to fail `in` and pass
+  `not_in` regardless of its elements, see #266). A nil element is ignored.
+- The `min`/`max` (and `gt`/`gte`/`lt`/`lte`/`between`) comments and the README now say that a string
+  value is compared lexicographically, not by its length — `min:3` passes for "ab"; use
+  `min_len`/`max_len` for a length check. A test pins that behaviour.
 
 ## v2.0.0
 

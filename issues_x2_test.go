@@ -737,16 +737,20 @@ func TestIssue_277_v2(t *testing.T) {
 
 // https://github.com/gookit/validate/v2/issues/266 Can `in` be used with slice in tag validation?
 //
-// partial(答案=用 .* 程序化写法): 结构体 tag 里的 in(enum)不会逐元素校验切片, 而是把整个
-// []string 当单值丢给 Enum -> ConvToBasicType 失败 -> 整体报错。要逐元素校验需用程序化的
-// "S.*" 规则(StringRule), tag 方式不支持。
+// tag 里的 in(enum) 对切片是**逐元素**校验: 每个元素都在枚举中才通过(自 #266 修复起)。
+// 只需要校验个别元素时, 仍可用程序化的 "S.*" 规则(StringRule)。
 func TestIssue_266_v2(t *testing.T) {
-	t.Run("tag 'in' on []string checks whole slice and fails (not per-element)", func(t *testing.T) {
+	t.Run("tag 'in' on []string checks every element", func(t *testing.T) {
 		type A struct {
 			S []string `validate:"required|in:a,b"`
 		}
-		// 两个元素都合法, 但 in 作用于整个切片 -> 仍失败
+		// 两个元素都合法
 		v := validate.Struct(&A{S: []string{"a", "b"}})
+		v.StopOnError = false
+		assert.True(t, v.Validate())
+
+		// 有一个元素不合法 -> 整体失败
+		v = validate.Struct(&A{S: []string{"a", "x"}})
 		v.StopOnError = false
 		assert.False(t, v.Validate())
 		assert.ErrSubMsg(t, v.Errors, "must be in the enum")
@@ -777,7 +781,7 @@ func TestIssue_265_v2(t *testing.T) {
 	}
 	run := func() bool { return validate.Struct(&Foo{Age: 0}).Validate() }
 
-	got1 := run() // CheckZero=false(默认)
+	got1 := run()                                                              // CheckZero=false(默认)
 	validate.Config(func(opt *validate.GlobalOption) { opt.CheckZero = true }) //nolint:staticcheck // intentionally exercise deprecated no-op
 	defer validate.ResetOption()
 	got2 := run() // CheckZero=true
@@ -844,6 +848,7 @@ func (issue203Bar) CustomCheck(val string) bool { return val == "OK" }
 //   - 非 required 字段对**非空**值, filter/validator **照常运行**, 非法值被拒;
 //   - 仅当值为**空(零值/"")**时, 非 required 规则按 SkipOnEmpty 跳过(视为"可选未填");
 //   - 若空也要拒, 加 required(或 Rule.SetSkipEmpty(false) / 关 SkipOnEmpty)。
+//
 // 另: 楼主原始 bug(required|int|between 对 Name=4 误报 "required to not be empty")在 v2.0
 // 已修复 —— Name=4 正常通过。
 func TestIssue_203_v2(t *testing.T) {

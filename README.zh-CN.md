@@ -794,16 +794,16 @@ func main()  {
 `string/isString`  |  检查值是字符串类型，同时支持长度检查 `"string"` `"string:2"` `"string:2,12"`
 `float/isFloat`  |  检查值是 float(`floatX`) 类型
 `slice/isSlice`  |  检查值是 slice 类型(`[]intX` `[]uintX` `[]byte` `[]string` 等).
-`in/enum`  |  检查值()是否在给定的枚举列表(`[]string`, `[]intX`, `[]uintX`)中
-`not_in/notIn`  |  检查值不是在给定的枚举列表中
+`in/enum`  |  检查值是否在给定的枚举列表(`[]string`, `[]intX`, `[]uintX`)中。切片/数组值（`[]string`、`[]intX` 等）在**每个元素**都在枚举中时通过
+`not_in/notIn`  |  检查值不是在给定的枚举列表中。对切片/数组值，**任何一个元素**都不在枚举中才通过
 `contains`  |  检查输入值(`string` `array/slice` `map`)是否包含给定的值
 `not_contains/notContains`  |  检查输入值(`string` `array/slice` `map`)是否不包含给定值
 `string_contains/stringContains`  |  检查输入的 `string` 值是否不包含给定sub-string值
 `starts_with/startsWith`  |  检查输入的 `string` 值是否以给定sub-string开始
 `ends_with/endsWith`  |  检查输入的 `string` 值是否以给定sub-string结束
 `range/between`  |  检查值是否为数字且在给定范围内
-`max/lte`  |  检查输入值小于或等于给定值
-`min/gte`  |  检查输入值大于或等于给定值(for `intX` `uintX` `floatX`)
+`max/lte`  |  检查输入值小于或等于给定值。字符串值按**字典序**比较，长度检查请用 `max_len`
+`min/gte`  |  检查输入值大于或等于给定值。字符串值按**字典序**比较，长度检查请用 `min_len`
 `eq/equal/isEqual`  |  检查输入值是否等于给定值
 `ne/notEq/notEqual`  |  检查输入值是否不等于给定值
 `lt/lessThan`  |  检查值小于给定大小(use for `intX` `uintX` `floatX`)

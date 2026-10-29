@@ -869,16 +869,16 @@ validator/aliases | description
 `string/isString`  |  Check value is string type.
 `float/isFloat`  |  Check value is float(`floatX`) type
 `slice/isSlice`  |  Check value is slice type(`[]intX` `[]uintX` `[]byte` `[]string` ...).
-`in/enum`  |  Check if the value is in the given enumeration `"in:a,b"`
-`not_in/notIn`  |  Check if the value is not in the given enumeration `"contains:b"`
+`in/enum`  |  Check if the value is in the given enumeration `"in:a,b"`. A slice/array value (`[]string`, `[]intX` ...) passes when every element is in the enumeration.
+`not_in/notIn`  |  Check if the value is not in the given enumeration `"not_in:b"`. For a slice/array value no element may be in the enumeration.
 `contains`  |  Check if the input value contains the given value
 `not_contains/notContains`  |  Check if the input value not contains the given value
 `string_contains/stringContains`  |  Check if the input string value is contains the given sub-string
 `starts_with/startsWith`  |  Check if the input string value is starts with the given sub-string
 `ends_with/endsWith`  |  Check if the input string value is ends with the given sub-string
 `range/between`  |  Check that the value is a number and is within the given range
-`max/lte`  |  Check value is less than or equal to the given value
-`min/gte`  |  Check value is greater than or equal to the given value(for `intX` `uintX` `floatX`)
+`max/lte`  |  Check value is less than or equal to the given value. A string value is compared lexicographically, use `max_len` for a length check.
+`min/gte`  |  Check value is greater than or equal to the given value. A string value is compared lexicographically, use `min_len` for a length check.
 `eq/equal/isEqual`  |  Check that the input value is equal to the given value
 `ne/notEq/notEqual`  |  Check that the input value is not equal to the given value
 `lt/lessThan`  |  Check value is less than the given value(use for `intX` `uintX` `floatX`)
