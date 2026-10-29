@@ -76,15 +76,9 @@ func eachBasicValue(fl *fieldval.FieldValue, fn func(v any) bool) bool {
 	}
 
 	for i := 0; i < rv.Len(); i++ {
-		ev := rv.Index(i)
-		// unwrap an element pointer, a nil one has no value to check
-		for ev.Kind() == reflect.Ptr {
-			if ev.IsNil() {
-				ev = reflect.Value{}
-				break
-			}
-			ev = ev.Elem()
-		}
+		// JSON arrays hold their elements in interfaces. Unwrap those as well
+		// as pointers; nil elements have no value to check.
+		ev := derefRV(rv.Index(i))
 		if !ev.IsValid() {
 			continue
 		}
