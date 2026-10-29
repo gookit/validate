@@ -16,7 +16,19 @@
   field `MD5`, `required_without_all:md5,url` and `Get("md5")` resolve it (before, only the exact
   `MD5` worked, and a cross-field rule treated the name as an empty value, see #347).
 - The `in`/`not_in` rules report an unsupported map value with a clear message instead of
-  "value must be in the enum [...]".
+  "value must be in the enum [...]". A map element of a slice value is reported the same way.
+- `in`/`not_in` now check a JSON array: JSON decodes an array into `[]any`, whose elements
+  used to stay wrapped in their interface and failed the rule (`{"tags":["go","php"]}` did
+  not pass `in:go,php`). Elements are unwrapped and a `nil` element is ignored (#353).
+- `in`/`not_in` now compare a JSON number: it decodes into a `float64`, so `1` matches
+  `in:1,2` (it used to fail); a fractional number such as `1.5` still fails.
+- The `notIn` rule no longer formats its enum list with `%d`, which rendered as
+  "must not be in the given enum list [%!d(string=go) %!d(string=php)]"; it now prints
+  "[go php]" (also fixed in the zh-CN, zh-TW and ru-RU messages).
+- `required_unless` now requires the value when the other field is missing: an absent field
+  cannot equal any of the listed values, so the exemption no longer applies (#354). Before,
+  a missing (or unset) dependency field silently exempted the field under validation. A
+  non-empty value and the existent numeric-zero behaviour are unchanged.
 
 ## v2.0.0
 

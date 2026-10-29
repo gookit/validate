@@ -869,8 +869,8 @@ validator/aliases | description
 `string/isString`  |  Check value is string type.
 `float/isFloat`  |  Check value is float(`floatX`) type
 `slice/isSlice`  |  Check value is slice type(`[]intX` `[]uintX` `[]byte` `[]string` ...).
-`in/enum`  |  Check if the value is in the given enumeration `"in:a,b"`. A slice/array value (`[]string`, `[]intX` ...) passes when every element is in the enumeration.
-`not_in/notIn`  |  Check if the value is not in the given enumeration `"not_in:b"`. For a slice/array value no element may be in the enumeration.
+`in/enum`  |  Check if the value is in the given enumeration `"in:a,b"`. A slice/array value (`[]string`, `[]intX` ...) passes when every element is in the enumeration. A JSON array (`[]any`, `null` elements are ignored) and a JSON number (`float64`, compare an integral value like `1`) are supported too.
+`not_in/notIn`  |  Check if the value is not in the given enumeration `"not_in:b"`. For a slice/array value no element may be in the enumeration. A JSON array and a JSON number are supported the same way as `in`.
 `contains`  |  Check if the input value contains the given value
 `not_contains/notContains`  |  Check if the input value not contains the given value
 `string_contains/stringContains`  |  Check if the input string value is contains the given sub-string

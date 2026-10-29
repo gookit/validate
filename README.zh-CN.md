@@ -794,8 +794,8 @@ func main()  {
 `string/isString`  |  检查值是字符串类型，同时支持长度检查 `"string"` `"string:2"` `"string:2,12"`
 `float/isFloat`  |  检查值是 float(`floatX`) 类型
 `slice/isSlice`  |  检查值是 slice 类型(`[]intX` `[]uintX` `[]byte` `[]string` 等).
-`in/enum`  |  检查值是否在给定的枚举列表(`[]string`, `[]intX`, `[]uintX`)中。切片/数组值（`[]string`、`[]intX` 等）在**每个元素**都在枚举中时通过
-`not_in/notIn`  |  检查值不是在给定的枚举列表中。对切片/数组值，**任何一个元素**都不在枚举中才通过
+`in/enum`  |  检查值是否在给定的枚举列表(`[]string`, `[]intX`, `[]uintX`)中。切片/数组值（`[]string`、`[]intX` 等）在**每个元素**都在枚举中时通过。也支持 JSON 数组（`[]any`，`null` 元素忽略）与 JSON 数字（`float64`，按整数值如 `1` 比较）
+`not_in/notIn`  |  检查值不是在给定的枚举列表中。对切片/数组值，**任何一个元素**都不在枚举中才通过。JSON 数组与 JSON 数字的支持同 `in`
 `contains`  |  检查输入值(`string` `array/slice` `map`)是否包含给定的值
 `not_contains/notContains`  |  检查输入值(`string` `array/slice` `map`)是否不包含给定值
 `string_contains/stringContains`  |  检查输入的 `string` 值是否不包含给定sub-string值
