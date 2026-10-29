@@ -584,9 +584,9 @@ func convValAsFuncValArgType(valArgKind, valKind reflect.Kind, val any) (any, bo
 }
 
 // enumRuleTypeOK reports whether the field value can be checked by the enum rules. When
-// it cannot (eg. a map or a struct value), a clear error is recorded and the rule must
-// not add its own "value must be in the enum [...]" message, which would read like the
-// value is simply not in the list.
+// it cannot (eg. a map value, or a map inside a slice value), a clear error is recorded and
+// the rule must not add its own "value must be in the enum [...]" message, which would read
+// like the value is simply not in the list.
 func enumRuleTypeOK(v *Validation, field, rule string, vfv *fieldval.FieldValue, val any) bool {
 	rv := reflect.Value{}
 	if vfv != nil {
@@ -595,11 +595,12 @@ func enumRuleTypeOK(v *Validation, field, rule string, vfv *fieldval.FieldValue,
 		rv = reflect.ValueOf(val)
 	}
 
-	if ivalidators.EnumSupported(rv) {
+	kind, unsupported := ivalidators.EnumUnsupportedKind(rv)
+	if !unsupported {
 		return true
 	}
 
-	v.AddErrorf(field, "the '%s' rule does not support a %s value, use a string, an int or a slice of them", rule, rv.Kind())
+	v.AddErrorf(field, "the '%s' rule does not support a %s value, use a string, an int or a slice of them", rule, kind)
 	return false
 }
 

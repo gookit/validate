@@ -92,6 +92,10 @@ func TestEnumJSONArrays(t *testing.T) {
 		{"not in mixed", `{"tags":["go","java"]}`, "not_in:go,php", false},
 		{"null element", `{"tags":[null,"go"]}`, "in:go,php", true},
 		{"unsupported element", `{"tags":["go",false]}`, "in:go,php", false},
+		{"numbers allowed", `{"tags":[1,2]}`, "in:1,2", true},
+		{"number outside", `{"tags":[3,1]}`, "in:1,2", false},
+		{"number with fraction", `{"tags":[1.5]}`, "in:1,2", false},
+		{"numbers not in", `{"tags":[3,4]}`, "not_in:1,2", true},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			var data map[string]any

@@ -1,6 +1,7 @@
 package validators
 
 import (
+	"math"
 	"reflect"
 
 	"github.com/gookit/goutil/arrutil"
@@ -36,19 +37,27 @@ func NotIn(fl *fieldval.FieldValue, enum any) bool {
 	return eachBasicValue(fl, func(v any) bool { return !enumHas(enum, v) })
 }
 
-// EnumSupported reports whether the value can be checked by the enum rules. Only a map is
-// reported as unsupported: the enum rules compare a value (or the elements of a slice)
-// with the given list, a map value has nothing to compare and used to fail with the
-// rule message, which reads like the value is simply not in the list. Any other value
-// stays with the old behaviour, including a struct reached through a nil nested pointer,
-// which the rules already treat as an unset value.
-func EnumSupported(rv reflect.Value) bool {
+// EnumUnsupportedKind reports the kind the enum rules cannot compare, when the value (or one
+// of its slice elements) has one: only a map is reported, because it has nothing to compare
+// with the given list and used to fail with the rule message, which reads like the value is
+// simply not in the list. Any other value stays with the old behaviour, including a struct
+// reached through a nil nested pointer, which the rules already treat as an unset value.
+func EnumUnsupportedKind(rv reflect.Value) (reflect.Kind, bool) {
 	rv = derefRV(rv)
 	if !rv.IsValid() {
-		return true
+		return reflect.Invalid, false
 	}
 
-	return rv.Kind() != reflect.Map
+	if kind := rv.Kind(); kind != reflect.Slice && kind != reflect.Array {
+		return kind, kind == reflect.Map
+	}
+
+	for i := 0; i < rv.Len(); i++ {
+		if ev := derefRV(rv.Index(i)); ev.IsValid() && ev.Kind() == reflect.Map {
+			return reflect.Map, true
+		}
+	}
+	return reflect.Invalid, false
 }
 
 // derefRV unwraps pointer/interface values, an invalid Value is returned for a nil one.
@@ -68,7 +77,7 @@ func derefRV(rv reflect.Value) reflect.Value {
 func eachBasicValue(fl *fieldval.FieldValue, fn func(v any) bool) bool {
 	rv := fl.RV()
 	if kind := rv.Kind(); kind != reflect.Slice && kind != reflect.Array {
-		v, err := reflectx.ConvToBasicTypeRV(rv)
+		v, err := convEnumValue(rv)
 		if err != nil {
 			return false
 		}
@@ -83,7 +92,7 @@ func eachBasicValue(fl *fieldval.FieldValue, fn func(v any) bool) bool {
 			continue
 		}
 
-		v, err := reflectx.ConvToBasicTypeRV(ev)
+		v, err := convEnumValue(ev)
 		if err != nil {
 			return false
 		}
@@ -93,6 +102,29 @@ func eachBasicValue(fl *fieldval.FieldValue, fn func(v any) bool) bool {
 	}
 	return true
 }
+
+// convEnumValue converts a field value (or one of its elements) to the basic type the enum
+// rules compare against: a string or an int64. A float holding an integral value is
+// converted as well, because a JSON number decodes into a float64: `in:1,2` accepts [1]
+// but rejects [1.5]. Any other value cannot be compared and reports the conversion error.
+func convEnumValue(rv reflect.Value) (any, error) {
+	if v, err := reflectx.ConvToBasicTypeRV(rv); err == nil {
+		return v, nil
+	}
+
+	if kind := rv.Kind(); kind == reflect.Float32 || kind == reflect.Float64 {
+		f := rv.Float()
+		// 2^63 is not representable as an int64, so the upper bound is exclusive.
+		if f == math.Trunc(f) && f >= -maxInt64AsFloat && f < maxInt64AsFloat {
+			return int64(f), nil
+		}
+	}
+
+	return nil, reflectx.ErrConvertFail
+}
+
+// maxInt64AsFloat is 2^63, the first float64 value that no longer fits in an int64.
+const maxInt64AsFloat = float64(1 << 63)
 
 // enumHas reports whether the basic value (string or int64) is in the given enum.
 func enumHas(enum any, v any) bool {
