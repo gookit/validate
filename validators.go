@@ -349,14 +349,11 @@ func (v *Validation) RequiredUnless(sourceField string, val any, kvs ...string) 
 	}
 
 	dstField, values := kvs[0], kvs[1:]
-	if dstVal, has, _ := v.tryGet(dstField); has {
-		if !Enum(dstVal, values) {
-			return !IsEmpty(val) || v.isIgnoreableZeroNumeric(sourceField)
-		}
+	if dstVal, has, _ := v.tryGet(dstField); has && Enum(dstVal, values) {
+		return true
 	}
 
-	// fields in values
-	return true
+	return !IsEmpty(val) || v.isIgnoreableZeroNumeric(sourceField)
 }
 
 // RequiredWith field under validation must be present and not empty only
