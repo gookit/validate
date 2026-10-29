@@ -617,7 +617,7 @@ func (d *StructData) Set(field string, val any) (newVal any, err error) {
 					if err != nil {
 						return nil, ErrInvalidData
 					}
-					if index >= fv.Len() {
+					if index < 0 || index >= fv.Len() {
 						return nil, ErrNoField
 					}
 

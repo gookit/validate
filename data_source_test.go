@@ -294,6 +294,20 @@ func TestStructData_sliceIndexOutOfRange(t *testing.T) {
 	_, err = d.Set("Items.0.Name", "Grace")
 	assert.Eq(t, ErrNoField, err)
 
+	// a negative index is out of range too, and must not reach fv.Index
+	form = &struct {
+		Items []Item
+		Fixed [1]Item
+	}{Items: []Item{{Name: "Ada"}}, Fixed: [1]Item{{Name: "Ada"}}}
+	d, err = FromStruct(form)
+	assert.NoErr(t, err)
+	_, err = d.Set("Items.-1.Name", "Grace")
+	assert.Eq(t, ErrNoField, err)
+	_, err = d.Set("Fixed.-1.Name", "Grace")
+	assert.Eq(t, ErrNoField, err)
+	assert.Eq(t, "Ada", form.Items[0].Name)
+	assert.Eq(t, "Ada", form.Fixed[0].Name)
+
 	v := Struct(&struct{ Items []Item }{})
 	v.StringRule("Items.0.Name", "required")
 	assert.False(t, v.Validate())
