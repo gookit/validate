@@ -261,6 +261,52 @@ func TestStructData_Get_ptrVal(t *testing.T) {
 	assert.Equal(t, 0, *val.(*int))
 }
 
+func TestStructData_sliceIndexOutOfRange(t *testing.T) {
+	type Item struct {
+		Name string
+	}
+	form := &struct {
+		Items []Item
+		Fixed [1]Item
+	}{Items: []Item{{Name: "Ada"}}, Fixed: [1]Item{{Name: "Ada"}}}
+
+	d, err := FromStruct(form)
+	assert.NoErr(t, err)
+	for _, path := range []string{"Items.0.Name", "Fixed.0.Name"} {
+		value, exist, zero := d.TryGet(path)
+		assert.True(t, exist)
+		assert.False(t, zero)
+		assert.Eq(t, "Ada", value)
+	}
+	for _, path := range []string{"Items.1.Name", "Items.-1.Name", "Fixed.1.Name"} {
+		value, exist, zero := d.TryGet(path)
+		assert.False(t, exist)
+		assert.False(t, zero)
+		assert.Nil(t, value)
+	}
+
+	// a resolved index that no longer exists when written back
+	d, err = FromStruct(form)
+	assert.NoErr(t, err)
+	_, exist := d.Get("Items.0.Name")
+	assert.True(t, exist)
+	form.Items = nil
+	_, err = d.Set("Items.0.Name", "Grace")
+	assert.Eq(t, ErrNoField, err)
+
+	v := Struct(&struct{ Items []Item }{})
+	v.StringRule("Items.0.Name", "required")
+	assert.False(t, v.Validate())
+	assert.NotEmpty(t, v.Errors.Field("Items.0.Name"))
+
+	type Order struct {
+		Items []Item
+		Kind  string `validate:"requiredIf:Items.0.Name,gift"`
+	}
+	assert.True(t, Struct(&Order{}).Validate())
+	assert.False(t, Struct(&Order{Items: []Item{{Name: "gift"}}}).Validate())
+}
+
 func TestValidatePrivateFieldsWhenTrue(t *testing.T) {
 	type foo struct {
 		Field1 int `validate:"required|min:5|max:20" message:"Field1 outside of range"`

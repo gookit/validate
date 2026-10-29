@@ -426,6 +426,9 @@ func (d *StructData) tryGetRV(field string) (fv reflect.Value, exist, zero bool)
 			switch kind {
 			case reflect.Array, reflect.Slice:
 				index, _ := strconv.Atoi(fieldNode)
+				if index < 0 || index >= fv.Len() {
+					return reflect.Value{}, false, false
+				}
 				fv = fv.Index(index)
 			case reflect.Map:
 				fv = structMapValue(fv, fieldNode)
@@ -613,6 +616,9 @@ func (d *StructData) Set(field string, val any) (newVal any, err error) {
 					index, err := strconv.Atoi(fieldNode)
 					if err != nil {
 						return nil, ErrInvalidData
+					}
+					if index >= fv.Len() {
+						return nil, ErrNoField
 					}
 
 					fv = fv.Index(index)

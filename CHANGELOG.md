@@ -5,6 +5,7 @@
 - Resolve string and integer map keys using their declared type during nested
   struct validation and filter/default write-back, including defined key types.
   Invalid or overflowing integer path segments are treated as missing entries.
+- Treat out-of-range slice and array indexes in struct field paths as missing instead of panicking.
 
 ## v2.0.0
 
