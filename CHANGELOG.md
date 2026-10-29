@@ -12,6 +12,11 @@
 - The `min`/`max` (and `gt`/`gte`/`lt`/`lte`/`between`) comments and the README now say that a string
   value is compared lexicographically, not by its length — `min:3` passes for "ab"; use
   `min_len`/`max_len` for a length check. A test pins that behaviour.
+- A struct field can be referenced in lower case now, including an acronym-style name: with the
+  field `MD5`, `required_without_all:md5,url` and `Get("md5")` resolve it (before, only the exact
+  `MD5` worked, and a cross-field rule treated the name as an empty value, see #347).
+- The `in`/`not_in` rules report an unsupported map value with a clear message instead of
+  "value must be in the enum [...]".
 
 ## v2.0.0
 

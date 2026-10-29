@@ -583,6 +583,26 @@ func convValAsFuncValArgType(valArgKind, valKind reflect.Kind, val any) (any, bo
 	return nil, false
 }
 
+// enumRuleTypeOK reports whether the field value can be checked by the enum rules. When
+// it cannot (eg. a map or a struct value), a clear error is recorded and the rule must
+// not add its own "value must be in the enum [...]" message, which would read like the
+// value is simply not in the list.
+func enumRuleTypeOK(v *Validation, field, rule string, vfv *fieldval.FieldValue, val any) bool {
+	rv := reflect.Value{}
+	if vfv != nil {
+		rv = vfv.RV()
+	} else if val != nil {
+		rv = reflect.ValueOf(val)
+	}
+
+	if ivalidators.EnumSupported(rv) {
+		return true
+	}
+
+	v.AddErrorf(field, "the '%s' rule does not support a %s value, use a string, an int or a slice of them", rule, rv.Kind())
+	return false
+}
+
 // boxedVal returns the boxed `any` a validator branch needs: when the carrier
 // vfv is present (vfv!=nil ⇒ val matches it) it lazily materializes vfv.Src()
 // (one box per field, cached); otherwise val was already a converted/sub-element
@@ -649,7 +669,9 @@ func callValidator(v *Validation, fm *funcMeta, field string, val any, args []an
 			ok = Max(val, args[0])
 		}
 	case "enum":
-		if vfv != nil {
+		if !enumRuleTypeOK(v, field, fm.name, vfv, val) {
+			ok = true // the type error is recorded already
+		} else if vfv != nil {
 			ok = ivalidators.Enum(vfv, args[0])
 		} else {
 			ok = Enum(val, args[0])
@@ -657,7 +679,9 @@ func callValidator(v *Validation, fm *funcMeta, field string, val any, args []an
 	case "rule_one_of": // #292: 列表参数同 enum, args[0] 为子校验器名 []string
 		ok = v.RuleOneOf(boxedVal(val, vfv), args[0])
 	case "notIn":
-		if vfv != nil {
+		if !enumRuleTypeOK(v, field, fm.name, vfv, val) {
+			ok = true // the type error is recorded already
+		} else if vfv != nil {
 			ok = ivalidators.NotIn(vfv, args[0])
 		} else {
 			ok = NotIn(val, args[0])

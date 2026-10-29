@@ -370,6 +370,28 @@ func (d *StructData) TryGet(field string) (val any, exist, zero bool) {
 	return fv.Interface(), true, zero
 }
 
+// findFieldFold returns the struct field name that matches name ignoring case, so a rule or
+// a getter can use "md5" for the field MD5. The first declared field wins. Only the first
+// segment of a path is matched, the rest is kept as-is.
+func (d *StructData) findFieldFold(name string) (string, bool) {
+	if d.valueTyp == nil || d.valueTyp.Kind() != reflect.Struct {
+		return "", false
+	}
+
+	first, rest, hasRest := strings.Cut(name, ".")
+	for i := 0; i < d.valueTyp.NumField(); i++ {
+		fName := d.valueTyp.Field(i).Name
+		if fName == "" || !strings.EqualFold(fName, first) {
+			continue
+		}
+		if hasRest {
+			return fName + "." + rest, true
+		}
+		return fName, true
+	}
+	return "", false
+}
+
 // tryGetRV resolves a field value by name (supports sub-path) and returns the
 // underlying reflect.Value WITHOUT boxing via Interface(). It is the value
 // resolve primitive shared by TryGet: same exist/zero semantics, the only
@@ -384,6 +406,14 @@ func (d *StructData) tryGetRV(field string) (fv reflect.Value, exist, zero bool)
 	// when ValidatePrivateFields is enabled (e.g., "foo.Field1" must not become "Foo.Field1").
 	if _, ok := d.fieldNames[field]; !ok {
 		field = strutil.UpperFirst(field)
+		if _, ok := d.fieldNames[field]; !ok {
+			// UpperFirst only fixes the first letter, so a name of an acronym-style field
+			// ("md5" for MD5, "url" for URL) still misses. Fall back to a case-insensitive
+			// match over the struct fields (#347).
+			if realName, found := d.findFieldFold(field); found {
+				field = realName
+			}
+		}
 	}
 	// read from cache. only populated by Set() (e.g. default-value / filter
 	// writes), so a later read here reflects the updated field value. tryGetRV

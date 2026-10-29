@@ -36,6 +36,32 @@ func NotIn(fl *fieldval.FieldValue, enum any) bool {
 	return eachBasicValue(fl, func(v any) bool { return !enumHas(enum, v) })
 }
 
+// EnumSupported reports whether the value can be checked by the enum rules. Only a map is
+// reported as unsupported: the enum rules compare a value (or the elements of a slice)
+// with the given list, a map value has nothing to compare and used to fail with the
+// rule message, which reads like the value is simply not in the list. Any other value
+// stays with the old behaviour, including a struct reached through a nil nested pointer,
+// which the rules already treat as an unset value.
+func EnumSupported(rv reflect.Value) bool {
+	rv = derefRV(rv)
+	if !rv.IsValid() {
+		return true
+	}
+
+	return rv.Kind() != reflect.Map
+}
+
+// derefRV unwraps pointer/interface values, an invalid Value is returned for a nil one.
+func derefRV(rv reflect.Value) reflect.Value {
+	for rv.IsValid() && (rv.Kind() == reflect.Ptr || rv.Kind() == reflect.Interface) {
+		if rv.IsNil() {
+			return reflect.Value{}
+		}
+		rv = rv.Elem()
+	}
+	return rv
+}
+
 // eachBasicValue calls fn with the basic value of the field: the value itself for a
 // scalar field, or every element for a slice/array field. It stops and returns false
 // as soon as fn returns false, or when a value cannot be converted to a basic type.
