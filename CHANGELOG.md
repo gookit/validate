@@ -29,6 +29,9 @@
   cannot equal any of the listed values, so the exemption no longer applies (#354). Before,
   a missing (or unset) dependency field silently exempted the field under validation. A
   non-empty value and the existent numeric-zero behaviour are unchanged.
+- `required_if` with a single literal now compares a defined scalar type: with
+  `type Status string`, `required_if:Mode,member` requires the field for `Status("member")`
+  too, which used to be a mismatch and left an empty field valid (#355).
 
 ## v2.0.0
 
