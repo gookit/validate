@@ -212,7 +212,7 @@ var builtinMessages = map[string]string{
 	"map":     "{field} value must be a map",
 	"array":   "{field} value must be an array",
 	"strings": "{field} value must be a []string",
-	"notIn":   "{field} value must not be in the given enum list %d",
+	"notIn":   "{field} value must not be in the given enum list %v",
 	//
 	"contains":    "{field} value does not contain %s",
 	"notContains": "{field} value contains %s",

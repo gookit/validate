@@ -63,7 +63,7 @@ var Data = map[string]string{
 	"array":   "{field} 值必須是壹個array類型",
 	"strings": "{field} 值必須是壹個[]string類型",
 	//
-	"notIn":       "{field} 值不能出現在給定枚舉列表中 %d",
+	"notIn":       "{field} 值不能出現在給定枚舉列表中 %v",
 	"contains":    "{field} 值不能出現在枚舉列表中 %s",
 	"notContains": "{field} 值包含輸入指定值 %s",
 	"startsWith":  "{field} 值的前綴必須是：%s ",

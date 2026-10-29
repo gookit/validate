@@ -73,7 +73,7 @@ var Data = map[string]string{
 	"map":     "{field} должно быть картой",
 	"array":   "{field} должно быть массивом",
 	"strings": "{field} должно быть массивом строк",
-	"notIn":   "{field} не должно быть в данном списке %d",
+	"notIn":   "{field} не должно быть в данном списке %v",
 	//
 	"contains":    "{field} должно содержать %s",
 	"notContains": "{field} не должно содержать %s",
