@@ -308,7 +308,7 @@ func (v *Validation) RequiredIf(sourceField string, val any, kvs ...string) bool
 		// up: only one check value, direct compare value
 		if len(args) == 1 {
 			wantVal, err := reflectx.ConvTypeByBaseKind(args[0], rftDv.Kind())
-			if err == nil && dstVal == wantVal {
+			if err == nil && IsEqual(dstVal, wantVal) {
 				return requiredIfValIsPresent(val) || v.isIgnoreableZeroNumeric(sourceField)
 			}
 		} else if Enum(dstVal, args) {
