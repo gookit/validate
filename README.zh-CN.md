@@ -825,8 +825,8 @@ func main()  {
 `gt_field/gteField`  | 检查字段值是否大于或等于另一个字段的值
 `lt_field/ltField`  |  检查字段值是否小于另一个字段的值
 `lte_field/lteField`  |  检查字段值是否小于或等于另一个字段的值
-`file/isFile`  |  验证是否是上传的文件
-`image/isImage`  |  验证是否是上传的图片文件，支持后缀检查
+`file/isFile`  |  验证是否是上传的文件。除 `Request`(FormData) 源外，struct/map 源里的 `*multipart.FileHeader` 字段也支持
+`image/isImage`  |  验证是否是上传的图片文件，支持后缀检查。MIME 类型由文件内容嗅探得出，不取 part 的 Content-Type 头
 `mime/mimeType/inMimeTypes`  |  验证是否是上传的文件，并且在指定的MIME类型中
 `date/isDate` | 检查字段值是否为日期字符串。（只支持几种常用的格式） eg `2018-10-25`
 `gt_date/gtDate/afterDate` | 检查输入值是否大于给定的日期字符串

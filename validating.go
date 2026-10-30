@@ -3,6 +3,7 @@ package validate
 import (
 	"errors"
 	"fmt"
+	"mime/multipart"
 	"reflect"
 	"strings"
 
@@ -306,10 +307,25 @@ func (r *Rule) applyField(field, name string, v *Validation) (stop bool) {
 }
 
 func (r *Rule) fileValidate(field, name string, v *Validation) uint8 {
-	// check data source
+	// a FormData source carries the uploaded files itself
 	form, ok := v.data.(*FormData)
 	if !ok {
-		return statusFail
+		// other sources (struct, map, a custom DataFace) can hold the very same
+		// *multipart.FileHeader; wrap it in a FormData so the file validators keep one
+		// code path instead of failing on the source type alone.
+		files, hasValue := formFilesOfValue(v, field)
+		if len(files) == 0 {
+			// an empty field follows the skipEmpty rule of a FormData source; a value
+			// that is not an uploaded file keeps failing as before
+			if !hasValue && r.skipEmpty {
+				return statusSkip
+			}
+			return statusFail
+		}
+
+		baseField, _, _ := strings.Cut(field, ".*")
+		form = newFormData()
+		form.AddFile(baseField, files...)
 	}
 
 	// skip on empty AND field not exist
@@ -343,6 +359,36 @@ func (r *Rule) fileValidate(field, name string, v *Validation) uint8 {
 		return statusOk
 	}
 	return statusFail
+}
+
+// formFilesOfValue returns the uploaded files a non-FormData source holds for the field,
+// and whether the field carries a value at all. The value may be a *multipart.FileHeader,
+// a []*multipart.FileHeader or a []multipart.FileHeader; any other value (eg. a string) is
+// reported as present but is not an uploaded file.
+func formFilesOfValue(v *Validation, field string) (files []*multipart.FileHeader, hasValue bool) {
+	baseField, _, _ := strings.Cut(field, ".*")
+
+	val, exist := v.Get(baseField)
+	if !exist || val == nil {
+		return nil, false
+	}
+
+	switch t := val.(type) {
+	case *multipart.FileHeader:
+		if t == nil {
+			return nil, false
+		}
+		return []*multipart.FileHeader{t}, true
+	case []*multipart.FileHeader:
+		return t, true
+	case []multipart.FileHeader:
+		out := make([]*multipart.FileHeader, 0, len(t))
+		for i := range t {
+			out = append(out, &t[i])
+		}
+		return out, true
+	}
+	return nil, true
 }
 
 // value by tryGet(key) TODO

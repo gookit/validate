@@ -32,6 +32,11 @@
 - `required_if` with a single literal now compares a defined scalar type: with
   `type Status string`, `required_if:Mode,member` requires the field for `Status("member")`
   too, which used to be a mismatch and left an empty field valid (#355).
+- The `file`/`isFile`, `image`/`isImage` and `mime`/`inMimeTypes` rules work on a struct or
+  map source now: a `*multipart.FileHeader` (or a slice of them) is wrapped into a
+  temporary FormData and goes through the same checks. Before, any source that was not a
+  `*FormData` failed the rule outright, so the same upload passed through
+  `validate.Request(r)` and failed through `validate.New(&form{File: fh})`.
 
 ## v2.0.0
 

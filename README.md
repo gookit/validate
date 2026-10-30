@@ -900,8 +900,8 @@ validator/aliases | description
 `gt_field/gtField`  |  Check that the field value is greater than the value of another field
 `lte_field/lteField`  |  Check if the field value is less than or equal to the value of another field
 `lt_field/ltField`  |  Check that the field value is less than the value of another field
-`file/isFile`  |  Verify if it is an uploaded file
-`image/isImage`  |  Check if it is an uploaded image file and support suffix check
+`file/isFile`  |  Verify if it is an uploaded file. A `*multipart.FileHeader` field of a struct or map source is accepted too, not only a `Request` (FormData) source
+`image/isImage`  |  Check if it is an uploaded image file and support suffix check. The MIME type is sniffed from the file content, not taken from the part header
 `mime/mimeType/inMimeTypes`  |  Check that it is an uploaded file and is in the specified MIME type
 `date/isDate` | Check the field value is date string. eg `2018-10-25`
 `gt_date/gtDate/afterDate` | Check that the input value is greater than the given date string.
