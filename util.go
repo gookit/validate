@@ -407,6 +407,9 @@ func eq(arg1 reflect.Value, arg2 reflect.Value) (bool, error) {
 // from package: github.com/stretchr/testify/assert/assertions.go
 func includeElement(list, element any) (ok, found bool) {
 	listValue := reflect.ValueOf(list)
+	if !listValue.IsValid() {
+		return false, false
+	}
 	elementValue := reflect.ValueOf(element)
 	listKind := listValue.Type().Kind()
 
