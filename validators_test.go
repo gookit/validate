@@ -454,6 +454,7 @@ func TestStringCheck(t *testing.T) {
 	// UUID3
 	is.True(IsUUID("e0f98f02-6703-365c-9a42-4a0749f76068"))
 	is.True(IsUUID3("e0f98f02-6703-365c-9a42-4a0749f76068"))
+	is.False(IsUUID3("e0f98f02-6703-365c-1a42-4a0749f76068")) // variant nibble must be RFC 4122 (10x)
 	is.False(IsUUID3(""))
 
 	// UUID4
