@@ -521,10 +521,11 @@ func (v *Validation) IsFormFile(fd *FormData, field string) (ok bool) {
 	field, _, _ = strings.Cut(field, ".*")
 	if files := fd.GetFiles(field); len(files) > 0 {
 		for i := range files {
-			_, err := files[i].Open()
+			file, err := files[i].Open()
 			if err != nil {
 				return false
 			}
+			_ = file.Close()
 		}
 		return true
 	}

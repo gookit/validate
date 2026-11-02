@@ -952,6 +952,8 @@ func (d *FormData) FileBytes(field string) ([]byte, error) {
 		return nil, err
 	}
 
+	defer file.Close()
+
 	return io.ReadAll(file)
 }
 
@@ -974,6 +976,7 @@ func (d *FormData) fileMimeType(fh *multipart.FileHeader) (mime string) {
 	}
 
 	if file, err := fh.Open(); err == nil {
+		defer file.Close()
 		var buf [sniffLen]byte
 		n, _ := io.ReadFull(file, buf[:])
 		mime = http.DetectContentType(buf[:n])
