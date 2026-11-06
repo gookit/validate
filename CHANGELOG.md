@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v2.0.3
+
 - Resolve string and integer map keys using their declared type during nested
   struct validation and filter/default write-back, including defined key types.
   Invalid or overflowing integer path segments are treated as missing entries.
