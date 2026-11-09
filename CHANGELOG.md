@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## v2.0.4
+
+- The case-insensitive field lookup (added in v2.0.3 for acronym-style names such as `MD5`)
+  skips unexported fields now. A rule on a promoted field, for example `WebURL` from an
+  embedded `Settings` struct, no longer resolves to an unexported `webURL` of the outer
+  struct, which always reads as missing and made `required` fail (see #360).
+
 ## v2.0.3
 
 - Resolve string and integer map keys using their declared type during nested
