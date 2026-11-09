@@ -1,6 +1,7 @@
 package validate
 
 import (
+	"net/url"
 	"testing"
 
 	"github.com/gookit/goutil/x/assert"
@@ -65,4 +66,30 @@ func TestEnumRule_mapValue(t *testing.T) {
 	}
 	assert.True(t, Struct(&sliceForm{Tags: []string{"a", "b"}}).Validate())
 	assert.False(t, Struct(&sliceForm{Tags: []string{"a", "x"}}).Validate())
+}
+
+// TestStructRule_promotedFieldVsUnexportedField: a rule on a promoted field must not
+// resolve to an unexported field of the outer struct whose name differs only in case.
+// https://github.com/gookit/validate/v2/issues/360
+func TestStructRule_promotedFieldVsUnexportedField(t *testing.T) {
+	type Settings struct {
+		WebURL string
+	}
+	type Config struct {
+		Settings
+		webURL *url.URL // parsed copy of WebURL
+	}
+
+	c := &Config{Settings: Settings{WebURL: "https://example.com"}}
+	c.webURL, _ = url.Parse(c.WebURL)
+
+	v := Struct(c)
+	v.AddRule("WebURL", "required")
+	assert.True(t, v.Validate(), v.Errors.One())
+
+	// the case-insensitive fallback still resolves the lower-case name to the exported
+	// WebURL, it just no longer picks the unexported field
+	val, exist := v.Get("webURL")
+	assert.True(t, exist)
+	assert.Eq(t, "https://example.com", val)
 }

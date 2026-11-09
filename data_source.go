@@ -380,7 +380,13 @@ func (d *StructData) findFieldFold(name string) (string, bool) {
 
 	first, rest, hasRest := strings.Cut(name, ".")
 	for i := 0; i < d.valueTyp.NumField(); i++ {
-		fName := d.valueTyp.Field(i).Name
+		sf := d.valueTyp.Field(i)
+		// An unexported field is never readable, so it must not shadow a promoted
+		// exported field that matches the name ignoring case (#360).
+		if !sf.IsExported() {
+			continue
+		}
+		fName := sf.Name
 		if fName == "" || !strings.EqualFold(fName, first) {
 			continue
 		}
