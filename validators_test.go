@@ -470,6 +470,16 @@ func TestStringCheck(t *testing.T) {
 	is.True(IsUUID5("f6785639-778b-5db8-b1b3-60962fb4f38d"))
 	is.False(IsUUID5(""))
 
+	// UUIDs in upper or mixed case, as .NET, Swift and Java tools print them
+	is.True(IsUUID("FD2FFF4C-CC39-11E8-A8D5-F2801F1B9FD1"))
+	is.True(IsUUID("fd2fff4c-CC39-11e8-A8D5-f2801f1b9fd1"))
+	is.True(IsUUID3("E0F98F02-6703-365C-9A42-4A0749F76068"))
+	is.True(IsUUID4("8098F6FB-1557-4633-B82B-40E1B26137BF"))
+	is.True(IsUUID5("F6785639-778B-5DB8-B1B3-60962FB4F38D"))
+	is.False(IsUUID("GD2FFF4C-CC39-11E8-A8D5-F2801F1B9FD1"))
+	is.False(IsUUID3("E0F98F02-6703-365C-1A42-4A0749F76068")) // wrong variant
+	is.False(IsUUID4("FD2FFF4C-CC39-11E8-A8D5-F2801F1B9FD1")) // uuid 1
+
 	// IsLatitude
 	is.True(IsLatitude("29.8431681298"))
 	is.False(IsLatitude(""))
