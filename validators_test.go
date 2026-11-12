@@ -521,11 +521,18 @@ func TestStringCheck_ISBN(t *testing.T) {
 
 	// IsISBN10
 	is.True(IsISBN10("0596528310"))
+	is.True(IsISBN10("080442957X"))
 	is.False(IsISBN10(""))
+	// wrong check digit
+	is.False(IsISBN10("0596528311"))
+	is.False(IsISBN10("059652831X"))
 
 	// IsISBN13
 	is.True(IsISBN13("9780596528317"))
+	is.True(IsISBN13("9780306406157"))
 	is.False(IsISBN13(""))
+	// wrong check digit
+	is.False(IsISBN13("9780596528318"))
 }
 
 func TestStringContains(t *testing.T) {

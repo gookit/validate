@@ -127,11 +127,39 @@ func IsDataURI(s string) bool { return s != "" && rxDataURI.MatchString(s) }
 // IsMultiByte string.
 func IsMultiByte(s string) bool { return s != "" && rxMultiByte.MatchString(s) }
 
-// IsISBN10 string.
-func IsISBN10(s string) bool { return s != "" && rxISBN10.MatchString(s) }
+// IsISBN10 string. The last char is the check digit (0-9 or X).
+func IsISBN10(s string) bool {
+	if s == "" || !rxISBN10.MatchString(s) {
+		return false
+	}
 
-// IsISBN13 string.
-func IsISBN13(s string) bool { return s != "" && rxISBN13.MatchString(s) }
+	sum := 0
+	for i := 0; i < 10; i++ {
+		d := int(s[i] - '0')
+		if s[i] == 'X' {
+			d = 10
+		}
+		sum += (10 - i) * d
+	}
+	return sum%11 == 0
+}
+
+// IsISBN13 string. The last digit is the check digit.
+func IsISBN13(s string) bool {
+	if s == "" || !rxISBN13.MatchString(s) {
+		return false
+	}
+
+	sum := 0
+	for i := 0; i < 13; i++ {
+		d := int(s[i] - '0')
+		if i%2 == 1 {
+			d *= 3
+		}
+		sum += d
+	}
+	return sum%10 == 0
+}
 
 // IsHexadecimal string.
 func IsHexadecimal(s string) bool { return s != "" && rxHexadecimal.MatchString(s) }

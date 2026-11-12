@@ -4,6 +4,8 @@
 
 - `uuid`, `uuid3`, `uuid4` and `uuid5` accept upper and mixed case hex digits now, for example
   `FD2FFF4C-CC39-11E8-A8D5-F2801F1B9FD1`. RFC 4122 section 3 makes UUIDs case insensitive on input.
+- `isbn10` and `isbn13` check the check digit now. Before, any 10 or 13 digits passed, so
+  `0596528311` and `9780596528318` (one digit off from real ISBNs) were accepted.
 
 ## v2.0.4
 
