@@ -28,7 +28,7 @@ func TestCompareRV_EquivCompareAny(t *testing.T) {
 		// plain signed ints (incl. negative, zero, MaxInt64)
 		int(5), int(-3), int(0), int8(5), int8(-3), int16(5), int32(5),
 		int64(5), int64(math.MaxInt64), int64(math.MinInt64),
-		// plain unsigned ints (incl. MaxUint64 -> int64 wrap to -1)
+		// plain unsigned ints (incl. MaxUint64 -> ToInt64 error -> false)
 		uint(5), uint8(5), uint8(255), uint16(5), uint32(5),
 		uint64(5), uint64(math.MaxUint64),
 		// plain floats (incl. 1.5, integral 2.0, negative)
@@ -100,9 +100,10 @@ func TestCompareRV_PlainFastPaths(t *testing.T) {
 		assert.True(t, compareRV(reflect.ValueOf(30), 120, "<="))
 		assert.False(t, compareRV(reflect.ValueOf(0), 1, ">="))
 	})
-	t.Run("uint64-wrap", func(t *testing.T) {
-		// int64(math.MaxUint64) == -1, so it is < 0
-		assert.True(t, compareRV(reflect.ValueOf(uint64(math.MaxUint64)), 0, "<"))
+	t.Run("uint64-overflow", func(t *testing.T) {
+		// mathutil.ToInt64 reports an error above MaxInt64 (goutil v0.9.0), so both
+		// paths must return false instead of comparing int64(MaxUint64) == -1.
+		assert.False(t, compareRV(reflect.ValueOf(uint64(math.MaxUint64)), 0, "<"))
 		assert.Eq(t,
 			compareAny(uint64(math.MaxUint64), 0, "<"),
 			compareRV(reflect.ValueOf(uint64(math.MaxUint64)), 0, "<"))

@@ -9,6 +9,7 @@
 package validators
 
 import (
+	"math"
 	"reflect"
 
 	"github.com/gookit/goutil/mathutil"
@@ -130,13 +131,18 @@ func compareRV(rv reflect.Value, dstVal any, op string) bool {
 		}
 		return mathutil.CompInt64(rv.Int(), i2, op)
 	case uintType, uint8Type, uint16Type, uint32Type, uint64Type:
-		// concrete uintX -> mathutil default: ToInt64(uintX) == int64(rv.Uint())
-		// (incl. uint64 overflow wrap to negative int64, matching int64(uint64) in ToInt64).
+		// concrete uintX -> mathutil default: ToInt64(uintX) == int64(rv.Uint()),
+		// and mathutil.ToInt64 reports an error for a value above MaxInt64
+		// (goutil v0.9.0), which makes mathutil.Compare return false.
 		i2, err := mathutil.ToInt64(dstVal)
 		if err != nil {
 			return false
 		}
-		return mathutil.CompInt64(int64(rv.Uint()), i2, op)
+		uVal := rv.Uint()
+		if uVal > math.MaxInt64 {
+			return false
+		}
+		return mathutil.CompInt64(int64(uVal), i2, op)
 	}
 
 	// everything else (named numeric / named string / bool / NilObject / other

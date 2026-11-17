@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- goutil is v0.9.0 now, where `mathutil.ToInt64` reports an error for a `uint`/`uint64` above
+  `MaxInt64` instead of wrapping around to a negative number. The box-free compare fast path
+  follows it, so a `uint64` field above `MaxInt64` is not compared as `-1` anymore: it matches
+  the `mathutil.Compare` result (`false`) again.
 - `uuid`, `uuid3`, `uuid4` and `uuid5` accept upper and mixed case hex digits now, for example
   `FD2FFF4C-CC39-11E8-A8D5-F2801F1B9FD1`. RFC 4122 section 3 makes UUIDs case insensitive on input.
 - `isbn10` and `isbn13` check the check digit now. Before, any 10 or 13 digits passed, so
