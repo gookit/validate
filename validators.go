@@ -516,7 +516,12 @@ var (
 )
 
 func isFileValidator(name string) bool {
-	return strings.Contains(fileValidators, "|"+name+"|")
+	switch name {
+	case "isFile", "isImage", "inMimeTypes":
+		return true
+	}
+	// a name with '|' can still match a run of the names above
+	return strings.IndexByte(name, '|') >= 0 && strings.Contains(fileValidators, "|"+name+"|")
 }
 
 // IsFormFile check field is uploaded file. validator: isFile
